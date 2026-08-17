@@ -17,7 +17,6 @@ class NudgeEligibilityTest {
         hourOfDay: Int = 12,
         isCheckedIn: Boolean = false,
         hasCheckedInToday: Boolean = false,
-        enabled: Set<Nudge> = setOf(Nudge.NOT_CHECKED_IN_BY),
         shownToday: Int = 0,
         config: NudgeConfig = NudgeConfig(),
         nowMillis: Long = 100 * hour,
@@ -26,7 +25,6 @@ class NudgeEligibilityTest {
         hourOfDay = hourOfDay,
         isCheckedIn = isCheckedIn,
         hasCheckedInToday = hasCheckedInToday,
-        enabledNudges = enabled,
         shownToday = shownToday,
         config = config,
     )
@@ -40,11 +38,6 @@ class NudgeEligibilityTest {
     @Test
     fun `a snapshot with no history at all is eligible`() {
         assertEquals(Nudge.NOT_CHECKED_IN_BY, NudgeEligibility.select(eligible()))
-    }
-
-    @Test
-    fun `nothing fires when the nudge is disabled`() {
-        assertNull(NudgeEligibility.select(eligible(enabled = emptySet())))
     }
 
     @Test

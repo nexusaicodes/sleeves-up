@@ -6,37 +6,29 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.checkin.app.CheckInApplication
-import com.checkin.app.notify.engagement.EngagementSettings
 import com.checkin.app.notify.engagement.Nudge
 import com.checkin.app.notify.engagement.NudgeTrigger
 import com.checkin.app.notify.log.EngagementEvent
 import com.checkin.app.notify.log.EngagementLog
-import com.checkin.app.platform.PromptSettings
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-data class SettingsUiState(val nudgesEnabled: Boolean = false, val enabledNudges: Set<Nudge> = emptySet())
-
 /**
- * Settings are prefs-backed rather than DB-backed, so there is no Room `Flow` to build on — the state
- * is re-read on resume and after each write instead. The engagement event log is the exception: it is
- * a real table, so the diagnostics card observes it reactively.
+ * Backs the debug cards, and nothing else — the Settings screen holds no state of its own.
+ *
+ * There are no in-app notification switches for it to carry: an opt-out is a notification channel,
+ * so the screen's one control is a link into Android's settings, and [NotificationsCard] reads the
+ * platform directly on resume rather than through here. What is left is debug-only, plus the
+ * engagement event log — a real table, so it is observed reactively.
  */
 class SettingsViewModel(
-    private val settings: PromptSettings,
-    private val engagementPrefs: EngagementSettings,
     private val engagementLog: EngagementLog,
     private val nudgeTrigger: NudgeTrigger,
     private val snapshotReader: DebugSnapshotReader,
 ) : ViewModel() {
-
-    private val _uiState = MutableStateFlow(readState())
-    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     /**
      * Backs the debug diagnostics card — what the notification and service layers have actually
@@ -45,25 +37,6 @@ class SettingsViewModel(
     val recentEvents: StateFlow<List<EngagementEvent>> =
         engagementLog.recent(EVENT_LOG_LIMIT)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    private fun readState(): SettingsUiState = SettingsUiState(
-        nudgesEnabled = engagementPrefs.masterEnabled,
-        enabledNudges = Nudge.entries.filter { engagementPrefs.isEnabled(it) }.toSet(),
-    )
-
-    fun onResumed() {
-        _uiState.value = readState()
-    }
-
-    fun setNudgesEnabled(enabled: Boolean) {
-        engagementPrefs.masterEnabled = enabled
-        _uiState.value = readState()
-    }
-
-    fun setNudgeEnabled(nudge: Nudge, enabled: Boolean) {
-        engagementPrefs.setEnabled(nudge, enabled)
-        _uiState.value = readState()
-    }
 
     // --- Debug harness ---
 
@@ -106,8 +79,6 @@ class SettingsViewModel(
             initializer {
                 val container = (this[APPLICATION_KEY] as CheckInApplication).container
                 SettingsViewModel(
-                    container.settings,
-                    container.engagementSettings,
                     container.engagementLog,
                     container.nudgeDispatcher,
                     DebugSnapshotReader(container.repository, container.sessionAlarms, container.timeSource),

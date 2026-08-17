@@ -9,7 +9,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -24,8 +23,6 @@ class SettingsViewModelTest {
     val mainRule = MainDispatcherRule()
 
     private fun buildViewModel(
-        settings: FakePromptSettings,
-        engagement: FakeEngagementSettings = FakeEngagementSettings(),
         log: FakeEngagementLog = FakeEngagementLog(),
         trigger: FakeNudgeTrigger = FakeNudgeTrigger(),
         alarms: FakeSessionAlarms = FakeSessionAlarms(),
@@ -34,58 +31,13 @@ class SettingsViewModelTest {
     ): SettingsViewModel {
         val time = FixedTime(NOW, LocalDate.of(2026, 6, 15))
         val reader = DebugSnapshotReader(CheckInRepository(dao, time), alarms, time) { serviceRunning }
-        return SettingsViewModel(settings, engagement, log, trigger, reader)
-    }
-
-    /**
-     * The ViewModel reports whatever the settings seam says and invents nothing — including the
-     * "everything off" state, which is what a master switch turned off must look like.
-     *
-     * This is deliberately **not** a test of the shipped default. Nudges default *on*, and that
-     * decision lives in `SharedPrefsEngagementSettings`, which is Android-only and outside this
-     * JVM-only suite; asserting it against [FakeEngagementSettings] would only pin the fake.
-     */
-    @Test
-    fun `the view model reports nudges off when settings report none`() {
-        val viewModel = buildViewModel(FakePromptSettings())
-
-        assertFalse(viewModel.uiState.value.nudgesEnabled)
-        assertTrue(viewModel.uiState.value.enabledNudges.isEmpty())
-    }
-
-    @Test
-    fun `toggling the master switch writes through and re-reads`() {
-        val engagement = FakeEngagementSettings()
-        val viewModel = buildViewModel(FakePromptSettings(), engagement)
-
-        viewModel.setNudgesEnabled(true)
-
-        assertTrue(engagement.masterEnabled)
-        assertTrue(viewModel.uiState.value.nudgesEnabled)
-    }
-
-    /**
-     * The per-nudge switch stays as the user set it even while the master switch is off, so turning
-     * the master back on restores their selection rather than silently re-enabling everything.
-     */
-    @Test
-    fun `an individual nudge keeps its own state independent of the master switch`() {
-        val engagement = FakeEngagementSettings()
-        val viewModel = buildViewModel(FakePromptSettings(), engagement)
-
-        viewModel.setNudgeEnabled(Nudge.NOT_CHECKED_IN_BY, true)
-        assertTrue(Nudge.NOT_CHECKED_IN_BY in viewModel.uiState.value.enabledNudges)
-        // Master is still off, so nothing is actually eligible to send.
-        assertTrue(engagement.enabledNudges().isEmpty())
-
-        viewModel.setNudgesEnabled(true)
-        assertEquals(setOf(Nudge.NOT_CHECKED_IN_BY), engagement.enabledNudges())
+        return SettingsViewModel(log, trigger, reader)
     }
 
     @Test
     fun `the debug harness forces a send and runs a pass`() = runTest {
         val trigger = FakeNudgeTrigger()
-        val viewModel = buildViewModel(FakePromptSettings(), trigger = trigger)
+        val viewModel = buildViewModel(trigger = trigger)
 
         viewModel.debugSend(Nudge.NOT_CHECKED_IN_BY, variant = 1)
         viewModel.debugRunPass()
@@ -101,26 +53,13 @@ class SettingsViewModelTest {
     @Test
     fun `clearing the log clears the send record`() = runTest {
         val log = FakeEngagementLog()
-        val viewModel = buildViewModel(FakePromptSettings(), FakeEngagementSettings(), log)
+        val viewModel = buildViewModel(log)
 
         viewModel.debugClearLog()
         advanceUntilIdle()
 
         assertEquals(1, log.clearCount)
         assertEquals(0, log.shownCountSince(0L))
-    }
-
-    /** Prefs can change while another screen is showing, so resume re-reads rather than trusting cache. */
-    @Test
-    fun `resume picks up a change made elsewhere`() {
-        val engagement = FakeEngagementSettings()
-        val viewModel = buildViewModel(FakePromptSettings(), engagement)
-        assertFalse(viewModel.uiState.value.nudgesEnabled)
-
-        engagement.masterEnabled = true
-        viewModel.onResumed()
-
-        assertTrue(viewModel.uiState.value.nudgesEnabled)
     }
 
     /**
@@ -137,7 +76,7 @@ class SettingsViewModelTest {
             scheduleReminderAt(NOW + 1000L)
             scheduleDayBoundaryAt(NOW + 5000L)
         }
-        val viewModel = buildViewModel(FakePromptSettings(), dao = dao, alarms = alarms, serviceRunning = true)
+        val viewModel = buildViewModel(dao = dao, alarms = alarms, serviceRunning = true)
 
         val snapshot = viewModel.readSnapshot(channels = emptyList())
 
@@ -160,7 +99,7 @@ class SettingsViewModelTest {
     @Test
     fun `the log reads without the events flow being collected`() = runTest {
         val log = FakeEngagementLog()
-        val viewModel = buildViewModel(FakePromptSettings(), log = log)
+        val viewModel = buildViewModel(log = log)
         log.record(Nudge.NOT_CHECKED_IN_BY, variant = 0, event = EngagementEventType.SHOWN, atMillis = NOW)
 
         // Nothing is collecting recentEvents here, which is the point.
@@ -171,7 +110,7 @@ class SettingsViewModelTest {
     /** With nothing open there is no session to read and no boundary to expect. */
     @Test
     fun `the snapshot reports no session when none is open`() = runTest {
-        val viewModel = buildViewModel(FakePromptSettings())
+        val viewModel = buildViewModel()
 
         val snapshot = viewModel.readSnapshot(channels = emptyList())
 

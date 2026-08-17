@@ -15,9 +15,13 @@ import com.checkin.app.notify.NotificationChannels
  * grant it and still turn notifications off for the whole app, or set an individual channel to
  * "None". All three are checked — the latter two are the settings behind "I had everything enabled",
  * and a card that looked only at the permission would be blind to them.
+ *
+ * Every case carries copy, [NONE] included: [NotificationsCard] renders in all of them, so the
+ * healthy state is a real state with something to say — where the switches are — rather than an
+ * absence.
  */
 internal enum class NotificationBlock(val titleRes: Int, val helpRes: Int) {
-    NONE(0, 0),
+    NONE(R.string.settings_notifications_title, R.string.settings_notifications_help),
     ALL(R.string.settings_notifications_off, R.string.settings_notifications_off_help),
     CHANNELS(R.string.settings_notifications_partial, R.string.settings_notifications_partial_help),
     ;
@@ -48,10 +52,11 @@ internal enum class NotificationBlock(val titleRes: Int, val helpRes: Int) {
 /**
  * Reads the three switches off the platform and hands them to [NotificationBlock.classify].
  *
- * Only the one channel a session depends on is inspected. Muting the reminder or the nudges is a
- * preference, not a fault: the reminder only ever asks, the day-boundary close ends a forgotten
- * session with no notification involved, and with no in-app switch for the reminder its channel *is*
- * the opt-out.
+ * Only the one channel a session depends on is inspected. Muting the reminder or the check-in
+ * reminders is a preference, not a fault: the reminder only ever asks, and the day-boundary close
+ * ends a forgotten session with no notification involved. Their channels *are* their opt-outs —
+ * there is no in-app switch for either — so warning about a muted one would be nagging the user
+ * about the choice they just made, in the same breath as telling them where to make it.
  */
 internal fun Context.notificationBlock(): NotificationBlock {
     val manager = NotificationManagerCompat.from(this)

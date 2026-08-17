@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Casing: section and card titles are Title Case ("Overall Stats", "All-Time Split"); everything a
-    user reads as a line rather than a heading — row labels, buttons, help text, empty states — is
-    sentence case ("Check-in reminders", "Showed up"). The only exceptions are the product name
-    CheckIn and the "Check In"/"Check Out" actions it is named after.
+    Casing: section and card titles are Title Case ("Overall Stats", "All-Time Split"), and so are
+    notification channel names ("Check-In Timer", "Session Reminders"), which Android renders as the
+    titles of one list; everything a user reads as a line rather than a heading — row labels,
+    buttons, help text, empty states — is sentence case ("Open notification settings", "Showed up").
+    The only exceptions are the product name CheckIn and the "Check In"/"Check Out" actions it is
+    named after.
 
     Nothing here grades a day. There is no target, no half day and no absence — a day is one the user
     showed up for or one they didn't, and the copy must not reintroduce a verdict.
@@ -65,9 +67,15 @@
     <string name="reminder_title">Still checked in?</string>
     <string name="reminder_text">Your session is still running. It closes on its own at midnight.</string>
 
-    <!-- Engagement nudges -->
-    <string name="engagement_channel_name">Encouragement</string>
-    <string name="engagement_channel_description">Optional nudges encouraging you to check in</string>
+    <!-- Engagement nudges. This channel is the only opt-out there is — there is no in-app switch — so
+         the name has to be the words a user hunting for one would look for, and the description has
+         to say what turning it off actually stops. "Nudge" is internal vocabulary and stays out of
+         both. A channel's name and description are updatable after creation; its id and importance
+         are not. The name is near-synonymous with "Session Reminders" one row away, so the two
+         descriptions carry the difference: muting the wrong one costs the prompt that catches a
+         forgotten open session. -->
+    <string name="engagement_channel_name">Check-In Reminders</string>
+    <string name="engagement_channel_description">Occasional reminders when you haven\'t checked in. At most one a day.</string>
     <string name="nudge_not_checked_in_title_a">Ready when you are</string>
     <string name="nudge_not_checked_in_body_a">You haven\'t checked in yet today. Tap to start your session.</string>
     <string name="nudge_not_checked_in_title_b">Start the clock?</string>
@@ -136,29 +144,24 @@
     <string name="export_failed">Export failed: %1$s</string>
 
     <!-- Settings Screen -->
-    <string name="settings_nudges_section">Notifications</string>
-    <string name="settings_nudges_master">Check-in reminders</string>
-    <!-- On by default. The copy has to say so and say how to stop it, since the first the user hears
-         of this may be the notification itself. -->
-    <string name="settings_nudges_master_help">Occasional reminders when you haven\'t checked in — at most one a day. Turn this off to stop all of them, or use the switches below to choose which ones.</string>
-    <string name="settings_info_about">About %1$s</string>
-    <string name="settings_info_dismiss">Got it</string>
-    <string name="nudge_label_not_checked_in">Morning reminder</string>
-    <!-- Deliberately vague about the time. The hour lives in NudgeConfig, and the pass that sends
-         the nudge is an hourly deferrable job, so naming a clock time would promise a punctuality
-         the app cannot keep — and would silently go stale if the rule were ever retuned. -->
-    <string name="nudge_help_not_checked_in">Sent mid-morning on a day with no check-in yet. At most one reminder a day.</string>
+    <!-- The healthy state of the notifications card. It exists to answer "how do I stop this?" in
+         the place a user looks for the answer, and to say plainly that the answer is not in here —
+         every opt-out is a notification channel, which the user owns and the app cannot override.
+         The timer is named as the one switch with a cost, because notificationBlock() checks that
+         channel alone and this copy must not invite what the warning state then flags. -->
+    <string name="settings_notifications_title">Notifications</string>
+    <string name="settings_notifications_help">The running timer, session reminders and check-in reminders are each switched on and off in Android\'s own settings — there are no separate switches here. Muting either reminder is entirely your call. Muting the timer leaves a running session with nothing on screen, so that is the one thing flagged back to you here.</string>
 
     <!-- Notification permission warning. Everything the app shows you about a running session goes
          through a notification, so losing the permission silently disables all of it. -->
     <string name="settings_notifications_off">Notifications are turned off</string>
-    <string name="settings_notifications_off_help">Without them the running timer, the session reminder and every nudge are silently disabled — a session can run all night with nothing to show for it. Your recorded hours are unaffected.</string>
+    <string name="settings_notifications_off_help">Without them the running timer, the session reminder and every check-in reminder are silently disabled — a session can run all night with nothing to show for it. Your recorded hours are unaffected.</string>
     <!-- The permission can be granted while an individual channel is set to "None", which looks like
          everything is enabled and behaves like nothing is. Only the timer is checked: muting the
-         reminder or the nudges is a preference, not a fault. -->
+         session or check-in reminders is a preference, not a fault. -->
     <string name="settings_notifications_partial">Some notifications are blocked</string>
     <string name="settings_notifications_partial_help">The check-in timer is set to “None” in system settings, so it will never appear — a session can run all night with nothing to show for it. Your recorded hours are unaffected.</string>
-    <string name="settings_notifications_off_action">Open notification settings</string>
+    <string name="settings_notifications_action">Open notification settings</string>
 
     <!-- The debug cards (Diagnostics, Nudge Harness) keep their text as Kotlin literals in
          SettingsScreen.kt rather than here. Nothing debug-only is translatable, and R8 folds the

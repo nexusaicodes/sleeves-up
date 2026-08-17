@@ -36,7 +36,7 @@ interface NudgeTrigger {
 class NudgeDispatcher(
     private val strings: StringResolver,
     private val repository: CheckInRepository,
-    private val prefs: EngagementSettings,
+    private val install: EngagementInstall,
     private val notifier: Notifier,
     private val log: EngagementLog,
     private val timeSource: TimeSource,
@@ -59,7 +59,7 @@ class NudgeDispatcher(
     private suspend fun send(nudge: Nudge, nowMillis: Long, variantOverride: Int?): Nudge? {
         val variantCount = NudgeCatalog.variants(nudge).size
         val variant = variantOverride?.mod(variantCount)
-            ?: VariantAssigner.assign(prefs.installId(), nudge.name, variantCount)
+            ?: VariantAssigner.assign(install.installId(), nudge.name, variantCount)
         val copy = NudgeCatalog.variant(nudge, variant)
 
         val posted = notifier.show(
@@ -95,7 +95,6 @@ class NudgeDispatcher(
             hourOfDay = hour,
             isCheckedIn = active != null,
             hasCheckedInToday = todaySessions.isNotEmpty(),
-            enabledNudges = prefs.enabledNudges(),
             // Counted from the log rather than a prefs tally, so the cap survives a prefs wipe and
             // can never drift out of step with what was actually sent.
             shownToday = log.shownCountSince(startOfDay),

@@ -10,10 +10,10 @@ import com.checkin.app.notify.AndroidStringResolver
 import com.checkin.app.notify.NotificationFactory
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.engagement.DefaultEngagementReporter
+import com.checkin.app.notify.engagement.EngagementInstall
 import com.checkin.app.notify.engagement.EngagementReporter
-import com.checkin.app.notify.engagement.EngagementSettings
 import com.checkin.app.notify.engagement.NudgeDispatcher
-import com.checkin.app.notify.engagement.SharedPrefsEngagementSettings
+import com.checkin.app.notify.engagement.SharedPrefsEngagementInstall
 import com.checkin.app.notify.log.EngagementDatabase
 import com.checkin.app.notify.log.EngagementLog
 import com.checkin.app.notify.log.RoomEngagementLog
@@ -53,7 +53,7 @@ interface AppContainer {
 
     // Engagement layer. Isolated from everything above: its own prefs namespace, its own database,
     // and no writes to the sessions table.
-    val engagementSettings: EngagementSettings
+    val engagementInstall: EngagementInstall
     val engagementLog: EngagementLog
     val nudgeDispatcher: NudgeDispatcher
     val engagementReporter: EngagementReporter
@@ -90,7 +90,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val csvExporter: CsvExporter = DefaultCsvExporter(appContext)
 
-    override val engagementSettings: EngagementSettings = SharedPrefsEngagementSettings.create(appContext)
+    override val engagementInstall: EngagementInstall = SharedPrefsEngagementInstall.create(appContext)
 
     override val notificationFactory = NotificationFactory(appContext)
 
@@ -104,7 +104,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
         NudgeDispatcher(
             strings = AndroidStringResolver(appContext),
             repository = repository,
-            prefs = engagementSettings,
+            install = engagementInstall,
             notifier = notifier,
             log = engagementLog,
             timeSource = timeSource,

@@ -13,7 +13,6 @@ data class EngagementSnapshot(
     val isCheckedIn: Boolean,
     /** Any session, open or closed, exists for today. */
     val hasCheckedInToday: Boolean,
-    val enabledNudges: Set<Nudge>,
     /** Nudges already shown in the current day. */
     val shownToday: Int = 0,
     val config: NudgeConfig = NudgeConfig(),
