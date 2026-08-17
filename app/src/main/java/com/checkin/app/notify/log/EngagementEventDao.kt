@@ -25,11 +25,16 @@ interface EngagementEventDao {
     )
     suspend fun latestOfType(event: String, source: String, since: Long): EngagementEvent?
 
+    /**
+     * Every matching row rather than a count, because the frequency rules ask three questions of the
+     * same set — how many were sent, which ones, and when the last landed — and three queries is how
+     * those answers come to disagree about where the day started.
+     */
     @Query(
-        "SELECT COUNT(*) FROM engagement_events " +
-            "WHERE event = :event AND source = :source AND at >= :since",
+        "SELECT * FROM engagement_events WHERE event = :event AND source = :source AND at >= :since " +
+            "ORDER BY at ASC, id ASC",
     )
-    suspend fun countOfTypeSince(event: String, source: String, since: Long): Int
+    suspend fun ofTypeSince(event: String, source: String, since: Long): List<EngagementEvent>
 
     @Query("DELETE FROM engagement_events WHERE at < :before")
     suspend fun deleteOlderThan(before: Long)

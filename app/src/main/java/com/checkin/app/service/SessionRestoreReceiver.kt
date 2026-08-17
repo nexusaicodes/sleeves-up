@@ -47,9 +47,6 @@ class SessionRestoreReceiver : BroadcastReceiver() {
         container.applicationScope.launch {
             try {
                 container.sessionWatchdog.reviveIfNeeded(source)
-                // Both actions that reach here cancel the package's alarms, and the checkpoint alarm
-                // has no other repair path on a device the user is not opening the app on.
-                container.nudgeAlarms.armNext(container.timeSource.nowMillis())
             } catch (e: Exception) {
                 runCatching {
                     container.engagementLog.recordService(
@@ -59,6 +56,10 @@ class SessionRestoreReceiver : BroadcastReceiver() {
                     )
                 }
             } finally {
+                // In the `finally`, exactly as in NudgeAlarmReceiver: both actions that reach here
+                // cancel the package's alarms, and on a device the user is not opening this is the
+                // checkpoint's only prompt repair. A throw upstream must not take it down with it.
+                runCatching { container.nudgeAlarms.armNext(container.timeSource.nowMillis()) }
                 pending.finish()
             }
         }

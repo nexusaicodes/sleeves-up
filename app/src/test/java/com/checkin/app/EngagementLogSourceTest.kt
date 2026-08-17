@@ -34,10 +34,10 @@ class EngagementLogSourceTest {
         log.recordPresenceCheck(EngagementEventType.SHOWN, 2_000L)
 
         // maxPerDay is 1; if these counted, the day's real nudge would never be sent.
-        assertEquals(0, log.shownCountSince(0L))
+        assertEquals(0, log.shownNudgesSince(0L).size)
 
         log.record(Nudge.NOT_CHECKED_IN_MORNING, variant = 0, event = EngagementEventType.SHOWN, atMillis = 3_000L)
-        assertEquals(1, log.shownCountSince(0L))
+        assertEquals(1, log.shownNudgesSince(0L).size)
     }
 
     @Test
@@ -129,7 +129,7 @@ class EngagementLogSourceTest {
         log.recordService(ServiceEventType.STARTED, nudgeAt + 60_000L, "1")
         log.recordService(ServiceEventType.REVIVED, nudgeAt + 120_000L, "app open")
 
-        assertEquals(1, log.shownCountSince(0L))
+        assertEquals(1, log.shownNudgesSince(0L).size)
         assertEquals(
             Nudge.NOT_CHECKED_IN_MORNING,
             log.recordOpenedForLastShown(nudgeAt + 5 * 60 * 1000L, window),

@@ -10,6 +10,14 @@ import kotlinx.coroutines.flow.Flow
  * Conversion is attributed in Kotlin rather than SQL because the sessions table lives in a different
  * database — the deliberate cost of keeping engagement data isolated from session data.
  */
+/**
+ * One nudge showing, reduced to what the frequency rules need: which nudge, and when.
+ *
+ * [key] is the stored enum name rather than a [Nudge], because a showing of a since-retired nudge
+ * still counts against the daily cap even though nothing can map it back to a constant.
+ */
+data class NudgeShowing(val key: String, val atMillis: Long)
+
 interface EngagementLog {
     suspend fun record(nudge: Nudge, variant: Int, event: EngagementEventType, atMillis: Long)
 
@@ -21,9 +29,12 @@ interface EngagementLog {
     suspend fun recordPresenceCheck(event: EngagementEventType, atMillis: Long)
 
     /**
-     * Records a foreground-service or alarm lifecycle event, with a short free-text [detail] stored
-     * in the key column (a reason, or an instant). Scoped to [EngagementSource.SERVICE] for the same
-     * reason presence rows are scoped: it must be invisible to the nudge cap and to attribution.
+     * Records an infrastructure lifecycle event — the foreground service, a session alarm, or the
+     * nudge checkpoint alarm — with a short free-text [detail] stored in the key column (a reason, or
+     * an instant). Scoped to [EngagementSource.SERVICE] for the same reason presence rows are scoped:
+     * it must be invisible to the nudge cap and to attribution. A checkpoint row belongs here rather
+     * than under [EngagementSource.NUDGE] precisely because it records that the *wake-up* happened,
+     * which is not a nudge impression and must never be counted as one.
      */
     suspend fun recordService(event: ServiceEventType, atMillis: Long, detail: String = "")
 
@@ -40,8 +51,14 @@ interface EngagementLog {
      */
     suspend fun recordOpenedForLastShown(atMillis: Long, windowMs: Long): Nudge?
 
-    /** How many nudges have been shown since [since] — the daily frequency cap reads this. */
-    suspend fun shownCountSince(since: Long): Int
+    /**
+     * Every nudge shown since [since], oldest first — the whole input to the frequency rules.
+     *
+     * Returned as the set rather than as a count because the rules ask three things of it: how many
+     * were sent (the daily cap), which ones (so a checkpoint cannot be sent twice), and when the last
+     * one landed (the minimum gap). Answering those from one query is what stops them disagreeing.
+     */
+    suspend fun shownNudgesSince(since: Long): List<NudgeShowing>
 
     fun recent(limit: Int): Flow<List<EngagementEvent>>
 
@@ -129,8 +146,9 @@ class RoomEngagementLog(private val dao: EngagementEventDao) : EngagementLog {
     /** Null when the stored name no longer maps to a nudge — a renamed or removed experiment. */
     private fun EngagementEvent.toNudge(): Nudge? = Nudge.entries.firstOrNull { it.name == key }
 
-    override suspend fun shownCountSince(since: Long): Int =
-        dao.countOfTypeSince(EngagementEventType.SHOWN.name, EngagementSource.NUDGE.name, since)
+    override suspend fun shownNudgesSince(since: Long): List<NudgeShowing> =
+        dao.ofTypeSince(EngagementEventType.SHOWN.name, EngagementSource.NUDGE.name, since)
+            .map { NudgeShowing(it.key, it.at) }
 
     override fun recent(limit: Int): Flow<List<EngagementEvent>> = dao.recent(limit)
 

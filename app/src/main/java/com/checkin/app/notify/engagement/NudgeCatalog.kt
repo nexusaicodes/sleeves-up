@@ -14,16 +14,16 @@ object NudgeCatalog {
 
     private val copy: Map<Nudge, List<NudgeCopy>> = mapOf(
         Nudge.NOT_CHECKED_IN_MORNING to listOf(
-            NudgeCopy(R.string.nudge_morning_title_a, R.string.nudge_morning_body_a),
-            NudgeCopy(R.string.nudge_morning_title_b, R.string.nudge_morning_body_b),
+            NudgeCopy(R.string.nudge_not_checked_in_morning_title_a, R.string.nudge_not_checked_in_morning_body_a),
+            NudgeCopy(R.string.nudge_not_checked_in_morning_title_b, R.string.nudge_not_checked_in_morning_body_b),
         ),
         Nudge.NOT_CHECKED_IN_AFTERNOON to listOf(
-            NudgeCopy(R.string.nudge_afternoon_title_a, R.string.nudge_afternoon_body_a),
-            NudgeCopy(R.string.nudge_afternoon_title_b, R.string.nudge_afternoon_body_b),
+            NudgeCopy(R.string.nudge_not_checked_in_afternoon_title_a, R.string.nudge_not_checked_in_afternoon_body_a),
+            NudgeCopy(R.string.nudge_not_checked_in_afternoon_title_b, R.string.nudge_not_checked_in_afternoon_body_b),
         ),
         Nudge.NOT_CHECKED_IN_EVENING to listOf(
-            NudgeCopy(R.string.nudge_evening_title_a, R.string.nudge_evening_body_a),
-            NudgeCopy(R.string.nudge_evening_title_b, R.string.nudge_evening_body_b),
+            NudgeCopy(R.string.nudge_not_checked_in_evening_title_a, R.string.nudge_not_checked_in_evening_body_a),
+            NudgeCopy(R.string.nudge_not_checked_in_evening_title_b, R.string.nudge_not_checked_in_evening_body_b),
         ),
     )
 

@@ -17,8 +17,12 @@ import java.util.concurrent.TimeUnit
  * standby buckets until periodic work runs roughly once a day, settling at a consistent hour, so a
  * trigger asking "is it past 10am" is asked at 5am forever and the answer never changes. The pass
  * survives because it is the only place `reviveIfNeeded` and `prune` can hang, and because a second
- * chance at the day's nudge costs nothing: the daily cap counts from the log, so a pass that lands
- * after the alarm already fired sends nothing.
+ * chance at the day's nudge costs nothing.
+ *
+ * "Costs nothing" is [NudgeSnapshot.alreadySentToday] doing that work, not the daily cap. A cap of
+ * two lets a pass landing inside a band the alarm has already fired in send the *same* nudge again —
+ * identical copy, same id, re-alerting on a high-importance channel, and the day's remaining slot
+ * gone. The per-checkpoint rule is what makes a redundant pass genuinely free.
  */
 class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
@@ -33,7 +37,11 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             container.sessionWatchdog.reviveIfNeeded(source = "hourly pass")
             // Re-arm before dispatching: a checkpoint alarm lost to a force stop is repaired here
             // even on a pass that then finds nothing eligible to send.
-            container.nudgeAlarms.armNext(container.timeSource.nowMillis())
+            //
+            // Guarded on its own, like every other arming site: `setAndAllowWhileIdle` throws past
+            // the platform's 500-alarm cap, and sharing the outer catch would let that one throw skip
+            // the dispatch and the prune — the two jobs this pass exists for.
+            runCatching { container.nudgeAlarms.armNext(container.timeSource.nowMillis()) }
             container.nudgeDispatcher.runOnce()
             container.engagementLog.prune(
                 container.timeSource.nowMillis() - RETENTION_MS,

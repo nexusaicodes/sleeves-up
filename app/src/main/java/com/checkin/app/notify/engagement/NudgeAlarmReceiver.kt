@@ -46,9 +46,9 @@ class NudgeAlarmReceiver : BroadcastReceiver() {
             try {
                 container.nudgeDispatcher.runOnce()
                 container.engagementLog.recordService(
-                    ServiceEventType.ALARM_FIRED,
+                    ServiceEventType.CHECKPOINT_FIRED,
                     container.timeSource.nowMillis(),
-                    ACTION_CHECKPOINT,
+                    "nudge checkpoint",
                 )
             } catch (e: Exception) {
                 // Best-effort breadcrumb; the log write is exactly what may have thrown.

@@ -11,7 +11,6 @@ import com.checkin.app.notify.log.EngagementEventType
 import com.checkin.app.notify.log.EngagementLog
 import com.checkin.app.notify.log.EngagementSource
 import com.checkin.app.service.CheckInService
-import com.checkin.app.service.SessionSchedule
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -51,7 +50,19 @@ class NudgeDispatcher(
     override suspend fun runOnce(): Nudge? {
         val snapshot = buildSnapshot()
         val nudge = NudgeEligibility.select(snapshot) ?: return null
-        return send(nudge, snapshot.nowMillis, variantOverride = null)
+        val sent = send(nudge, snapshot.nowMillis, variantOverride = null) ?: return null
+
+        // Retire the day's earlier checkpoints, but only now that this one is actually up. They carry
+        // distinct ids by design, so otherwise an evening nudge stacks under a morning one still in
+        // the tray — two notifications saying the user hasn't checked in, which reads as a stuck loop
+        // rather than as one message that came back. Clearing *before* the post would instead take a
+        // still-actionable notification away on the pass where the post is refused.
+        //
+        // Scheduling belongs on this path and not inside `send`: the debug harness posts through the
+        // same writer, and a force-sent nudge must add to the tray rather than clear a genuine one
+        // the user has not answered yet.
+        Nudge.entries.filter { it != sent }.forEach { notifier.cancel(it.notificationId) }
+        return sent
     }
 
     override suspend fun forceSend(nudge: Nudge, variant: Int?): Nudge? =
@@ -79,38 +90,31 @@ class NudgeDispatcher(
         // put an un-convertible event in the denominator and understate every conversion rate.
         if (!posted) return null
 
-        // Retire the day's other checkpoints, but only now that this one is actually up. They carry
-        // distinct ids by design, so otherwise an evening nudge stacks under a morning one still in
-        // the tray — two notifications saying the user hasn't checked in, which reads as a stuck loop
-        // rather than as one message that came back. Clearing *before* the post would instead take a
-        // still-actionable notification away on the pass where the post is refused.
-        Nudge.entries.filter { it != nudge }.forEach { notifier.cancel(it.notificationId) }
-
         log.record(nudge, variant, EngagementEventType.SHOWN, nowMillis)
         return nudge
     }
 
-    private suspend fun buildSnapshot(): EngagementSnapshot {
+    private suspend fun buildSnapshot(): NudgeSnapshot {
         val now = timeSource.nowMillis()
         val today = timeSource.today()
         val hour = Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault()).hour
-        val active = repository.getActiveSession()
         val todaySessions = repository.getSessionsByDate(today.format(dateFormatter))
         val startOfDay = today.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        // Read from the log rather than a prefs tally, so the frequency rules survive a prefs wipe
+        // and can never drift out of step with what was actually sent. One query answers all three.
+        val shown = log.shownNudgesSince(startOfDay)
 
-        return EngagementSnapshot(
+        return NudgeSnapshot(
             nowMillis = now,
             hourOfDay = hour,
-            isCheckedIn = active != null,
-            // Derived from the session's own date_key through the same pure helper the day-boundary
-            // close uses, so "overdue" here means exactly the instant that close was meant to happen.
-            openSessionOverdue = active
-                ?.let { SessionSchedule.dayBoundaryOf(it.dateKey, ZoneId.systemDefault()) }
-                ?.let { now >= it } == true,
+            // Deliberately the day's rows and not `getActiveSession()`: a session still open from an
+            // earlier day is a lost day-boundary close, not a user who is present. See the field.
             hasCheckedInToday = todaySessions.isNotEmpty(),
-            // Counted from the log rather than a prefs tally, so the cap survives a prefs wipe and
-            // can never drift out of step with what was actually sent.
-            shownToday = log.shownCountSince(startOfDay),
+            alreadySentToday = shown.mapNotNullTo(mutableSetOf()) { showing ->
+                Nudge.entries.firstOrNull { it.name == showing.key }
+            },
+            shownToday = shown.size,
+            lastShownAtMs = shown.maxOfOrNull { it.atMillis },
         )
     }
 }

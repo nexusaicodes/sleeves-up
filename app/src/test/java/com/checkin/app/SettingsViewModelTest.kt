@@ -64,7 +64,7 @@ class SettingsViewModelTest {
         advanceUntilIdle()
 
         assertEquals(1, log.clearCount)
-        assertEquals(0, log.shownCountSince(0L))
+        assertEquals(0, log.shownNudgesSince(0L).size)
     }
 
     /**
