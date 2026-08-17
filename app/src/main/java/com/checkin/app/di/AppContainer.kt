@@ -9,9 +9,11 @@ import com.checkin.app.notify.AndroidNotifier
 import com.checkin.app.notify.AndroidStringResolver
 import com.checkin.app.notify.NotificationFactory
 import com.checkin.app.notify.Notifier
+import com.checkin.app.notify.engagement.AndroidNudgeAlarms
 import com.checkin.app.notify.engagement.DefaultEngagementReporter
 import com.checkin.app.notify.engagement.EngagementInstall
 import com.checkin.app.notify.engagement.EngagementReporter
+import com.checkin.app.notify.engagement.NudgeAlarms
 import com.checkin.app.notify.engagement.NudgeDispatcher
 import com.checkin.app.notify.engagement.SharedPrefsEngagementInstall
 import com.checkin.app.notify.log.EngagementDatabase
@@ -57,6 +59,7 @@ interface AppContainer {
     val engagementLog: EngagementLog
     val nudgeDispatcher: NudgeDispatcher
     val engagementReporter: EngagementReporter
+    val nudgeAlarms: NudgeAlarms
 
     // Session mechanics that deliberately do not live inside CheckInService, because both have to
     // work in a process where no service is running: an alarm can be delivered into a process the
@@ -114,6 +117,10 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val engagementReporter: EngagementReporter by lazy {
         DefaultEngagementReporter(notifier, engagementLog)
     }
+
+    // Eager, like sessionAlarms: it holds the last-armed instant the debug snapshot reads, and two
+    // instances would each report only what they themselves armed.
+    override val nudgeAlarms: NudgeAlarms = AndroidNudgeAlarms(appContext)
 
     // One instance, shared: the armed instants live in SharedPreferences, so a second would read the
     // same values — but hoisting it keeps the runner and anything that merely *inspects* the alarms

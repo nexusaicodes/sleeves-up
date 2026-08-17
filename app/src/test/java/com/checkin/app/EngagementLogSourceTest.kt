@@ -36,7 +36,7 @@ class EngagementLogSourceTest {
         // maxPerDay is 1; if these counted, the day's real nudge would never be sent.
         assertEquals(0, log.shownCountSince(0L))
 
-        log.record(Nudge.NOT_CHECKED_IN_BY, variant = 0, event = EngagementEventType.SHOWN, atMillis = 3_000L)
+        log.record(Nudge.NOT_CHECKED_IN_MORNING, variant = 0, event = EngagementEventType.SHOWN, atMillis = 3_000L)
         assertEquals(1, log.shownCountSince(0L))
     }
 
@@ -45,12 +45,12 @@ class EngagementLogSourceTest {
         val log = FakeEngagementLog()
         val nudgeAt = 10 * hour
 
-        log.record(Nudge.NOT_CHECKED_IN_BY, variant = 0, event = EngagementEventType.SHOWN, atMillis = nudgeAt)
+        log.record(Nudge.NOT_CHECKED_IN_MORNING, variant = 0, event = EngagementEventType.SHOWN, atMillis = nudgeAt)
         // Fired after the nudge, so it is the most recent SHOWN row in the table.
         log.recordPresenceCheck(EngagementEventType.SHOWN, nudgeAt + 10 * 60 * 1000L)
 
         assertEquals(
-            Nudge.NOT_CHECKED_IN_BY,
+            Nudge.NOT_CHECKED_IN_MORNING,
             log.recordConversionIfAttributable(nudgeAt + 20 * 60 * 1000L, window),
         )
     }
@@ -65,9 +65,9 @@ class EngagementLogSourceTest {
         val log = FakeEngagementLog()
         val nudgeAt = 10 * hour
 
-        log.record(Nudge.NOT_CHECKED_IN_BY, variant = 0, event = EngagementEventType.SHOWN, atMillis = nudgeAt)
+        log.record(Nudge.NOT_CHECKED_IN_MORNING, variant = 0, event = EngagementEventType.SHOWN, atMillis = nudgeAt)
         log.record(
-            Nudge.NOT_CHECKED_IN_BY,
+            Nudge.NOT_CHECKED_IN_MORNING,
             variant = 0,
             event = EngagementEventType.DISMISSED,
             atMillis = nudgeAt + 60_000L,
@@ -82,11 +82,11 @@ class EngagementLogSourceTest {
         val log = FakeEngagementLog()
         val nudgeAt = 10 * hour
 
-        log.record(Nudge.NOT_CHECKED_IN_BY, variant = 0, event = EngagementEventType.SHOWN, atMillis = nudgeAt)
+        log.record(Nudge.NOT_CHECKED_IN_MORNING, variant = 0, event = EngagementEventType.SHOWN, atMillis = nudgeAt)
         log.recordPresenceCheck(EngagementEventType.DISMISSED, nudgeAt + 60_000L)
 
         assertEquals(
-            Nudge.NOT_CHECKED_IN_BY,
+            Nudge.NOT_CHECKED_IN_MORNING,
             log.recordConversionIfAttributable(nudgeAt + hour, window),
         )
     }
@@ -96,11 +96,11 @@ class EngagementLogSourceTest {
         val log = FakeEngagementLog()
         val nudgeAt = 10 * hour
 
-        log.record(Nudge.NOT_CHECKED_IN_BY, variant = 0, event = EngagementEventType.SHOWN, atMillis = nudgeAt)
+        log.record(Nudge.NOT_CHECKED_IN_MORNING, variant = 0, event = EngagementEventType.SHOWN, atMillis = nudgeAt)
         log.recordPresenceCheck(EngagementEventType.SHOWN, nudgeAt + 5 * 60 * 1000L)
 
         assertEquals(
-            Nudge.NOT_CHECKED_IN_BY,
+            Nudge.NOT_CHECKED_IN_MORNING,
             log.recordOpenedForLastShown(nudgeAt + 6 * 60 * 1000L, window),
         )
     }
@@ -125,13 +125,13 @@ class EngagementLogSourceTest {
         val log = FakeEngagementLog()
         val nudgeAt = 10 * hour
 
-        log.record(Nudge.NOT_CHECKED_IN_BY, variant = 0, event = EngagementEventType.SHOWN, atMillis = nudgeAt)
+        log.record(Nudge.NOT_CHECKED_IN_MORNING, variant = 0, event = EngagementEventType.SHOWN, atMillis = nudgeAt)
         log.recordService(ServiceEventType.STARTED, nudgeAt + 60_000L, "1")
         log.recordService(ServiceEventType.REVIVED, nudgeAt + 120_000L, "app open")
 
         assertEquals(1, log.shownCountSince(0L))
         assertEquals(
-            Nudge.NOT_CHECKED_IN_BY,
+            Nudge.NOT_CHECKED_IN_MORNING,
             log.recordOpenedForLastShown(nudgeAt + 5 * 60 * 1000L, window),
         )
     }
@@ -153,7 +153,7 @@ class EngagementLogSourceTest {
         val log = FakeEngagementLog()
 
         log.recordPresenceCheck(EngagementEventType.SHOWN, 1_000L)
-        log.record(Nudge.NOT_CHECKED_IN_BY, variant = 0, event = EngagementEventType.SHOWN, atMillis = 2_000L)
+        log.record(Nudge.NOT_CHECKED_IN_MORNING, variant = 0, event = EngagementEventType.SHOWN, atMillis = 2_000L)
 
         val all = log.events.value
         assertEquals(2, all.size)

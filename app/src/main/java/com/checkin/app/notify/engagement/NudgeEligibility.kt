@@ -17,14 +17,13 @@ package com.checkin.app.notify.engagement
  * the timer notification ignored it — a quiet window the app could not actually honour.
  *
  * **The daily cap is the whole frequency bound**; anything it allows is allowed. A per-nudge cooldown
- * beside it would, at `maxPerDay = 1`, only ever suppress a nudge the cap had already suppressed,
- * while measuring a rolling window against the cap's calendar day — two rules disagreeing about what
- * a day is.
+ * beside it would measure a rolling window against the cap's calendar day — two rules disagreeing
+ * about what a day is — while the checkpoints are already spaced hours apart by construction.
  *
- * There is likewise **no tracking-started gate**. The one nudge that exists — "you haven't checked in
- * today" — is for exactly the user who has not started yet, so requiring a first check-in would lock
- * it away from its audience. A user who finds it unwelcome turns the channel off, which is one
- * long-press on the notification itself.
+ * There is likewise **no tracking-started gate**. These nudges — "you haven't checked in today" — are
+ * for exactly the user who has not started yet, so requiring a first check-in would lock them away
+ * from their audience. A user who finds them unwelcome turns the channel off, which is one long-press
+ * on the notification itself.
  *
  * Gates run cheapest-and-broadest first: the global cap, then per-nudge ones.
  */
@@ -37,10 +36,20 @@ object NudgeEligibility {
         return Nudge.entries.firstOrNull { nudge -> triggers(snapshot, nudge) }
     }
 
+    /**
+     * Exhaustive over [Nudge], so a new one is a compile error here rather than a nudge that is
+     * declared, given copy and an id, and then never selected by anything.
+     *
+     * Each checkpoint matches only the band it owns — see [NudgeSchedule.checkpointAt] for why that
+     * must be a band and not a `>=` threshold.
+     */
     private fun triggers(snapshot: EngagementSnapshot, nudge: Nudge): Boolean = when (nudge) {
-        Nudge.NOT_CHECKED_IN_BY ->
+        Nudge.NOT_CHECKED_IN_MORNING,
+        Nudge.NOT_CHECKED_IN_AFTERNOON,
+        Nudge.NOT_CHECKED_IN_EVENING,
+        ->
             !snapshot.hasCheckedInToday &&
-                !snapshot.isCheckedIn &&
-                snapshot.hourOfDay >= snapshot.config.notCheckedInByHour
+                !snapshot.isPresent &&
+                NudgeSchedule.checkpointAt(snapshot.hourOfDay) == nudge.checkpoint
     }
 }

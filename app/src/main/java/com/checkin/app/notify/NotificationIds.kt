@@ -16,12 +16,12 @@ object NotificationIds {
     const val SESSION_REMINDER = 2
 
     /**
-     * The id every nudge shares in releases that predate per-nudge ids. Nothing posts under it; it is
-     * only cancelled, because a notification survives an app update and a nudge left in the tray by
-     * such a release could otherwise never be retired.
+     * One per checkpoint nudge. Distinct ids rather than a shared one, so the tray never silently
+     * swaps one message for another behind the app's back — when a later checkpoint *should* replace
+     * an earlier one, [com.checkin.app.notify.engagement.NudgeDispatcher] cancels its siblings
+     * explicitly, which is a decision in code rather than a side effect of an id collision.
      */
-    const val RETIRED_SHARED_NUDGE = 3
-
-    /** [com.checkin.app.notify.engagement.Nudge.NOT_CHECKED_IN_BY]'s id. */
-    const val NUDGE_NOT_CHECKED_IN_BY = 10
+    const val NUDGE_NOT_CHECKED_IN_MORNING = 10
+    const val NUDGE_NOT_CHECKED_IN_AFTERNOON = 11
+    const val NUDGE_NOT_CHECKED_IN_EVENING = 12
 }

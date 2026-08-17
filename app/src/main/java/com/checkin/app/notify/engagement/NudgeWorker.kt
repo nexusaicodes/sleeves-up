@@ -10,10 +10,15 @@ import com.checkin.app.CheckInApplication
 import java.util.concurrent.TimeUnit
 
 /**
- * Periodic evaluation pass. Waking hourly and deciding "not yet" is deliberate: it avoids an exact
- * alarm and its permission entirely, matching the choice the session alarms make. The cost is that a
- * nudge fires at the next pass after it becomes eligible rather than on the minute — acceptable for
- * encouragement, which has no deadline.
+ * The periodic backstop, and the home of the housekeeping that has to happen somewhere.
+ *
+ * **It is no longer what delivers a nudge** — [NudgeAlarms] is. Relying on this pass alone is the bug
+ * that made a real install go silent for days: an app the user is not opening drops through Android's
+ * standby buckets until periodic work runs roughly once a day, settling at a consistent hour, so a
+ * trigger asking "is it past 10am" is asked at 5am forever and the answer never changes. The pass
+ * survives because it is the only place `reviveIfNeeded` and `prune` can hang, and because a second
+ * chance at the day's nudge costs nothing: the daily cap counts from the log, so a pass that lands
+ * after the alarm already fired sends nothing.
  */
 class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
@@ -26,6 +31,9 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             // worker is not among the exemptions — which is why this is the last of the three revive
             // points rather than the only one. A refusal is logged, not thrown.
             container.sessionWatchdog.reviveIfNeeded(source = "hourly pass")
+            // Re-arm before dispatching: a checkpoint alarm lost to a force stop is repaired here
+            // even on a pass that then finds nothing eligible to send.
+            container.nudgeAlarms.armNext(container.timeSource.nowMillis())
             container.nudgeDispatcher.runOnce()
             container.engagementLog.prune(
                 container.timeSource.nowMillis() - RETENTION_MS,

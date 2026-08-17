@@ -24,6 +24,7 @@ class DebugSnapshotTest {
         nextReminderAt: Long = now + minute,
         dayBoundaryAt: Long = now + minute,
         expectedDayBoundaryAt: Long? = now + minute,
+        nextCheckpointAt: Long = now + minute,
         channels: List<ChannelState> = emptyList(),
     ) = DebugSnapshot(
         nowMs = now,
@@ -33,6 +34,7 @@ class DebugSnapshotTest {
         dayBoundaryAt = dayBoundaryAt,
         remindersSent = 0,
         expectedDayBoundaryAt = expectedDayBoundaryAt,
+        nextCheckpointAt = nextCheckpointAt,
         channels = channels,
     )
 

@@ -11,6 +11,7 @@ import com.checkin.app.notify.log.EngagementEventType
 import com.checkin.app.notify.log.EngagementLog
 import com.checkin.app.notify.log.EngagementSource
 import com.checkin.app.service.CheckInService
+import com.checkin.app.service.SessionSchedule
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -78,6 +79,13 @@ class NudgeDispatcher(
         // put an un-convertible event in the denominator and understate every conversion rate.
         if (!posted) return null
 
+        // Retire the day's other checkpoints, but only now that this one is actually up. They carry
+        // distinct ids by design, so otherwise an evening nudge stacks under a morning one still in
+        // the tray — two notifications saying the user hasn't checked in, which reads as a stuck loop
+        // rather than as one message that came back. Clearing *before* the post would instead take a
+        // still-actionable notification away on the pass where the post is refused.
+        Nudge.entries.filter { it != nudge }.forEach { notifier.cancel(it.notificationId) }
+
         log.record(nudge, variant, EngagementEventType.SHOWN, nowMillis)
         return nudge
     }
@@ -94,6 +102,11 @@ class NudgeDispatcher(
             nowMillis = now,
             hourOfDay = hour,
             isCheckedIn = active != null,
+            // Derived from the session's own date_key through the same pure helper the day-boundary
+            // close uses, so "overdue" here means exactly the instant that close was meant to happen.
+            openSessionOverdue = active
+                ?.let { SessionSchedule.dayBoundaryOf(it.dateKey, ZoneId.systemDefault()) }
+                ?.let { now >= it } == true,
             hasCheckedInToday = todaySessions.isNotEmpty(),
             // Counted from the log rather than a prefs tally, so the cap survives a prefs wipe and
             // can never drift out of step with what was actually sent.

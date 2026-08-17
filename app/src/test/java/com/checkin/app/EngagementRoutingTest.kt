@@ -21,11 +21,11 @@ class EngagementRoutingTest {
     fun `a nudge dismissal resolves to the nudge and its variant`() {
         val target = EngagementRouting.resolve(
             source = EngagementSource.NUDGE.name,
-            key = Nudge.NOT_CHECKED_IN_BY.name,
+            key = Nudge.NOT_CHECKED_IN_MORNING.name,
             variant = 1,
         )
 
-        assertEquals(EngagementTarget.NudgeTarget(Nudge.NOT_CHECKED_IN_BY, 1), target)
+        assertEquals(EngagementTarget.NudgeTarget(Nudge.NOT_CHECKED_IN_MORNING, 1), target)
     }
 
     @Test
@@ -51,7 +51,7 @@ class EngagementRoutingTest {
     @Test
     fun `a malformed payload resolves to nothing`() {
         assertNull(EngagementRouting.resolve(source = null, key = null, variant = 0))
-        assertNull(EngagementRouting.resolve("NOT_A_SOURCE", Nudge.NOT_CHECKED_IN_BY.name, 0))
+        assertNull(EngagementRouting.resolve("NOT_A_SOURCE", Nudge.NOT_CHECKED_IN_MORNING.name, 0))
         // Right source, wrong key: presence has exactly one, so anything else is a mismatch.
         assertNull(EngagementRouting.resolve(EngagementSource.PRESENCE.name, "SOMETHING_ELSE", 0))
     }

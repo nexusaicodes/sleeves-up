@@ -23,9 +23,10 @@ a bar.
 - **A session reminder** every couple of hours while you're checked in. It only asks — ignoring it
   costs you nothing. A session you forget about closes itself at midnight, so a check-in left running
   overnight can't record a sixteen-hour day.
-- **Check-in reminders** — on by default and at most one a day. Turn them off where you turn off any
-  other notification: long-press one, or find the **Check-In Reminders** channel in Android's
-  notification settings for the app. Tapping one still runs the same face check.
+- **Check-in reminders** — on by default and at most two a day, hours apart, and only on a day you
+  haven't checked in. Turn them off where you turn off any other notification: long-press one, or find
+  the **Check-In Reminders** channel in Android's notification settings for the app. Tapping one still
+  runs the same face check.
 - **Self-contained** — Room-only storage, no backend. Export your log to CSV via the share sheet.
 
 ## Tabs
