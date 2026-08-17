@@ -49,11 +49,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun SettingsScreen(
-    innerPadding: PaddingValues,
-    onOpenLicenses: () -> Unit,
-    viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
-) {
+fun SettingsScreen(innerPadding: PaddingValues, onOpenLicenses: () -> Unit) {
     // Screen-scoped, not item-scoped: the About card that posts these messages is a lazy item, and a
     // scope remembered inside it is cancelled the moment the card scrolls away.
     val snackbarHostState = LocalSnackbarHostState.current
@@ -79,9 +75,16 @@ fun SettingsScreen(
         item { AboutCard(onOpenLicenses = onOpenLicenses, showMessage = showMessage) }
 
         // Debug-only. The diagnostics card reads state, the harness drives it, so state comes first.
+        //
+        // The ViewModel is resolved *inside* the branch rather than as a parameter of this screen,
+        // because these two cards are all it backs — the screen holds no state of its own. As a
+        // default argument it would be constructed on every release visit to Settings, building the
+        // engagement database's object graph and the dispatcher for a value nothing reads, and R8
+        // could not fold the path away. Both calls return the same instance: `viewModel()` resolves
+        // against the destination's ViewModelStore, not the composition.
         if (BuildConfig.DEBUG) {
-            item { DiagnosticsCard(viewModel, showMessage) }
-            item { NudgeHarnessCard(viewModel) }
+            item { DiagnosticsCard(viewModel(factory = SettingsViewModel.Factory), showMessage) }
+            item { NudgeHarnessCard(viewModel(factory = SettingsViewModel.Factory)) }
         }
     }
 }
