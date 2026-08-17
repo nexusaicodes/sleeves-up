@@ -41,11 +41,14 @@ enum class EngagementSource {
     PRESENCE,
 
     /**
-     * Foreground-service and alarm lifecycle. Recorded for visibility only; it drives no rules.
+     * Background-machinery lifecycle — the foreground service, the session alarms, and the nudge
+     * checkpoint alarm. Recorded for visibility only; it drives no rules.
      *
      * These rows are the only trace a session that silently loses its service leaves: the
      * notification is gone, the DB row still looks open, and the app keeps rendering a running timer
-     * from it. Without them, diagnosis means inferring backwards from a wrong duration.
+     * from it. Without them, diagnosis means inferring backwards from a wrong duration. The nudge
+     * checkpoint shares the source because it is the same kind of fact — a wake-up fired — and
+     * because anything scoped [NUDGE] is counted as an impression by the cap and by attribution.
      */
     SERVICE,
 }

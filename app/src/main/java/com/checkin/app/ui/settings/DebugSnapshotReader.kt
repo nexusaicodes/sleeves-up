@@ -20,7 +20,7 @@ import java.time.ZoneId
  */
 class DebugSnapshotReader(
     private val repository: CheckInRepository,
-    private val alarms: SessionAlarms,
+    private val sessionAlarms: SessionAlarms,
     private val nudgeAlarms: NudgeAlarms,
     private val timeSource: TimeSource,
     /** Injected for the same reason [com.checkin.app.service.SessionWatchdog] injects it: a live service is not testable. */
@@ -37,9 +37,9 @@ class DebugSnapshotReader(
             nowMs = timeSource.nowMillis(),
             session = session?.let { SessionState(it.id, it.startedAt, it.dateKey) },
             serviceRunning = serviceRunning(),
-            nextReminderAt = alarms.nextReminderAt,
-            dayBoundaryAt = alarms.dayBoundaryAt,
-            remindersSent = alarms.remindersSent,
+            nextReminderAt = sessionAlarms.nextReminderAt,
+            dayBoundaryAt = sessionAlarms.dayBoundaryAt,
+            remindersSent = sessionAlarms.remindersSent,
             expectedDayBoundaryAt = session?.let {
                 SessionSchedule.dayBoundaryOf(it.dateKey, ZoneId.systemDefault())
             },

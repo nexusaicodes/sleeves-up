@@ -83,18 +83,18 @@
          invent a deadline this app does not have, and would grade a day that is not over. No copy
          names the hour: delivery is best-effort, so a stated time is a punctuality promise the app
          cannot keep. -->
-    <string name="nudge_morning_title_a">Ready when you are</string>
-    <string name="nudge_morning_body_a">You haven\'t checked in yet today. Tap to start your session.</string>
-    <string name="nudge_morning_title_b">Start the clock?</string>
-    <string name="nudge_morning_body_b">Your day hasn\'t started in CheckIn yet. Tap to check in now.</string>
-    <string name="nudge_afternoon_title_a">No session yet today</string>
-    <string name="nudge_afternoon_body_a">Whenever you start, it counts — a short day is still a day shown up for.</string>
-    <string name="nudge_afternoon_title_b">Nothing recorded today</string>
-    <string name="nudge_afternoon_body_b">There\'s no session on today yet. Tap whenever you\'re ready to start one.</string>
-    <string name="nudge_evening_title_a">Still time today</string>
-    <string name="nudge_evening_body_a">Today\'s record closes at midnight. Tap to check in.</string>
-    <string name="nudge_evening_title_b">The day\'s not over</string>
-    <string name="nudge_evening_body_b">A short session lands on your calendar the same as a long one. Tap to start.</string>
+    <string name="nudge_not_checked_in_morning_title_a">Ready when you are</string>
+    <string name="nudge_not_checked_in_morning_body_a">You haven\'t checked in yet today. Tap to start your session.</string>
+    <string name="nudge_not_checked_in_morning_title_b">Start the clock?</string>
+    <string name="nudge_not_checked_in_morning_body_b">Your day hasn\'t started in CheckIn yet. Tap to check in now.</string>
+    <string name="nudge_not_checked_in_afternoon_title_a">No session yet today</string>
+    <string name="nudge_not_checked_in_afternoon_body_a">Whenever you start, it counts — a short day is still a day shown up for.</string>
+    <string name="nudge_not_checked_in_afternoon_title_b">Nothing recorded today</string>
+    <string name="nudge_not_checked_in_afternoon_body_b">There\'s no session on today yet. Tap whenever you\'re ready to start one.</string>
+    <string name="nudge_not_checked_in_evening_title_a">Still time today</string>
+    <string name="nudge_not_checked_in_evening_body_a">Today\'s record closes at midnight. Tap to check in.</string>
+    <string name="nudge_not_checked_in_evening_title_b">The day\'s not over</string>
+    <string name="nudge_not_checked_in_evening_body_b">A short session lands on your calendar the same as a long one. Tap to start.</string>
 
     <!-- Empty / first-run states -->
     <string name="empty_checkin_title">Ready when you are</string>

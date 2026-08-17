@@ -171,7 +171,6 @@ class FakeSessionAlarms(override var remindersSent: Int = 0) : SessionAlarms {
  */
 class FakeNudgeAlarms(private val zone: ZoneId = ZoneId.of("UTC")) : NudgeAlarms {
     val armed = mutableListOf<Long>()
-    var cancelCount = 0
 
     override var nextCheckpointAt: Long = 0L
         private set
@@ -179,10 +178,5 @@ class FakeNudgeAlarms(private val zone: ZoneId = ZoneId.of("UTC")) : NudgeAlarms
     override fun armNext(nowMs: Long) {
         nextCheckpointAt = NudgeSchedule.nextCheckpointAfter(nowMs, zone)
         armed += nextCheckpointAt
-    }
-
-    override fun cancel() {
-        cancelCount++
-        nextCheckpointAt = 0L
     }
 }

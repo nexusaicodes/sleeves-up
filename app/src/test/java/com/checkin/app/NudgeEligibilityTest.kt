@@ -1,12 +1,13 @@
 package com.checkin.app
 
-import com.checkin.app.notify.engagement.EngagementSnapshot
 import com.checkin.app.notify.engagement.Nudge
 import com.checkin.app.notify.engagement.NudgeConfig
 import com.checkin.app.notify.engagement.NudgeEligibility
 import com.checkin.app.notify.engagement.NudgeSchedule
+import com.checkin.app.notify.engagement.NudgeSnapshot
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NudgeEligibilityTest {
@@ -21,19 +22,19 @@ class NudgeEligibilityTest {
      */
     private fun eligible(
         hourOfDay: Int = NudgeSchedule.Checkpoint.MORNING.hour,
-        isCheckedIn: Boolean = false,
-        openSessionOverdue: Boolean = false,
         hasCheckedInToday: Boolean = false,
+        alreadySentToday: Set<Nudge> = emptySet(),
         shownToday: Int = 0,
+        lastShownAtMs: Long? = null,
         config: NudgeConfig = NudgeConfig(),
         nowMillis: Long = 100 * hour,
-    ) = EngagementSnapshot(
+    ) = NudgeSnapshot(
         nowMillis = nowMillis,
         hourOfDay = hourOfDay,
-        isCheckedIn = isCheckedIn,
-        openSessionOverdue = openSessionOverdue,
         hasCheckedInToday = hasCheckedInToday,
+        alreadySentToday = alreadySentToday,
         shownToday = shownToday,
+        lastShownAtMs = lastShownAtMs,
         config = config,
     )
 
@@ -108,23 +109,102 @@ class NudgeEligibilityTest {
         assertNull(NudgeEligibility.select(eligible(hasCheckedInToday = true)))
     }
 
-    /** A session open since yesterday means today has no row yet, but the user is plainly working. */
+    /**
+     * The band is hours wide and more than one thing asks inside it — the checkpoint alarm, then the
+     * hourly worker. Without this, an 11:00 pass reposts the 10:00 morning nudge under the same id
+     * with the same copy, which re-alerts on a high-importance channel and reads as a stuck loop; and
+     * because it also spends a slot of the daily cap, the afternoon and evening copy never fire.
+     */
     @Test
-    fun `nothing fires while a session is open`() {
-        assertNull(NudgeEligibility.select(eligible(isCheckedIn = true)))
+    fun `a checkpoint already sent today does not fire again inside its band`() {
+        val laterInTheBand = NudgeSchedule.Checkpoint.AFTERNOON.hour - 1
+
+        assertNull(
+            NudgeEligibility.select(
+                eligible(
+                    hourOfDay = laterInTheBand,
+                    alreadySentToday = setOf(Nudge.NOT_CHECKED_IN_MORNING),
+                    shownToday = 1,
+                    lastShownAtMs = null,
+                ),
+            ),
+        )
+    }
+
+    /** Only the band's own nudge is retired by having been sent — the later checkpoints still fire. */
+    @Test
+    fun `a later checkpoint still fires after an earlier one was sent`() {
+        assertEquals(
+            Nudge.NOT_CHECKED_IN_AFTERNOON,
+            NudgeEligibility.select(
+                eligible(
+                    hourOfDay = NudgeSchedule.Checkpoint.AFTERNOON.hour,
+                    alreadySentToday = setOf(Nudge.NOT_CHECKED_IN_MORNING),
+                    shownToday = 1,
+                ),
+            ),
+        )
     }
 
     /**
-     * A session past its own day boundary is not evidence of presence — it is a session whose alarms
-     * were lost, since the boundary close would otherwise have ended it. Counting it as "checked in"
-     * silenced every nudge for as long as it stayed open, which is indefinitely on a device the user
-     * has stopped opening the app on, and the nudge it silenced is the one that would have surfaced it.
+     * The checkpoint hours look like they space deliveries out and do not: the alarm is inexact, so
+     * Doze can hold the morning one until 13:57 and the afternoon one then lands three minutes later.
+     * Two high-importance messages that close together read as a malfunction, and they spend the whole
+     * day's budget before it is half over.
      */
     @Test
-    fun `a session already past its day boundary does not suppress`() {
+    fun `a second nudge is refused until the minimum gap has passed`() {
+        val now = 100 * hour
+        val gap = NudgeConfig().minGapMs
+
+        assertNull(
+            NudgeEligibility.select(
+                eligible(
+                    hourOfDay = NudgeSchedule.Checkpoint.AFTERNOON.hour,
+                    shownToday = 1,
+                    lastShownAtMs = now - gap + 1,
+                    nowMillis = now,
+                ),
+            ),
+        )
         assertEquals(
-            Nudge.NOT_CHECKED_IN_MORNING,
-            NudgeEligibility.select(eligible(isCheckedIn = true, openSessionOverdue = true)),
+            Nudge.NOT_CHECKED_IN_AFTERNOON,
+            NudgeEligibility.select(
+                eligible(
+                    hourOfDay = NudgeSchedule.Checkpoint.AFTERNOON.hour,
+                    shownToday = 1,
+                    lastShownAtMs = now - gap,
+                    nowMillis = now,
+                ),
+            ),
+        )
+    }
+
+    /** The gap never blocks a delivery that arrived on time — it is under the smallest real spacing. */
+    @Test
+    fun `the minimum gap is smaller than the closest two checkpoints`() {
+        val closest = NudgeSchedule.Checkpoint.entries
+            .zipWithNext { a, b -> (b.hour - a.hour) * hour }
+            .min()
+
+        assertTrue(
+            "A gap of ${NudgeConfig().minGapMs}ms would suppress punctual checkpoints ${closest}ms apart",
+            NudgeConfig().minGapMs <= closest,
+        )
+    }
+
+    /** A clock moved backwards must not read as "long enough ago" and unlock a burst. */
+    @Test
+    fun `a backwards clock does not unlock a second nudge`() {
+        assertNull(
+            NudgeEligibility.select(
+                eligible(
+                    hourOfDay = NudgeSchedule.Checkpoint.AFTERNOON.hour,
+                    shownToday = 1,
+                    lastShownAtMs = 100 * hour,
+                    nowMillis = 10 * hour,
+                ),
+            ),
         )
     }
 

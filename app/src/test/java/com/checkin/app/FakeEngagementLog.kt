@@ -6,6 +6,7 @@ import com.checkin.app.notify.log.EngagementEvent
 import com.checkin.app.notify.log.EngagementEventType
 import com.checkin.app.notify.log.EngagementLog
 import com.checkin.app.notify.log.EngagementSource
+import com.checkin.app.notify.log.NudgeShowing
 import com.checkin.app.notify.log.PRESENCE_CHECK_KEY
 import com.checkin.app.notify.log.ServiceEventType
 import kotlinx.coroutines.flow.Flow
@@ -82,8 +83,10 @@ class FakeEngagementLog : EngagementLog {
         return nudge
     }
 
-    override suspend fun shownCountSince(since: Long): Int =
-        nudgeEvents().count { it.event == EngagementEventType.SHOWN.name && it.at >= since }
+    override suspend fun shownNudgesSince(since: Long): List<NudgeShowing> =
+        nudgeEvents().filter { it.event == EngagementEventType.SHOWN.name && it.at >= since }
+            .sortedBy { it.at }
+            .map { NudgeShowing(it.key, it.at) }
 
     override fun recent(limit: Int): Flow<List<EngagementEvent>> =
         events.map { list -> list.sortedByDescending { it.at }.take(limit) }

@@ -34,15 +34,14 @@ interface NudgeAlarms {
     /** Arms the next checkpoint strictly after [nowMs], replacing whatever was set. */
     fun armNext(nowMs: Long)
 
-    /** Drops the alarm. Nothing in the app calls this today; it exists so the seam is complete. */
-    fun cancel()
-
-    /** The instant last armed, or 0 if this process has armed nothing. Diagnostics only. */
+    /**
+     * The instant last armed, or 0 if this process has armed nothing — and 0 therefore means the
+     * arming call did not run, never that the alarm is merely unknown. Diagnostics only.
+     */
     val nextCheckpointAt: Long
 }
 
-class AndroidNudgeAlarms(private val context: Context, private val zone: () -> ZoneId = { ZoneId.systemDefault() }) :
-    NudgeAlarms {
+class AndroidNudgeAlarms(private val context: Context) : NudgeAlarms {
 
     private val alarmManager: AlarmManager?
         get() = context.getSystemService(AlarmManager::class.java)
@@ -56,22 +55,20 @@ class AndroidNudgeAlarms(private val context: Context, private val zone: () -> Z
 
     // RTC_WAKEUP, not ELAPSED_REALTIME: a checkpoint is a local wall-clock hour.
     override fun armNext(nowMs: Long) {
-        val at = NudgeSchedule.nextCheckpointAfter(nowMs, zone())
-        alarmManager?.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pendingIntent())
+        // Recorded only once the alarm is actually set. Assigning regardless would leave the one
+        // diagnostic for an unarmed checkpoint reporting a healthy future instant while nothing is
+        // scheduled — the "renders as a completely normal app" state the card exists to name.
+        val manager = alarmManager ?: return
+        val at = NudgeSchedule.nextCheckpointAfter(nowMs, ZoneId.systemDefault())
+        manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pendingIntent())
         nextCheckpointAt = at
     }
 
-    override fun cancel() {
-        alarmManager?.cancel(pendingIntent())
-        nextCheckpointAt = 0L
-    }
-
     /**
-     * One PendingIntent, rebuilt identically each time so arming replaces rather than accumulates and
-     * [cancel] can find it. The request code sits clear of both the session alarms' band and the
-     * notification codes in [com.checkin.app.notify.NotificationFactory] — all three share one
-     * process-wide namespace, and equality ignores extras, so a collision would make one silently
-     * overwrite another.
+     * One PendingIntent, rebuilt identically each time so arming replaces rather than accumulates.
+     * The request code sits clear of both the session alarms' band and the notification codes in
+     * [com.checkin.app.notify.NotificationFactory] — all three share one process-wide namespace, and
+     * equality ignores extras, so a collision would make one silently overwrite another.
      */
     private fun pendingIntent(): PendingIntent = PendingIntent.getBroadcast(
         context,
