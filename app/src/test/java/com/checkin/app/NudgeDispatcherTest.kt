@@ -38,19 +38,15 @@ class NudgeDispatcherTest {
     private val time = FixedTime(triggerHour, today)
     private val notifier = FakeNotifier()
     private val log = FakeEngagementLog()
-    private val prefs = FakeEngagementSettings(masterEnabled = true)
 
-    private fun dispatcher(): NudgeDispatcher {
-        prefs.setEnabled(Nudge.NOT_CHECKED_IN_BY, true)
-        return NudgeDispatcher(
-            strings = StringResolver { "copy-$it" },
-            repository = CheckInRepository(FakeCheckInSessionDao(), time),
-            prefs = prefs,
-            notifier = notifier,
-            log = log,
-            timeSource = time,
-        )
-    }
+    private fun dispatcher(clock: FixedTime = time): NudgeDispatcher = NudgeDispatcher(
+        strings = StringResolver { "copy-$it" },
+        repository = CheckInRepository(FakeCheckInSessionDao(), clock),
+        install = FakeEngagementInstall(),
+        notifier = notifier,
+        log = log,
+        timeSource = clock,
+    )
 
     @Test
     fun `an eligible nudge is posted and logged`() = runTest {
@@ -78,11 +74,19 @@ class NudgeDispatcherTest {
         assertEquals(0, log.shownCountSince(0L))
     }
 
+    /**
+     * Ineligibility is decided by the rules alone — there is no opt-out pref to switch off, since a
+     * notification's opt-out is its channel and a blocked one is refused at [FakeNotifier] instead.
+     * An hour before the trigger is the cheapest genuine ineligibility. The load-bearing assertion is
+     * the log one: nothing eligible must record nothing, or the daily cap counts a send that never
+     * happened and burns the day's single slot.
+     */
     @Test
     fun `nothing is posted when no nudge is eligible`() = runTest {
-        prefs.masterEnabled = false
+        val beforeTriggerHour = today.atTime(NudgeConfig().notCheckedInByHour - 1, 0)
+            .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-        val sent = dispatcher().runOnce()
+        val sent = dispatcher(FixedTime(beforeTriggerHour, today)).runOnce()
 
         assertNull(sent)
         assertTrue(notifier.shown.isEmpty())

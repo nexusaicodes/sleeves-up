@@ -13,16 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,12 +23,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
@@ -44,7 +35,6 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.checkin.app.BuildConfig
-import com.checkin.app.R
 import com.checkin.app.notify.NotificationChannels
 import com.checkin.app.notify.engagement.Nudge
 import com.checkin.app.notify.engagement.NudgeCatalog
@@ -64,19 +54,12 @@ fun SettingsScreen(
     onOpenLicenses: () -> Unit,
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
     // Screen-scoped, not item-scoped: the About card that posts these messages is a lazy item, and a
     // scope remembered inside it is cancelled the moment the card scrolls away.
     val snackbarHostState = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
     val showMessage: (String) -> Unit = { message ->
         scope.launch { snackbarHostState.showSnackbar(message) }
-    }
-
-    LifecycleResumeEffect(Unit) {
-        viewModel.onResumed()
-        onPauseOrDispose { }
     }
 
     LazyColumn(
@@ -89,30 +72,9 @@ fun SettingsScreen(
         ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // First, and only when it applies: everything below it silently does nothing without this.
-        item { NotificationsOffCard() }
-
-        item {
-            SectionCard(title = stringResource(R.string.settings_nudges_section)) {
-                ToggleRow(
-                    label = stringResource(R.string.settings_nudges_master),
-                    checked = uiState.nudgesEnabled,
-                    onCheckedChange = { viewModel.setNudgesEnabled(it) },
-                    info = stringResource(R.string.settings_nudges_master_help),
-                )
-                // Individual nudges only matter once the master switch is on.
-                if (uiState.nudgesEnabled) {
-                    Nudge.entries.forEach { nudge ->
-                        ToggleRow(
-                            label = nudgeLabel(nudge),
-                            checked = nudge in uiState.enabledNudges,
-                            onCheckedChange = { viewModel.setNudgeEnabled(nudge, it) },
-                            info = nudgeHelp(nudge),
-                        )
-                    }
-                }
-            }
-        }
+        // The app's only notification surface, and first because a blocked state makes silent
+        // no-ops of the timer, the session reminder and every nudge.
+        item { NotificationsCard() }
 
         item { AboutCard(onOpenLicenses = onOpenLicenses, showMessage = showMessage) }
 
@@ -285,8 +247,8 @@ private fun diagnosticsReport(snapshot: DebugSnapshot?, events: List<EngagementE
 
 /**
  * Reads each channel's three switches off the platform — all three channels, unlike
- * [NotificationsOffCard], which checks only the timer because muting the others is a preference, not
- * a fault. That is about warning a *user*; a muted channel is the ordinary explanation here.
+ * [NotificationsCard], which checks only the timer because muting the others is a preference, not a
+ * fault. That is about warning a *user*; a muted channel is the ordinary explanation here.
  */
 private fun Context.channelStates(): List<ChannelState> {
     val manager = NotificationManagerCompat.from(this)
@@ -304,55 +266,7 @@ private fun Context.channelStates(): List<ChannelState> {
         }
 }
 
-/**
- * A switch and its label, with the explanation behind an (i) rather than printed underneath. Inline
- * help would make every row three lines tall and push the controls apart; on tap it is the same
- * words with the row's label as the dialog's title, so the question it answers is never ambiguous.
- */
-@Composable
-private fun ToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit, info: String? = null) {
-    // Saveable: the dialog is where a row's whole explanation lives, and rotating to finish reading
-    // it must not be what closes it.
-    var showInfo by rememberSaveable { mutableStateOf(false) }
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            // Takes the leftover width so a long label wraps instead of squeezing the switch.
-            modifier = Modifier.weight(1f),
-        )
-        if (info != null) {
-            IconButton(onClick = { showInfo = true }) {
-                Icon(
-                    imageVector = Icons.Outlined.Info,
-                    contentDescription = stringResource(R.string.settings_info_about, label),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
-    }
-
-    if (info != null && showInfo) {
-        AlertDialog(
-            onDismissRequest = { showInfo = false },
-            title = { Text(label) },
-            text = { Text(info, style = MaterialTheme.typography.bodyMedium) },
-            confirmButton = {
-                TextButton(onClick = { showInfo = false }) {
-                    Text(stringResource(R.string.settings_info_dismiss))
-                }
-            },
-        )
-    }
-}
-
-/** Secondary copy under a control, explaining what it does to the user's data. */
+/** Secondary copy inside a card, explaining what the card is for or what its button will do. */
 @Composable
 internal fun HelpText(text: String) {
     Text(
@@ -360,24 +274,6 @@ internal fun HelpText(text: String) {
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-}
-
-/** The name of a nudge's toggle. What it does, and when, is in [nudgeHelp] behind the row's (i). */
-@Composable
-private fun nudgeLabel(nudge: Nudge): String = when (nudge) {
-    Nudge.NOT_CHECKED_IN_BY -> stringResource(R.string.nudge_label_not_checked_in)
-}
-
-/**
- * What a nudge's (i) explains.
- *
- * Deliberately describes *when* only in general terms. The pass that sends a nudge is an hourly,
- * deferrable background job, so naming a trigger hour here would promise a time the delivery cannot
- * keep — and it would let a change to the eligibility rule silently make a translated string wrong.
- */
-@Composable
-private fun nudgeHelp(nudge: Nudge): String = when (nudge) {
-    Nudge.NOT_CHECKED_IN_BY -> stringResource(R.string.nudge_help_not_checked_in)
 }
 
 private val eventTimeFormat: DateTimeFormatter =

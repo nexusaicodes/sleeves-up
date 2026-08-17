@@ -4,13 +4,12 @@ import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
+import com.checkin.app.notify.engagement.EngagementInstall
 import com.checkin.app.notify.engagement.EngagementReporter
-import com.checkin.app.notify.engagement.EngagementSettings
 import com.checkin.app.notify.engagement.Nudge
 import com.checkin.app.notify.engagement.NudgeTrigger
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.ExportResult
-import com.checkin.app.platform.PromptSettings
 import com.checkin.app.platform.ServiceController
 import com.checkin.app.service.SessionAlarms
 import kotlinx.coroutines.flow.Flow
@@ -23,20 +22,6 @@ class FixedTime(private val now: Long, date: LocalDate) : TimeSource {
     override fun nowMillis(): Long = now
     override fun today(): LocalDate = day.value
     override fun currentDay(): Flow<LocalDate> = day
-}
-
-class FakePromptSettings : PromptSettings {
-    var cameraDisclosureSeen = false
-    var notificationsAsked = false
-
-    override fun hasSeenCameraDisclosure(): Boolean = cameraDisclosureSeen
-    override fun markCameraDisclosureSeen() {
-        cameraDisclosureSeen = true
-    }
-    override fun hasAskedNotifications(): Boolean = notificationsAsked
-    override fun markNotificationsAsked() {
-        notificationsAsked = true
-    }
 }
 
 class FakeServiceController : ServiceController {
@@ -99,17 +84,7 @@ class FakeCsvExporter(var result: ExportResult = ExportResult.Success) : CsvExpo
     }
 }
 
-class FakeEngagementSettings(
-    override var masterEnabled: Boolean = false,
-    private val installId: String = "fake-install",
-) : EngagementSettings {
-    val enabled = mutableSetOf<Nudge>()
-
-    override fun isEnabled(nudge: Nudge) = nudge in enabled
-    override fun setEnabled(nudge: Nudge, enabled: Boolean) {
-        if (enabled) this.enabled += nudge else this.enabled -= nudge
-    }
-    override fun enabledNudges(): Set<Nudge> = if (!masterEnabled) emptySet() else enabled.toSet()
+class FakeEngagementInstall(private val installId: String = "fake-install") : EngagementInstall {
     override fun installId(): String = installId
 }
 

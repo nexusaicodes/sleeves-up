@@ -23,8 +23,9 @@ a bar.
 - **A session reminder** every couple of hours while you're checked in. It only asks — ignoring it
   costs you nothing. A session you forget about closes itself at midnight, so a check-in left running
   overnight can't record a sixteen-hour day.
-- **Check-in reminders** — on by default, at most one a day, and switchable off in Settings
-  (Android's own per-channel settings cover quiet hours). Tapping one still runs the same face check.
+- **Check-in reminders** — on by default and at most one a day. Turn them off where you turn off any
+  other notification: long-press one, or Android's notification settings for the app. Tapping one
+  still runs the same face check.
 - **Self-contained** — Room-only storage, no backend. Export your log to CSV via the share sheet.
 
 ## Tabs
@@ -34,7 +35,7 @@ a bar.
 | **Check In** | Live timer and the check-in/out button, with today's sessions a tap away |
 | **History** | Monthly calendar shaded by how long each day ran, plus the month's split and averages |
 | **Reports** | Daily-hours and monthly charts, the all-time split, streaks, and CSV export |
-| **Settings** | Notification preferences and About (privacy policy, feedback, open-source licenses) |
+| **Settings** | A shortcut into Android's notification settings — where every one of the app's notifications is switched on and off — and About (privacy policy, feedback, open-source licenses) |
 
 ## Requirements
 
