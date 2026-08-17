@@ -75,13 +75,9 @@ fun SettingsScreen(innerPadding: PaddingValues, onOpenLicenses: () -> Unit) {
         item { AboutCard(onOpenLicenses = onOpenLicenses, showMessage = showMessage) }
 
         // Debug-only. The diagnostics card reads state, the harness drives it, so state comes first.
-        //
-        // The ViewModel is resolved *inside* the branch rather than as a parameter of this screen,
-        // because these two cards are all it backs — the screen holds no state of its own. As a
-        // default argument it would be constructed on every release visit to Settings, building the
-        // engagement database's object graph and the dispatcher for a value nothing reads, and R8
-        // could not fold the path away. Both calls return the same instance: `viewModel()` resolves
-        // against the destination's ViewModelStore, not the composition.
+        // The ViewModel is resolved here rather than as a screen parameter — these two cards are all
+        // it backs, and a default argument would build it on every release visit to Settings, on a
+        // path R8 could then not fold. Both calls return the same store-scoped instance.
         if (BuildConfig.DEBUG) {
             item { DiagnosticsCard(viewModel(factory = SettingsViewModel.Factory), showMessage) }
             item { NudgeHarnessCard(viewModel(factory = SettingsViewModel.Factory)) }

@@ -71,12 +71,9 @@
          the name has to be the words a user hunting for one would look for, and the description has
          to say what turning it off actually stops. "Nudge" is internal vocabulary and stays out of
          both. A channel's name and description are updatable after creation; its id and importance
-         are not.
-
-         Title Case, like the other two: all three names sit together in one system list, where a
-         lone sentence-case entry reads as an oversight. It is also near-synonymous with "Session
-         Reminders" one row away — a real hazard, since turning off the wrong one removes the prompt
-         that catches a forgotten open session — so the descriptions have to carry the difference. -->
+         are not. The name is near-synonymous with "Session Reminders" one row away, so the two
+         descriptions carry the difference: muting the wrong one costs the prompt that catches a
+         forgotten open session. -->
     <string name="engagement_channel_name">Check-In Reminders</string>
     <string name="engagement_channel_description">Occasional reminders when you haven\'t checked in. At most one a day.</string>
     <string name="nudge_not_checked_in_title_a">Ready when you are</string>
@@ -150,9 +147,8 @@
     <!-- The healthy state of the notifications card. It exists to answer "how do I stop this?" in
          the place a user looks for the answer, and to say plainly that the answer is not in here —
          every opt-out is a notification channel, which the user owns and the app cannot override.
-         It names the timer as the one exception it will warn about, because this card checks that
-         channel alone: sending a user to Android's settings and then scolding them for what they
-         switched off there would be worse than saying up front which switch has a cost. -->
+         The timer is named as the one switch with a cost, because notificationBlock() checks that
+         channel alone and this copy must not invite what the warning state then flags. -->
     <string name="settings_notifications_title">Notifications</string>
     <string name="settings_notifications_help">The running timer, session reminders and check-in reminders are each switched on and off in Android\'s own settings — there are no separate switches here. Muting either reminder is entirely your call. Muting the timer leaves a running session with nothing on screen, so that is the one thing flagged back to you here.</string>
 

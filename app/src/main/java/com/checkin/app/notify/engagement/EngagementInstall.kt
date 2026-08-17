@@ -33,12 +33,10 @@ class SharedPrefsEngagementInstall(private val prefs: SharedPreferences) : Engag
          * its own: the name is a half-truth now that only an id lives here, and a rename is a new file
          * that orphans what the old one holds.
          *
-         * An install carried over from a build with the in-app nudge toggles still holds
-         * `master_enabled` and `nudge_enabled_<NUDGE_NAME>` in this file. Nothing reads them and
-         * nothing clears them — a one-time wipe would be code running forever against a population of
-         * roughly zero. **Neither name may be reused**, though: a future release reading either would
-         * have a three-versions-old opt-out silently take effect on the handful of installs that
-         * still hold one.
+         * Some installs also hold `master_enabled` and `nudge_enabled_<NUDGE_NAME>` here, left by the
+         * in-app nudge toggles. Nothing reads or clears them; a wipe would be code running forever
+         * against a population of roughly zero. **Neither name may be reused**, though — a read under
+         * either would hand those installs a stale opt-out they never made again.
          */
         const val NAME = "engagement_prefs"
         private const val KEY_INSTALL_ID = "install_id"
