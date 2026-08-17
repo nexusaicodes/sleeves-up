@@ -9,29 +9,41 @@ data class EngagementSnapshot(
     val nowMillis: Long,
     /** Local hour of day, 0-23. */
     val hourOfDay: Int,
-    /** A session is open right now. */
+    /** A session row is open right now. Raw fact — see [isPresent] for the one the rules use. */
     val isCheckedIn: Boolean,
+    /**
+     * That open session is already past its own day boundary.
+     *
+     * A session cannot legitimately outlive the midnight of the day it began on: the day-boundary
+     * alarm closes it. One that has is a session whose alarms were lost — a force stop and a package
+     * replace both cancel them — and nothing re-arms them until the app is opened. Left counting as
+     * "checked in", it suppresses every nudge for as long as it stays open, which is indefinitely,
+     * and the nudge that would surface the problem is the one it silences.
+     */
+    val openSessionOverdue: Boolean = false,
     /** Any session, open or closed, exists for today. */
     val hasCheckedInToday: Boolean,
     /** Nudges already shown in the current day. */
     val shownToday: Int = 0,
     val config: NudgeConfig = NudgeConfig(),
-)
+) {
+    /**
+     * Whether an open session is evidence the user is actually here. An overdue one is evidence of a
+     * lost alarm instead, so it does not hold a nudge back.
+     */
+    val isPresent: Boolean get() = isCheckedIn && !openSessionOverdue
+}
 
 /** Tunables for the eligibility rules — the surface an engagement experiment varies. */
 data class NudgeConfig(
     /**
-     * [Nudge.NOT_CHECKED_IN_BY] can fire from this local hour onward.
+     * The only frequency bound there is, and the only one there should be.
      *
-     * Deliberately not quoted in any user-facing string. Delivery is best-effort — the pass that
-     * sends it runs hourly and is deferrable — so naming an exact time promises a punctuality the
-     * app cannot keep, and changing the value would then silently make the copy wrong.
+     * Two, not one: the checkpoints exist because a single delivery can slip, and a cap of one means
+     * the first checkpoint to land consumes the day even when the user has gone on to spend all of it
+     * without checking in. Two is still bounded — the checkpoints are hours apart, so the worst case
+     * is a morning message and an evening one, and [NudgeDispatcher] cancels the earlier before
+     * posting the later, so at most one is ever in the tray.
      */
-    val notCheckedInByHour: Int = 10,
-    /**
-     * The only frequency bound there is, and the only one there should be. A per-nudge cooldown
-     * beside it could suppress nothing the cap does not already suppress at one nudge a day, while
-     * measuring a rolling window the cap does not — the two would disagree about where a day ends.
-     */
-    val maxPerDay: Int = 1,
+    val maxPerDay: Int = 2,
 )

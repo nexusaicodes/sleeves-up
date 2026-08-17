@@ -2,6 +2,7 @@ package com.checkin.app.ui.settings
 
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.repository.CheckInRepository
+import com.checkin.app.notify.engagement.NudgeAlarms
 import com.checkin.app.service.CheckInService
 import com.checkin.app.service.SessionAlarms
 import com.checkin.app.service.SessionSchedule
@@ -20,6 +21,7 @@ import java.time.ZoneId
 class DebugSnapshotReader(
     private val repository: CheckInRepository,
     private val alarms: SessionAlarms,
+    private val nudgeAlarms: NudgeAlarms,
     private val timeSource: TimeSource,
     /** Injected for the same reason [com.checkin.app.service.SessionWatchdog] injects it: a live service is not testable. */
     private val serviceRunning: () -> Boolean = { CheckInService.isRunning },
@@ -41,6 +43,7 @@ class DebugSnapshotReader(
             expectedDayBoundaryAt = session?.let {
                 SessionSchedule.dayBoundaryOf(it.dateKey, ZoneId.systemDefault())
             },
+            nextCheckpointAt = nudgeAlarms.nextCheckpointAt,
             channels = channels,
         )
     }

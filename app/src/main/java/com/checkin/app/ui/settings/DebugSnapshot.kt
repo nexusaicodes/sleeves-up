@@ -30,6 +30,15 @@ data class DebugSnapshot(
      * check-in and never re-derived, so a mid-session time-zone change leaves it on the old midnight.
      */
     val expectedDayBoundaryAt: Long?,
+    /**
+     * The next check-in nudge checkpoint this process has armed, or 0 if it has armed none.
+     *
+     * Process-local by design — [com.checkin.app.notify.engagement.NudgeAlarms] stores nothing — so a
+     * 0 here after a cold start means the arming call did not run, not that the alarm is missing.
+     * Worth showing anyway: an unarmed checkpoint is the exact state that made a real install go
+     * silent for days, and nothing else in the app renders differently while it is true.
+     */
+    val nextCheckpointAt: Long,
     val channels: List<ChannelState>,
 ) {
 
@@ -52,6 +61,7 @@ data class DebugSnapshot(
         if (expectedDayBoundaryAt != null) {
             add("  expected ${alarmLine(expectedDayBoundaryAt)}")
         }
+        add("checkpoint ${alarmLine(nextCheckpointAt)}")
         channels.forEach { channel ->
             add("channel    ${channel.id}  ${channel.blocker() ?: "deliverable"}")
         }
@@ -60,33 +70,15 @@ data class DebugSnapshot(
     /**
      * The states that are wrong, named. Empty when everything is consistent. Each one leaves the app
      * looking entirely normal, so the alternative is inferring backwards from a wrong number later.
+     *
+     * Split by subject rather than written as one block: the session, the nudge checkpoint and the
+     * channels fail independently of each other, and reading them together is what made this one
+     * function too tangled to follow.
      */
-    fun warnings(): List<String> = buildList {
-        if (session != null) {
-            // START_STICKY is best effort, and the Check-In screen renders from the row — so a killed
-            // service still draws a cheerfully running timer with nothing behind it.
-            if (!serviceRunning) {
-                add("Open session with no service. A watchdog revive is due (app open, boot, or hourly pass).")
-            }
-            // The only thing that ends a forgotten session. Unarmed, it runs until the user notices
-            // and then writes a multi-day duration onto an uneditable row.
-            if (dayBoundaryAt == 0L) {
-                add("Day boundary NOT armed. This session will not be closed at midnight.")
-            }
-            if (nextReminderAt == 0L) {
-                add("Reminder not armed.")
-            }
-            // A past-due alarm is delivered immediately, so sitting well past the boundary means it
-            // was dropped rather than merely late.
-            if (dayBoundaryAt in 1 until nowMs - PAST_DUE_GRACE_MS) {
-                val overdue = TimeFormat.durationShort(nowMs - dayBoundaryAt)
-                add("Day boundary is $overdue past due and the session is still open.")
-            }
-            if (expectedDayBoundaryAt != null && dayBoundaryAt != 0L && dayBoundaryAt != expectedDayBoundaryAt) {
-                val armed = clockOf(dayBoundaryAt)
-                add("Day boundary is armed for $armed but date_key implies ${clockOf(expectedDayBoundaryAt)}.")
-            }
-        } else {
+    fun warnings(): List<String> = sessionWarnings() + checkpointWarnings() + channelWarnings()
+
+    private fun sessionWarnings(): List<String> = buildList {
+        if (session == null) {
             // Check-out cancels both alarms because `ServiceController.stop()` is a caught no-op once
             // the service is dead; either half failing shows up here.
             if (serviceRunning) {
@@ -95,10 +87,47 @@ data class DebugSnapshot(
             if (nextReminderAt != 0L || dayBoundaryAt != 0L) {
                 add("Alarms still armed with no open session. Check-out did not cancel them.")
             }
+            return@buildList
         }
-        channels.mapNotNull { channel ->
-            channel.blocker()?.let { "Channel ${channel.id} cannot deliver: $it." }
-        }.forEach(::add)
+        // START_STICKY is best effort, and the Check-In screen renders from the row — so a killed
+        // service still draws a cheerfully running timer with nothing behind it.
+        if (!serviceRunning) {
+            add("Open session with no service. A watchdog revive is due (app open, boot, or hourly pass).")
+        }
+        // The only thing that ends a forgotten session. Unarmed, it runs until the user notices and
+        // then writes a multi-day duration onto an uneditable row.
+        if (dayBoundaryAt == 0L) {
+            add("Day boundary NOT armed. This session will not be closed at midnight.")
+        }
+        if (nextReminderAt == 0L) {
+            add("Reminder not armed.")
+        }
+        // A past-due alarm is delivered immediately, so sitting well past the boundary means it was
+        // dropped rather than merely late.
+        if (dayBoundaryAt in 1 until nowMs - PAST_DUE_GRACE_MS) {
+            add("Day boundary is ${TimeFormat.durationShort(nowMs - dayBoundaryAt)} past due and the session is open.")
+        }
+        if (expectedDayBoundaryAt != null && dayBoundaryAt != 0L && dayBoundaryAt != expectedDayBoundaryAt) {
+            val armed = clockOf(dayBoundaryAt)
+            add("Day boundary is armed for $armed but date_key implies ${clockOf(expectedDayBoundaryAt)}.")
+        }
+    }
+
+    /**
+     * Nothing else in the app renders differently while this is wrong: an unarmed checkpoint is a
+     * completely normal-looking install that will never send a check-in reminder again, which is the
+     * failure the checkpoint alarm was introduced to end.
+     */
+    private fun checkpointWarnings(): List<String> = buildList {
+        if (nextCheckpointAt == 0L) {
+            add("No nudge checkpoint armed. No check-in reminder will be sent.")
+        } else if (nextCheckpointAt < nowMs - PAST_DUE_GRACE_MS) {
+            add("Nudge checkpoint is ${TimeFormat.durationShort(nowMs - nextCheckpointAt)} past due, not re-armed.")
+        }
+    }
+
+    private fun channelWarnings(): List<String> = channels.mapNotNull { channel ->
+        channel.blocker()?.let { "Channel ${channel.id} cannot deliver: $it." }
     }
 
     /**

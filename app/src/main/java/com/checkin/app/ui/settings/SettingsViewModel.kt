@@ -81,7 +81,12 @@ class SettingsViewModel(
                 SettingsViewModel(
                     container.engagementLog,
                     container.nudgeDispatcher,
-                    DebugSnapshotReader(container.repository, container.sessionAlarms, container.timeSource),
+                    DebugSnapshotReader(
+                        container.repository,
+                        container.sessionAlarms,
+                        container.nudgeAlarms,
+                        container.timeSource,
+                    ),
                 )
             }
         }

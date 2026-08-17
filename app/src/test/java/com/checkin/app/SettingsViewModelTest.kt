@@ -30,7 +30,12 @@ class SettingsViewModelTest {
         serviceRunning: Boolean = false,
     ): SettingsViewModel {
         val time = FixedTime(NOW, LocalDate.of(2026, 6, 15))
-        val reader = DebugSnapshotReader(CheckInRepository(dao, time), alarms, time) { serviceRunning }
+        val reader = DebugSnapshotReader(
+            CheckInRepository(dao, time),
+            alarms,
+            FakeNudgeAlarms(),
+            time,
+        ) { serviceRunning }
         return SettingsViewModel(log, trigger, reader)
     }
 
@@ -39,13 +44,13 @@ class SettingsViewModelTest {
         val trigger = FakeNudgeTrigger()
         val viewModel = buildViewModel(trigger = trigger)
 
-        viewModel.debugSend(Nudge.NOT_CHECKED_IN_BY, variant = 1)
+        viewModel.debugSend(Nudge.NOT_CHECKED_IN_MORNING, variant = 1)
         viewModel.debugRunPass()
         advanceUntilIdle()
 
         // The variant reaches the dispatcher: the harness exists to preview copy, and the install's
         // own bucket is fixed, so a dropped override would make every other wording unreachable.
-        assertEquals(listOf(Nudge.NOT_CHECKED_IN_BY to 1), trigger.forced)
+        assertEquals(listOf(Nudge.NOT_CHECKED_IN_MORNING to 1), trigger.forced)
         assertEquals(1, trigger.runOnceCount)
     }
 
@@ -100,7 +105,7 @@ class SettingsViewModelTest {
     fun `the log reads without the events flow being collected`() = runTest {
         val log = FakeEngagementLog()
         val viewModel = buildViewModel(log = log)
-        log.record(Nudge.NOT_CHECKED_IN_BY, variant = 0, event = EngagementEventType.SHOWN, atMillis = NOW)
+        log.record(Nudge.NOT_CHECKED_IN_MORNING, variant = 0, event = EngagementEventType.SHOWN, atMillis = NOW)
 
         // Nothing is collecting recentEvents here, which is the point.
         assertTrue(viewModel.recentEvents.value.isEmpty())

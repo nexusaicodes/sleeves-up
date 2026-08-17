@@ -76,6 +76,19 @@
             </intent-filter>
         </receiver>
 
+        <!-- The daily check-in nudge. Its own receiver rather than a third action on the session one:
+             the engagement layer is structurally isolated from service/, and this alarm has no
+             session to reason about. Not exported — the alarm is the app's own PendingIntent, so
+             nothing outside the app has cause to deliver this action. -->
+        <receiver
+            android:name=".notify.engagement.NudgeAlarmReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.checkin.app.NUDGE_CHECKPOINT_DUE" />
+            </intent-filter>
+        </receiver>
+
         <!-- Restores a session left open across a reboot or an app update. Both end the process and
              clear the session's alarms, and both are permitted to start a foreground service from
              the background. Exported is required for the system to deliver either broadcast; the

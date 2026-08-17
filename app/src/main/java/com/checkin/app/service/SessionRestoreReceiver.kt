@@ -47,6 +47,9 @@ class SessionRestoreReceiver : BroadcastReceiver() {
         container.applicationScope.launch {
             try {
                 container.sessionWatchdog.reviveIfNeeded(source)
+                // Both actions that reach here cancel the package's alarms, and the checkpoint alarm
+                // has no other repair path on a device the user is not opening the app on.
+                container.nudgeAlarms.armNext(container.timeSource.nowMillis())
             } catch (e: Exception) {
                 runCatching {
                     container.engagementLog.recordService(

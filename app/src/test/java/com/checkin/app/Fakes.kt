@@ -7,6 +7,8 @@ import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.engagement.EngagementInstall
 import com.checkin.app.notify.engagement.EngagementReporter
 import com.checkin.app.notify.engagement.Nudge
+import com.checkin.app.notify.engagement.NudgeAlarms
+import com.checkin.app.notify.engagement.NudgeSchedule
 import com.checkin.app.notify.engagement.NudgeTrigger
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.ExportResult
@@ -15,6 +17,7 @@ import com.checkin.app.service.SessionAlarms
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.time.LocalDate
+import java.time.ZoneId
 
 /** Deterministic clock. [day] is mutable so tests can drive a midnight rollover. */
 class FixedTime(private val now: Long, date: LocalDate) : TimeSource {
@@ -158,5 +161,28 @@ class FakeSessionAlarms(override var remindersSent: Int = 0) : SessionAlarms {
     fun seedArmed(reminderAt: Long, boundaryAt: Long) {
         nextReminderAt = reminderAt
         dayBoundaryAt = boundaryAt
+    }
+}
+
+/**
+ * Records each arming, and resolves the instant through the real [NudgeSchedule] rather than storing
+ * whatever it was handed — the production seam derives it the same way, and a fake that simply echoed
+ * `nowMs` would let a test pass while the schedule was wrong.
+ */
+class FakeNudgeAlarms(private val zone: ZoneId = ZoneId.of("UTC")) : NudgeAlarms {
+    val armed = mutableListOf<Long>()
+    var cancelCount = 0
+
+    override var nextCheckpointAt: Long = 0L
+        private set
+
+    override fun armNext(nowMs: Long) {
+        nextCheckpointAt = NudgeSchedule.nextCheckpointAfter(nowMs, zone)
+        armed += nextCheckpointAt
+    }
+
+    override fun cancel() {
+        cancelCount++
+        nextCheckpointAt = 0L
     }
 }
