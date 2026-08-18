@@ -54,8 +54,8 @@ interface AppContainer {
     val notificationFactory: NotificationFactory
 
     // Engagement layer. Isolated from everything above: its own prefs namespace, its own database,
-    // and no writes to the sessions table.
-    val engagementInstall: EngagementInstall
+    // and no writes to the sessions table. The install id is not exposed: only NudgeDispatcher's
+    // variant bucketing reads it, and it is wired straight into that below.
     val engagementLog: EngagementLog
     val nudgeDispatcher: NudgeDispatcher
     val engagementReporter: EngagementReporter
@@ -63,8 +63,8 @@ interface AppContainer {
 
     // Session mechanics that deliberately do not live inside CheckInService, because both have to
     // work in a process where no service is running: an alarm can be delivered into a process the
-    // broadcast just created, and the watchdog exists precisely for when the service is gone.
-    val sessionAlarms: SessionAlarms
+    // broadcast just created, and the watchdog exists precisely for when the service is gone. The
+    // alarm seam itself is not exposed — everything goes through the runner, which owns the ordering.
     val sessionReminderRunner: SessionReminderRunner
     val sessionWatchdog: SessionWatchdog
 }
@@ -93,7 +93,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val csvExporter: CsvExporter = DefaultCsvExporter(appContext)
 
-    override val engagementInstall: EngagementInstall = SharedPrefsEngagementInstall.create(appContext)
+    private val engagementInstall: EngagementInstall = SharedPrefsEngagementInstall.create(appContext)
 
     override val notificationFactory = NotificationFactory(appContext)
 
@@ -118,14 +118,15 @@ class DefaultAppContainer(context: Context) : AppContainer {
         DefaultEngagementReporter(notifier, engagementLog)
     }
 
-    // Eager, like sessionAlarms: it holds the last-armed instant the debug snapshot reads, and two
-    // instances would each report only what they themselves armed.
+    // Stateless — a checkpoint is derivable from now — so this is just the one arming seam its callers
+    // share: the receiver re-arming from the alarm it just handled, which is what makes the chain
+    // self-sustaining, plus every process start, the deferrable worker repair, and boot/package replace.
     override val nudgeAlarms: NudgeAlarms = AndroidNudgeAlarms(appContext)
 
-    // One instance, shared: the armed instants live in SharedPreferences, so a second would read the
-    // same values — but hoisting it keeps the runner and anything that merely *inspects* the alarms
-    // (the debug snapshot) demonstrably looking at one seam rather than two that happen to agree.
-    override val sessionAlarms: SessionAlarms = AndroidSessionAlarms(appContext)
+    // One instance, shared by the runner and the watchdog below. The armed instants live in
+    // SharedPreferences, so a second would read the same values; hoisting it keeps both callers
+    // demonstrably on one seam rather than on two that happen to agree.
+    private val sessionAlarms: SessionAlarms = AndroidSessionAlarms(appContext)
 
     override val sessionReminderRunner: SessionReminderRunner by lazy {
         SessionReminderRunner(

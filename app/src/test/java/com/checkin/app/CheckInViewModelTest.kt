@@ -203,18 +203,6 @@ class CheckInViewModelTest {
     }
 
     @Test
-    fun `today total sums completed sessions for today`() = runTest {
-        val dao = FakeCheckInSessionDao()
-        val today = LocalDate.of(2026, 6, 15)
-        dao.seedCompleted(today.toString(), startedAt = 0L, durationMs = 3_600_000L)
-        val viewModel = buildViewModel(dao, FakeServiceController(), FixedTime(0L, today))
-        backgroundScope.launch { viewModel.uiState.collect {} }
-        advanceUntilIdle()
-
-        assertEquals(3_600_000L, viewModel.uiState.value.todayTotalDuration)
-    }
-
-    @Test
     fun `day rollover advances today's date key without a resume`() = runTest {
         val dao = FakeCheckInSessionDao()
         val service = FakeServiceController()
@@ -231,7 +219,7 @@ class CheckInViewModelTest {
     }
 
     @Test
-    fun `a session open from a prior day keeps the screen running while today's total stays zero`() = runTest {
+    fun `a session open from a prior day keeps the screen running while today's list stays empty`() = runTest {
         val dao = FakeCheckInSessionDao()
         // Checked in yesterday, never checked out; the clock has since rolled to 06-15.
         dao.insertSession(
@@ -243,12 +231,12 @@ class CheckInViewModelTest {
         advanceUntilIdle()
 
         // isRunning follows the ticker (the prior-day open row), guarding a double check-in, while
-        // today's list is empty so the day's total correctly reads zero.
+        // today's list stays empty — the interval belongs wholly to the day it began on.
         val state = viewModel.uiState.value
         assertTrue(state.isRunning)
         assertEquals(500L, state.currentSessionStartTime)
         assertEquals("2026-06-15", state.todayDateKey)
-        assertEquals(0L, state.todayTotalDuration)
+        assertTrue(state.todaySessions.isEmpty())
     }
 
     @Test

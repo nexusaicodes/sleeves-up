@@ -7,10 +7,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Shared sizing for the two donuts (the History month split and the Reports all-time split).
+ * Sizing for the all-time-split donut on Reports, the app's one [DonutChart].
  *
- * They are the same chart shown in two places, so the numbers live here rather than at each call
- * site: a second copy is how the two would drift apart.
+ * Separate from the call site so the stroke and the diameter are stated once beside the reasoning
+ * that fixes them, rather than as two bare literals inside a Composable.
  */
 object DonutChartDefaults {
 

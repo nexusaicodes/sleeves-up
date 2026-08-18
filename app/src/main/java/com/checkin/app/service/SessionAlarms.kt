@@ -44,12 +44,11 @@ interface SessionAlarms {
     /**
      * The instant each alarm is currently set for, or 0 when nothing is armed.
      *
-     * Recorded because **an alarm is less durable than the row it belongs to**. A force stop and a
-     * package replace both cancel a package's alarms while leaving the open session untouched, and
-     * `AlarmManager` offers no way to ask what is still standing. Persisting the instants is what
-     * lets [SessionReminderRunner.ensureArmed] put them back without re-deriving them — re-deriving
-     * would push the reminder out by a full interval on every repair, and would recompute the day
-     * boundary against whatever time zone the device happens to be in now.
+     * Recorded because these alarms can be cancelled out from under an open session (see
+     * [SessionReminderRunner.ensureArmed]) and `AlarmManager` offers no way to ask what is still
+     * standing. Persisting the instants lets the repair put back what was armed rather than derive
+     * fresh ones — re-deriving would push the reminder out by a full interval on every repair, and
+     * would recompute the day boundary against whatever time zone the device is in now.
      */
     val nextReminderAt: Long
     val dayBoundaryAt: Long

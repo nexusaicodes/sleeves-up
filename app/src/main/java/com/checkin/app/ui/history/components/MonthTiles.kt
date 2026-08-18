@@ -7,7 +7,6 @@ import com.checkin.app.data.local.DailyAggregate
 data class MonthTiles(
     val showedUp: Int,
     val missed: Int,
-    val totalHoursMs: Long,
     val avgDailyMs: Long,
     /** The month's longest single day, which the card rings against the all-time peak. */
     val peakDayMs: Long,
@@ -30,7 +29,7 @@ fun computeMonthTiles(summaries: Map<String, DailyAggregate>, trackedDaysInMonth
     val missed = (trackedDaysInMonth - showedUp).coerceAtLeast(0)
     val totalHoursMs = ConsistencyStats.totalWorkedMs(summaries)
     val avgDailyMs = if (trackedDaysInMonth > 0) totalHoursMs / trackedDaysInMonth else 0L
-    return MonthTiles(showedUp, missed, totalHoursMs, avgDailyMs, ConsistencyStats.peakDayMs(summaries))
+    return MonthTiles(showedUp, missed, avgDailyMs, ConsistencyStats.peakDayMs(summaries))
 }
 
 /**

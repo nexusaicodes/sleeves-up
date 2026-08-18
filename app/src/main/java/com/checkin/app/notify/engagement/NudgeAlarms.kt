@@ -17,11 +17,8 @@ import java.time.ZoneId
  * again, and the failure is self-reinforcing: the user this feature exists for is precisely the one
  * whose worker has stopped running. A time-of-day trigger needs a time-of-day primitive.
  *
- * Inexact, for the same reasons the session alarms are: encouragement has no deadline, so landing
- * late costs nothing, while `SCHEDULE_EXACT_ALARM` is denied by default from Android 14 and Play
- * restricts the install-time alternative to alarm-clock apps. What is needed is the *wake* —
- * [AlarmManager.setAndAllowWhileIdle] fires through Doze. Never `setAlarmClock`, which is the one API
- * that puts an icon in the status bar and an entry on the lock screen.
+ * Inexact, for the reasons set out on [com.checkin.app.service.SessionAlarms] — and with more room
+ * to spare here, since encouragement has no deadline at all.
  *
  * **Deliberately stateless, unlike [com.checkin.app.service.SessionAlarms].** That seam persists its
  * armed instants because they are derived from a session and cannot be recomputed without it. A
@@ -33,12 +30,6 @@ import java.time.ZoneId
 interface NudgeAlarms {
     /** Arms the next checkpoint strictly after [nowMs], replacing whatever was set. */
     fun armNext(nowMs: Long)
-
-    /**
-     * The instant last armed, or 0 if this process has armed nothing — and 0 therefore means the
-     * arming call did not run, never that the alarm is merely unknown. Diagnostics only.
-     */
-    val nextCheckpointAt: Long
 }
 
 class AndroidNudgeAlarms(private val context: Context) : NudgeAlarms {
@@ -46,22 +37,11 @@ class AndroidNudgeAlarms(private val context: Context) : NudgeAlarms {
     private val alarmManager: AlarmManager?
         get() = context.getSystemService(AlarmManager::class.java)
 
-    // Process-local, and only ever read by the debug snapshot. It is not persisted on purpose: a
-    // stored instant would be a second answer to a question the schedule already answers exactly,
-    // free to disagree with both the schedule and whatever AlarmManager actually holds.
-    @Volatile
-    override var nextCheckpointAt: Long = 0L
-        private set
-
     // RTC_WAKEUP, not ELAPSED_REALTIME: a checkpoint is a local wall-clock hour.
     override fun armNext(nowMs: Long) {
-        // Recorded only once the alarm is actually set. Assigning regardless would leave the one
-        // diagnostic for an unarmed checkpoint reporting a healthy future instant while nothing is
-        // scheduled — the "renders as a completely normal app" state the card exists to name.
         val manager = alarmManager ?: return
         val at = NudgeSchedule.nextCheckpointAfter(nowMs, ZoneId.systemDefault())
         manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pendingIntent())
-        nextCheckpointAt = at
     }
 
     /**

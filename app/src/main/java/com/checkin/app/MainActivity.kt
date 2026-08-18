@@ -98,8 +98,7 @@ class MainActivity : FragmentActivity() {
      * Asked once, tracked in prefs rather than inferred from the grant, because a refusal and a
      * never-asked look the same through `PackageManager` — and Android drops the dialog silently
      * after two refusals, so re-asking every cold start would be invisible noise. Declining costs
-     * only notifications; every post is already guarded by `Notifier`, and Settings' warning card is
-     * what surfaces the consequence afterwards.
+     * only notifications; every post is already guarded by `Notifier`.
      */
     @Composable
     private fun NotificationPermissionOnFirstOpen() {

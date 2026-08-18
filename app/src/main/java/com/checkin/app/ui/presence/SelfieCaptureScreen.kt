@@ -75,7 +75,8 @@ private const val TAG = "SelfieCaptureScreen"
 private const val SUCCESS_CONFIRMATION_MS = 800L
 
 /**
- * Presence gate: a front-camera capture verified by on-device face detection. The captured image is
+ * The capture stage of [PresenceGate]: a front-camera frame verified by on-device face detection,
+ * reached once the disclosure and the permission request are behind it. The captured image is
  * transient — it is deleted as soon as the outcome is known. After [AuthGate.BIOMETRIC_FALLBACK_AFTER]
  * consecutive failures, device unlock is offered as a fallback. [onAuthSuccess] fires once either
  * path passes.
@@ -96,8 +97,10 @@ fun SelfieCaptureScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     val appScope = (context.applicationContext as CheckInApplication).container.applicationScope
 
     // failCount and errorMessage are saved so the 3-attempt budget and the last guidance survive a
-    // config change while the gate itself survives it. successMessage/isProcessing are intentionally
-    // not saved — their 800ms confirmation coroutine is composition-scoped and dies on recreation.
+    // config change: an attempt lost to a rotation is one that never counts toward the biometric
+    // fallback, and on a device whose camera errors reliably that escape hatch is the whole point.
+    // successMessage/isProcessing are intentionally not saved — their 800ms confirmation coroutine
+    // is composition-scoped and dies on recreation.
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
     var isProcessing by remember { mutableStateOf(false) }

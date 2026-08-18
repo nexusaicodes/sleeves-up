@@ -40,7 +40,6 @@ class MonthSummaryTest {
 
         assertEquals(2, tiles.showedUp)
         assertEquals(8, tiles.missed)
-        assertEquals(2 * hours8, tiles.totalHoursMs)
     }
 
     /**

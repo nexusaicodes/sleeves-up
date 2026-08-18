@@ -59,8 +59,11 @@ object TimeFormat {
     /**
      * A date already framed by its surroundings — a heading over that day's sessions — so the year
      * is dropped and the weekday earns the space instead (e.g. "Saturday, Jul 25").
+     *
+     * Private because the screens hold a `date_key`, never a `LocalDate`: [dateKeyWithWeekday] is the
+     * way in, and it is the parse this keeps out of the composables that makes it worth having.
      */
-    fun dateWithWeekday(date: LocalDate): String = date.format(dateWithWeekdayFormatter)
+    private fun dateWithWeekday(date: LocalDate): String = date.format(dateWithWeekdayFormatter)
 
     /**
      * [dateWithWeekday] over a stored `date_key`, returning null for anything unparseable.

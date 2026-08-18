@@ -63,7 +63,7 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
         ActivityResultContracts.RequestMultiplePermissions(),
     ) {
         // Only the camera decides whether the check can run. A refused POST_NOTIFICATIONS costs the
-        // timer notification and the presence reminder, both of which Notifier already guards.
+        // timer notification, the session reminder and every nudge, all of which Notifier guards.
         cameraGranted = context.hasCameraPermission()
         notificationsGranted = context.hasNotificationPermission()
         cameraRefused = !cameraGranted

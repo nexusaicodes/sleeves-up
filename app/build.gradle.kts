@@ -140,17 +140,12 @@ dependencies {
     implementation("com.google.mlkit:face-detection:16.1.7")
 
     // Testing
+    // JUnit plus the coroutines test dispatcher, and nothing else: the suite is pure JVM and mocks
+    // nothing, standing every seam up with a hand-written fake instead (app/src/test/.../Fakes.kt).
+    // There is no androidTest source set, so no instrumentation dependency has anything to run.
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.mockito:mockito-core:5.7.0")
-    testImplementation("org.mockito:mockito-inline:5.2.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    testImplementation("app.cash.turbine:turbine:1.1.0")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2025.12.00"))
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
 // The open-source licence list in ui/about/OpenSourceLibraries.kt is hand-written: it groups ~220

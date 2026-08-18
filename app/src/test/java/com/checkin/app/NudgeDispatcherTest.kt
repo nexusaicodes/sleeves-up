@@ -7,6 +7,7 @@ import com.checkin.app.notify.engagement.Nudge
 import com.checkin.app.notify.engagement.NudgeCatalog
 import com.checkin.app.notify.engagement.NudgeDispatcher
 import com.checkin.app.notify.engagement.NudgeSchedule
+import com.checkin.app.notify.engagement.VariantAssigner
 import com.checkin.app.notify.log.EngagementEventType
 import com.checkin.app.notify.log.EngagementSource
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -100,10 +101,6 @@ class NudgeDispatcherTest {
      * The checkpoints carry distinct ids, so without this an evening nudge would stack under a
      * morning one still in the tray — two notifications saying the user hasn't checked in, which
      * reads as a stuck loop rather than as one message that came back.
-     *
-     * Asserted on the dispatch path rather than on [NudgeDispatcher.forceSend], because that is the
-     * one that runs in production; a retirement proven only through the debug harness is a retirement
-     * nothing pins.
      */
     @Test
     fun `a dispatched nudge retires the day's other checkpoints`() = runTest {
@@ -113,18 +110,6 @@ class NudgeDispatcherTest {
         val expected = Nudge.entries.filter { it != Nudge.NOT_CHECKED_IN_MORNING }.map { it.notificationId }
         assertEquals(expected.toSet(), notifier.cancelled.toSet())
         assertTrue(Nudge.NOT_CHECKED_IN_MORNING.notificationId !in notifier.cancelled)
-    }
-
-    /**
-     * Retirement is a scheduling decision, so it lives on the dispatch path and not in the shared
-     * writer. Through the shared writer, previewing a checkpoint from the debug harness would clear a
-     * genuine nudge the user had not answered yet — a harness that takes things out of the tray.
-     */
-    @Test
-    fun `a forced send leaves the tray alone`() = runTest {
-        dispatcher().forceSend(Nudge.NOT_CHECKED_IN_EVENING, variant = 0)
-
-        assertTrue(notifier.cancelled.isEmpty())
     }
 
     /**
@@ -180,19 +165,26 @@ class NudgeDispatcherTest {
     }
 
     /**
-     * Bucketing is deterministic per install by design, so without an override the debug harness can
-     * only ever preview whichever wording this device landed on.
+     * The install's own bucket is the only wording a device ever sees — there is no override, so a
+     * dispatcher that assigned differently from [VariantAssigner] would silently split an experiment
+     * the log then reports as one. The variant is asserted on both the spec and the row, because a
+     * mismatch between them attributes a tap to copy the user was never shown.
      */
     @Test
-    fun `a forced variant overrides the install's bucket`() = runTest {
-        val dispatcher = dispatcher()
-        val variantCount = NudgeCatalog.variants(Nudge.NOT_CHECKED_IN_MORNING).size
+    fun `the posted variant is the install's own bucket`() = runTest {
+        val install = FakeEngagementInstall()
+        val expected = VariantAssigner.assign(
+            install.installId(),
+            Nudge.NOT_CHECKED_IN_MORNING.name,
+            NudgeCatalog.variants(Nudge.NOT_CHECKED_IN_MORNING).size,
+        )
 
-        repeat(variantCount) { dispatcher.forceSend(Nudge.NOT_CHECKED_IN_MORNING, variant = it) }
+        dispatcher().runOnce()
 
-        val variants = log.events.value
-            .filter { it.event == EngagementEventType.SHOWN.name }
-            .map { it.variant }
-        assertEquals((0 until variantCount).toList(), variants)
+        assertEquals(expected, notifier.shown.single().tag?.variant)
+        assertEquals(
+            listOf(expected),
+            log.events.value.filter { it.event == EngagementEventType.SHOWN.name }.map { it.variant },
+        )
     }
 }

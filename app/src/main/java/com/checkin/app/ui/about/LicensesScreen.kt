@@ -55,8 +55,8 @@ fun LicensesScreen(innerPadding: PaddingValues) {
     val noHandler = stringResource(R.string.about_no_handler)
 
     val bundledLicenses = remember { LibraryLicense.entries.filter { it.bundled } }
-    // Both hoisted above the lazy list so each paragraph can stay a real lazy item — the licences run
-    // to 200 paragraphs, and composing them all on the frame the toggle flips is long enough to see.
+    // Both hoisted above the lazy list so each paragraph can stay a real lazy item — Apache-2.0 alone
+    // splits into 33 of them, and composing them all on the frame the toggle flips is long enough to see.
     // Expansion is saveable (a rotation mid-licence would lose the reader's place); the text is not,
     // since holding 11 KB per licence in the state bundle costs more than reading the file again.
     var expanded by rememberSaveable { mutableStateOf(emptySet<String>()) }

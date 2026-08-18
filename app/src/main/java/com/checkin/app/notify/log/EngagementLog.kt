@@ -1,15 +1,7 @@
 package com.checkin.app.notify.log
 
 import com.checkin.app.notify.engagement.Nudge
-import kotlinx.coroutines.flow.Flow
 
-/**
- * Records what each notification did, so nudges can be judged on whether they actually produce
- * check-ins rather than on whether they were sent.
- *
- * Conversion is attributed in Kotlin rather than SQL because the sessions table lives in a different
- * database — the deliberate cost of keeping engagement data isolated from session data.
- */
 /**
  * One nudge showing, reduced to what the frequency rules need: which nudge, and when.
  *
@@ -18,6 +10,13 @@ import kotlinx.coroutines.flow.Flow
  */
 data class NudgeShowing(val key: String, val atMillis: Long)
 
+/**
+ * Records what each notification did, so nudges can be judged on whether they actually produce
+ * check-ins rather than on whether they were sent.
+ *
+ * Conversion is attributed in Kotlin rather than SQL because the sessions table lives in a different
+ * database — the deliberate cost of keeping engagement data isolated from session data.
+ */
 interface EngagementLog {
     suspend fun record(nudge: Nudge, variant: Int, event: EngagementEventType, atMillis: Long)
 
@@ -59,10 +58,6 @@ interface EngagementLog {
      * one landed (the minimum gap). Answering those from one query is what stops them disagreeing.
      */
     suspend fun shownNudgesSince(since: Long): List<NudgeShowing>
-
-    fun recent(limit: Int): Flow<List<EngagementEvent>>
-
-    suspend fun clear()
 
     /** Drops events older than [before]; the log is analytics, not an audit trail. */
     suspend fun prune(before: Long)
@@ -149,10 +144,6 @@ class RoomEngagementLog(private val dao: EngagementEventDao) : EngagementLog {
     override suspend fun shownNudgesSince(since: Long): List<NudgeShowing> =
         dao.ofTypeSince(EngagementEventType.SHOWN.name, EngagementSource.NUDGE.name, since)
             .map { NudgeShowing(it.key, it.at) }
-
-    override fun recent(limit: Int): Flow<List<EngagementEvent>> = dao.recent(limit)
-
-    override suspend fun clear() = dao.clear()
 
     override suspend fun prune(before: Long) = dao.deleteOlderThan(before)
 }

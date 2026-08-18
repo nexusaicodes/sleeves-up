@@ -12,9 +12,8 @@ import kotlinx.coroutines.launch
  * an app update.
  *
  * Both events end the process and take the foreground service with it, and `START_STICKY` does not
- * survive either. Both also **clear the session's alarms**, which is the more serious loss: the
- * day-boundary close is the only thing that ends a session the user has forgotten, and without it a
- * session runs until they notice and then writes a multi-day duration onto a row nothing can edit.
+ * survive either. Both also **clear the session's alarms**, which is the more serious loss — see
+ * [SessionReminderRunner.ensureArmed].
  *
  * `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED` are two of the few contexts explicitly permitted to
  * start a foreground service from the background, which is why the restore is attempted here rather
@@ -33,8 +32,8 @@ class SessionRestoreReceiver : BroadcastReceiver() {
     /** See [SessionAlarmReceiver] for why the `catch` is required rather than tidy. */
     @Suppress("TooGenericExceptionCaught")
     override fun onReceive(context: Context, intent: Intent?) {
-        // Named for the diagnostics card, which shows this detail verbatim — a fully qualified
-        // action string would push everything after it off the row.
+        // A short label rather than the fully qualified action: this string is stored verbatim as
+        // the log row's key.
         val source = when (intent?.action) {
             Intent.ACTION_BOOT_COMPLETED -> "boot"
             Intent.ACTION_MY_PACKAGE_REPLACED -> "update"

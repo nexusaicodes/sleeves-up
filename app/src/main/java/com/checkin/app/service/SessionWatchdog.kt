@@ -15,10 +15,10 @@ import com.checkin.app.platform.ServiceController
  * cheerfully running timer with no service behind it.
  *
  * **The service and the alarms are repaired independently, because they are lost independently.** A
- * force stop and a package replace cancel a package's alarms; a plain process kill does not. The
- * service running says nothing about whether the day-boundary close is still standing, and that
- * close is the only thing that ends a session the user has forgotten — so the alarms are ensured on
- * every pass, before the service is even looked at.
+ * force stop and a package replace cancel a package's alarms; a plain process kill does not. So the
+ * service running says nothing about whether the day-boundary close is still standing, and the
+ * alarms are ensured on every pass, before the service is even looked at — see
+ * [SessionReminderRunner.ensureArmed] for what that repair costs to skip.
  *
  * The revive is best-effort by necessity. Starting a foreground service from the background is
  * restricted, so the call can be refused outright depending on where it is invoked from; the callers
@@ -41,10 +41,9 @@ class SessionWatchdog(
      * Ensures the open session's alarms, then returns true when a service revive was *also*
      * attempted (whether or not the platform allowed it).
      *
-     * Never throws. Every caller is a fire-and-forget `launch` on the app-wide scope, which has no
-     * exception handler, so anything escaping here reaches the default handler and kills the
-     * process — a poor outcome for a mechanism whose whole job is recovering from a process that
-     * died. A failed recovery attempt is worth a breadcrumb, not a crash.
+     * Never throws, for the reason given in [SessionAlarmReceiver]: every caller is a
+     * fire-and-forget `launch` on the app-wide scope. Killing the process would be a poor outcome
+     * for a mechanism whose whole job is recovering from one that died.
      */
     @Suppress("TooGenericExceptionCaught")
     suspend fun reviveIfNeeded(source: String): Boolean = try {
@@ -70,9 +69,9 @@ class SessionWatchdog(
         if (serviceRunning()) return false
         val active = repository.getActiveSession() ?: return false
 
-        // revive(), not startTimer(): that path takes its timing from the intent and re-anchors the
-        // reminder cadence from it, which is right for a session that has not begun and wrong for
-        // one already running.
+        // revive(), not startTimer(): that path takes its timing from the intent and rewrites the
+        // render mirror from it, which is right for a session that has not begun and wrong for one
+        // already running.
         val started = serviceController.revive(active.id, active.startedAt)
         log.recordService(
             if (started) ServiceEventType.REVIVED else ServiceEventType.DEGRADED,

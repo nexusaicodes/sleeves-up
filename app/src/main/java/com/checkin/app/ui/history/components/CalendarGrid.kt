@@ -72,7 +72,6 @@ fun CalendarGrid(
     val weekDays = (0L..6L).map { firstDayOfWeek.plus(it) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        // Day-of-week headers, localized and ordered from the locale's first day of week.
         Row(modifier = Modifier.fillMaxWidth()) {
             weekDays.forEach { day ->
                 Text(
@@ -168,7 +167,6 @@ private fun DayCell(
     onClick: () -> Unit,
 ) {
     // A day with no sessions gets no shade at all: an empty cell, not a coloured failure.
-    // BACKGROUND_STRENGTH caps the fill so the number stays legible on even the strongest day.
     val fraction = DayIntensity.fractionOf(summary?.totalDurationMs ?: 0L, peakDayMs)
     val dayShade = dayColor(fraction * BACKGROUND_STRENGTH)
 

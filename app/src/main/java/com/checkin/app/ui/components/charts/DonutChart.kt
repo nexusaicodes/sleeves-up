@@ -43,8 +43,9 @@ fun DonutChart(
         modifier = modifier.semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center,
     ) {
-        // The arc is stroked along a circle inset by half the stroke, so the hole is the diameter
-        // less a full stroke width. A stroke wider than the box would invert it, hence the floor.
+        // The arc is centred on a circle inset by half the stroke, so the hole is the box diameter
+        // less two stroke widths — one at each side. A stroke wider than half the box would invert
+        // that, hence the floor.
         val diameter = minOf(maxWidth, maxHeight)
         val innerBound = if (diameter == Dp.Infinity) {
             // An unsized caller leaves the constraints unbounded; sizing the content to an infinite

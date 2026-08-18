@@ -14,7 +14,10 @@ enum class ServiceEventType {
     /** The service entered the foreground for a session. */
     STARTED,
 
-    /** The service tore itself down: check-out, or a reconcile that found no open session. */
+    /**
+     * A session ended: the service torn down at check-out or by a reconcile that found no open row,
+     * or the day boundary closing a forgotten session.
+     */
     STOPPED,
 
     /** The watchdog found an open session with no service and restarted it. */
@@ -27,9 +30,9 @@ enum class ServiceEventType {
     ALARM_FIRED,
 
     /**
-     * The nudge checkpoint alarm fired and a dispatch pass ran. Distinct from [ALARM_FIRED] because
-     * the diagnostics card prints these names verbatim, and a reader chasing a missing nudge needs to
-     * tell "the checkpoint never woke" from "a session alarm fired" at a glance.
+     * The nudge checkpoint alarm fired and a dispatch pass ran. Distinct from [ALARM_FIRED] so a
+     * reader chasing a missing nudge can tell "the checkpoint never woke" from "a session alarm
+     * fired" without decoding the detail column.
      */
     CHECKPOINT_FIRED,
 
