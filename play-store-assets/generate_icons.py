@@ -43,6 +43,17 @@ WHITE = (255, 255, 255)
 
 SAFE_RADIUS = 33.0    # adaptive-icon safe circle; nothing may exceed this
 
+# Butt caps and mitred joins, matching strokeLineCap/strokeLineJoin on both drawables. The
+# mark used to be stroked round throughout, which softened the two things that carry it:
+# the ring's opening, which now reads as a deliberate cut rather than a tapered end, and
+# the check's vertex, which now comes to a point. MITER_LIMIT is Android's own default --
+# past it a join renders bevelled instead, so the two must agree or the raster Play icon
+# and the shipped vector disagree at exactly the corner the eye lands on.
+MITER_LIMIT = 4.0
+
+# Width, in supersampled pixels, of the boundary redrawn over each stroke polygon. See render().
+SEAM_PAD = 2
+
 
 def _pt(angle_deg, radius=R):
     """Point on the ring. Screen coords, so y is flipped."""
@@ -96,17 +107,71 @@ def path_data(scale=1.0, cx=CX, cy=CY):
 
 
 def verify():
-    """Every on-curve point, plus its stroke halo, must sit inside the safe circle.
+    """The stroked outline -- not the centreline -- must sit inside the safe circle.
 
-    Bezier control points are excluded: they sit outside the arc by construction and
-    the curve never reaches them.
+    Measured off [stroke_polygons] rather than by padding each on-curve point by half the
+    stroke, because a mitred join reaches past that halo: the check's vertex extends by
+    half the stroke over sin(half the angle), which at a sharp corner is most of a stroke
+    width more than a round join would have taken.
     """
-    tip, vertex, heel = check_points()
-    start, cubics = arc_cubics()
-    on_curve = [start, tip, vertex, heel] + [end for _, _, end in cubics]
-    worst = max(math.hypot(x - CX, y - CY) for x, y in on_curve) + STROKE / 2
+    worst = max(
+        math.hypot(x - CX, y - CY)
+        for poly in stroke_polygons(polyline(), STROKE)
+        for x, y in poly
+    )
     assert worst <= SAFE_RADIUS + 0.01, f"mark exceeds safe circle: {worst:.2f} > {SAFE_RADIUS}"
     return worst
+
+
+def stroke_polygons(pts, width, miter_limit=MITER_LIMIT):
+    """A polyline stroked as filled polygons: butt caps, mitred joins.
+
+    One quad per segment plus one wedge per join, all in the same coordinate space as
+    [pts]. Overlap between them is harmless -- they are filled, not outlined -- and the
+    wedge is what fills the notch a plain quad leaves on the outside of a turn.
+
+    Pillow has neither cap nor join control, so this stands in for it; sharing the result
+    with [verify] is what keeps the Play raster and the shipped vector the same shape.
+    """
+    r = width / 2.0
+    segs = []
+    for p0, p1 in zip(pts, pts[1:]):
+        dx, dy = p1[0] - p0[0], p1[1] - p0[1]
+        length = math.hypot(dx, dy)
+        if length == 0:
+            continue
+        u = (dx / length, dy / length)
+        n = (-u[1], u[0])
+        segs.append((p0, p1, u, n))
+
+    polys = [
+        [
+            (p0[0] + n[0] * r, p0[1] + n[1] * r),
+            (p1[0] + n[0] * r, p1[1] + n[1] * r),
+            (p1[0] - n[0] * r, p1[1] - n[1] * r),
+            (p0[0] - n[0] * r, p0[1] - n[1] * r),
+        ]
+        for p0, p1, _, n in segs
+    ]
+
+    for (_, corner, ua, na), (_, _, ub, nb) in zip(segs, segs[1:]):
+        turn = ua[0] * ub[1] - ua[1] * ub[0]
+        if turn == 0:
+            continue
+        # The outside of the turn is the side the two offset edges diverge on; the inside
+        # needs nothing, since the segment quads already overlap there.
+        side = -1.0 if turn > 0 else 1.0
+        a = (corner[0] + side * na[0] * r, corner[1] + side * na[1] * r)
+        b = (corner[0] + side * nb[0] * r, corner[1] + side * nb[1] * r)
+        t = ((b[0] - a[0]) * ub[1] - (b[1] - a[1]) * ub[0]) / turn
+        point = (a[0] + ua[0] * t, a[1] + ua[1] * t)
+        # Past the limit the join bevels, exactly as the platform's renderer does.
+        if math.hypot(point[0] - corner[0], point[1] - corner[1]) > miter_limit * r:
+            polys.append([corner, a, b])
+        else:
+            polys.append([corner, a, point, b])
+
+    return polys
 
 
 # --- raster rendering for the Play listing ---------------------------------------------
@@ -141,20 +206,16 @@ def render(size, bg=BRAND_INDIGO, fg=WHITE, supersample=4):
     k = s / 108.0
     img = Image.new("RGBA", (s, s), bg + (255,) if bg else (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    w = STROKE * k
 
-    # Stamp a round brush along the path. Pillow's line joints leave hairline seams on a
-    # densely sampled curve, and it has no round-cap setting; stamping gives both for free.
+    # Each polygon is filled and then had its own boundary drawn over it. Pillow's polygon
+    # fill leaves the odd single pixel of background at a junction where two of them meet
+    # at a shallow angle, and the downsample smears each pinhole into a faint mark on an
+    # otherwise flat white stroke. SEAM_PAD is in supersampled pixels, so at the final size
+    # it is a fraction of one -- it closes the holes without moving the edge.
     pts = [(x * k, y * k) for x, y in polyline()]
-    r = w / 2.0
-    step = 0.4
-    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
-        seg = math.hypot(x1 - x0, y1 - y0)
-        n = max(1, int(seg / step))
-        for i in range(n + 1):
-            t = i / n
-            x, y = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
-            d.ellipse([x - r, y - r, x + r, y + r], fill=fg)
+    for poly in stroke_polygons(pts, STROKE * k):
+        d.polygon(poly, fill=fg)
+        d.line(list(poly) + [poly[0]], fill=fg, width=SEAM_PAD)
 
     return img.resize((size, size), Image.LANCZOS)
 
@@ -173,13 +234,15 @@ if __name__ == "__main__":
     worst = verify()
     print(f"safe-circle check: furthest extent {worst:.2f} of {SAFE_RADIUS} OK\n")
 
-    print("--- ic_launcher_foreground.xml / ic_launcher_monochrome.xml (viewport 108) ---")
+    print("--- ic_launcher_foreground.xml (viewport 108) — launcher, monochrome and splash ---")
     print(path_data())
     print(f"strokeWidth {STROKE:g}\n")
 
     print("--- ic_stat_checkin.xml (viewport 24) ---")
     print(stat_path_data())
     print(f"strokeWidth {STROKE * STAT_SCALE:.2f}\n")
+
+    print(f"strokeLineCap butt  strokeLineJoin miter  strokeMiterLimit {MITER_LIMIT:g}\n")
 
     out = "app/src/main/ic_launcher-playstore.png"
     render(512).convert("RGB").save(out)

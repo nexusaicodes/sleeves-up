@@ -30,7 +30,6 @@ data class CheckInUiState(
     val currentSessionStartTime: Long? = null,
     val todayDateKey: String = "",
     val todaySessions: List<CheckInSession> = emptyList(),
-    val todayTotalDuration: Long = 0L,
     val hasEverTracked: Boolean = false,
     val showSelfieCapture: Boolean = false,
     val selfieAction: SelfieAction = SelfieAction.None,
@@ -47,7 +46,6 @@ class CheckInViewModel(
 
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
-    // Rolls the date window forward on a screen resume.
     private val refresh = MutableStateFlow(0)
     private val showSelfie = MutableStateFlow(false)
     private val selfieAction = MutableStateFlow<SelfieAction>(SelfieAction.None)
@@ -80,7 +78,6 @@ class CheckInViewModel(
                     currentSessionStartTime = ticker?.startedAt,
                     todayDateKey = todayKey,
                     todaySessions = sessions,
-                    todayTotalDuration = sessions.filter { it.stoppedAt != null }.sumOf { it.duration ?: 0L },
                     hasEverTracked = trackingStart != null,
                     showSelfieCapture = selfie.first,
                     selfieAction = selfie.second,

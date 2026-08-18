@@ -113,11 +113,9 @@ fun CheckInScreen(
         }
     }
 
-    // The gauge is the open session alone, and zero between sessions — never the day's total. A
-    // clock resuming from the day's accumulated time read as a paused stopwatch, which is a mechanic
-    // this app deliberately does not have, and forced a user mid-session to subtract to find out how
-    // long they had actually been sitting there. The day's total is stated below instead, and the
-    // notification's chronometer now counts the same thing this does.
+    // The gauge is the open session alone, and zero between sessions — never the day's total; see
+    // TimerGauge for why. The day's total is stated below instead, and the notification's chronometer
+    // counts this same figure.
     val sessionElapsed = if (uiState.isRunning) elapsed else 0L
 
     // The list shows the running interval alongside the closed ones, so the day's total counts the

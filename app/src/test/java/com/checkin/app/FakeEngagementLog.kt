@@ -9,15 +9,11 @@ import com.checkin.app.notify.log.EngagementSource
 import com.checkin.app.notify.log.NudgeShowing
 import com.checkin.app.notify.log.PRESENCE_CHECK_KEY
 import com.checkin.app.notify.log.ServiceEventType
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
 
 /** In-memory stand-in for the engagement database, with the same attribution semantics. */
 class FakeEngagementLog : EngagementLog {
     val events = MutableStateFlow<List<EngagementEvent>>(emptyList())
-    var clearCount = 0
-    var prunedBefore: Long? = null
 
     override suspend fun record(nudge: Nudge, variant: Int, event: EngagementEventType, atMillis: Long) {
         events.value = events.value + EngagementEvent(
@@ -88,15 +84,5 @@ class FakeEngagementLog : EngagementLog {
             .sortedBy { it.at }
             .map { NudgeShowing(it.key, it.at) }
 
-    override fun recent(limit: Int): Flow<List<EngagementEvent>> =
-        events.map { list -> list.sortedByDescending { it.at }.take(limit) }
-
-    override suspend fun clear() {
-        clearCount++
-        events.value = emptyList()
-    }
-
-    override suspend fun prune(before: Long) {
-        prunedBefore = before
-    }
+    override suspend fun prune(before: Long) = Unit
 }

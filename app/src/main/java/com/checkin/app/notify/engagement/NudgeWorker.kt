@@ -12,12 +12,9 @@ import java.util.concurrent.TimeUnit
 /**
  * The periodic backstop, and the home of the housekeeping that has to happen somewhere.
  *
- * **It is no longer what delivers a nudge** — [NudgeAlarms] is. Relying on this pass alone is the bug
- * that made a real install go silent for days: an app the user is not opening drops through Android's
- * standby buckets until periodic work runs roughly once a day, settling at a consistent hour, so a
- * trigger asking "is it past 10am" is asked at 5am forever and the answer never changes. The pass
- * survives because it is the only place `reviveIfNeeded` and `prune` can hang, and because a second
- * chance at the day's nudge costs nothing.
+ * **It does not deliver nudges** — [NudgeAlarms] does, and putting the trigger back here is the bug
+ * documented there. The pass survives because it is the only place `reviveIfNeeded` and `prune` can
+ * hang, and because a second chance at the day's nudge costs nothing.
  *
  * "Costs nothing" is [NudgeSnapshot.alreadySentToday] doing that work, not the daily cap. A cap of
  * two lets a pass landing inside a band the alarm has already fired in send the *same* nudge again —
@@ -64,7 +61,7 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
         /**
          * Enqueued unconditionally at startup with [ExistingPeriodicWorkPolicy.KEEP], so it survives
          * reboots and app updates without resetting its schedule on every launch. The pass is cheap,
-         * and exits without posting when nudges are switched off.
+         * and a post to a channel the user has turned off is refused by `Notifier` rather than shown.
          */
         fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<NudgeWorker>(

@@ -65,7 +65,10 @@ data class EngagementEvent(
     @ColumnInfo(name = "at")
     val at: Long,
 
-    /** The nudge's enum name for a nudge; [PRESENCE_CHECK_KEY] for the session reminder. */
+    /**
+     * The nudge's enum name for a nudge; [PRESENCE_CHECK_KEY] for the session reminder; the free-text
+     * detail for a SERVICE row.
+     */
     @ColumnInfo(name = "nudge")
     val key: String,
 
@@ -85,8 +88,8 @@ data class EngagementEvent(
  * The [EngagementEvent.key] the session reminder is logged under.
  *
  * Deliberately a bare constant rather than a `Nudge` entry: adding it to that enum would make it
- * selectable by `NudgeEligibility`, listed in the Settings nudge loop, and force-sendable from the
- * debug harness — none of which apply to a reminder that belongs to one open session.
+ * selectable by `NudgeEligibility` and countable by the daily cap, neither of which applies to a
+ * reminder that belongs to one open session.
  *
  * Frozen for the same reason as [EngagementSource.PRESENCE]: the string is stored in `engagement.db`.
  */

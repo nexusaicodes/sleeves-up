@@ -50,4 +50,19 @@ class TimeFormatTest {
         assertEquals("0h 0m", TimeFormat.durationShort(59 * second))
         assertEquals("8h 30m", TimeFormat.durationShort(8 * hour + 30 * minute + 59 * second))
     }
+
+    @Test
+    fun `a date key renders with its weekday and no year`() {
+        assertEquals("Saturday, Jul 25", TimeFormat.dateKeyWithWeekday("2026-07-25"))
+    }
+
+    /** The screens hold a nullable selection, and a malformed key must lose the heading, not crash. */
+    @Test
+    fun `an absent or unparseable date key returns null`() {
+        assertEquals(null, TimeFormat.dateKeyWithWeekday(null))
+        assertEquals(null, TimeFormat.dateKeyWithWeekday(""))
+        assertEquals(null, TimeFormat.dateKeyWithWeekday("25-07-2026"))
+        assertEquals(null, TimeFormat.dateKeyWithWeekday("2026-13-01"))
+        assertEquals(null, TimeFormat.dateKeyWithWeekday("2026-02-30"))
+    }
 }

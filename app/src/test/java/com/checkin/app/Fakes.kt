@@ -6,10 +6,6 @@ import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.engagement.EngagementInstall
 import com.checkin.app.notify.engagement.EngagementReporter
-import com.checkin.app.notify.engagement.Nudge
-import com.checkin.app.notify.engagement.NudgeAlarms
-import com.checkin.app.notify.engagement.NudgeSchedule
-import com.checkin.app.notify.engagement.NudgeTrigger
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.ExportResult
 import com.checkin.app.platform.ServiceController
@@ -17,7 +13,6 @@ import com.checkin.app.service.SessionAlarms
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.time.LocalDate
-import java.time.ZoneId
 
 /** Deterministic clock. [day] is mutable so tests can drive a midnight rollover. */
 class FixedTime(private val now: Long, date: LocalDate) : TimeSource {
@@ -31,7 +26,6 @@ class FakeServiceController : ServiceController {
     val started = mutableListOf<Long>()
     val startedAt = mutableListOf<Long>()
     var stopCount = 0
-    var refreshCount = 0
 
     /** Set to false to stand in for a platform that refused a background foreground-service start. */
     var startAllowed = true
@@ -54,9 +48,7 @@ class FakeServiceController : ServiceController {
     override fun stop() {
         stopCount++
     }
-    override fun refreshFromDb() {
-        refreshCount++
-    }
+    override fun refreshFromDb() = Unit
 }
 
 /** Records what was posted, and can refuse like a revoked POST_NOTIFICATIONS does. */
@@ -92,32 +84,11 @@ class FakeEngagementInstall(private val installId: String = "fake-install") : En
 }
 
 class FakeEngagementReporter : EngagementReporter {
-    val openedAt = mutableListOf<Long>()
-    val openedTags = mutableListOf<Pair<String?, Int>>()
     val checkedInAt = mutableListOf<Long>()
 
-    override suspend fun onNudgeOpened(atMillis: Long, key: String?, variant: Int) {
-        openedAt += atMillis
-        openedTags += key to variant
-    }
+    override suspend fun onNudgeOpened(atMillis: Long, key: String?, variant: Int) = Unit
     override suspend fun onCheckedIn(atMillis: Long) {
         checkedInAt += atMillis
-    }
-}
-
-class FakeNudgeTrigger : NudgeTrigger {
-    var runOnceCount = 0
-    val forced = mutableListOf<Pair<Nudge, Int?>>()
-    var nextResult: Nudge? = null
-
-    override suspend fun runOnce(): Nudge? {
-        runOnceCount++
-        return nextResult
-    }
-
-    override suspend fun forceSend(nudge: Nudge, variant: Int?): Nudge? {
-        forced += nudge to variant
-        return nudge
     }
 }
 
@@ -161,22 +132,5 @@ class FakeSessionAlarms(override var remindersSent: Int = 0) : SessionAlarms {
     fun seedArmed(reminderAt: Long, boundaryAt: Long) {
         nextReminderAt = reminderAt
         dayBoundaryAt = boundaryAt
-    }
-}
-
-/**
- * Records each arming, and resolves the instant through the real [NudgeSchedule] rather than storing
- * whatever it was handed — the production seam derives it the same way, and a fake that simply echoed
- * `nowMs` would let a test pass while the schedule was wrong.
- */
-class FakeNudgeAlarms(private val zone: ZoneId = ZoneId.of("UTC")) : NudgeAlarms {
-    val armed = mutableListOf<Long>()
-
-    override var nextCheckpointAt: Long = 0L
-        private set
-
-    override fun armNext(nowMs: Long) {
-        nextCheckpointAt = NudgeSchedule.nextCheckpointAfter(nowMs, zone)
-        armed += nextCheckpointAt
     }
 }

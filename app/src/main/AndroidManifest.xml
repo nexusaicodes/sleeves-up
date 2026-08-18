@@ -2,7 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -13,11 +12,8 @@
       START_STICKY does not survive one. BOOT_COMPLETED is also one of the few contexts permitted to
       start a foreground service from the background, which is what makes the restore possible.
 
-      Note there is deliberately no SCHEDULE_EXACT_ALARM/USE_EXACT_ALARM here. Both session alarms are
-      scheduled inexactly (see SessionAlarms): the reminder is a two-hour cadence, and the day-boundary
-      close stamps its check-out from the session's own date_key rather than from when it fires, so
-      landing late costs nothing. Exactness would cost a runtime permission denied by default from
-      Android 14, or the install-time alternative Play restricts to alarm-clock apps.
+      Note there is deliberately no SCHEDULE_EXACT_ALARM/USE_EXACT_ALARM here: every alarm the app
+      sets is inexact, for the reasons set out on SessionAlarms.
     -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
@@ -32,7 +28,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CheckInApp.Starting">
 
-        <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
@@ -43,7 +38,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Check-In Foreground Service -->
         <service
             android:name=".service.CheckInService"
             android:enabled="true"
@@ -103,7 +97,6 @@
             </intent-filter>
         </receiver>
 
-        <!-- FileProvider for CSV export -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

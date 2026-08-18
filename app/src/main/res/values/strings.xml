@@ -3,7 +3,7 @@
     Casing: section and card titles are Title Case ("Overall Stats", "All-Time Split"), and so are
     notification channel names ("Check-In Timer", "Session Reminders"), which Android renders as the
     titles of one list; everything a user reads as a line rather than a heading — row labels,
-    buttons, help text, empty states — is sentence case ("Open notification settings", "Showed up").
+    buttons, help text, empty states — is sentence case ("Grant access", "Showed up").
     The only exceptions are the product name CheckIn and the "Check In"/"Check Out" actions it is
     named after.
 
@@ -111,9 +111,10 @@
     <!-- A ring's fill is a ratio and colour carries none of it, so each tile states both figures. -->
     <string name="cd_stat_vs_all_time">%1$s this month: %2$s, against %3$s all time</string>
     <string name="cd_alltime_split">All-time split: %1$d days showed up, %2$d missed</string>
-    <!-- The ring sweeps hourly and means nothing as a fraction, so this states the time and only
-         the time — announcing a sweep position as progress would invent a goal the app doesn't have. -->
-    <string name="cd_timer_gauge">%1$s worked today</string>
+    <!-- The gauge is the open session, never the day's total (see TimerGauge), so this must name the
+         session rather than the day. Its ring sweeps hourly and means nothing as a fraction, so this
+         states the time and only the time — a sweep position read as progress would invent a goal. -->
+    <string name="cd_timer_gauge">%1$s this session</string>
 
     <!-- History Screen -->
     <string name="previous_month">Previous month</string>
@@ -158,34 +159,7 @@
     <string name="export_nothing">No completed days to export yet</string>
     <string name="export_failed">Export failed: %1$s</string>
 
-    <!-- Settings Screen -->
-    <!-- The healthy state of the notifications card. It exists to answer "how do I stop this?" in
-         the place a user looks for the answer, and to say plainly that the answer is not in here —
-         every opt-out is a notification channel, which the user owns and the app cannot override.
-         The timer is named as the one switch with a cost, because notificationBlock() checks that
-         channel alone and this copy must not invite what the warning state then flags. -->
-    <string name="settings_notifications_title">Notifications</string>
-    <string name="settings_notifications_help">The running timer, session reminders and check-in reminders are each switched on and off in Android\'s own settings — there are no separate switches here. Muting either reminder is entirely your call. Muting the timer leaves a running session with nothing on screen, so that is the one thing flagged back to you here.</string>
-
-    <!-- Notification permission warning. Everything the app shows you about a running session goes
-         through a notification, so losing the permission silently disables all of it. -->
-    <string name="settings_notifications_off">Notifications are turned off</string>
-    <string name="settings_notifications_off_help">Without them the running timer, the session reminder and every check-in reminder are silently disabled — a session can run all night with nothing to show for it. Your recorded hours are unaffected.</string>
-    <!-- The permission can be granted while an individual channel is set to "None", which looks like
-         everything is enabled and behaves like nothing is. Only the timer is checked: muting the
-         session or check-in reminders is a preference, not a fault. -->
-    <string name="settings_notifications_partial">Some notifications are blocked</string>
-    <string name="settings_notifications_partial_help">The check-in timer is set to “None” in system settings, so it will never appear — a session can run all night with nothing to show for it. Your recorded hours are unaffected.</string>
-    <string name="settings_notifications_action">Open notification settings</string>
-
-    <!-- The debug cards (Diagnostics, Nudge Harness) keep their text as Kotlin literals in
-         SettingsScreen.kt rather than here. Nothing debug-only is translatable, and R8 folds the
-         `BuildConfig.DEBUG` branch away, so a literal leaves the release APK entirely — a string
-         resource does not: resource shrinking keeps these, and they would also surface to any
-         translator as product copy. -->
-
-
-    <!-- About -->
+    <!-- About. Settings holds nothing else — see SettingsScreen for why. -->
     <string name="about_section">About</string>
     <string name="about_version">Version %1$s (build %2$d)</string>
     <string name="about_developer">Nexus AI Technology Labs</string>

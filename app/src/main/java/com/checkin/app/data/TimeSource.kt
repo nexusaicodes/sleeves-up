@@ -17,8 +17,8 @@ interface TimeSource {
 }
 
 /**
- * The current local date, re-emitted on every [refresh] tick (screen resume / prefs change) and at
- * each local midnight. The single place the "recompute on resume or at day rollover" trigger lives,
+ * The current local date, re-emitted on every [refresh] tick (a screen resume) and at each local
+ * midnight. The single place the "recompute on resume or at day rollover" trigger lives,
  * shared by every ViewModel so the idiom can't drift between screens.
  */
 fun TimeSource.dayTrigger(refresh: Flow<Int>): Flow<LocalDate> = combine(refresh, currentDay()) { _, day -> day }

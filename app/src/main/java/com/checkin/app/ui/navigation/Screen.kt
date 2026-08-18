@@ -34,10 +34,22 @@ sealed class Screen(val route: String, val titleRes: Int) {
     data object Licenses : Detail("licenses", R.string.nav_licenses, Settings)
 }
 
-internal val tabs = listOf(Screen.CheckIn, Screen.History, Screen.Reports, Screen.Settings)
-
 /**
- * Every destination the title bar can name. Details belong here and not in [tabs] — a route missing
- * from this list falls back to the start destination and would silently mislabel the screen.
+ * Every destination, in bottom-nav order with details after their parents. The one list a new screen
+ * must be added to: [tabs] and [titledScreens] are both derived from it, so they cannot disagree.
+ *
+ * A route missing from here falls back to the start destination and silently mislabels the screen
+ * rather than failing, which is why `ScreenTest` pins what can be checked without it.
  */
-internal val titledScreens: List<Screen> = tabs + Screen.Licenses
+internal val allScreens: List<Screen> = listOf(
+    Screen.CheckIn,
+    Screen.History,
+    Screen.Reports,
+    Screen.Settings,
+    Screen.Licenses,
+)
+
+internal val tabs: List<Screen.Tab> = allScreens.filterIsInstance<Screen.Tab>()
+
+/** Every destination the title bar can name. */
+internal val titledScreens: List<Screen> = allScreens

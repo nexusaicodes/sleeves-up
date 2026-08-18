@@ -22,13 +22,9 @@ import kotlinx.coroutines.launch
 class NudgeAlarmReceiver : BroadcastReceiver() {
 
     /**
-     * The `catch` is load-bearing, exactly as in
-     * [com.checkin.app.service.SessionAlarmReceiver]: `applicationScope` carries a `SupervisorJob`
-     * but **no** `CoroutineExceptionHandler`, so an uncaught throw in a root `launch` reaches the
-     * default handler and kills the process. A read on a corrupt engagement database and a
-     * `setAndAllowWhileIdle` past the 500-alarm cap are both realistic sources — and taking the
-     * process down would also take down any running session's notification, which has nothing to do
-     * with nudges.
+     * The `catch` is load-bearing, exactly as in [com.checkin.app.service.SessionAlarmReceiver] —
+     * and note that a throw here would take down any running session's notification, which has
+     * nothing to do with nudges.
      *
      * The re-arm sits in the `finally`, so a pass that throws still schedules the next checkpoint.
      * Without that, one bad pass would end the chain permanently and reproduce the silence this whole

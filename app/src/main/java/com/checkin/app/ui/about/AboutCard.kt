@@ -118,8 +118,8 @@ fun AboutCard(onOpenLicenses: () -> Unit, showMessage: (String) -> Unit, modifie
  * Last and centred because it is the only thing on the card that cannot be acted on: the links are
  * why someone opens About, while the version is reference material looked up when support asks for
  * it. Centring is what stops it reading as a fifth row — the four above are left-aligned and
- * tappable, and identity is neither. Muted to `bodySmall` for the same reason: leading the card, it
- * competed with the section heading for the eye while being the least useful line on it.
+ * tappable, and identity is neither. Muted to `bodySmall` because it is the least useful line on the
+ * card.
  */
 @Composable
 private fun Identity() {

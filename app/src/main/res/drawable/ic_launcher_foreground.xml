@@ -10,7 +10,12 @@
   cubic Beziers rather than SVG arc commands so PathParser has no flags to interpret.
 
   Sized against the 72dp window the launcher shows rather than the 66dp safe circle:
-  filling the safe circle reads oversized beside other icons. Furthest extent 24.1 of 33.
+  filling the safe circle reads oversized beside other icons. Furthest extent 24.46 of 33,
+  which includes the mitre overshoot at the check's vertex — the widest point of the mark.
+
+  Butt caps and mitred joins, not round: the ring's opening reads as a cut rather than a
+  taper, and the check comes to a point. The splash draws this same file scaled up through
+  drawable/ic_splash_icon.xml, where softness showed most.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -21,6 +26,7 @@
         android:pathData="M58.31,33.73 C48.47,31.64 38.56,36.92 34.79,46.24 C31.02,55.56 34.49,66.24 43.02,71.57 C51.55,76.90 62.67,75.34 69.40,67.86 C76.13,60.39 76.52,49.17 70.33,41.24 L51.30,63.92 L42.93,55.55"
         android:strokeColor="#FFFFFF"
         android:strokeWidth="6.66"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round" />
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter"
+        android:strokeMiterLimit="4" />
 </vector>

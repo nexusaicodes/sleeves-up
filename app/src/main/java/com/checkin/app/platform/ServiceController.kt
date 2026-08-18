@@ -16,9 +16,10 @@ interface ServiceController {
 
     /**
      * Restores the notification for a session that is **already** running, after its service was
-     * killed. Separate from [startTimer] because that path re-arms the session's alarms from the
-     * intent's timing — correct for a check-in, wrong for a revive, where the alarms are still
-     * standing. Returns false when the platform refused the start.
+     * killed. Separate from [startTimer] because that path takes the session's timing from the intent
+     * and writes it into the service's render mirror — correct for a session that has not begun, wrong
+     * for one already running, whose timing must come from the DB row. Returns false when the platform
+     * refused the start.
      */
     fun revive(sessionId: Long, startedAt: Long): Boolean
 

@@ -10,9 +10,9 @@ import androidx.compose.ui.unit.dp
 
 /** Centers content and caps it to a comfortable reading width on large screens/landscape. */
 @Composable
-fun ConstrainedContent(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+fun ConstrainedContent(content: @Composable () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-        Box(modifier.widthIn(max = 600.dp).fillMaxSize()) {
+        Box(Modifier.widthIn(max = 600.dp).fillMaxSize()) {
             content()
         }
     }

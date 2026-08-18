@@ -52,7 +52,8 @@ class SessionReminderRunner(
          */
         data object Refused : Outcome
 
-        data class Reminded(val nextAt: Long, val silent: Boolean) : Outcome
+        /** The reminder was posted and the next one armed. */
+        data object Reminded : Outcome
 
         /** The day boundary closed the session, stamped at [atMillis]. */
         data class Closed(val atMillis: Long) : Outcome
@@ -124,7 +125,7 @@ class SessionReminderRunner(
         alarms.scheduleDayBoundaryAt(boundaryAt)
 
         // Logged only when something had to be re-derived. This runs on every app open, and a row
-        // per open would bury the diagnostics card in noise that says nothing happened.
+        // per open is retention spent on entries that say nothing happened.
         if (reminderAt != storedReminder || boundaryAt != storedBoundary) {
             log.recordService(ServiceEventType.ALARM_SET, nowMs, "ensure $reminderAt/$boundaryAt")
         }
@@ -152,7 +153,7 @@ class SessionReminderRunner(
         val nextAt = SessionSchedule.nextReminderAt(firedAt)
         alarms.scheduleReminderAt(nextAt)
         log.recordService(ServiceEventType.ALARM_SET, firedAt, nextAt.toString())
-        return Outcome.Reminded(nextAt, silent)
+        return Outcome.Reminded
     }
 
     /**

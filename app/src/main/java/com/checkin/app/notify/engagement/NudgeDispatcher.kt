@@ -15,20 +15,11 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-/** The subset the Settings debug harness needs, so the ViewModel doesn't depend on a Context. */
-interface NudgeTrigger {
-    suspend fun runOnce(): Nudge?
-
-    /**
-     * Bypasses eligibility to post [nudge] now. A non-null [variant] overrides the install's own
-     * bucket, which the harness needs because bucketing is deterministic per install — without it,
-     * every other variant's copy is unreachable on a given device.
-     */
-    suspend fun forceSend(nudge: Nudge, variant: Int? = null): Nudge?
-}
-
 /**
  * Assembles a snapshot, asks [NudgeEligibility] what to send, and posts the result.
+ *
+ * [runOnce] is the only way a nudge is ever posted — there is no bypass and no forced send, so the
+ * copy a device shows is whatever eligibility and the install's own variant bucket produce.
  *
  * Every read here is a read-only observation of tracking state — this layer never writes to the
  * sessions table, and the decision itself stays in the pure rules.
@@ -40,38 +31,30 @@ class NudgeDispatcher(
     private val notifier: Notifier,
     private val log: EngagementLog,
     private val timeSource: TimeSource,
-) : NudgeTrigger {
+) {
 
     companion object {
         private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
     }
 
     /** Returns the nudge sent, or null when nothing was eligible or posting was refused. */
-    override suspend fun runOnce(): Nudge? {
+    suspend fun runOnce(): Nudge? {
         val snapshot = buildSnapshot()
         val nudge = NudgeEligibility.select(snapshot) ?: return null
-        val sent = send(nudge, snapshot.nowMillis, variantOverride = null) ?: return null
+        val sent = send(nudge, snapshot.nowMillis) ?: return null
 
         // Retire the day's earlier checkpoints, but only now that this one is actually up. They carry
         // distinct ids by design, so otherwise an evening nudge stacks under a morning one still in
         // the tray — two notifications saying the user hasn't checked in, which reads as a stuck loop
         // rather than as one message that came back. Clearing *before* the post would instead take a
         // still-actionable notification away on the pass where the post is refused.
-        //
-        // Scheduling belongs on this path and not inside `send`: the debug harness posts through the
-        // same writer, and a force-sent nudge must add to the tray rather than clear a genuine one
-        // the user has not answered yet.
         Nudge.entries.filter { it != sent }.forEach { notifier.cancel(it.notificationId) }
         return sent
     }
 
-    override suspend fun forceSend(nudge: Nudge, variant: Int?): Nudge? =
-        send(nudge, timeSource.nowMillis(), variantOverride = variant)
-
-    private suspend fun send(nudge: Nudge, nowMillis: Long, variantOverride: Int?): Nudge? {
+    private suspend fun send(nudge: Nudge, nowMillis: Long): Nudge? {
         val variantCount = NudgeCatalog.variants(nudge).size
-        val variant = variantOverride?.mod(variantCount)
-            ?: VariantAssigner.assign(install.installId(), nudge.name, variantCount)
+        val variant = VariantAssigner.assign(install.installId(), nudge.name, variantCount)
         val copy = NudgeCatalog.variant(nudge, variant)
 
         val posted = notifier.show(

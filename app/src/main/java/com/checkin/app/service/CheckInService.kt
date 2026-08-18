@@ -112,9 +112,8 @@ class CheckInService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        // Channels are registered app-wide by CheckInApplication; ensuring here too keeps the service
-        // safe to start on its own — a START_STICKY restart can outlive an Application that hasn't
-        // re-run onCreate in the expected order.
+        // Channels are registered app-wide by CheckInApplication; re-ensuring here is idempotent and
+        // keeps this service independent of who started it.
         NotificationChannels.ensureAll(this)
     }
 
@@ -125,7 +124,7 @@ class CheckInService : Service() {
             START_NOT_STICKY
         }
         ACTION_REVIVE -> handleRevive(intent)
-        ACTION_REFRESH -> reconcileThen { }
+        ACTION_REFRESH -> reconcileAndPost()
         else -> handleStickyRestart()
     }
 
@@ -165,7 +164,7 @@ class CheckInService : Service() {
             sessionId = intent.getLongExtra(EXTRA_SESSION_ID, -1)
             startTime = intent.getLongExtra(EXTRA_START_TIME, 0L)
         }
-        return reconcileThen { }
+        return reconcileAndPost()
     }
 
     /**
@@ -176,13 +175,13 @@ class CheckInService : Service() {
      * the service without asking the database — that would invert the rule that the row is
      * authoritative, precisely where the cache is least trustworthy and the row most.
      */
-    private fun handleStickyRestart(): Int = reconcileThen { }
+    private fun handleStickyRestart(): Int = reconcileAndPost()
 
     /**
-     * Meets the foreground-start deadline, then reconciles against the active session row and runs
-     * [onAdopted]. A closed or absent row is an orphan and tears down instead of re-posting.
+     * Meets the foreground-start deadline, then reconciles against the active session row and posts
+     * from it. A closed or absent row is an orphan and tears down instead of re-posting.
      */
-    private fun reconcileThen(onAdopted: suspend () -> Unit): Int {
+    private fun reconcileAndPost(): Int {
         // The advisory mirror is read first purely so the notification posted inside the
         // foreground-start deadline shows the right elapsed time rather than counting from the
         // epoch. The DB read below overwrites whatever it said.
@@ -194,7 +193,6 @@ class CheckInService : Service() {
                 ServiceReconciler.Result.Stop -> tearDown()
                 is ServiceReconciler.Result.Adopt -> {
                     adopt(result)
-                    onAdopted()
                     saveState()
                     postTimerNotification()
                 }
@@ -256,9 +254,7 @@ class CheckInService : Service() {
         id = NotificationIds.TIMER,
         channelId = NotificationChannels.TIMER,
         title = getString(R.string.notification_title),
-        // The elapsed time comes from the platform chronometer in the timestamp slot, so printing it
-        // here as well would show it twice — and the copy here would be the frozen one, since
-        // nothing re-posts on a timer.
+        // Must not print the elapsed time — the chronometer already draws it (see the string).
         body = getString(R.string.notification_running),
         actions = listOf(
             // "Check Out" opens the app so the presence gate runs — check-out stays gated, never silent.
