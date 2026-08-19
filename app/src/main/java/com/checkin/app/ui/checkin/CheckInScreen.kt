@@ -1,6 +1,5 @@
 package com.checkin.app.ui.checkin
 
-import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
@@ -51,7 +50,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -69,6 +67,7 @@ import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.service.SessionClock
 import com.checkin.app.ui.components.EmptyState
+import com.checkin.app.ui.components.animationsEnabled
 import com.checkin.app.ui.theme.startActionColors
 import com.checkin.app.ui.theme.stopActionColors
 import com.checkin.app.ui.theme.tabularFigures
@@ -185,10 +184,12 @@ fun CheckInScreen(
                     size = gaugeSize,
                 )
 
-                // First-run welcome, shown instead of a gauge that would only ever read 00:00. The
-                // brand mark rather than an action icon, and a title with no message: this is the
-                // one moment on the screen that introduces the app instead of asking for something,
-                // and the button below already states the action.
+                // The first-run empty state, shown instead of a gauge that would only ever read
+                // 00:00 — not the welcome tour, which is a separate full-screen surface the user has
+                // already passed by the time they reach this. The brand mark rather than an action
+                // icon, and a title with no message: this is the one moment on the screen that
+                // introduces the app instead of asking for something, and the button below already
+                // states the action.
                 else -> EmptyState(
                     icon = painterResource(R.drawable.ic_stat_checkin),
                     title = stringResource(R.string.empty_checkin_title),
@@ -435,15 +436,12 @@ private fun IntervalRow(session: CheckInSession) {
  * The open session's mark: three dots breathing in sequence, in the duration column's place.
  *
  * Drawn rather than an emoji glyph, which would vary by device font, ignore the theme colour and sit
- * on its own baseline. It holds still when the system animation scale is off — an infinite pulse
- * that ignores "remove animations" is exactly what that setting exists to stop.
+ * on its own baseline. It holds still when the system animation scale is off — see
+ * [animationsEnabled], which is where that reasoning lives now that a second surface honours it.
  */
 @Composable
 private fun OngoingPulse(color: Color) {
-    val context = LocalContext.current
-    val animated = remember(context) {
-        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
-    }
+    val animated = animationsEnabled()
     val transition = rememberInfiniteTransition(label = "ongoing")
 
     Row(horizontalArrangement = Arrangement.spacedBy(PULSE_DOT_GAP)) {
