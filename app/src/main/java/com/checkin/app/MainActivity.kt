@@ -26,6 +26,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.checkin.app.notify.EngagementTag
+import com.checkin.app.platform.PromptSettings
 import com.checkin.app.service.CheckInService
 import com.checkin.app.service.PresenceCheckSignal
 import com.checkin.app.service.PresenceCheckSignal.Reason
@@ -62,13 +63,21 @@ class MainActivity : FragmentActivity() {
 
     /**
      * The three surfaces that can occupy the whole window, in the order they outrank each other:
-     * the presence gate, the first-run welcome, then the app — with the celebration over whichever
+     * the first-run welcome, the presence gate, then the app — with the celebration over whichever
      * is showing.
      *
-     * **The gate outranks the welcome** because it carries a 10-minute fuse `onStart` retires and
-     * answers something the user just did, while the welcome is owed indefinitely. On a fresh
-     * install the two cannot meet: a never-launched app is in the stopped state, so no alarm is
-     * armed and no nudge can be tapped.
+     * **The welcome outranks the gate**, because an introduction the app owes is worth more than the
+     * few seconds it delays an action, and the reverse ordering delivers the tour *after* the user
+     * has already checked in — an introduction to an app they have just used. That case is the one
+     * that ships: every existing install updates onto this build owing the welcome while its alarms
+     * are armed and its notifications live, so a nudge tap can raise the gate with the tour still
+     * owed. The request survives the read (its 10-minute fuse only retires in [onStart]), so the
+     * check-in follows immediately after.
+     *
+     * Two states go away with it. Nothing can preempt the welcome, so its pager position cannot be
+     * disposed mid-read the way the nav controller's would be — which is what the hoist below exists
+     * to prevent for the host. And a pending celebration can no longer be drawn over the tour, since
+     * every check-out path now sits behind it.
      *
      * A `@Composable` rather than the body of [onCreate] so each branch is one call site.
      * [AppNavScaffold] in two arms would carry two structural identities, and a step change would
@@ -80,18 +89,38 @@ class MainActivity : FragmentActivity() {
         val gateReason by PresenceCheckSignal.request.collectAsStateWithLifecycle()
         val completed by CheckOutSignal.completed.collectAsStateWithLifecycle()
 
-        // Mirrored so finishing the welcome recomposes: PromptSettings is a synchronous prefs read
-        // with no Flow behind it, so the write alone would leave the tour on screen.
+        // Both mirrored so ending the welcome recomposes: PromptSettings is a synchronous prefs read
+        // with no Flow behind it, so the writes alone would leave the tour on screen — and a skip
+        // resolves the notification ask too, which the step below has to see on the same frame.
         var seenWelcome by rememberSaveable { mutableStateOf(settings.hasSeenWelcome()) }
-        // Not mirrored: its only writer is the composable below, whose LaunchedEffect(Unit) is the
-        // once-only guard, and ASK_NOTIFICATIONS and NONE draw the same thing.
-        val askedNotifications = remember { settings.hasAskedNotifications() }
+        var askedNotifications by rememberSaveable { mutableStateOf(settings.hasAskedNotifications()) }
         val step = FirstRun.step(seenWelcome, askedNotifications)
+
+        val endWelcome = { exit: FirstRun.Exit ->
+            settings.markWelcomeSeen()
+            seenWelcome = true
+            if (!FirstRun.asksNotificationsAfter(exit)) {
+                // Recorded as raised without raising it: the flag's job is to keep the launch-time
+                // dialog from appearing twice, and a skip has decided it should not appear at all.
+                settings.markNotificationsAsked()
+                askedNotifications = true
+            }
+        }
 
         // Hoisted above the switch so entering and leaving the presence gate never destroys the nav
         // controller — the active tab and back stack survive re-auth.
         val navController = rememberNavController()
         when {
+            step == FirstRun.Step.WELCOME -> {
+                // No BackHandler by design: the branches around it map back to dismiss, which
+                // returns the user to what they were doing, and there is nothing here to return to.
+                // Back leaves the app and the welcome is owed again — only ending it writes it.
+                WelcomeScreen(
+                    onFinished = { endWelcome(FirstRun.Exit.FINISHED) },
+                    onSkipped = { endWelcome(FirstRun.Exit.SKIPPED) },
+                )
+            }
+
             gateReason != Reason.NONE -> {
                 // Full-screen modal gate: the nav host is not composed underneath, so nothing behind
                 // it is reachable by touch, accessibility focus, or the camera. Back dismisses the
@@ -103,24 +132,12 @@ class MainActivity : FragmentActivity() {
                 )
             }
 
-            step == FirstRun.Step.WELCOME -> {
-                // No BackHandler by design: the branches around it map back to dismiss, which
-                // returns the user to what they were doing, and there is nothing here to return to.
-                // Back leaves the app and the welcome is owed again — only finishing writes it.
-                WelcomeScreen(
-                    onFinished = {
-                        settings.markWelcomeSeen()
-                        seenWelcome = true
-                    },
-                )
-            }
-
             else -> {
                 // Gated on the step, not on sitting below the welcome branch: the ordering is the
                 // reason the welcome exists, and enforced by branch position it is a rule no test
                 // can see. Outside the gate for the older reason too — PresenceGate raises its own
                 // request, and two stacked system dialogs is a dialog the user can't answer.
-                if (step == FirstRun.Step.ASK_NOTIFICATIONS) NotificationPermissionOnFirstOpen()
+                if (step == FirstRun.Step.ASK_NOTIFICATIONS) NotificationPermissionOnFirstOpen(settings)
                 AppNavScaffold(navController)
             }
         }
@@ -146,7 +163,7 @@ class MainActivity : FragmentActivity() {
      * arrived before a word about the app had been on screen. The welcome's last page describes the
      * reminders this then requests, so the ask has a reason by the time it appears. Nothing else is
      * asked at launch: the camera and its prominent disclosure stay behind the gate, where a check
-     * actually needs them.
+     * actually needs them. A *skipped* welcome never reaches here at all — see [FirstRun.Exit].
      *
      * Asked once, tracked in prefs rather than inferred from the grant, because a refusal and a
      * never-asked look the same through `PackageManager` — and Android drops the dialog silently
@@ -154,8 +171,7 @@ class MainActivity : FragmentActivity() {
      * only notifications; every post is already guarded by `Notifier`.
      */
     @Composable
-    private fun NotificationPermissionOnFirstOpen() {
-        val settings = remember { (application as CheckInApplication).container.settings }
+    private fun NotificationPermissionOnFirstOpen(settings: PromptSettings) {
         val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
             // The outcome is deliberately unused: the grant is re-read wherever it matters, and a
             // refusal is a valid answer that must not be re-litigated on the next launch.

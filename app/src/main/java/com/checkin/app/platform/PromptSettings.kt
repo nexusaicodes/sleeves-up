@@ -29,10 +29,17 @@ interface PromptSettings {
     /** Records that the camera prominent-disclosure screen has been shown and accepted. */
     fun markCameraDisclosureSeen()
 
-    /** Whether the launch-time notification permission request has already been made. */
+    /** Whether the launch-time notification permission request has already been settled. */
     fun hasAskedNotifications(): Boolean
 
-    /** Records that it has, so the app asks once rather than on every cold start. */
+    /**
+     * Records that it has, so the app asks once rather than on every cold start.
+     *
+     * Also written when the welcome tour is *skipped*, which settles the ask by deciding it should
+     * not be raised at launch at all: nothing has explained the app, and the presence gate still
+     * asks at the first check-in. The flag's job is to keep the launch dialog from reappearing, and
+     * both endings answer that question.
+     */
     fun markNotificationsAsked()
 
     /** Whether the first-run welcome tour has already been shown. */

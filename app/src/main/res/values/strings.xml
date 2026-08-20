@@ -116,6 +116,9 @@
     <string name="welcome_presence_body">The front camera confirms someone\'s there at check-in and check-out. Photos are checked on this device, then deleted. Never uploaded.</string>
     <string name="welcome_reminders_title">A reminder if the day gets away</string>
     <string name="welcome_reminders_body">If you haven\'t checked in, CheckIn says so — at most twice a day. Turn them off with a long press on any reminder.</string>
+    <!-- Spoken by the dot row. HorizontalPager publishes a scroll range and no page count, so
+         without this a screen reader is never told where in the tour it is. -->
+    <string name="welcome_page_position">Page %1$d of %2$d</string>
     <string name="welcome_skip">Skip</string>
     <string name="welcome_next">Next</string>
     <string name="welcome_start">Get started</string>

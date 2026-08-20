@@ -3,29 +3,21 @@ package com.checkin.app
 import com.checkin.app.ui.welcome.FirstRun
 import com.checkin.app.ui.welcome.FirstRun.Step
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The order is the feature. A rule left as "the welcome branch happens to be written above the one
- * holding the permission composable" is a rule no test can see and any edit can undo, so it is
- * stated here instead.
+ * The order is the feature, and the defect it fixes is a system permission dialog arriving as the
+ * first thing a fresh install puts on screen, asking for notifications from an app nothing has yet
+ * described. A rule left as "the welcome branch happens to be written above the one holding the
+ * permission composable" is a rule no test can see and any edit can undo, so it is stated here.
  */
 class FirstRunTest {
 
     @Test
     fun `a fresh install is owed the welcome before anything else`() {
         assertEquals(Step.WELCOME, FirstRun.step(seenWelcome = false, askedNotifications = false))
-    }
-
-    /**
-     * The defect this whole screen exists to fix: the system permission dialog used to be the first
-     * thing a fresh install put on screen, asking for notifications from an app nothing had yet
-     * described.
-     */
-    @Test
-    fun `the notification request is never the first thing owed`() {
-        assertNotEquals(Step.ASK_NOTIFICATIONS, FirstRun.step(seenWelcome = false, askedNotifications = false))
     }
 
     @Test
@@ -68,5 +60,19 @@ class FirstRunTest {
 
         assertEquals(listOf(Step.WELCOME, Step.ASK_NOTIFICATIONS, Step.NONE), walked)
         assertEquals(Step.NONE, FirstRun.step(seenWelcome, askedNotifications))
+    }
+
+    /**
+     * The last page is what gives the permission dialog a reason, so a skip must not release it —
+     * one tap on page 1 would otherwise reproduce the defect in full, dialog first and nothing said.
+     */
+    @Test
+    fun `a skipped welcome does not release the notification request`() {
+        assertFalse(FirstRun.asksNotificationsAfter(FirstRun.Exit.SKIPPED))
+    }
+
+    @Test
+    fun `a welcome read through releases the notification request`() {
+        assertTrue(FirstRun.asksNotificationsAfter(FirstRun.Exit.FINISHED))
     }
 }

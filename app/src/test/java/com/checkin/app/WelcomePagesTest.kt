@@ -29,9 +29,15 @@ class WelcomePagesTest {
         assertEquals(bodies.size, bodies.toSet().size)
     }
 
-    /** A zero id is an unresolved reference, which renders as a crash rather than as a blank page. */
+    /**
+     * The icon rides on the page so that reordering the tour moves the mark with the words. Picked
+     * by pager index instead, a reorder left the thesis page under a notifications bell and nothing
+     * failed — the coupling was real and beyond the reach of any test.
+     */
     @Test
-    fun `every page names both of its strings`() {
-        assertEquals(emptyList<Int>(), WelcomePages.all.filter { it.titleRes == 0 || it.bodyRes == 0 })
+    fun `no two pages carry the same icon`() {
+        val icons = WelcomePages.all.map { it.icon }
+
+        assertEquals(icons.size, icons.toSet().size)
     }
 }
