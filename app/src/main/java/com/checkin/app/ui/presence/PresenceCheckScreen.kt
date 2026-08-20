@@ -8,6 +8,7 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
+import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
 import androidx.annotation.OptIn
@@ -38,6 +39,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -78,6 +80,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 private const val TAG = "PresenceCheckScreen"
 
@@ -194,10 +197,24 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     val streamingFlow = remember { MutableStateFlow(false) }
     val streaming by streamingFlow.collectAsState()
 
-    // Written from a camera thread every frame and read only when the user confirms, so it is an
-    // atomic rather than snapshot state — recomposing at the preview frame rate to hold a number
-    // nothing draws would be pure waste.
-    val faceCount = remember { AtomicInteger(0) }
+    // When a frame last held a face, as monotonic elapsed time; 0 until one has. Written from a
+    // camera thread every frame, so an atomic rather than snapshot state — recomposing at the
+    // preview frame rate to hold a number nothing draws would be pure waste. A timestamp rather
+    // than the count itself because the confirm button asks whether a face was there *recently*
+    // (FaceDetectSupport.PRESENCE_WINDOW_MS), not whether it was there in the one frame that
+    // happened to land as the user's thumb came down.
+    val lastFaceAtMs = remember { AtomicLong(0L) }
+
+    // The same question the confirm button asks, answered continuously so the screen can show it.
+    // Unlike the count this does drive recomposition, but only on a change: a StateFlow drops a
+    // write equal to what it holds, so a steady face or a steady empty frame costs nothing.
+    val facePresentFlow = remember { MutableStateFlow(false) }
+    val facePresent by facePresentFlow.collectAsState()
+
+    // Consecutive results showing no detection at all. Counted rather than acted on at the first,
+    // because the results either side of session configuration can carry OFF on a camera that then
+    // detects perfectly well.
+    val nonDetectingResults = remember { AtomicInteger(0) }
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     // Tracks disposal so the async provider callback can release the camera if the gate is gone
     // before the provider resolves (onDispose would otherwise see a null provider and skip unbind).
@@ -257,15 +274,17 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     }
 
     DisposableEffect(lifecycleOwner) {
-        // CameraX unbinds at ON_STOP and capture results stop arriving, but both values survive it —
+        // CameraX unbinds at ON_STOP and capture results stop arriving, but these values survive it —
         // they are remembered, and a stop is not a config change. Left standing, a gate backgrounded
-        // with a face in frame comes back with the button already enabled and the old count still
-        // reading 1, so a confirm tapped while the camera is reopening passes a check nobody was
-        // present for. Clearing them re-imposes the wait for a real result.
+        // with a face in frame comes back with the button already enabled and the last-face stamp
+        // still inside its window, so a confirm tapped while the camera is reopening passes a check
+        // nobody was present for. Clearing them re-imposes the wait for a real result.
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
                 streamingFlow.value = false
-                faceCount.set(0)
+                lastFaceAtMs.set(0L)
+                facePresentFlow.value = false
+                nonDetectingResults.set(0)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -310,21 +329,33 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                         }
 
                         val preview = faceDetectingPreview(mode) { result ->
+                            val faces = result.get(CaptureResult.STATISTICS_FACES).orEmpty()
+                            val appliedMode = result.get(CaptureResult.STATISTICS_FACE_DETECT_MODE)
                             // What the camera advertised was read before the bind; this is what it
                             // actually runs with. A HAL that lists a mode and then reports OFF
                             // returns no faces however long the user waits, so it takes the same
                             // route as one that never offered detection rather than an unwinnable
-                            // ladder.
-                            if (!FaceDetectSupport.isDetecting(result.get(CaptureResult.STATISTICS_FACE_DETECT_MODE))) {
-                                cameraUsableFlow.value = false
-                            } else {
-                                val scores = result.get(CaptureResult.STATISTICS_FACES)
-                                    ?.map { it.score }
-                                    ?.toIntArray()
-                                    ?: IntArray(0)
-                                faceCount.set(FaceDetectSupport.facesPresent(scores))
-                                streamingFlow.value = true
+                            // ladder — but only once it has said so consistently, since the results
+                            // around session configuration can carry OFF on a camera that works.
+                            if (!FaceDetectSupport.resultIsDetecting(appliedMode, faces.size)) {
+                                if (nonDetectingResults.incrementAndGet() >=
+                                    FaceDetectSupport.NON_DETECTING_RESULTS
+                                ) {
+                                    cameraUsableFlow.value = false
+                                }
+                                return@faceDetectingPreview
                             }
+                            nonDetectingResults.set(0)
+                            // Detection is running after all, so a camera written off by an earlier
+                            // run of OFF results is taken back rather than left on the fallback.
+                            cameraUsableFlow.value = true
+
+                            val now = SystemClock.elapsedRealtime()
+                            if (FaceDetectSupport.someonePresent(faces.size)) {
+                                lastFaceAtMs.set(now)
+                            }
+                            facePresentFlow.value = FaceDetectSupport.stillPresent(lastFaceAtMs.get(), now)
+                            streamingFlow.value = true
                         }.also {
                             it.surfaceProvider = previewView.surfaceProvider
                         }
@@ -410,14 +441,36 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                         .semantics { liveRegion = LiveRegionMode.Polite },
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-            } else if (AuthGate.shouldShowHint(failCount)) {
-                val remaining = AuthGate.attemptsLeft(failCount)
-                Text(
-                    text = pluralStringResource(R.plurals.presence_attempts_remaining, remaining, remaining),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = 24.dp),
-                )
+            } else {
+                // What the camera can see, stated before the user commits to a tap. Without it the
+                // only way to learn the answer is to spend an attempt on it, and a check that fails
+                // silently is indistinguishable from a camera that is not looking.
+                if (streaming && successMessage == null) {
+                    Text(
+                        text = stringResource(
+                            if (facePresent) R.string.presence_face_in_frame else R.string.presence_looking,
+                        ),
+                        color = if (facePresent) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .padding(horizontal = 24.dp)
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                if (AuthGate.shouldShowHint(failCount)) {
+                    val remaining = AuthGate.attemptsLeft(failCount)
+                    Text(
+                        text = pluralStringResource(R.plurals.presence_attempts_remaining, remaining, remaining),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                    )
+                }
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
@@ -429,14 +482,31 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
             } else {
                 if (cameraUsable != false) {
                     // Disabled until the camera is actually reporting results: bound is not the same
-                    // as streaming, and a tap before the first result would read the zero the count
-                    // starts at and burn an attempt the user never had.
+                    // as streaming, and a tap before the first result would read a stamp no frame
+                    // has written yet and burn an attempt the user never had.
+                    // Colour tracks the live answer, but the button stays pressable without a face:
+                    // the tap is what advances the attempt ladder, so gating it on detection would
+                    // leave a camera that never reports one with a dead control and no route to the
+                    // device-unlock fallback — the unwinnable countdown, arrived at from the other
+                    // side.
                     FilledTonalButton(
                         enabled = streaming,
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = if (facePresent) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            },
+                            contentColor = if (facePresent) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        ),
                         onClick = {
                             isProcessing = true
                             errorMessage = null
-                            if (faceCount.get() > 0) {
+                            if (FaceDetectSupport.stillPresent(lastFaceAtMs.get(), SystemClock.elapsedRealtime())) {
                                 // Stay in the processing state through the confirmation delay so the
                                 // confirm and biometric buttons can't re-fire before onAuthSuccess.
                                 successMessage = faceDetectedMessage

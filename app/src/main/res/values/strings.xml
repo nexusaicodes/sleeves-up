@@ -47,6 +47,10 @@
     <string name="presence_dismiss">Dismiss</string>
     <string name="presence_face_detected">You\'re here!</string>
     <string name="presence_no_face">No face in frame — try again</string>
+    <!-- The live answer, shown while the camera streams so the state of the check is readable
+         before the user spends an attempt finding it out. -->
+    <string name="presence_looking">Looking for a face…</string>
+    <string name="presence_face_in_frame">Face in frame — tap to confirm</string>
     <!-- Shown instead of the attempt ladder when the camera reports no face-detection mode: there
          is no attempt to spend, so device unlock is offered straight away. -->
     <string name="presence_unsupported">This camera can\'t check for a face. Use device unlock instead.</string>
