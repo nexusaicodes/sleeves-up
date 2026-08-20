@@ -133,6 +133,16 @@ dependencies {
     // Biometric fallback (device unlock after repeated face-detection failures)
     implementation("androidx.biometric:biometric:1.1.0")
 
+    // Declared only to raise the version biometric 1.1.0 would otherwise pin, and it is load-bearing:
+    // that release depends on fragment 1.2.5, whose FragmentActivity.startActivityForResult still
+    // rejects any request code above 16 bits, while ActivityResultRegistry — which every
+    // rememberLauncherForActivityResult goes through — generates them from 65536 up. MainActivity is
+    // a FragmentActivity (BiometricPrompt requires one), so the pair crashed the app outright at
+    // every runtime permission request: the POST_NOTIFICATIONS ask after the welcome tour, and the
+    // camera request inside PresenceGate. Nothing else in the graph pulls fragment forward, and
+    // biometric 1.1.0 is still the newest stable, so the floor has to be stated here.
+    implementation("androidx.fragment:fragment:1.8.2")
+
     // Periodic evaluation pass for engagement nudges (see notify/engagement/NudgeWorker)
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
