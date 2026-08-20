@@ -5,7 +5,7 @@ package com.checkin.app.ui.presence
  *
  * Detection is done by the camera HAL and arrives as capture-result metadata, so the app reads a
  * face count off the preview stream rather than taking a picture and analysing it. Nothing here
- * touches Android, which is what lets the two rules that decide a presence check be unit-tested.
+ * touches Android, which is what lets the rules that decide a presence check be unit-tested.
  */
 object FaceDetectSupport {
 
@@ -17,18 +17,6 @@ object FaceDetectSupport {
 
     /** `CameraMetadata.STATISTICS_FACE_DETECT_MODE_FULL` — adds landmarks and stable ids. */
     const val FULL = 2
-
-    /**
-     * How long a face stays counted as present after the last frame that held one.
-     *
-     * The confirm button sits at the bottom of the screen: pressing it means looking down and
-     * reaching, so the user's face tilts, drifts toward the edge of the front camera's field of view
-     * and is crossed by their own arm — for exactly the frames around the tap. Sampling the single
-     * latest result therefore reads zero at the one instant it is asked, however long the face was
-     * squarely in frame beforehand. This window is what makes the check a question about the last
-     * moment or so rather than about one frame the user cannot see or time.
-     */
-    const val PRESENCE_WINDOW_MS = 1_500L
 
     /**
      * Consecutive results showing no detection before the camera is written off as unable to run a
@@ -97,14 +85,4 @@ object FaceDetectSupport {
      * it is only the grade that is uninformative. A wall was never going to pass this; a user was.
      */
     fun someonePresent(facesReported: Int): Boolean = facesReported > 0
-
-    /**
-     * Whether a face seen at [lastFaceAtMs] still counts at [nowMs], per [PRESENCE_WINDOW_MS].
-     *
-     * Both are monotonic elapsed-time readings, not wall clock: this measures how long ago something
-     * happened on screen, so a clock change mid-check must not answer it. A [lastFaceAtMs] of zero
-     * means no frame has held a face yet.
-     */
-    fun stillPresent(lastFaceAtMs: Long, nowMs: Long): Boolean =
-        lastFaceAtMs > 0L && nowMs - lastFaceAtMs <= PRESENCE_WINDOW_MS
 }

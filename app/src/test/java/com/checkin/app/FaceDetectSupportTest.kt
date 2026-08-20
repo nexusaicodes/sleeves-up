@@ -60,39 +60,6 @@ class FaceDetectSupportTest {
     }
 
     /**
-     * Reaching the confirm button means looking down and away, so the frames around the tap are the
-     * least likely in the whole check to hold a face. The window is what stops one such frame
-     * deciding a check the user was plainly present for.
-     */
-    @Test
-    fun `a face stays present for the length of the window`() {
-        assertTrue(FaceDetectSupport.stillPresent(lastFaceAtMs = 1_000L, nowMs = 1_000L))
-        assertTrue(
-            FaceDetectSupport.stillPresent(
-                lastFaceAtMs = 1_000L,
-                nowMs = 1_000L + FaceDetectSupport.PRESENCE_WINDOW_MS,
-            ),
-        )
-    }
-
-    @Test
-    fun `a face older than the window has gone`() {
-        assertFalse(
-            FaceDetectSupport.stillPresent(
-                lastFaceAtMs = 1_000L,
-                nowMs = 1_001L + FaceDetectSupport.PRESENCE_WINDOW_MS,
-            ),
-        )
-    }
-
-    /** No frame has held a face yet, which the window must not read as one seen at time zero. */
-    @Test
-    fun `a face never seen is never present`() {
-        assertFalse(FaceDetectSupport.stillPresent(lastFaceAtMs = 0L, nowMs = 0L))
-        assertFalse(FaceDetectSupport.stillPresent(lastFaceAtMs = 0L, nowMs = 500L))
-    }
-
-    /**
      * Where the mode field and the faces disagree, the faces win: a result carrying rectangles came
      * from a detector, whatever the metadata says, and routing that camera to the fallback would
      * abandon a working check.
