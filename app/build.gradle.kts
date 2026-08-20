@@ -81,7 +81,8 @@ android {
 
     buildFeatures {
         compose = true
-        // Needed for BuildConfig.DEBUG, which gates the debug-only nudge harness in Settings.
+        // Needed for BuildConfig.VERSION_NAME / VERSION_CODE, which the About card renders and the
+        // feedback draft carries. Nothing reads BuildConfig.DEBUG — the app has no debug-only branch.
         buildConfig = true
     }
 

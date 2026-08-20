@@ -10,10 +10,20 @@ words describing it land in the same commit.
    to remove, whatever it is called.
 2. **"No internet permission" is a claim to re-verify, not to assume.** It holds because presence
    detection is done by the camera HAL and nothing on the classpath declares `INTERNET`; the merged
-   manifest carries only `ACCESS_NETWORK_STATE` and `WAKE_LOCK`, both from `androidx.work`, and
-   neither grants network access. Any dependency pulling in a telemetry artifact makes the line
-   false without touching a word of it. Check before every release:
-   `unzip -p app/build/outputs/bundle/release/app-release.aab base/manifest/AndroidManifest.xml | strings | grep android.permission`
+   manifest's only additions are `ACCESS_NETWORK_STATE` and `WAKE_LOCK` from `androidx.work`,
+   `USE_FINGERPRINT` from `androidx.biometric`, and an app-scoped dynamic-receiver permission — none
+   of which grants network access. Any dependency pulling in a telemetry artifact makes the line
+   false without touching a word of it. Check before every release, against the merger report rather
+   than the built manifest — `strings` over the latter also matches the `android:permission`
+   attributes guarding `androidx.work`'s components (`DUMP`, `BIND_JOB_SERVICE`), which are access
+   controls on what the app exposes and not permissions it requests, so it reads as two findings that
+   need explaining every time:
+   `grep uses-permission app/build/outputs/logs/manifest-merger-release-report.txt`
+   Run `:app:bundleRelease` first — that report is a build output and is not committed, so an
+   unbuilt tree has none and a stale one describes the previous release rather than this one.
+   Expect eleven lines: the app's own six, `USE_FINGERPRINT` / `WAKE_LOCK` / `ACCESS_NETWORK_STATE`, and
+   the app-scoped `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` (which appears twice, once
+   `${applicationId}`-templated and once resolved). Anything else is new and unexplained.
 
 ---
 
