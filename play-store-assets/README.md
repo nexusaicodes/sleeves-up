@@ -8,15 +8,16 @@ Graphics for the Google Play listing of **CheckIn - Solopreneur Tracker**.
 | `../app/src/main/ic_launcher-playstore.png` | 512×512 PNG | App icon (generated — do not hand-edit) |
 | `feature-graphic.png` | 1024×500 PNG | Feature graphic (generated) |
 | `generate_feature_graphic.py` | — | Regenerates `feature-graphic.png` |
-| `LISTING.md` | — | The store listing copy, and the two claims it must never make again |
+| `LISTING.md` | — | The store listing copy, the two rules governing it, and the vocabulary it must never use |
 | `screenshots/phone/` | 1080×2400 PNG ×4 | Phone screenshots |
 | `screenshots/tablet/` | 2560×1600 PNG ×3 | Tablet screenshots (two-pane History) |
 | `seed_demo_data.py` | — | Writes the demo history the screenshots are taken against |
 
-**The feature graphic composites the real 512px icon, so regenerating the mark leaves it stale.**
-That happened once: the icon was rebuilt with butt caps and mitre joins while `feature-graphic.png`
-kept the old one, and nothing flagged it. Run both generators together, or check that
-`feature-graphic.png` is no older than `ic_launcher-playstore.png`.
+**The feature graphic composites the real 512px icon, so regenerating the mark alone leaves it
+stale** — that is how the graphic once kept a round-capped mark the app had already replaced with a
+butt-capped one. Run both generators together. **Both are deterministic, so re-running them is also
+the check**: identical output means the committed files are current. Comparing modification times
+instead gives a false alarm whenever the two were generated seconds apart from unchanged geometry.
 
 Both scripts need Pillow (`pip install Pillow`) and run from the repo root.
 
