@@ -31,8 +31,8 @@ data class CheckInUiState(
     val todayDateKey: String = "",
     val todaySessions: List<CheckInSession> = emptyList(),
     val hasEverTracked: Boolean = false,
-    val showSelfieCapture: Boolean = false,
-    val selfieAction: SelfieAction = SelfieAction.None,
+    val showPresenceGate: Boolean = false,
+    val presenceAction: PresenceAction = PresenceAction.None,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -47,8 +47,8 @@ class CheckInViewModel(
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
     private val refresh = MutableStateFlow(0)
-    private val showSelfie = MutableStateFlow(false)
-    private val selfieAction = MutableStateFlow<SelfieAction>(SelfieAction.None)
+    private val showGate = MutableStateFlow(false)
+    private val presenceAction = MutableStateFlow<PresenceAction>(PresenceAction.None)
 
     // Rebuild on a screen resume OR when the day rolls over at midnight.
     val uiState: StateFlow<CheckInUiState> = timeSource.dayTrigger(refresh)
@@ -58,12 +58,12 @@ class CheckInViewModel(
             combine(
                 repository.activeSessionFlow(),
                 repository.sessionsForDateFlow(todayKey),
-                combine(showSelfie, selfieAction) { show, action -> show to action },
+                combine(showGate, presenceAction) { show, action -> show to action },
                 // "Has ever tracked" is "has ever checked in", so it is read off the sessions
                 // themselves — the same reactive emission that opens the first one closes the
                 // welcome, with no refresh to remember.
                 repository.trackingStartFlow(),
-            ) { active, sessions, selfie, trackingStart ->
+            ) { active, sessions, gate, trackingStart ->
                 // The running flag, completed total, and live-ticker basis all derive from this single
                 // sessions emission (via `ticker`), so a check-out moves the closing session into the
                 // total in one atomic step — no one-frame dip or 00:00:00 flash. A session still open
@@ -79,8 +79,8 @@ class CheckInViewModel(
                     todayDateKey = todayKey,
                     todaySessions = sessions,
                     hasEverTracked = trackingStart != null,
-                    showSelfieCapture = selfie.first,
-                    selfieAction = selfie.second,
+                    showPresenceGate = gate.first,
+                    presenceAction = gate.second,
                 )
             }
         }.stateIn(
@@ -98,29 +98,29 @@ class CheckInViewModel(
     }
 
     fun requestCheckIn() {
-        selfieAction.value = SelfieAction.CheckIn
-        showSelfie.value = true
+        presenceAction.value = PresenceAction.CheckIn
+        showGate.value = true
     }
 
     fun requestCheckOut() {
-        selfieAction.value = SelfieAction.CheckOut
-        showSelfie.value = true
+        presenceAction.value = PresenceAction.CheckOut
+        showGate.value = true
     }
 
-    fun dismissSelfieCapture() {
-        showSelfie.value = false
-        selfieAction.value = SelfieAction.None
+    fun dismissPresenceGate() {
+        showGate.value = false
+        presenceAction.value = PresenceAction.None
     }
 
     /** Called once the auth gate (face detection or biometric fallback) has passed. */
     fun onAuthSuccess() {
-        showSelfie.value = false
-        when (selfieAction.value) {
-            SelfieAction.CheckIn -> executeCheckIn()
-            SelfieAction.CheckOut -> executeCheckOut()
-            SelfieAction.None -> {}
+        showGate.value = false
+        when (presenceAction.value) {
+            PresenceAction.CheckIn -> executeCheckIn()
+            PresenceAction.CheckOut -> executeCheckOut()
+            PresenceAction.None -> {}
         }
-        selfieAction.value = SelfieAction.None
+        presenceAction.value = PresenceAction.None
     }
 
     private fun executeCheckIn() {
@@ -172,8 +172,8 @@ class CheckInViewModel(
     }
 }
 
-sealed class SelfieAction {
-    data object None : SelfieAction()
-    data object CheckIn : SelfieAction()
-    data object CheckOut : SelfieAction()
+sealed class PresenceAction {
+    data object None : PresenceAction()
+    data object CheckIn : PresenceAction()
+    data object CheckOut : PresenceAction()
 }

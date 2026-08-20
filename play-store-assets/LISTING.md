@@ -1,18 +1,19 @@
 # Play listing copy
 
 The text of the en-GB store listing. Kept here because the previous copy went out of date silently:
-it survived the removal of the daily target, the pause and the mid-session check, and it claimed a
-permission the app does not hold.
+it survived the removal of the daily target, the pause and the mid-session check, and it claimed
+the app had no internet permission at a time when ML Kit's transitive dependencies gave it one.
 
 **Two rules govern every line below, and both have been broken before.**
 
 1. **Nothing grades a day.** There is no target, no half-day tier and no deficit — see the no-target
    entry in `CLAUDE.md`. Copy that implies an hours bar reintroduces the failure the app was
    rebuilt to remove.
-2. **The honest privacy claim is "session data never leaves this device", never "the app has no
-   internet permission".** The *merged* release manifest carries `INTERNET`, `ACCESS_NETWORK_STATE`
-   and `WAKE_LOCK` from ML Kit's transitive dependencies (`transport-backend-cct`), which any user
-   can see in system settings. Verify with:
+2. **"No internet permission" is true as of the Camera2 swap — and it is a claim to re-verify, not
+   to assume.** It was false while ML Kit was a dependency, because `transport-backend-cct` came
+   with it and declared `INTERNET`. The merged manifest now carries only `ACCESS_NETWORK_STATE` and
+   `WAKE_LOCK`, both from `androidx.work`; neither grants network access. Any dependency that pulls
+   the datatransport artifact back in makes this line false again. Verify before every release with:
    `unzip -p app/build/outputs/bundle/release/app-release.aab base/manifest/AndroidManifest.xml | strings | grep android.permission`
 
 ---
@@ -20,7 +21,7 @@ permission the app does not hold.
 ## Short description (80 max)
 
 ```
-Private on-device check-in tracker. A day counts because you showed up.
+No internet permission. No photo taken. A day counts because you showed up.
 ```
 
 ## Full description (4000 max)
@@ -46,7 +47,8 @@ WHAT YOU SEE
 
 PRIVATE BY DESIGN
 • Your session data never leaves this device. There is no account, no server and no sync.
-• The camera is used only for the presence check. Each frame is analysed on your device and deleted as soon as the check resolves — no image is ever stored, displayed or shared.
+• The app holds no internet permission at all. It cannot upload anything, because it cannot reach the network.
+• No photo is ever taken. Your camera hardware reports whether a face is in frame and the app reads only that count — frames never leave the camera, so there is no image to store, show, delete or leak.
 • Face detection, not face recognition: the check confirms someone is there. It identifies no one and matches nothing.
 • No ads. No analytics. No third-party data collection.
 • Your history lives in a local database on your phone. Export it to CSV whenever you like — that copy is yours.
@@ -67,7 +69,7 @@ CheckIn is a self-discipline tool, not a substitute for any employer or legal ti
 
 | Removed claim | Reason |
 |---|---|
-| "ships without the internet permission" | False — the merged manifest holds `INTERNET`. Replaced with "session data never leaves this device". |
+| "ships without the internet permission" | Was false while ML Kit was a dependency. **True again** since presence detection moved to the camera HAL — re-stated deliberately, with rule 2 above guarding it. |
 | "Set a daily target … meet it and you're present; fall short and a half-day or full-day leave is recorded" | The target, `AttendanceStatus` and `DeficitCalculator` are deleted. |
 | "A rolling leave deficit accumulates" | Deleted with the target. |
 | "a periodic presence reminder asks you to re-verify. Time between … is paused" | The mid-session check and the pause mechanism are deleted; nothing is subtracted from a session. |

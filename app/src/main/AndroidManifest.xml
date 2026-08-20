@@ -17,6 +17,21 @@
     -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!--
+      Declared required="false" so a device without a camera — a ChromeOS machine, a display-less
+      tablet — can still install and use the app. History, Reports and the About screen need no
+      camera at all, and the presence gate treats a camera it cannot run a check on as the state
+      that offers device unlock, so the check-in path degrades rather than disappearing. Omitting
+      these entirely is what CAMERA alone implies: Play would infer required="true" and filter the
+      app off exactly those devices.
+    -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.front"
+        android:required="false" />
+
     <application
         android:name=".CheckInApplication"
         android:allowBackup="true"

@@ -102,7 +102,7 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
             onDismiss = onDismiss,
         )
 
-        cameraGranted -> SelfieCaptureScreen(onAuthSuccess = onAuthSuccess, onDismiss = onDismiss)
+        cameraGranted -> PresenceCheckScreen(onAuthSuccess = onAuthSuccess, onDismiss = onDismiss)
 
         cameraRefused -> GateMessageScreen(
             icon = Icons.Rounded.PhotoCamera,

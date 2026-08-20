@@ -33,18 +33,18 @@ import com.checkin.app.ui.theme.CheckInAppTheme
 fun EmptyState(
     icon: ImageVector,
     title: String,
-    message: String? = null,
     modifier: Modifier = Modifier,
+    message: String? = null,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-) = EmptyState(rememberVectorPainter(icon), title, message, modifier, tint)
+) = EmptyState(rememberVectorPainter(icon), title, modifier, message, tint)
 
 /** Painter overload, for a drawable-backed mark such as the brand logo. */
 @Composable
 fun EmptyState(
     icon: Painter,
     title: String,
-    message: String? = null,
     modifier: Modifier = Modifier,
+    message: String? = null,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     Column(

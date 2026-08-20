@@ -23,7 +23,6 @@ import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.DefaultCsvExporter
 import com.checkin.app.platform.DefaultServiceController
 import com.checkin.app.platform.PromptSettings
-import com.checkin.app.platform.SelfieStorage
 import com.checkin.app.platform.ServiceController
 import com.checkin.app.platform.SharedPrefsPromptSettings
 import com.checkin.app.service.AndroidSessionAlarms
@@ -33,7 +32,6 @@ import com.checkin.app.service.SessionWatchdog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 
 /**
  * Minimal manual DI: the single place that builds the repository, the side-effect seams
@@ -74,14 +72,9 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val timeSource: TimeSource = SystemTimeSource
 
-    // Outlives any ViewModel/composition: used for fire-and-forget work that must not be cancelled
-    // by a screen leaving composition (e.g. deleting a transient selfie after the gate is dismissed).
+    // Outlives any ViewModel/composition: used for fire-and-forget work that must not be cancelled by
+    // a screen leaving composition, and for the log writes that happen as the service is torn down.
     override val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
-    init {
-        // Clear any selfie orphaned by process death between capture and its post-detection delete.
-        applicationScope.launch(Dispatchers.IO) { SelfieStorage.sweep(appContext) }
-    }
 
     override val settings: PromptSettings = SharedPrefsPromptSettings.create(appContext)
 
