@@ -74,6 +74,29 @@ CheckIn is a self-discipline tool, not a substitute for any employer or legal ti
 
 ---
 
+## What's new (500 max, per release)
+
+Play keeps these per version code, so the text below is 2.0's and is replaced wholesale at the next
+release rather than appended to. It is subject to both rules at the top of this file: **2.0's leading
+claim is the removal of the hours target, which is the one change an existing user will notice** —
+the camera rework is larger in the code and invisible in the app until a check runs.
+
+Two things are deliberately absent. The **crash on granting a permission** (fragment 1.8.2, see
+`CLAUDE.md`) is a real fix and is not named: release notes are read by people deciding whether to
+care about an update, and a bug report is not what earns that. And nothing here **grades a day**,
+which rules out the obvious framing — "track your hours", "hit your goal" — for the release that
+deleted the mechanism those describe.
+
+```
+2.0 changes what a day means. There is no hours target any more — no half-days, no deficit. A day counts because you showed up, and hours are a number, never a grade.
+
+The face check now runs on the camera hardware itself. No photo is taken, and the app holds no internet permission at all. It passes the moment it sees you, with device unlock if it cannot.
+
+Also: a first-run tour, reminders twice a day at most, and today counts as soon as you check out.
+```
+
+---
+
 ## Vocabulary that must stay out
 
 Each of these described a mechanism the app no longer has, and each reads as plausible copy, which
