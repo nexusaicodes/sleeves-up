@@ -8,13 +8,9 @@ import androidx.compose.ui.platform.LocalContext
 /**
  * Whether the system's animation scale is on — false when the user has chosen "remove animations".
  *
- * An animation that ignores that setting is exactly what it exists to stop, and the two callers that
- * must honour it read it from here rather than each carrying the lookup: an infinite pulse that kept
- * breathing and a pager that kept sliding would be the same bug found twice.
- *
- * Read once per context rather than observed. The setting changes from system settings, which
- * restarts the activity, and a live subscription for a value that moves that rarely is machinery
- * with nothing to do.
+ * An animation that ignores that setting is what it exists to stop, so both callers read it here
+ * rather than each carrying the lookup. Read once per context: the setting only changes from system
+ * settings, which restarts the activity.
  */
 @Composable
 fun animationsEnabled(): Boolean {

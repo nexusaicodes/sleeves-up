@@ -18,10 +18,9 @@ import androidx.core.content.edit
  * bring it back without the rows it indexes. There is no setting to seed or read.
  *
  * **A new one-time prompt is a new key here, never a new prefs file.** Both backup rules exclude
- * `prompt_prefs.xml` by name, so a key added here inherits that; a separate namespace would need the
- * same exclusion added to two XML files, and missing either restores onto a device asserting that a
- * prompt was raised where it never was. It follows that a prompt added after an install base exists
- * defaults false and is shown to everyone once — that is the design, not a regression.
+ * `prompt_prefs.xml` by name, so a key inherits that; a separate namespace needs the same exclusion
+ * in two files, and missing either restores onto a device asserting a prompt was raised where it
+ * never was. A key added later defaults false and so is shown to everyone once, by design.
  */
 interface PromptSettings {
     /** Whether the camera prominent-disclosure screen has already been shown and accepted. */

@@ -45,16 +45,12 @@ import com.checkin.app.ui.theme.CheckInAppTheme
 import kotlinx.coroutines.launch
 
 /**
- * The first-run tour: three pages, shown once, before anything is asked for.
+ * The first-run tour: three pages, shown once, ahead of the `POST_NOTIFICATIONS` request rather than
+ * beside it. [onFinished] releases the dialog, which is why the last page describes the reminders it
+ * is about to ask for.
  *
- * It runs ahead of the `POST_NOTIFICATIONS` request rather than beside it, and that ordering is the
- * reason the screen exists — the dialog used to be the first thing a fresh install put on screen,
- * asking a user to accept notifications from an app they had not yet seen a word about. [onFinished]
- * is what releases it, so the last page describes the reminders the dialog is about to request.
- *
- * Reaching the end and skipping are the same outcome deliberately: both mean "I have seen enough of
- * this", and a skip that quietly withheld the notification request would leave the user with every
- * notification silently dead — including the one telling them they have not checked in.
+ * Skipping and reaching the end are the same outcome deliberately — a skip that withheld the request
+ * would leave every notification silently dead, including the one saying they have not checked in.
  */
 @Composable
 fun WelcomeScreen(onFinished: () -> Unit) {
@@ -64,10 +60,9 @@ fun WelcomeScreen(onFinished: () -> Unit) {
     val animated = animationsEnabled()
     val onLastPage = pagerState.currentPage == pages.lastIndex
 
-    // Owned here rather than by the caller, unlike every other full-screen surface in the app: those
-    // handlers map to dismiss, which the caller owns, and this one maps to page position, which only
-    // this screen knows. On the first page there is no handler at all, so back leaves the app and
-    // the tour returns next launch — it is marked seen when finished, not when opened.
+    // Owned here rather than by the caller, unlike the app's other full-screen surfaces: theirs map
+    // to dismiss, which the caller owns, and this maps to page position, which only this knows.
+    // Disabled on the first page, so back there leaves the app rather than entering it.
     BackHandler(enabled = pagerState.currentPage > 0) {
         scope.launch { pagerState.goTo(pagerState.currentPage - 1, animated) }
     }
@@ -122,11 +117,7 @@ fun WelcomeScreen(onFinished: () -> Unit) {
     }
 }
 
-/**
- * Chosen by position rather than carried on [WelcomePage]: the first is the brand mark, a drawable,
- * and the other two are Material vectors. A model holding both shapes would exist only to let the
- * page list name them.
- */
+/** By position rather than on [WelcomePage]: the first is a drawable, the other two are vectors. */
 @Composable
 private fun PageIcon(page: Int) {
     val tint = MaterialTheme.colorScheme.primary
@@ -138,17 +129,17 @@ private fun PageIcon(page: Int) {
             modifier = modifier,
             tint = tint,
         )
-        // The same face the camera disclosure uses for the same subject, so the screen the user
-        // meets at their first check-in reads as a continuation of this one.
+        // The camera disclosure's own icon, so the screen met at the first check-in reads as a
+        // continuation of this one.
         1 -> Icon(Icons.Rounded.Face, contentDescription = null, modifier = modifier, tint = tint)
         else -> Icon(Icons.Default.Notifications, contentDescription = null, modifier = modifier, tint = tint)
     }
 }
 
 /**
- * One page, laid out like `GateMessageScreen` — the app's other full-screen message — so the two
- * cannot drift apart. The scroll wrapper is why they match: at the largest accessibility font scales
- * this content is taller than a phone, and it must scroll rather than clip.
+ * One page, laid out like `GateMessageScreen` so the app's two full-screen messages cannot drift.
+ * It scrolls for the same reason that one does: at the largest font scales the content is taller
+ * than a phone.
  */
 @Composable
 private fun WelcomePageContent(page: WelcomePage, icon: @Composable () -> Unit) {
@@ -176,10 +167,7 @@ private fun WelcomePageContent(page: WelcomePage, icon: @Composable () -> Unit) 
     }
 }
 
-/**
- * Position, drawn. Silent to a screen reader: the pager already announces "page 2 of 3", and read as
- * nodes these arrive as three unlabelled marks restating it.
- */
+/** Silent to a screen reader: the pager already announces "page 2 of 3". */
 @Composable
 private fun PageDots(pageCount: Int, current: Int) {
     Row(

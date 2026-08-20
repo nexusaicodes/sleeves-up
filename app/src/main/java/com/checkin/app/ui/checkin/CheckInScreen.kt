@@ -185,11 +185,10 @@ fun CheckInScreen(
                 )
 
                 // The first-run empty state, shown instead of a gauge that would only ever read
-                // 00:00 — not the welcome tour, which is a separate full-screen surface the user has
-                // already passed by the time they reach this. The brand mark rather than an action
-                // icon, and a title with no message: this is the one moment on the screen that
-                // introduces the app instead of asking for something, and the button below already
-                // states the action.
+                // 00:00 — not the welcome tour, which is a separate surface already passed by the
+                // time anyone reaches this. The brand mark rather than an action icon, and a title
+                // with no message: this is the one moment on the screen that introduces the app
+                // instead of asking for something, and the button below already states the action.
                 else -> EmptyState(
                     icon = painterResource(R.drawable.ic_stat_checkin),
                     title = stringResource(R.string.empty_checkin_title),

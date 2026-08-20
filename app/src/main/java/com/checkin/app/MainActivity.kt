@@ -61,22 +61,18 @@ class MainActivity : FragmentActivity() {
     }
 
     /**
-     * The three things that can occupy the whole window, in the order they outrank each other: the
-     * presence gate, the first-run welcome, then the app itself — with the check-out celebration
-     * drawn over whichever of them is showing.
+     * The three surfaces that can occupy the whole window, in the order they outrank each other:
+     * the presence gate, the first-run welcome, then the app — with the celebration over whichever
+     * is showing.
      *
-     * **The gate outranks the welcome.** It carries a 10-minute fuse that `onStart` retires, and it
-     * answers something the user just did at a moment they chose; the welcome is owed indefinitely
-     * and nothing waits on it. Deferring the fused thing behind the unfused one is how the fused
-     * thing dies. On a *fresh* install the two cannot meet at all: a never-launched app is in the
-     * stopped state, so no alarm is ever armed and no nudge can be posted or tapped, and
-     * `POST_NOTIFICATIONS` is ungranted regardless. Only an install updated onto this build can
-     * raise a gate over an unseen welcome.
+     * **The gate outranks the welcome** because it carries a 10-minute fuse `onStart` retires and
+     * answers something the user just did, while the welcome is owed indefinitely. On a fresh
+     * install the two cannot meet: a never-launched app is in the stopped state, so no alarm is
+     * armed and no nudge can be tapped.
      *
-     * A separate `@Composable` rather than the body of [onCreate] so this is one call site per
-     * branch: [AppNavScaffold] appearing in two arms would give it two structural identities, and a
-     * step change would then discard the NavHost and reset the active tab — the very thing hoisting
-     * `rememberNavController` above the switch exists to prevent.
+     * A `@Composable` rather than the body of [onCreate] so each branch is one call site.
+     * [AppNavScaffold] in two arms would carry two structural identities, and a step change would
+     * discard the NavHost and reset the active tab.
      */
     @Composable
     private fun AppRoot() {
@@ -84,14 +80,11 @@ class MainActivity : FragmentActivity() {
         val gateReason by PresenceCheckSignal.request.collectAsStateWithLifecycle()
         val completed by CheckOutSignal.completed.collectAsStateWithLifecycle()
 
-        // Mirrored so finishing the welcome recomposes: PromptSettings is a synchronous
-        // SharedPreferences read with no Flow behind it, so the write alone would leave the tour on
-        // screen after it had been accepted. Saveable for symmetry with the gate's own mirror rather
-        // than out of need — a rotation re-reads the pref and gets the same answer.
+        // Mirrored so finishing the welcome recomposes: PromptSettings is a synchronous prefs read
+        // with no Flow behind it, so the write alone would leave the tour on screen.
         var seenWelcome by rememberSaveable { mutableStateOf(settings.hasSeenWelcome()) }
-        // Not mirrored for write: its only writer is the composable below, whose own
-        // `LaunchedEffect(Unit)` is the once-only guard, and a stale `false` changes nothing that
-        // renders — ASK_NOTIFICATIONS and NONE both draw the host.
+        // Not mirrored: its only writer is the composable below, whose LaunchedEffect(Unit) is the
+        // once-only guard, and ASK_NOTIFICATIONS and NONE draw the same thing.
         val askedNotifications = remember { settings.hasAskedNotifications() }
         val step = FirstRun.step(seenWelcome, askedNotifications)
 
@@ -111,10 +104,9 @@ class MainActivity : FragmentActivity() {
             }
 
             step == FirstRun.Step.WELCOME -> {
-                // No BackHandler, and that is deliberate rather than an omission: the two above map
-                // back to *dismiss*, which returns the user to what they were already doing, and
-                // there is nothing here to return to. Back leaves the app and the welcome is owed
-                // again next launch — only finishing it writes the flag.
+                // No BackHandler by design: the branches around it map back to dismiss, which
+                // returns the user to what they were doing, and there is nothing here to return to.
+                // Back leaves the app and the welcome is owed again — only finishing writes it.
                 WelcomeScreen(
                     onFinished = {
                         settings.markWelcomeSeen()
@@ -124,10 +116,9 @@ class MainActivity : FragmentActivity() {
             }
 
             else -> {
-                // Gated on the step rather than left to sit below the welcome branch: the ordering
-                // is the reason the welcome exists, and a rule enforced only by which branch is
-                // written first is one that any later edit breaks with nothing failing. Composed
-                // only outside the gate for the older reason too — PresenceGate raises its own
+                // Gated on the step, not on sitting below the welcome branch: the ordering is the
+                // reason the welcome exists, and enforced by branch position it is a rule no test
+                // can see. Outside the gate for the older reason too — PresenceGate raises its own
                 // request, and two stacked system dialogs is a dialog the user can't answer.
                 if (step == FirstRun.Step.ASK_NOTIFICATIONS) NotificationPermissionOnFirstOpen()
                 AppNavScaffold(navController)

@@ -97,23 +97,20 @@
     <string name="nudge_not_checked_in_evening_body_b">A short session lands on your calendar the same as a long one. Tap to start.</string>
 
     <!--
-      The first-run welcome tour, shown once before anything is asked for. Three pages, in this
-      order, and the order is the point: the notification permission dialog opens the moment the
-      last one is finished, so the reminders are described immediately before they are requested.
+      The first-run welcome tour, shown once before anything is asked for. The order is the point:
+      the notification permission dialog opens the moment the last page is finished, so the
+      reminders are described immediately before they are requested.
 
-      Sentence case throughout — these read as lines, not as card titles. Nothing here grades a day
-      or names an hour, by the same two rules the nudge copy above follows: the app has no target,
-      and nudge delivery is best-effort, so a stated time would be a promise it cannot keep. The
-      one figure quoted, "twice a day", is NudgeConfig.maxPerDay rather than a round number chosen
-      to sound generous — if that value changes, this line is wrong.
+      Sentence case — these read as lines, not card titles. Nothing grades a day or names an hour,
+      by the same rules the nudge copy follows. "Twice a day" is NudgeConfig.maxPerDay, not a round
+      number chosen to sound generous: if that value changes, this line is wrong.
     -->
     <string name="welcome_showing_up_title">Showing up is the whole thing</string>
     <string name="welcome_showing_up_body">Check in when you start, check out when you stop. There\'s no target to clear — a short day counts the same as a long one.</string>
     <!--
-      Deliberately the disclosure's own clauses rather than a paraphrase of them, so the two cannot
-      drift into saying different things about the same camera. "Confirms someone\'s there" is
-      load-bearing: the camera runs face detection, not recognition, and no copy may read as
-      matching the user against an enrolled identity.
+      The disclosure's own clauses rather than a paraphrase, so the two cannot drift apart about the
+      same camera. "Confirms someone\'s there" is load-bearing: this is face detection, not
+      recognition, and no copy may read as matching the user against an enrolled identity.
     -->
     <string name="welcome_presence_title">Presence, checked on this device</string>
     <string name="welcome_presence_body">The front camera confirms someone\'s there at check-in and check-out. Photos are checked on this device, then deleted. Never uploaded.</string>
