@@ -44,28 +44,41 @@ class FaceDetectSupportTest {
 
     @Test
     fun `an empty frame holds nobody`() {
-        assertEquals(0, FaceDetectSupport.facesPresent(intArrayOf()))
+        assertFalse(FaceDetectSupport.someonePresent(facesReported = 0))
     }
 
     /**
-     * The score floor is what separates a face from the wall behind a desk. Counting every reported
-     * rectangle regardless of confidence would pass a check nobody was present for.
+     * Every reported face counts, whatever the camera scored it. The score is not comparable across
+     * HALs — a MediaTek front camera returned the defined minimum of 1 for every genuine, well-lit,
+     * squarely-framed face — so any floor at all rejects those users outright while the rectangle
+     * itself, which the HAL emits only where it believes a face is, discriminates perfectly well.
      */
     @Test
-    fun `faces below the score floor do not count`() {
-        assertEquals(0, FaceDetectSupport.facesPresent(intArrayOf(1, FaceDetectSupport.MIN_SCORE - 1)))
+    fun `a reported face means someone is there`() {
+        assertTrue(FaceDetectSupport.someonePresent(facesReported = 1))
+        assertTrue(FaceDetectSupport.someonePresent(facesReported = 3))
+    }
+
+    /**
+     * Where the mode field and the faces disagree, the faces win: a result carrying rectangles came
+     * from a detector, whatever the metadata says, and routing that camera to the fallback would
+     * abandon a working check.
+     */
+    @Test
+    fun `a result carrying faces is detecting whatever its mode says`() {
+        assertTrue(FaceDetectSupport.resultIsDetecting(appliedMode = FaceDetectSupport.OFF, facesReported = 1))
+        assertTrue(FaceDetectSupport.resultIsDetecting(appliedMode = null, facesReported = 1))
     }
 
     @Test
-    fun `a face at the floor counts`() {
-        assertEquals(1, FaceDetectSupport.facesPresent(intArrayOf(FaceDetectSupport.MIN_SCORE)))
+    fun `an empty result from a mode that detects is still detection`() {
+        assertTrue(FaceDetectSupport.resultIsDetecting(appliedMode = SIMPLE, facesReported = 0))
     }
 
     @Test
-    fun `only the confident faces are counted out of a mixed frame`() {
-        val scores = intArrayOf(100, 10, 80, FaceDetectSupport.MIN_SCORE - 1)
-
-        assertEquals(2, FaceDetectSupport.facesPresent(scores))
+    fun `no mode and no faces is no detection`() {
+        assertFalse(FaceDetectSupport.resultIsDetecting(appliedMode = FaceDetectSupport.OFF, facesReported = 0))
+        assertFalse(FaceDetectSupport.resultIsDetecting(appliedMode = null, facesReported = 0))
     }
 
     /**

@@ -58,12 +58,22 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     // Saveable, or a rotation on the recovery screen re-fires the system dialog the user just
     // answered — and rotating while it is still up launches a second request against the pending one.
     var requested by rememberSaveable { mutableStateOf(false) }
+    // Whether a system permission dialog is on screen right now — which `requested` cannot answer,
+    // since it stays true after a refusal and keying on it would shut the camera out permanently.
+    // It outranks the camera in the `when` below: granting CAMERA while refusing POST_NOTIFICATIONS
+    // is one tap apart in the same dialog, so the next visit re-asks with the camera already
+    // granted, and that dialog is a translucent activity that never stops this one — the preview
+    // underneath would keep streaming and pass the check while the user was still reading a system
+    // prompt they never connected to checking in. Saveable because the dialog outlives a rotation
+    // beneath it; the launcher's callback always fires, so this cannot latch on.
+    var requestInFlight by rememberSaveable { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) {
         // Only the camera decides whether the check can run. A refused POST_NOTIFICATIONS costs the
         // timer notification, the session reminder and every nudge, all of which Notifier guards.
+        requestInFlight = false
         cameraGranted = context.hasCameraPermission()
         notificationsGranted = context.hasNotificationPermission()
         cameraRefused = !cameraGranted
@@ -79,6 +89,7 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     LaunchedEffect(disclosureSeen, allGranted) {
         if (disclosureSeen && !allGranted && !requested) {
             requested = true
+            requestInFlight = true
             permissionLauncher.launch(PRESENCE_PERMISSIONS)
         }
     }
@@ -102,6 +113,8 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
             onDismiss = onDismiss,
         )
 
+        requestInFlight -> Box(modifier = Modifier.fillMaxSize())
+
         cameraGranted -> PresenceCheckScreen(onAuthSuccess = onAuthSuccess, onDismiss = onDismiss)
 
         cameraRefused -> GateMessageScreen(
@@ -114,6 +127,7 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                 // Android stops showing the dialog after a second refusal, at which point the only
                 // route left is system settings.
                 if (activity != null && activity.shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
+                    requestInFlight = true
                     permissionLauncher.launch(PRESENCE_PERMISSIONS)
                 } else {
                     context.startActivity(
