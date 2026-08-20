@@ -4,7 +4,9 @@ import com.checkin.app.ui.presence.FaceDetectSupport
 import com.checkin.app.ui.presence.FaceDetectSupport.FULL
 import com.checkin.app.ui.presence.FaceDetectSupport.SIMPLE
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -64,5 +66,26 @@ class FaceDetectSupportTest {
         val scores = intArrayOf(100, 10, 80, FaceDetectSupport.MIN_SCORE - 1)
 
         assertEquals(2, FaceDetectSupport.facesPresent(scores))
+    }
+
+    /**
+     * What the camera advertises and what it runs with are separate answers, and a HAL is free to
+     * disagree with itself. Detection that silently ran OFF reports an empty frame forever, so it
+     * has to be caught rather than spent as three failed attempts.
+     */
+    @Test
+    fun `a mode of OFF on the result is not detection`() {
+        assertFalse(FaceDetectSupport.isDetecting(FaceDetectSupport.OFF))
+    }
+
+    @Test
+    fun `a result carrying no mode at all is not detection`() {
+        assertFalse(FaceDetectSupport.isDetecting(null))
+    }
+
+    @Test
+    fun `both detecting modes count as detection`() {
+        assertTrue(FaceDetectSupport.isDetecting(SIMPLE))
+        assertTrue(FaceDetectSupport.isDetecting(FULL))
     }
 }

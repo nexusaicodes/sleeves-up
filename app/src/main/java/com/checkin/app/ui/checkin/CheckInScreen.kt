@@ -95,8 +95,8 @@ fun CheckInScreen(
         onPauseOrDispose { }
     }
 
-    // The presence gate (showSelfieCapture) is rendered full-screen by AppNavScaffold, above the
-    // chrome — not here — so the camera and its capture button aren't covered by the bottom nav.
+    // The presence gate is rendered full-screen by AppNavScaffold, above the
+    // chrome — not here — so the preview and its confirm button aren't covered by the bottom nav.
 
     // Elapsed ticker is screen-driven, so it only runs while this screen is composed.
     val startTime = uiState.currentSessionStartTime

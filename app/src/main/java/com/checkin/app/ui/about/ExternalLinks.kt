@@ -13,9 +13,9 @@ import androidx.core.content.getSystemService
  *
  * CheckIn's own code makes no network calls — it only ever hands an intent to the system: the
  * browser fetches the policy, the mail app sends the feedback, the Play app handles the review.
- * (The merged manifest *does* carry INTERNET, added transitively by ML Kit's datatransport
- * dependency, so "no internet permission" is not something the app can claim.) Adding a network call
- * here would mean session data leaving the device and a new Data Safety declaration — don't.
+ * The merged manifest carries no INTERNET permission at all, which is a claim the listing and the
+ * privacy policy both make — a dependency that reintroduces one takes it down with them. Adding a
+ * network call here would mean session data leaving the device and a new Data Safety declaration.
  *
  * Each launcher returns `false` rather than throwing when the intent can't be handed off, so the
  * caller can fall back to [copyToClipboard]. A device with no browser or no mail app is unusual but

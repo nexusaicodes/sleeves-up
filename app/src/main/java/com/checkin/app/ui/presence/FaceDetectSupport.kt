@@ -9,6 +9,9 @@ package com.checkin.app.ui.presence
  */
 object FaceDetectSupport {
 
+    /** `CameraMetadata.STATISTICS_FACE_DETECT_MODE_OFF` — a mode, but not a detector. */
+    const val OFF = 0
+
     /** `CameraMetadata.STATISTICS_FACE_DETECT_MODE_SIMPLE` — bounds and a score. */
     const val SIMPLE = 1
 
@@ -36,6 +39,16 @@ object FaceDetectSupport {
         available.contains(FULL) -> FULL
         else -> null
     }
+
+    /**
+     * Whether the mode the HAL reports back on a capture result is one that actually detects.
+     *
+     * [preferredMode] reads what the camera advertises; this reads what it delivered. A camera that
+     * lists [SIMPLE] and then runs with `OFF` reports no faces however long the user waits, which is
+     * indistinguishable from an empty frame and turns the attempt ladder into a countdown that
+     * cannot be won — the state the immediate device-unlock offer exists to avoid.
+     */
+    fun isDetecting(appliedMode: Int?): Boolean = appliedMode != null && appliedMode != OFF
 
     /** How many of the reported faces are confident enough to count as someone being there. */
     fun facesPresent(scores: IntArray): Int = scores.count { it >= MIN_SCORE }

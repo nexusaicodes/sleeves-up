@@ -50,6 +50,10 @@
     <!-- Shown instead of the attempt ladder when the camera reports no face-detection mode: there
          is no attempt to spend, so device unlock is offered straight away. -->
     <string name="presence_unsupported">This camera can\'t check for a face. Use device unlock instead.</string>
+    <!-- Same state, but the device has no screen lock, so the fallback the line above names does not
+         exist yet. Both the message and the button point at the settings screen that creates one. -->
+    <string name="presence_unsupported_no_unlock">This camera can\'t check for a face. Set up a screen lock to use device unlock instead.</string>
+    <string name="presence_set_up_screen_lock">Set up screen lock</string>
     <plurals name="presence_attempts_remaining">
         <item quantity="one">%d more attempt, then device unlock</item>
         <item quantity="other">%d more attempts, then device unlock</item>

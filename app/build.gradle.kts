@@ -136,8 +136,6 @@ dependencies {
     // Periodic evaluation pass for engagement nudges (see notify/engagement/NudgeWorker)
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
-    // ML Kit Face Detection (bundled, works offline)
-
     // Testing
     // JUnit plus the coroutines test dispatcher, and nothing else: the suite is pure JVM and mocks
     // nothing, standing every seam up with a hand-written fake instead (app/src/test/.../Fakes.kt).
