@@ -8,6 +8,7 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
+import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
 import androidx.annotation.OptIn
@@ -171,20 +172,25 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     val activity = context as? FragmentActivity
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Both are saved because a rotation must not cost the user the escape hatch or the guidance that
-    // sent them to it. A config change restarts the camera and with it the wait, so without saving
-    // this the fallback would be offered late — or on a device being turned over in the hand while
-    // it fails to find a face, never — and it is the only way out of a gate every check-in and
-    // check-out routes through.
+    // All saved, because a rotation must not cost the user the escape hatch, the guidance that sent
+    // them to it, or the time they have already spent waiting on it. The instant is saved rather
+    // than the remaining delay: a config change or a trip to the notification shade restarts the
+    // effect, so a bare countdown would begin again from zero every time, and a phone being turned
+    // over in the hand while the camera fails to find a face would reach the fallback late or never.
+    // That is the one way out of a gate every check-in and check-out routes through.
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var searchTimedOut by rememberSaveable { mutableStateOf(false) }
+    val searchStartedAt = rememberSaveable { SystemClock.elapsedRealtime() }
     var successMessage by remember { mutableStateOf<String?>(null) }
     // Set for as long as the device-unlock prompt is up. The camera keeps streaming behind it, so
     // without this a face found while the user is answering the prompt would pass the check under
     // the dialog — leaving a live prompt over a screen that has already moved on, and a second
-    // onAuthSuccess behind it if they then complete it. Cleared on any prompt error, cancel
-    // included, so backing out of the prompt hands the check back to the camera.
-    var usingDeviceUnlock by remember { mutableStateOf(false) }
+    // onAuthSuccess behind it if they then complete it. Saved, because the prompt outlives the
+    // composition that raised it: rotating with it on screen recreates this screen underneath, and a
+    // flag reset to false there passes the check under a dialog the user is still answering. That is
+    // only safe because the prompt is rebuilt below on every composition, which re-registers a
+    // callback able to clear it — the restored flag would otherwise have no writer left alive.
+    var usingDeviceUnlock by rememberSaveable { mutableStateOf(false) }
     // Null until the camera has been asked. False means no check can run here at all — the hardware
     // reports no face-detection mode, the mode it advertised isn't the one it runs with, or the bind
     // failed — and that is the one state that skips the wait before device unlock is offered, since
@@ -194,13 +200,6 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     // because the capture callback is one of the writers and it does not run on the main thread.
     val cameraUsableFlow = remember { MutableStateFlow<Boolean?>(null) }
     val cameraUsable by cameraUsableFlow.collectAsState()
-
-    // Set from the camera thread on the first capture result — bound is not the same as streaming,
-    // and the fallback timer is measured from here so a slow-opening camera does not spend it before
-    // it has looked at anything. A StateFlow rather than snapshot state because the writer is not
-    // the main thread.
-    val streamingFlow = remember { MutableStateFlow(false) }
-    val streaming by streamingFlow.collectAsState()
 
     // Whether the latest capture result held a face. This is the whole check: the first frame that
     // sets it true passes the gate. Written every frame from a camera thread, but a StateFlow drops
@@ -239,43 +238,63 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     val promptSubtitle = stringResource(R.string.biometric_subtitle)
     val faceDetectedMessage = stringResource(R.string.presence_face_detected)
 
-    fun launchBiometric() {
-        if (activity == null) {
-            errorMessage = unavailableMessage
-            return
-        }
-        val prompt = BiometricPrompt(
-            activity,
-            ContextCompat.getMainExecutor(context),
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    onAuthSuccess()
-                }
+    // Both success paths run through this rather than the parameter. The camera's effect is keyed on
+    // Unit and the prompt's callback is registered with the activity, so each would otherwise capture
+    // the caller's lambda exactly once and hold it for the life of the screen — and that lambda
+    // carries the check-in itself, so a stale one writes against state the caller has since replaced.
+    val currentOnAuthSuccess by rememberUpdatedState(onAuthSuccess)
 
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    usingDeviceUnlock = false
-                    if (errorCode != BiometricPrompt.ERROR_USER_CANCELED &&
-                        errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON
-                    ) {
-                        errorMessage = errString.toString()
+    // Built here rather than on the button tap, and rebuilt whenever the activity is. BiometricPrompt
+    // registers its callback against the host activity and the prompt outlives a recreation of that
+    // activity beneath it, so a callback captured at tap time belongs to a composition a rotation has
+    // since discarded: the cancel that follows is delivered to dead state, `usingDeviceUnlock` is
+    // never cleared, and the camera path stays shut for good. Rebuilding in composition re-registers
+    // a live callback every time, which is what makes that flag safe to save across the recreation.
+    val biometricPrompt = remember(activity) {
+        activity?.let { host ->
+            BiometricPrompt(
+                host,
+                ContextCompat.getMainExecutor(host),
+                object : BiometricPrompt.AuthenticationCallback() {
+                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                        currentOnAuthSuccess()
                     }
-                }
-            },
-        )
-        val info = BiometricPrompt.PromptInfo.Builder()
+
+                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                        usingDeviceUnlock = false
+                        if (errorCode != BiometricPrompt.ERROR_USER_CANCELED &&
+                            errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON
+                        ) {
+                            errorMessage = errString.toString()
+                        }
+                    }
+                },
+            )
+        }
+    }
+    val promptInfo = remember(promptTitle, promptSubtitle) {
+        BiometricPrompt.PromptInfo.Builder()
             .setTitle(promptTitle)
             .setSubtitle(promptSubtitle)
             .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
             .build()
-        usingDeviceUnlock = true
-        prompt.authenticate(info)
     }
 
-    // The success effect below is keyed on Unit, so it captures its callback exactly once. Read
-    // directly, that would pin the caller's first lambda for the life of the screen — and this
-    // callback carries the check-in itself, so a stale one writes against state the caller has
-    // since replaced.
-    val currentOnAuthSuccess by rememberUpdatedState(onAuthSuccess)
+    fun launchBiometric() {
+        if (biometricPrompt == null) {
+            errorMessage = unavailableMessage
+            return
+        }
+        usingDeviceUnlock = true
+        // The platform can refuse the prompt outright — an authenticator combination it rejects, a
+        // fragment transaction past onSaveInstanceState. Only an error callback clears the flag, and
+        // a refusal delivers none, so a throw left unhandled would shut the camera path too.
+        runCatching { biometricPrompt.authenticate(promptInfo) }.onFailure { e ->
+            Log.e(TAG, "Device unlock could not be raised", e)
+            usingDeviceUnlock = false
+            errorMessage = unavailableMessage
+        }
+    }
 
     // The check itself. Keyed on Unit and latched by `first`, so the face leaving frame during the
     // confirmation cannot cancel a check that has already passed — which keying on the live value
@@ -290,13 +309,26 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
         currentOnAuthSuccess()
     }
 
-    // What replaces the old three-failure ladder. Keyed on `streaming` so the wait starts when the
-    // camera does and restarts if it is torn down and rebuilt; `searchTimedOut` is saved, so an
-    // escape hatch once offered is never taken back.
-    LaunchedEffect(streaming) {
-        if (!streaming || searchTimedOut) return@LaunchedEffect
-        delay(AuthGate.BIOMETRIC_FALLBACK_AFTER_MS)
+    // The wait that guarantees this screen always ends in something the user can act on. It runs off
+    // a saved instant rather than a fresh countdown, so what is left of the budget survives every
+    // rotation and every trip out of the app, and it is measured from the gate opening rather than
+    // from the camera streaming — a camera that binds and then never delivers a result would start
+    // no clock at all, leaving Dismiss as the only control on a screen check-out also routes through.
+    // Both ends are clamped: saved state can outlive a reboot, which resets the elapsed-time clock.
+    LaunchedEffect(Unit) {
+        if (searchTimedOut) return@LaunchedEffect
+        val spent = SystemClock.elapsedRealtime() - searchStartedAt
+        delay((AuthGate.BIOMETRIC_FALLBACK_AFTER_MS - spent).coerceIn(0L, AuthGate.BIOMETRIC_FALLBACK_AFTER_MS))
         searchTimedOut = true
+    }
+
+    // A camera written off mid-wait offers the fallback at once, and latching it here is what stops
+    // the offer being retracted: a HAL that reports OFF for its first results and then starts
+    // detecting would otherwise take the button back out from under a user already reaching for it.
+    // The explanatory message is free to go — it says the camera cannot look, which stopped being
+    // true — but the escape hatch, once offered, stays.
+    LaunchedEffect(cameraUsable) {
+        if (cameraUsable == false) searchTimedOut = true
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -308,7 +340,6 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
         // result.
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
-                streamingFlow.value = false
                 facePresentFlow.value = false
                 nonDetectingResults.set(0)
             }
@@ -360,10 +391,15 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                             // What the camera advertised was read before the bind; this is what it
                             // actually runs with. A HAL that lists a mode and then reports OFF
                             // returns no faces however long the user waits, so it takes the same
-                            // route as one that never offered detection rather than an unwinnable
-                            // ladder — but only once it has said so consistently, since the results
-                            // around session configuration can carry OFF on a camera that works.
+                            // route as one that never offered detection — but only once it has said
+                            // so consistently, since the results around session configuration can
+                            // carry OFF on a camera that then works perfectly well.
                             if (!FaceDetectSupport.resultIsDetecting(appliedMode, faces.size)) {
+                                // A non-detecting result reports nobody by definition, and writing
+                                // that is load-bearing: without it a `true` from before the user
+                                // walked away survives a run of empty frames, which the device-unlock
+                                // prompt holds back long enough to be acted on stale.
+                                facePresentFlow.value = false
                                 if (nonDetectingResults.incrementAndGet() >=
                                     FaceDetectSupport.NON_DETECTING_RESULTS
                                 ) {
@@ -377,7 +413,6 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                             cameraUsableFlow.value = true
 
                             facePresentFlow.value = FaceDetectSupport.someonePresent(faces.size)
-                            streamingFlow.value = true
                         }.also {
                             it.surfaceProvider = previewView.surfaceProvider
                         }
@@ -464,12 +499,15 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             } else if (successMessage == null) {
-                // The one thing the screen has to say while it looks. It is shown from the moment the
-                // gate opens rather than from the first capture result, because a camera still being
-                // opened is a camera that has not found anyone either — and the alternative is a bare
-                // preview that states nothing at all for as long as the bind takes.
+                // What the screen says while it looks. Shown from the moment the gate opens rather
+                // than from the first capture result, because a camera still being opened is a camera
+                // that has not found anyone either — and the alternative is a bare preview that
+                // states nothing at all for as long as the bind takes. It changes with the wait
+                // running out, so the button that appears then is explained rather than simply there.
                 Text(
-                    text = stringResource(R.string.presence_looking),
+                    text = stringResource(
+                        if (searchTimedOut) R.string.presence_looking_slow else R.string.presence_looking,
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier
@@ -479,9 +517,13 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Withdrawn once the check has passed: the confirmation is brief, and a fallback still on
-            // screen through it invites a second authentication for a gate that is already leaving.
-            val offerBiometric = successMessage == null && (cameraUsable == false || searchTimedOut)
+            // Withdrawn once the check has passed and while a prompt is outstanding, both to stop a
+            // second authentication being raised against a gate that is already leaving — a success
+            // never clears `usingDeviceUnlock`, so that half also covers the gap before the caller's
+            // state reaches the screen.
+            val offerBiometric = successMessage == null &&
+                !usingDeviceUnlock &&
+                (cameraUsable == false || searchTimedOut)
             if (offerBiometric) {
                 if (canUseBiometric) {
                     OutlinedButton(onClick = { launchBiometric() }) {

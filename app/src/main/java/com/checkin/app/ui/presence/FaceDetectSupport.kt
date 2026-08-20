@@ -24,9 +24,9 @@ object FaceDetectSupport {
      *
      * The first results after session configuration can legitimately carry `OFF`, or omit the mode
      * entirely, while the HAL applies the request the session was built with. Concluding from the
-     * very first of those routes a working camera to the device-unlock fallback and leaves the
-     * confirm button disabled for good. At preview frame rates this grace is a fraction of a second,
-     * so a camera that really does run `OFF` still reaches the fallback effectively immediately.
+     * very first of those sends a working camera to the device-unlock fallback with a live detector
+     * running behind it. At preview frame rates this grace is a fraction of a second, so a camera
+     * that really does run `OFF` still reaches the fallback effectively immediately.
      */
     const val NON_DETECTING_RESULTS = 10
 
@@ -50,8 +50,8 @@ object FaceDetectSupport {
      *
      * [preferredMode] reads what the camera advertises; this reads what it delivered. A camera that
      * lists [SIMPLE] and then runs with `OFF` reports no faces however long the user waits, which is
-     * indistinguishable from an empty frame and turns the attempt ladder into a countdown that
-     * cannot be won — the state the immediate device-unlock offer exists to avoid.
+     * indistinguishable from a wall and would leave the user watching a countdown that cannot be
+     * won — the state the immediate device-unlock offer exists to avoid.
      */
     fun isDetecting(appliedMode: Int?): Boolean = appliedMode != null && appliedMode != OFF
 
@@ -63,7 +63,7 @@ object FaceDetectSupport {
      * alone would strand such a camera on the fallback with a working detector behind it.
      */
     fun resultIsDetecting(appliedMode: Int?, facesReported: Int): Boolean =
-        isDetecting(appliedMode) || facesReported > 0
+        isDetecting(appliedMode) || someonePresent(facesReported)
 
     /**
      * Whether a frame's reported faces mean someone is there. Every reported face counts.

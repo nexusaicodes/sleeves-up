@@ -51,9 +51,9 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            // Request native debug symbols in the bundle. Today's only native libs (ML Kit, CameraX)
-            // ship pre-stripped by their vendors, so nothing is extracted and Play's "missing native
-            // symbols" warning persists — this is future-proofing for any first-party NDK code and
+            // Request native debug symbols in the bundle. Today's only native libs (CameraX, and the
+            // libyuv it embeds) ship pre-stripped by their vendor, so nothing is extracted and Play's
+            // "missing native symbols" warning persists — this is future-proofing for NDK code and
             // costs nothing (symbols are stored server-side and stripped before delivery).
             ndk {
                 debugSymbolLevel = "FULL"
@@ -130,7 +130,8 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.5.0")
     implementation("androidx.camera:camera-view:1.5.0")
 
-    // Biometric fallback (device unlock after repeated face-detection failures)
+    // Device-unlock fallback, offered when the camera cannot run a check or has looked without
+    // finding anyone for AuthGate.BIOMETRIC_FALLBACK_AFTER_MS
     implementation("androidx.biometric:biometric:1.1.0")
 
     // Declared only to raise the version biometric 1.1.0 would otherwise pin, and it is load-bearing:
@@ -156,9 +157,9 @@ dependencies {
 }
 
 // The open-source licence list in ui/about/OpenSourceLibraries.kt is hand-written: it groups ~220
-// resolved artifacts into the upstream projects a reader can act on, and carries the three
-// non-Apache corrections (ML Kit terms, the Android SDK licence, CameraX's embedded libyuv BSD) that
-// a generator reading POMs alone gets wrong when a POM is silent. What it cannot do is notice a new
+// resolved artifacts into the upstream projects a reader can act on, and carries the corrections a
+// generator reading POMs alone gets wrong where a POM is silent — today that is CameraX's embedded
+// libyuv BSD, the one non-Apache row left. What it cannot do is notice a new
 // dependency, so this task supplies the half that can be automated: every group id on the release
 // runtime classpath must be covered by some entry's `coordinates`, or the build fails naming it.
 val licenseSourceFile = layout.projectDirectory

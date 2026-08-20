@@ -49,6 +49,11 @@
          passes itself on the frame the camera finds a face in, so this states what is happening
          rather than asking for anything. -->
     <string name="presence_looking">Looking for a face…</string>
+    <!-- Replaces the line above once the wait for a face runs out and the device-unlock button
+         appears. It is what tells the user why: a control arriving in silence beneath text still
+         saying the camera is working on it explains nothing, and this line is inside the live region,
+         so it is also the only announcement a screen reader gets that anything changed. -->
+    <string name="presence_looking_slow">Still looking. You can use device unlock instead.</string>
     <!-- Shown when the camera reports no face-detection mode: it will never find anyone, so device
          unlock is offered straight away rather than after the usual wait. -->
     <string name="presence_unsupported">This camera can\'t check for a face. Use device unlock instead.</string>

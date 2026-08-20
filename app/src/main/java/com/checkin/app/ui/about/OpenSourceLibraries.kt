@@ -54,10 +54,11 @@ data class OpenSourceLibrary(
  * AutoValue's annotations, JSpecify and javax.inject are all redistributed in the APK without
  * appearing in `app/build.gradle.kts`, so a list built from that file alone would omit them.
  *
- * Every entry is now Apache-2.0 or the OFL. That is a consequence of presence detection being done
- * by the camera hardware rather than by a library: the ML Kit stack took Play services, ODML,
- * datatransport and the Firebase encoders off the classpath with it, and those carried the only
- * non-open-source terms the app ever redistributed.
+ * Every entry is now Apache-2.0, the OFL, or the BSD that rides along with CameraX — no proprietary
+ * terms remain. That is a consequence of presence detection being done by the camera hardware rather
+ * than by a library: the ML Kit stack took Play services, ODML, datatransport and the Firebase
+ * encoders off the classpath with it, and those carried the only non-open-source terms the app ever
+ * redistributed.
  *
  * Keeping this by hand means it can drift when a dependency is added. `OpenSourceLibrariesTest`
  * guards the shape of the list, but it cannot see the Gradle graph — regenerate the group list with
