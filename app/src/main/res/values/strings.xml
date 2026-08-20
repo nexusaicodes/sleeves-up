@@ -41,13 +41,16 @@
     <string name="checkout_celebration_title">You showed up</string>
     <string name="checkout_celebration_dismiss">Tap to close</string>
 
-    <!-- Selfie Capture -->
-    <string name="selfie_capture">Capture</string>
-    <string name="selfie_dismiss">Dismiss</string>
-    <string name="selfie_face_detected">Face detected!</string>
-    <string name="selfie_no_face">No face detected — try again</string>
-    <string name="selfie_error">Capture failed — try again</string>
-    <plurals name="selfie_attempts_remaining">
+    <!-- Presence check. No image is captured, so nothing here may say "photo", "capture" or
+         "selfie" — the camera reports whether a face is in frame and the app reads only that. -->
+    <string name="presence_confirm">Confirm you\'re here</string>
+    <string name="presence_dismiss">Dismiss</string>
+    <string name="presence_face_detected">You\'re here!</string>
+    <string name="presence_no_face">No face in frame — try again</string>
+    <!-- Shown instead of the attempt ladder when the camera reports no face-detection mode: there
+         is no attempt to spend, so device unlock is offered straight away. -->
+    <string name="presence_unsupported">This camera can\'t check for a face. Use device unlock instead.</string>
+    <plurals name="presence_attempts_remaining">
         <item quantity="one">%d more attempt, then device unlock</item>
         <item quantity="other">%d more attempts, then device unlock</item>
     </plurals>
@@ -113,7 +116,7 @@
       recognition, and no copy may read as matching the user against an enrolled identity.
     -->
     <string name="welcome_presence_title">Presence, checked on this device</string>
-    <string name="welcome_presence_body">The front camera confirms someone\'s there at check-in and check-out. Photos are checked on this device, then deleted. Never uploaded.</string>
+    <string name="welcome_presence_body">The front camera confirms someone\'s there at check-in and check-out. No photo is taken and no image ever leaves the camera.</string>
     <string name="welcome_reminders_title">A reminder if the day gets away</string>
     <string name="welcome_reminders_body">If you haven\'t checked in, CheckIn says so — at most twice a day. Turn them off with a long press on any reminder.</string>
     <!-- Spoken by the dot row. HorizontalPager publishes a scroll range and no page count, so
@@ -221,9 +224,10 @@
          check-in. The camera runs face *detection* — it looks for any face, it does not match one
          against an enrolled identity, so none of this may read as "selfie verification". -->
     <string name="camera_disclosure_title">Presence verification</string>
-    <!-- The frame is written to app-private storage for the split second detection needs it, so the
-         honest claim is "then deleted", not "never saved". -->
-    <string name="camera_disclosure_message">Your front camera verifies your presence at check-in and check-out. Photos are checked on this device, then deleted. Never uploaded.</string>
+    <!-- Detection is done by the camera hardware and reaches the app as a face count, so no frame is
+         ever written, read or held. "No photo is taken" is the literal truth here, and it replaced
+         "then deleted" — which was the honest claim only while a JPEG briefly existed. -->
+    <string name="camera_disclosure_message">Your front camera checks that someone is there at check-in and check-out. No photo is taken and no image ever leaves the camera.</string>
     <string name="camera_disclosure_button">Continue</string>
 
     <!-- Recovery screen, shown only after the camera permission is refused -->

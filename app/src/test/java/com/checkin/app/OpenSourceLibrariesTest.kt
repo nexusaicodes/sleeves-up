@@ -32,33 +32,21 @@ class OpenSourceLibrariesTest {
         assertEquals(coordinates.size, coordinates.toSet().size)
     }
 
+    /**
+     * Presence detection moved to the camera HAL, which is the platform rather than a dependency, so
+     * the whole ML Kit stack left the classpath with it — and with that stack went the only two
+     * non-open-source licences the app ever redistributed. A re-add would bring both back.
+     */
     @Test
-    fun `ml kit is not passed off as apache licensed`() {
-        val mlKit = OPEN_SOURCE_LIBRARIES.single { it.coordinates.startsWith("com.google.mlkit") }
-        assertEquals(listOf(LibraryLicense.ML_KIT_TERMS), mlKit.licenses)
-    }
-
-    @Test
-    fun `google's own-terms artifacts are never listed as apache`() {
-        // Play services and ODML declare the Android SDK license in their POMs, not Apache-2.0.
-        listOf("com.google.android.gms", "com.google.android.odml").forEach { group ->
-            val entry = OPEN_SOURCE_LIBRARIES.single { it.coordinates.startsWith(group) }
-            assertFalse(entry.name, entry.licenses.contains(LibraryLicense.APACHE_2_0))
-            assertTrue(entry.name, entry.licenses.contains(LibraryLicense.ANDROID_SDK_TERMS))
-        }
-    }
-
-    @Test
-    fun `the transitive ml kit stack is attributed, not just the direct dependencies`() {
-        // None of these is declared in app/build.gradle.kts; every one of them is redistributed in
-        // the APK, so a list built from the dependency block alone would omit all four.
+    fun `nothing on the list ships under proprietary terms`() {
         listOf(
-            "com.google.android.datatransport",
-            "com.google.firebase",
+            "com.google.mlkit",
             "com.google.android.gms",
             "com.google.android.odml",
+            "com.google.android.datatransport",
+            "com.google.firebase",
         ).forEach { group ->
-            assertTrue(group, OPEN_SOURCE_LIBRARIES.any { it.coordinates.startsWith(group) })
+            assertFalse(group, OPEN_SOURCE_LIBRARIES.any { it.coordinates.startsWith(group) })
         }
     }
 

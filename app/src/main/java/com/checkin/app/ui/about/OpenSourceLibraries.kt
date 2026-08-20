@@ -28,23 +28,6 @@ enum class LibraryLicense(val displayName: String, val url: String, val bundled:
         url = "https://scripts.sil.org/OFL",
         bundled = true,
     ),
-
-    /** Not an open-source license: ML Kit ships under Google's own terms. Named honestly here. */
-    ML_KIT_TERMS(
-        displayName = "ML Kit Terms of Service",
-        url = "https://developers.google.com/ml-kit/terms",
-        bundled = false,
-    ),
-
-    /**
-     * Also not open source. The `com.google.android.gms` and `com.google.android.odml` POMs declare
-     * this, not Apache-2.0 — folding them into an Apache row would misstate their terms.
-     */
-    ANDROID_SDK_TERMS(
-        displayName = "Android Software Development Kit License",
-        url = "https://developer.android.com/studio/terms",
-        bundled = false,
-    ),
 }
 
 /**
@@ -62,16 +45,19 @@ data class OpenSourceLibrary(
 /**
  * Everything redistributed inside the app, grouped by project rather than by artifact.
  *
- * The release runtime classpath resolves to ~220 artifacts, which is neither readable nor
- * maintainable as a list; they collapse into the projects below. Grouping is only sound because the
- * license is uniform within each group — where it isn't, the group carries both (see CameraX, whose
- * camera-core POM declares BSD alongside Apache-2.0, and Play services, where face detection
- * declares the ML Kit terms while the rest declare the Android SDK license).
+ * The release runtime classpath resolves to 52 group ids, which collapse into the projects below.
+ * Grouping is only sound because the license is uniform within each group — where it isn't, the
+ * group carries both, as CameraX does: its camera-core POM declares BSD alongside Apache-2.0 for the
+ * libyuv it embeds.
  *
- * **This list is the resolved classpath, not the dependency block.** Over half of it arrives
- * transitively, most of that under ML Kit: nothing here calls datatransport, the Firebase encoders,
- * Play services or ODML directly, yet all four are redistributed inside the APK and all four have to
- * be attributed. Reading `app/build.gradle.kts` alone would account for barely half of them.
+ * **This list is the resolved classpath, not the dependency block.** Guava's ListenableFuture,
+ * AutoValue's annotations, JSpecify and javax.inject are all redistributed in the APK without
+ * appearing in `app/build.gradle.kts`, so a list built from that file alone would omit them.
+ *
+ * Every entry is now Apache-2.0 or the OFL. That is a consequence of presence detection being done
+ * by the camera hardware rather than by a library: the ML Kit stack took Play services, ODML,
+ * datatransport and the Firebase encoders off the classpath with it, and those carried the only
+ * non-open-source terms the app ever redistributed.
  *
  * Keeping this by hand means it can drift when a dependency is added. `OpenSourceLibrariesTest`
  * guards the shape of the list, but it cannot see the Gradle graph — regenerate the group list with
@@ -105,44 +91,6 @@ val OPEN_SOURCE_LIBRARIES: List<OpenSourceLibrary> = listOf(
         coordinates = "org.jetbrains.kotlinx:*",
         copyright = "Copyright © JetBrains s.r.o.",
         licenses = listOf(LibraryLicense.APACHE_2_0),
-    ),
-    OpenSourceLibrary(
-        name = "ML Kit Face Detection",
-        coordinates = "com.google.mlkit:face-detection:16.1.7",
-        copyright = "Copyright © Google LLC",
-        licenses = listOf(LibraryLicense.ML_KIT_TERMS),
-        note = "Runs entirely on the device. It is the face check that gates check-in and check-out.",
-    ),
-    OpenSourceLibrary(
-        name = "Google Play services",
-        coordinates = "com.google.android.gms:*",
-        copyright = "Copyright © Google LLC",
-        licenses = listOf(LibraryLicense.ANDROID_SDK_TERMS, LibraryLicense.ML_KIT_TERMS),
-        note = "Base, basement and tasks, plus the face-detection API surface ML Kit is built on. " +
-            "The face-detection artifact carries the ML Kit terms; the rest carry the SDK license.",
-    ),
-    OpenSourceLibrary(
-        name = "ODML Image",
-        coordinates = "com.google.android.odml:image",
-        copyright = "Copyright © Google LLC",
-        licenses = listOf(LibraryLicense.ANDROID_SDK_TERMS),
-        note = "The image container ML Kit passes camera frames through.",
-    ),
-    OpenSourceLibrary(
-        name = "Android Datatransport",
-        coordinates = "com.google.android.datatransport:*",
-        copyright = "Copyright © Google LLC",
-        licenses = listOf(LibraryLicense.APACHE_2_0),
-        note = "ML Kit's telemetry transport, and the reason the built app declares the INTERNET " +
-            "permission. No session data is given to it — this app never calls it.",
-    ),
-    OpenSourceLibrary(
-        name = "Firebase Components and Encoders",
-        coordinates = "com.google.firebase:*",
-        copyright = "Copyright © Google LLC",
-        licenses = listOf(LibraryLicense.APACHE_2_0),
-        note = "Component discovery and JSON encoding used internally by ML Kit. No Firebase " +
-            "product is configured or initialised.",
     ),
     OpenSourceLibrary(
         name = "Guava ListenableFuture",

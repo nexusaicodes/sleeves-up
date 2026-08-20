@@ -137,7 +137,6 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     // ML Kit Face Detection (bundled, works offline)
-    implementation("com.google.mlkit:face-detection:16.1.7")
 
     // Testing
     // JUnit plus the coroutines test dispatcher, and nothing else: the suite is pure JVM and mocks
