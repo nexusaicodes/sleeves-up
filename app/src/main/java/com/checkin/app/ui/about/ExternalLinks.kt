@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.getSystemService
+import androidx.core.net.toUri
 
 /**
  * Every outbound link in the app.
@@ -25,7 +26,7 @@ object ExternalLinks {
 
     const val PRIVACY_POLICY_URL = "https://nexusai.world/checkin/privacy"
 
-    fun openUrl(context: Context, url: String): Boolean = launch(context, Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    fun openUrl(context: Context, url: String): Boolean = launch(context, Intent(Intent.ACTION_VIEW, url.toUri()))
 
     /**
      * Prefers the Play app's own scheme so the rating sheet opens in place; falls back to the web
@@ -33,7 +34,7 @@ object ExternalLinks {
      */
     fun openPlayListing(context: Context): Boolean {
         val id = context.packageName
-        return launch(context, Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$id"))) ||
+        return launch(context, Intent(Intent.ACTION_VIEW, "market://details?id=$id".toUri())) ||
             openUrl(context, playListingUrl(context))
     }
 
@@ -52,7 +53,7 @@ object ExternalLinks {
             // which would offer every share target on the device.
             // The recipient goes in the URI *and* in EXTRA_EMAIL: clients disagree about which one
             // is authoritative, and one that reads only the URI would otherwise open an empty To:.
-            data = Uri.parse("mailto:${Uri.encode(Feedback.ADDRESS)}")
+            data = "mailto:${Uri.encode(Feedback.ADDRESS)}".toUri()
             putExtra(Intent.EXTRA_EMAIL, arrayOf(Feedback.ADDRESS))
             putExtra(Intent.EXTRA_SUBJECT, draft.subject)
             putExtra(Intent.EXTRA_TEXT, draft.body)

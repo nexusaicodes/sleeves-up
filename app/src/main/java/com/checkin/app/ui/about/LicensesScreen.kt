@@ -26,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
@@ -48,7 +49,10 @@ import kotlinx.coroutines.withContext
  */
 @Composable
 fun LicensesScreen(innerPadding: PaddingValues) {
+    // The context is here for the intent launchers; resources come through their own local, since
+    // reading them back off the context is what the licence text used to do.
     val context = LocalContext.current
+    val resources = LocalResources.current
     val snackbarHostState = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
     val noBrowser = stringResource(R.string.about_no_browser)
@@ -68,7 +72,7 @@ fun LicensesScreen(innerPadding: PaddingValues) {
             if (paragraphs[name] == null) {
                 val license = LibraryLicense.valueOf(name)
                 paragraphs[name] = withContext(Dispatchers.IO) {
-                    context.resources
+                    resources
                         .openRawResource(license.rawTextRes())
                         .bufferedReader()
                         .use { it.readText() }

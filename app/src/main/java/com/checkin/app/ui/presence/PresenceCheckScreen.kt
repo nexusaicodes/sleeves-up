@@ -218,9 +218,17 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     // BiometricPrompt, so there is no status left over for which this screen offers nothing.
     val canUseBiometric = activity != null && unlockStatus == BiometricManager.BIOMETRIC_SUCCESS
 
+    // Read in composition rather than through the context inside each callback, so a locale or
+    // configuration change re-resolves them with the rest of the screen.
+    val unavailableMessage = stringResource(R.string.biometric_unavailable)
+    val promptTitle = stringResource(R.string.biometric_title)
+    val promptSubtitle = stringResource(R.string.biometric_subtitle)
+    val faceDetectedMessage = stringResource(R.string.presence_face_detected)
+    val noFaceMessage = stringResource(R.string.presence_no_face)
+
     fun launchBiometric() {
         if (activity == null) {
-            errorMessage = context.getString(R.string.biometric_unavailable)
+            errorMessage = unavailableMessage
             return
         }
         val prompt = BiometricPrompt(
@@ -241,8 +249,8 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
             },
         )
         val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle(context.getString(R.string.biometric_title))
-            .setSubtitle(context.getString(R.string.biometric_subtitle))
+            .setTitle(promptTitle)
+            .setSubtitle(promptSubtitle)
             .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
             .build()
         prompt.authenticate(info)
@@ -431,7 +439,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                             if (faceCount.get() > 0) {
                                 // Stay in the processing state through the confirmation delay so the
                                 // confirm and biometric buttons can't re-fire before onAuthSuccess.
-                                successMessage = context.getString(R.string.presence_face_detected)
+                                successMessage = faceDetectedMessage
                                 scope.launch {
                                     delay(SUCCESS_CONFIRMATION_MS)
                                     onAuthSuccess()
@@ -440,7 +448,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                                 isProcessing = false
                                 successMessage = null
                                 failCount++
-                                errorMessage = context.getString(R.string.presence_no_face)
+                                errorMessage = noFaceMessage
                             }
                         },
                         modifier = Modifier
@@ -477,7 +485,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                         OutlinedButton(
                             onClick = {
                                 if (!openScreenLockSettings(context)) {
-                                    errorMessage = context.getString(R.string.biometric_unavailable)
+                                    errorMessage = unavailableMessage
                                 }
                             },
                         ) {

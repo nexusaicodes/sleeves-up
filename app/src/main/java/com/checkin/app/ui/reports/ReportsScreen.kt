@@ -32,7 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -72,13 +72,15 @@ fun ReportsScreen(
     // Surface each export outcome once as an auto-dismissing snackbar. The event flow is
     // non-replaying, so a config-change re-collect can't re-show a past result.
     val snackbarHostState = LocalSnackbarHostState.current
-    val context = LocalContext.current
+    // The failure case interpolates a runtime message, so this reads resources rather than hoisting
+    // three `stringResource` values, only one of which could be resolved ahead of the event.
+    val resources = LocalResources.current
     LaunchedEffect(Unit) {
         viewModel.exportEvents.collect { event ->
             val message = when (event) {
-                ExportResult.Success -> context.getString(R.string.export_success)
-                ExportResult.Nothing -> context.getString(R.string.export_nothing)
-                is ExportResult.Failure -> context.getString(R.string.export_failed, event.message ?: "")
+                ExportResult.Success -> resources.getString(R.string.export_success)
+                ExportResult.Nothing -> resources.getString(R.string.export_nothing)
+                is ExportResult.Failure -> resources.getString(R.string.export_failed, event.message ?: "")
             }
             snackbarHostState.showSnackbar(message)
         }
@@ -130,7 +132,11 @@ private fun DailyHoursCard(uiState: ReportsUiState) {
     ChartCard(
         title = stringResource(R.string.chart_daily_hours_title),
         // The dashed line needs naming somewhere; the subtitle keeps it out of the date axis.
-        subtitle = stringResource(R.string.chart_daily_hours_subtitle, uiState.dailySeries.size),
+        subtitle = pluralStringResource(
+            R.plurals.chart_daily_hours_subtitle,
+            uiState.dailySeries.size,
+            uiState.dailySeries.size,
+        ),
     ) {
         LineChart(
             values = hours,
@@ -138,8 +144,9 @@ private fun DailyHoursCard(uiState: ReportsUiState) {
             lineColor = MaterialTheme.colorScheme.primary,
             fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
             referenceColor = MaterialTheme.colorScheme.outline,
-            contentDescription = stringResource(
-                R.string.cd_daily_hours_chart,
+            contentDescription = pluralStringResource(
+                R.plurals.cd_daily_hours_chart,
+                uiState.dailySeries.size,
                 uiState.dailySeries.size,
                 TimeFormat.durationShort(uiState.dailySeries.maxOfOrNull { it.workedMs } ?: 0L),
             ),
@@ -166,10 +173,12 @@ private fun SplitCard(uiState: ReportsUiState) {
             DonutChart(
                 values = listOf(uiState.showedUpDays.toFloat(), uiState.missedDays.toFloat()),
                 colors = listOf(showedUp, missed),
+                // Two counts, so neither can be the plural's own quantity: each is worded through
+                // `days_count` first and arrives here as a phrase.
                 contentDescription = stringResource(
                     R.string.cd_alltime_split,
-                    uiState.showedUpDays,
-                    uiState.missedDays,
+                    pluralStringResource(R.plurals.days_count, uiState.showedUpDays, uiState.showedUpDays),
+                    pluralStringResource(R.plurals.days_count, uiState.missedDays, uiState.missedDays),
                 ),
                 // Nothing tracked yet still has to read as a ring rather than as blank space.
                 emptyColor = missed,

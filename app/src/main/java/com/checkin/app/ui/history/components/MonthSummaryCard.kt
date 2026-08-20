@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
@@ -71,9 +72,19 @@ fun MonthSummaryCard(
                 StatRing(
                     value = "${tiles.showedUp}",
                     label = stringResource(R.string.stat_showed_up),
-                    baseline = stringResource(R.string.stat_baseline_of_days, trackedDaysInMonth),
+                    baseline = pluralStringResource(
+                        R.plurals.stat_baseline_of_days,
+                        trackedDaysInMonth,
+                        trackedDaysInMonth,
+                    ),
                     progress = statRatio(tiles.showedUp, trackedDaysInMonth),
-                    contentDescription = stringResource(R.string.cd_month_split, tiles.showedUp, tiles.missed),
+                    // Two counts, so neither can be the plural's own quantity: each is worded
+                    // through `days_count` first and arrives here as a phrase.
+                    contentDescription = stringResource(
+                        R.string.cd_month_split,
+                        pluralStringResource(R.plurals.days_count, tiles.showedUp, tiles.showedUp),
+                        pluralStringResource(R.plurals.days_count, tiles.missed, tiles.missed),
+                    ),
                     modifier = Modifier.weight(1f),
                 )
                 StatRing(
