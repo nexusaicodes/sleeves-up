@@ -33,6 +33,16 @@ export JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
 Run a single test class: `./gradlew :app:testDebugUnitTest --tests "com.checkin.app.ConsistencyStatsTest"`.
 
+**The `applicationId` is not the `namespace`, and the split is deliberate.** `namespace` is
+`com.checkin.app` — the Kotlin package, where `R` and `BuildConfig` are generated, and what a
+relative manifest name resolves against. `applicationId` is `com.nexusai.checkin.app` — the Play
+identity, the data directory, and the FileProvider authority (written `${applicationId}.fileprovider`,
+so it cannot drift). The launcher component is therefore **`com.nexusai.checkin.app/com.checkin.app.MainActivity`**,
+and `adb shell am start -n com.checkin.app/.MainActivity` fails with `does not exist` — the first
+thing to get wrong in any adb session, because every source file in sight declares the other one.
+Nothing depends on the two matching. Note only that `applicationId` is frozen at the first Play
+upload, so aligning them is free until then and a new listing afterwards.
+
 **Static analysis** is **ktlint** (via `org.jlleitschuh.gradle.ktlint`, engine pinned to 1.5.0) and
 **detekt** 1.23.8, applied to every project including the root build script. `staticAnalysis` is the
 one task CI and the pre-commit hook both call. Formatting rules come from `.editorconfig`
