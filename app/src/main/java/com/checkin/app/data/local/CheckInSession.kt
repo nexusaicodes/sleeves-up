@@ -29,6 +29,6 @@ data class CheckInSession(
      * say which stop instants the user chose and which midnight chose for them — a distinction the
      * export could not otherwise carry, since a forgotten session is stamped at a plausible time.
      */
-    @ColumnInfo(name = "auto_closed")
+    @ColumnInfo(name = "auto_closed", defaultValue = "0")
     val autoClosed: Boolean = false,
 )

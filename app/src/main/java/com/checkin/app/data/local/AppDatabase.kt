@@ -73,6 +73,12 @@ abstract class AppDatabase : RoomDatabase() {
          * Both under-report, which is the safe direction for a column that asserts something about
          * the user's behaviour.
          *
+         * The `DEFAULT 0` is matched by `@ColumnInfo(defaultValue = "0")` on the entity, so a fresh
+         * install and a migrated one end up with the *same* CREATE TABLE. Without the annotation Room
+         * emits the column with no default on a fresh install, and the two schemas differ in a way
+         * nothing checks — any insert that does not name the column then succeeds on one and fails
+         * on the other, which is a difference that only ever shows up on somebody else's device.
+         *
          * `SessionSchedule.dayBoundaryOf` is reused rather than reimplemented in SQL: the midnight
          * rule goes through the calendar (so a DST day still ends at midnight), and a second copy of
          * it here is how the export would come to disagree with the alarm that wrote the rows.
