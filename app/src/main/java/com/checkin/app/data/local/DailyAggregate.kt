@@ -13,4 +13,6 @@ data class DailyAggregate(
     val sessionCount: Int,
     val firstCheckIn: Long,
     val lastCheckOut: Long?,
+    /** How many of the day's sessions the day-boundary alarm closed. Exported; never displayed. */
+    val autoClosedSessions: Int,
 )

@@ -7,6 +7,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.checkin.app.CheckInApplication
 import com.checkin.app.data.ConsistencyStats
+import com.checkin.app.data.SessionBand
+import com.checkin.app.data.SessionRhythm
+import com.checkin.app.data.StartBucket
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.dayTrigger
 import com.checkin.app.data.local.DailyAggregate
@@ -19,6 +22,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -42,8 +46,14 @@ data class ReportsUiState(
     val totalDays: Int = 0,
     val showedUpDays: Int = 0,
     val missedDays: Int = 0,
-    val currentStreak: Int = 0,
-    val bestStreak: Int = 0,
+    /** Worked time over the whole record, stated as a total and compared to nothing. */
+    val totalWorkedMs: Long = 0L,
+    /** Mean sessions per day shown up — a rhythm, not a score. */
+    val avgSessionsPerDay: Float = 0f,
+    /** Completed sessions by the hour they began. Descriptive; no bucket is preferable. */
+    val startBuckets: Map<StartBucket, Int> = emptyMap(),
+    /** Days grouped by how many sessions they held. Descriptive; more is not better. */
+    val sessionBands: Map<SessionBand, Int> = emptyMap(),
     /** Trailing window ending at the last counted day, gap-filled so missed days read as zero rather than vanish. */
     val dailySeries: List<DayPoint> = emptyList(),
     val monthlySeries: List<MonthPoint> = emptyList(),
@@ -74,34 +84,42 @@ class ReportsViewModel(
             if (start == null || start.isAfter(today)) {
                 flowOf(ReportsUiState(loading = false, trackingStartDate = start))
             } else {
-                // The query runs through today; how far of it counts is decided per emission, so a
-                // check-out lands in the streak and both charts straight away.
-                repository.dailyAggregatesFlow(start.format(dateFormatter), today.format(dateFormatter))
-                    .map { aggregates ->
-                        // One range query feeds every figure and all three charts.
-                        val summaries = repository.byDateKey(aggregates)
-                        val countedThrough = ConsistencyStats.countedThrough(summaries, today)
-                        // The record's first day, still unfinished: nothing has been completed to
-                        // report on, and the charts would otherwise plot a phantom zero day.
-                        if (start.isAfter(countedThrough)) {
-                            return@map ReportsUiState(loading = false, trackingStartDate = start)
-                        }
-                        val totalDays = (countedThrough.toEpochDay() - start.toEpochDay() + 1).toInt()
-                        val showedUp = ConsistencyStats.showedUpDays(summaries)
-                        ReportsUiState(
-                            loading = false,
-                            trackingStartDate = start,
-                            totalDays = totalDays,
-                            showedUpDays = showedUp,
-                            // Days with no sessions never reach the map, so the missed count is what
-                            // is left of the tracked window once the recorded days are removed.
-                            missedDays = (totalDays - showedUp).coerceAtLeast(0),
-                            currentStreak = ConsistencyStats.currentStreak(summaries, start, countedThrough),
-                            bestStreak = ConsistencyStats.bestStreak(summaries, start, countedThrough),
-                            dailySeries = dailySeries(summaries, start, countedThrough),
-                            monthlySeries = monthlySeries(summaries, start, countedThrough),
-                        )
+                // Both queries run through today; how far of it counts is decided per emission, so a
+                // check-out lands in every figure and every chart straight away. They are scoped
+                // identically on purpose — the aggregates say which days count, the starts say when
+                // within them the work began, and a range that differed between the two would let
+                // the split describe sessions the rest of the screen had excluded.
+                val startKey = start.format(dateFormatter)
+                val todayKey = today.format(dateFormatter)
+                combine(
+                    repository.dailyAggregatesFlow(startKey, todayKey),
+                    repository.sessionStartsFlow(startKey, todayKey),
+                ) { aggregates, sessionStarts ->
+                    val summaries = repository.byDateKey(aggregates)
+                    val countedThrough = ConsistencyStats.countedThrough(summaries, today)
+                    // The record's first day, still unfinished: nothing has been completed to
+                    // report on, and the charts would otherwise plot a phantom zero day.
+                    if (start.isAfter(countedThrough)) {
+                        return@combine ReportsUiState(loading = false, trackingStartDate = start)
                     }
+                    val totalDays = (countedThrough.toEpochDay() - start.toEpochDay() + 1).toInt()
+                    val showedUp = ConsistencyStats.showedUpDays(summaries)
+                    ReportsUiState(
+                        loading = false,
+                        trackingStartDate = start,
+                        totalDays = totalDays,
+                        showedUpDays = showedUp,
+                        // Days with no sessions never reach the map, so the missed count is what
+                        // is left of the tracked window once the recorded days are removed.
+                        missedDays = (totalDays - showedUp).coerceAtLeast(0),
+                        totalWorkedMs = ConsistencyStats.totalWorkedMs(summaries),
+                        avgSessionsPerDay = SessionRhythm.averageSessionsPerDay(summaries),
+                        startBuckets = SessionRhythm.startBuckets(sessionStarts, timeSource.zone()),
+                        sessionBands = SessionRhythm.sessionsPerDayBands(summaries),
+                        dailySeries = dailySeries(summaries, start, countedThrough),
+                        monthlySeries = monthlySeries(summaries, start, countedThrough),
+                    )
+                }
             }
         }
 

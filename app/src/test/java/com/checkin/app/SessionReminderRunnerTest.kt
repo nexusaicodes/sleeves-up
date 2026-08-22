@@ -251,6 +251,9 @@ class SessionReminderRunnerTest {
         val closed = dao.getSessionById(session.id)!!
         assertEquals(boundary, closed.stoppedAt)
         assertEquals(boundary - closed.startedAt, closed.duration)
+        // The one writer that flags a close as the boundary's rather than the user's. The CSV is the
+        // only thing that reads it; nothing about the row's duration or immutability changes.
+        assertTrue(closed.autoClosed)
     }
 
     @Test

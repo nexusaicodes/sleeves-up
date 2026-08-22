@@ -1,9 +1,14 @@
 """Seed a representative CheckIn history into a pulled `_app` database.
 
 Demo data for Play Store screenshots. Shapes it to show what the app actually does:
-varying day lengths so the calendar shades at different intensities, a handful of
-missed days so the split is not a flat 100%, multi-session days so the Check-In
-list has something to expand, and an open session today so the gauge is running.
+a handful of missed days so the split is not a flat 100%, sessions starting across
+the morning, afternoon and evening so the start-time split has all three slices,
+days of one, two and three blocks so the sessions-per-day split has all three, and
+an open session today so the gauge is running.
+
+Day *lengths* are still varied, but nothing renders them any more — the calendar is
+one mark per day shown up, whether it held 45 minutes or nine hours. They vary here
+only so the hours charts are not a flat line.
 
 Usage: python3 seed.py <path-to-_app>
 """
@@ -76,6 +81,8 @@ def main(db_path: str) -> None:
     conn = sqlite3.connect(db_path)
     conn.execute("DELETE FROM sessions")
     conn.executemany(
+        # `auto_closed` is left to its DEFAULT 0: every seeded session is one the demo user
+        # checked out of, which is what the screenshots should show.
         "INSERT INTO sessions (started_at, stopped_at, duration, date_key) VALUES (?, ?, ?, ?)",
         rows,
     )

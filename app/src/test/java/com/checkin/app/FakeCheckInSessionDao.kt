@@ -24,13 +24,14 @@ class FakeCheckInSessionDao : CheckInSessionDao {
         store.value = store.value + CheckInSession(id = nextId++, startedAt = startedAt, dateKey = dateKey)
     }
 
-    fun seedCompleted(dateKey: String, startedAt: Long, durationMs: Long) {
+    fun seedCompleted(dateKey: String, startedAt: Long, durationMs: Long, autoClosed: Boolean = false) {
         store.value = store.value + CheckInSession(
             id = nextId++,
             startedAt = startedAt,
             stoppedAt = startedAt + durationMs,
             duration = durationMs,
             dateKey = dateKey,
+            autoClosed = autoClosed,
         )
     }
 
@@ -64,6 +65,15 @@ class FakeCheckInSessionDao : CheckInSessionDao {
     override fun getDailyAggregatesFlow(startDate: String, endDate: String): Flow<List<DailyAggregate>> =
         store.map { aggregate(startDate, endDate) }
 
+    // Mirrors the query's scoping exactly — completed sessions only, keyed on `date_key` — because a
+    // fake that filtered differently would let the start-time split describe a set of sessions the
+    // aggregates had excluded, and the test could only ever prove the fake right.
+    override fun getSessionStartsFlow(startDate: String, endDate: String): Flow<List<Long>> = store.map { list ->
+        list.filter { it.stoppedAt != null && it.dateKey in startDate..endDate }
+            .map { it.startedAt }
+            .sorted()
+    }
+
     override suspend fun getFirstDateKey(): String? = store.value.minOfOrNull { it.dateKey }
 
     override fun getFirstDateKeyFlow(): Flow<String?> = store.map { list -> list.minOfOrNull { it.dateKey } }
@@ -78,6 +88,7 @@ class FakeCheckInSessionDao : CheckInSessionDao {
                 sessionCount = list.size,
                 firstCheckIn = list.minOf { it.startedAt },
                 lastCheckOut = list.maxOf { it.stoppedAt ?: 0L },
+                autoClosedSessions = list.count { it.autoClosed },
             )
         }
         .sortedBy { it.dateKey }

@@ -171,7 +171,6 @@ private fun LazyListScope.calendarItems(uiState: HistoryUiState, viewModel: Hist
             trackingStartDate = uiState.trackingStartDate,
             today = uiState.today,
             countedThrough = uiState.countedThrough,
-            peakDayMs = uiState.peakDayMs,
             onDayClick = { viewModel.selectDay(it) },
             cellHeight = cellHeight,
         )
@@ -183,10 +182,6 @@ private fun LazyListScope.monthSummaryItem(uiState: HistoryUiState) {
         MonthSummaryCard(
             summaries = uiState.summaries,
             trackedDaysInMonth = uiState.trackedDaysInMonth,
-            monthBestStreak = uiState.monthBestStreak,
-            allTimeBestStreak = uiState.allTimeBestStreak,
-            allTimeAvgDailyMs = uiState.allTimeAvgDailyMs,
-            allTimePeakDayMs = uiState.peakDayMs,
             formatDuration = TimeFormat::durationShort,
         )
     }
@@ -214,17 +209,25 @@ private val MONTH_SELECTOR_HEIGHT = 48.dp
 private val WEEKDAY_HEADER_HEIGHT = 20.dp
 
 /**
- * The summary card: 16dp padding, two rows of an 88dp ring over two label lines, 12dp between them.
+ * The summary card: 16dp padding top and bottom, a 104dp hero ring over two label lines, 12dp, then a
+ * row of 76dp frame rings over one label line — 32 + 142 + 12 + 98, rounded up for margin.
  *
  * It is a constant rather than a measurement because the grid above has to be sized before the card
  * below it is laid out. **Keep it in step with `MonthSummaryCard`** — over-stating it costs the grid
  * height it could have used, and under-stating it pushes the card off the bottom of the viewport.
  */
-private val SUMMARY_CARD_HEIGHT = 292.dp
+private val SUMMARY_CARD_HEIGHT = 288.dp
 private val SECTION_SPACING = 16.dp
 
-/** The part of the above that is text or `sp`-scaled, and so grows with the user's font setting. */
-private val TEXT_CONTENT_HEIGHT = 140.dp
+/**
+ * The part of the above that grows with the user's font setting: three label lines plus both ring
+ * diameters, which are scaled by `fontScale` so the `sp` value inside them keeps fitting.
+ *
+ * Deliberately generous. The rings stop growing at their caps while this stays linear, so the figure
+ * cannot be right at every scale, and the two errors are not symmetric: over-stating only shrinks the
+ * grid, which the 48dp cell floor absorbs by scrolling, whereas under-stating clips the card.
+ */
+private val TEXT_CONTENT_HEIGHT = 150.dp
 
 private fun LazyListScope.dayDetailItems(uiState: HistoryUiState) {
     item {

@@ -13,12 +13,16 @@ import com.checkin.app.service.SessionAlarms
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.time.LocalDate
+import java.time.ZoneId
 
 /** Deterministic clock. [day] is mutable so tests can drive a midnight rollover. */
-class FixedTime(private val now: Long, date: LocalDate) : TimeSource {
+class FixedTime(private val now: Long, date: LocalDate, private val zone: ZoneId = ZoneId.of("UTC")) : TimeSource {
     val day = MutableStateFlow(date)
     override fun nowMillis(): Long = now
     override fun today(): LocalDate = day.value
+
+    /** UTC by default so a test's start instants read back as the hour it wrote them at. */
+    override fun zone(): ZoneId = zone
     override fun currentDay(): Flow<LocalDate> = day
 }
 

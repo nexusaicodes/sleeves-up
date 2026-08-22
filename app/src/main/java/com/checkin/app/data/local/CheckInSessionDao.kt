@@ -35,7 +35,8 @@ interface CheckInSessionDao {
                COALESCE(SUM(duration), 0) AS totalDurationMs,
                COUNT(*) AS sessionCount,
                MIN(started_at) AS firstCheckIn,
-               MAX(stopped_at) AS lastCheckOut
+               MAX(stopped_at) AS lastCheckOut,
+               COALESCE(SUM(auto_closed), 0) AS autoClosedSessions
         FROM sessions
         WHERE date_key BETWEEN :startDate AND :endDate
           AND stopped_at IS NOT NULL
@@ -51,7 +52,8 @@ interface CheckInSessionDao {
                COALESCE(SUM(duration), 0) AS totalDurationMs,
                COUNT(*) AS sessionCount,
                MIN(started_at) AS firstCheckIn,
-               MAX(stopped_at) AS lastCheckOut
+               MAX(stopped_at) AS lastCheckOut,
+               COALESCE(SUM(auto_closed), 0) AS autoClosedSessions
         FROM sessions
         WHERE date_key BETWEEN :startDate AND :endDate
           AND stopped_at IS NOT NULL
@@ -60,6 +62,24 @@ interface CheckInSessionDao {
     """,
     )
     fun getDailyAggregatesFlow(startDate: String, endDate: String): Flow<List<DailyAggregate>>
+
+    /**
+     * Start instants of the completed sessions in the range, for the start-time split.
+     *
+     * The per-day aggregates cannot serve this: `firstCheckIn` is each day's *first* session, so a
+     * day worked in three blocks would contribute one start instead of three. Filtered to completed
+     * sessions and keyed on `date_key` exactly as the aggregates are, so the two always describe the
+     * same set of sessions.
+     */
+    @Query(
+        """
+        SELECT started_at FROM sessions
+        WHERE date_key BETWEEN :startDate AND :endDate
+          AND stopped_at IS NOT NULL
+        ORDER BY started_at ASC
+    """,
+    )
+    fun getSessionStartsFlow(startDate: String, endDate: String): Flow<List<Long>>
 
     /**
      * The day of the earliest session, or null when there are none — the day tracking began.

@@ -185,7 +185,9 @@ class SessionReminderRunner(
         val closeAt = (alarms.dayBoundaryAt.takeIf { it > 0L } ?: dayBoundaryFor(active))
             .coerceAtMost(timeSource.nowMillis())
 
-        repository.checkOutAt(active.id, closeAt)
+        // The one un-gated check-out in the app, and the only writer that flags a session as
+        // closed by the boundary rather than by the user.
+        repository.checkOutAt(active.id, closeAt, autoClosed = true)
         alarms.cancelAll()
         notifier.cancel(NotificationIds.SESSION_REMINDER)
         log.recordService(ServiceEventType.STOPPED, timeSource.nowMillis(), "day boundary @$closeAt")

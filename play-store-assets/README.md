@@ -61,8 +61,8 @@ common macOS system faces.
 ## Regenerating the screenshots
 
 They are taken against **seeded demo data on an emulator, never a real device** — a real install
-has whatever history it happens to have, which is usually too thin to show the calendar shading or
-a streak, and a real device puts the owner's own records into a public listing.
+has whatever history it happens to have, which is usually too thin to fill a calendar month or give
+the splits anything to divide, and a real device puts the owner's own records into a public listing.
 
 ```bash
 $ANDROID_HOME/emulator/emulator -avd Pixel_8 &          # or Pixel_Tablet

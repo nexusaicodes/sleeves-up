@@ -43,6 +43,8 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.checkin.app.R
+import com.checkin.app.data.SessionBand
+import com.checkin.app.data.StartBucket
 import com.checkin.app.platform.ExportResult
 import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.LocalSnackbarHostState
@@ -113,7 +115,9 @@ fun ReportsScreen(
                 item { DailyHoursCard(uiState) }
                 item { SplitCard(uiState) }
                 item { MonthlyHoursCard(uiState) }
-                item { StreakCard(uiState) }
+                item { StartTimesCard(uiState) }
+                item { SessionsPerDayCard(uiState) }
+                item { OverallStatsCard(uiState) }
             }
         }
 
@@ -144,11 +148,12 @@ private fun DailyHoursCard(uiState: ReportsUiState) {
             lineColor = MaterialTheme.colorScheme.primary,
             fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
             referenceColor = MaterialTheme.colorScheme.outline,
+            // States the window and nothing else. No superlative here: naming the window's longest
+            // day ranks one of the user's days against the others, which nothing in the app does.
             contentDescription = pluralStringResource(
                 R.plurals.cd_daily_hours_chart,
                 uiState.dailySeries.size,
                 uiState.dailySeries.size,
-                TimeFormat.durationShort(uiState.dailySeries.maxOfOrNull { it.workedMs } ?: 0L),
             ),
             modifier = Modifier.fillMaxWidth().height(140.dp),
         )
@@ -249,8 +254,150 @@ private fun MonthlyHoursCard(uiState: ReportsUiState) {
     }
 }
 
+/**
+ * When the user's sessions begin.
+ *
+ * Purely descriptive, and styled to stay that way: three hues of equal weight, no ordering implied by
+ * colour, no bucket highlighted. There is no "best time to start" here and there must never be one —
+ * that is a target for the shape of a day rather than its length, which is the same mistake in a
+ * different axis.
+ */
 @Composable
-private fun StreakCard(uiState: ReportsUiState) {
+private fun StartTimesCard(uiState: ReportsUiState) {
+    val morning = uiState.startBuckets[StartBucket.MORNING] ?: 0
+    val afternoon = uiState.startBuckets[StartBucket.AFTERNOON] ?: 0
+    val evening = uiState.startBuckets[StartBucket.EVENING] ?: 0
+
+    ChartCard(title = stringResource(R.string.chart_start_times_title)) {
+        SplitRow(
+            values = listOf(morning, afternoon, evening),
+            colors = descriptiveHues(),
+            labels = listOf(
+                stringResource(R.string.bucket_morning),
+                stringResource(R.string.bucket_afternoon),
+                stringResource(R.string.bucket_evening),
+            ),
+            // Three counts, so none can be the plural's own quantity: each is worded through
+            // `sessions_count` first and the sentence takes them as `%s`.
+            contentDescription = stringResource(
+                R.string.cd_start_time_split,
+                sessionsPhrase(morning),
+                sessionsPhrase(afternoon),
+                sessionsPhrase(evening),
+            ),
+        )
+    }
+}
+
+/**
+ * How many blocks a day is broken into, and the average across the days that had any.
+ *
+ * A day of one long session and a day of four short ones are two rhythms, not a better and a worse
+ * one, so the slices are the same three neutral hues and the average sits in the hole as a plain
+ * figure rather than as anything the ring measures.
+ */
+@Composable
+private fun SessionsPerDayCard(uiState: ReportsUiState) {
+    val one = uiState.sessionBands[SessionBand.ONE] ?: 0
+    val two = uiState.sessionBands[SessionBand.TWO] ?: 0
+    val threePlus = uiState.sessionBands[SessionBand.THREE_PLUS] ?: 0
+    val average = formatAverage(uiState.avgSessionsPerDay)
+
+    ChartCard(title = stringResource(R.string.chart_sessions_per_day_title)) {
+        SplitRow(
+            values = listOf(one, two, threePlus),
+            colors = descriptiveHues(),
+            labels = listOf(
+                pluralStringResource(R.plurals.sessions_count, 1, 1),
+                pluralStringResource(R.plurals.sessions_count, 2, 2),
+                stringResource(R.string.band_three_plus),
+            ),
+            contentDescription = stringResource(
+                R.string.cd_sessions_per_day_split,
+                daysPhrase(one),
+                daysPhrase(two),
+                daysPhrase(threePlus),
+                average,
+            ),
+        ) {
+            // DonutChart bounds this to the ring's clear middle; the caption wraps to fit it.
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = average,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = stringResource(R.string.stat_avg_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * A donut over [values] with a legend beside it — the shape both descriptive splits share.
+ *
+ * The colours are handed in rather than derived from the values, because deriving them is how a
+ * ramp gets back in: any mapping from a magnitude to a strength ranks the slices.
+ */
+@Composable
+private fun SplitRow(
+    values: List<Int>,
+    colors: List<Color>,
+    labels: List<String>,
+    contentDescription: String,
+    center: @Composable () -> Unit = {},
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        DonutChart(
+            values = values.map { it.toFloat() },
+            colors = colors,
+            contentDescription = contentDescription,
+            // Nothing recorded yet still has to read as a ring rather than as blank space.
+            emptyColor = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.size(DonutChartDefaults.size()),
+            content = center,
+        )
+        Spacer(Modifier.width(20.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            labels.forEachIndexed { index, label ->
+                LegendRow(colors[index], label, values[index])
+            }
+        }
+    }
+}
+
+/**
+ * Three hues of equal visual weight for a descriptive split.
+ *
+ * Deliberately not the day hue at three strengths: one colour at varying alpha is an intensity ramp,
+ * and a ramp says one end is more than the other. These are three different colours saying three
+ * different things.
+ */
+@Composable
+private fun descriptiveHues(): List<Color> = listOf(
+    MaterialTheme.colorScheme.primary,
+    MaterialTheme.colorScheme.tertiary,
+    MaterialTheme.colorScheme.secondary,
+)
+
+/** One decimal place: the figure is a rhythm, and a second digit implies a precision it lacks. */
+private fun formatAverage(value: Float): String = String.format(Locale.getDefault(), "%.1f", value)
+
+@Composable
+private fun sessionsPhrase(count: Int): String = pluralStringResource(R.plurals.sessions_count, count, count)
+
+@Composable
+private fun daysPhrase(count: Int): String = pluralStringResource(R.plurals.days_count, count, count)
+
+@Composable
+private fun OverallStatsCard(uiState: ReportsUiState) {
     ChartCard(title = stringResource(R.string.overall_stats_title)) {
         // The card only renders with tracked days behind it, so the start is present — but it is
         // derived from the sessions, so the row is dropped rather than invented if it is ever null.
@@ -259,13 +406,12 @@ private fun StreakCard(uiState: ReportsUiState) {
         }
         StatsRow(stringResource(R.string.stat_total_tracked_days), "${uiState.totalDays}")
         StatsRow(
-            stringResource(R.string.stat_current_streak),
-            pluralStringResource(R.plurals.days_count, uiState.currentStreak, uiState.currentStreak),
+            stringResource(R.string.stat_showed_up),
+            pluralStringResource(R.plurals.days_count, uiState.showedUpDays, uiState.showedUpDays),
         )
-        StatsRow(
-            stringResource(R.string.stat_best_streak),
-            pluralStringResource(R.plurals.days_count, uiState.bestStreak, uiState.bestStreak),
-        )
+        // A total, and nothing measures it. The two rows this replaced were a current and a best
+        // streak, each of which was a number the next day could take away.
+        StatsRow(stringResource(R.string.stat_total_hours), TimeFormat.durationShort(uiState.totalWorkedMs))
     }
 }
 

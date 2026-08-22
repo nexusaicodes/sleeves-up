@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
@@ -43,8 +44,8 @@ class HistoryViewModelTest {
 
     /**
      * The record's very first day, counted the moment it is checked out of. This also pins the
-     * denominator guard: an unfinished first day leaves nothing to divide by, and dividing anyway
-     * is a crash rather than a wrong number.
+     * denominator the showed-up ring fills against: an unfinished first day leaves zero tracked
+     * days, and a ring measured against that must be empty rather than a division by zero.
      */
     @Test
     fun `the first day of the record counts as soon as it is checked out of`() = runTest {
@@ -57,7 +58,7 @@ class HistoryViewModelTest {
         advanceUntilIdle()
 
         // Checked in but never out: nothing is counted, and nothing divides by zero.
-        assertEquals(0L, viewModel.uiState.value.allTimeAvgDailyMs)
+        assertTrue(viewModel.uiState.value.summaries.isEmpty())
         assertEquals(0, viewModel.uiState.value.trackedDaysInMonth)
         assertEquals(today.minusDays(1), viewModel.uiState.value.countedThrough)
 
@@ -66,19 +67,18 @@ class HistoryViewModelTest {
 
         assertEquals(today, viewModel.uiState.value.countedThrough)
         assertEquals(1, viewModel.uiState.value.trackedDaysInMonth)
-        assertEquals(fourHours, viewModel.uiState.value.allTimeAvgDailyMs)
+        assertEquals(fourHours, viewModel.uiState.value.summaries.getValue(today.toString()).totalDurationMs)
     }
 
     /**
-     * A check-out reaches every all-time figure on the spot, with no resume and no clock change —
-     * the whole point of counting through today rather than through yesterday.
+     * A check-out reaches the counted window on the spot, with no resume and no clock change — the
+     * whole point of counting through today rather than through yesterday.
      */
     @Test
     fun `a check-out today lands in the stats without a resume`() = runTest {
         val dao = FakeCheckInSessionDao()
         val hour = 3_600_000L
         val today = LocalDate.of(2026, 6, 15)
-        // Two past days, one of them the standing peak and both of them the standing streak.
         dao.seedCompleted("2026-06-13", startedAt = 0L, durationMs = 5 * hour)
         dao.seedCompleted("2026-06-14", startedAt = 0L, durationMs = 3 * hour)
         val viewModel = buildViewModel(dao, FixedTime(0L, today))
@@ -86,9 +86,7 @@ class HistoryViewModelTest {
         advanceUntilIdle()
 
         assertEquals(2, viewModel.uiState.value.trackedDaysInMonth)
-        assertEquals(2, viewModel.uiState.value.allTimeBestStreak)
-        assertEquals(5 * hour, viewModel.uiState.value.peakDayMs)
-        assertEquals(4 * hour, viewModel.uiState.value.allTimeAvgDailyMs)
+        assertEquals(2, viewModel.uiState.value.summaries.size)
 
         // An open session on today moves nothing: only completed ones aggregate.
         dao.seedOpen(today.toString(), startedAt = 0L)
@@ -96,15 +94,13 @@ class HistoryViewModelTest {
         assertEquals(2, viewModel.uiState.value.trackedDaysInMonth)
         assertEquals(today.minusDays(1), viewModel.uiState.value.countedThrough)
 
-        // Checking out extends the window, the streak and the peak, all at once.
+        // Checking out extends the counted window and the month's own days at once.
         dao.seedCompleted(today.toString(), startedAt = 0L, durationMs = 7 * hour)
         advanceUntilIdle()
 
         assertEquals(today, viewModel.uiState.value.countedThrough)
         assertEquals(3, viewModel.uiState.value.trackedDaysInMonth)
-        assertEquals(3, viewModel.uiState.value.allTimeBestStreak)
-        assertEquals(7 * hour, viewModel.uiState.value.peakDayMs)
-        assertEquals(5 * hour, viewModel.uiState.value.allTimeAvgDailyMs)
+        assertEquals(3, viewModel.uiState.value.summaries.size)
     }
 
     /** Midnight must not re-count or reset a day that was already counted at check-out. */
@@ -120,7 +116,7 @@ class HistoryViewModelTest {
         advanceUntilIdle()
 
         assertEquals(1, viewModel.uiState.value.trackedDaysInMonth)
-        assertEquals(fourHours, viewModel.uiState.value.allTimeAvgDailyMs)
+        assertEquals(fourHours, viewModel.uiState.value.summaries.getValue(start.toString()).totalDurationMs)
 
         time.day.value = LocalDate.of(2026, 6, 16)
         advanceUntilIdle()
@@ -129,22 +125,25 @@ class HistoryViewModelTest {
         // 06-15 is now a past day rather than a counted today, which must read identically.
         assertEquals(start, viewModel.uiState.value.countedThrough)
         assertEquals(1, viewModel.uiState.value.trackedDaysInMonth)
-        assertEquals(fourHours, viewModel.uiState.value.allTimeAvgDailyMs)
+        assertEquals(fourHours, viewModel.uiState.value.summaries.getValue(start.toString()).totalDurationMs)
     }
 
-    /** Absent days stay in the denominator, so the mean is per tracked day, not per worked day. */
+    /**
+     * Absent days stay in the tracked-day count, which is what the showed-up ring fills against —
+     * so a month shown up for once reads as one day of many rather than as a full ring.
+     */
     @Test
-    fun `the all-time average divides by tracked days including absent ones`() = runTest {
+    fun `the tracked-day count keeps days with no sessions in it`() = runTest {
         val dao = FakeCheckInSessionDao()
-        val sixHours = 6 * 3_600_000L
-        dao.seedCompleted("2026-06-01", startedAt = 0L, durationMs = sixHours)
+        dao.seedCompleted("2026-06-01", startedAt = 0L, durationMs = 6 * 3_600_000L)
         // 06-02 and 06-03 have no sessions at all.
         val viewModel = buildViewModel(dao, FixedTime(0L, LocalDate.of(2026, 6, 4)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        // Window is 06-01..06-03 — three tracked days holding six hours between them.
-        assertEquals(sixHours / 3, viewModel.uiState.value.allTimeAvgDailyMs)
+        // Window is 06-01..06-03 — three tracked days, one of them shown up for.
+        assertEquals(3, viewModel.uiState.value.trackedDaysInMonth)
+        assertEquals(1, viewModel.uiState.value.summaries.size)
     }
 
     @Test
@@ -159,31 +158,9 @@ class HistoryViewModelTest {
         assertEquals(29, viewModel.uiState.value.trackedDaysInMonth)
     }
 
-    /**
-     * The card rings the month's streak against the all-time one, so the two have to be measured
-     * over different windows from the same data — and the month figure has to stop at the month
-     * boundary, or "best streak this month" would report a run that mostly happened in May.
-     */
-    @Test
-    fun `the month streak stops at the month boundary while the all-time one runs through it`() = runTest {
-        val dao = FakeCheckInSessionDao()
-        val hour = 3_600_000L
-        // One unbroken run of five days straddling the May/June boundary.
-        listOf("2026-05-30", "2026-05-31", "2026-06-01", "2026-06-02", "2026-06-03").forEach {
-            dao.seedCompleted(it, startedAt = 0L, durationMs = hour)
-        }
-        dao.seedOpen("2026-05-28")
-        val viewModel = buildViewModel(dao, FixedTime(0L, LocalDate.of(2026, 6, 10)))
-        backgroundScope.launch { viewModel.uiState.collect {} }
-        advanceUntilIdle()
-
-        assertEquals(3, viewModel.uiState.value.monthBestStreak)
-        assertEquals(5, viewModel.uiState.value.allTimeBestStreak)
-    }
-
     /** An empty ring is the honest reading of a month with nothing behind it — not a crash. */
     @Test
-    fun `a month before tracking began reports no tracked days and no streak`() = runTest {
+    fun `a month before tracking began reports no tracked days`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedOpen("2026-06-01")
         val viewModel = buildViewModel(dao, FixedTime(0L, LocalDate.of(2026, 6, 15)))
@@ -194,7 +171,7 @@ class HistoryViewModelTest {
         advanceUntilIdle()
 
         assertEquals(0, viewModel.uiState.value.trackedDaysInMonth)
-        assertEquals(0, viewModel.uiState.value.monthBestStreak)
+        assertTrue(viewModel.uiState.value.summaries.isEmpty())
     }
 
     /**
@@ -212,8 +189,7 @@ class HistoryViewModelTest {
         val state = viewModel.uiState.value
         assertNull(state.trackingStartDate)
         assertEquals(0, state.trackedDaysInMonth)
-        assertEquals(0, state.monthBestStreak)
-        assertEquals(0L, state.allTimeAvgDailyMs)
+        assertTrue(state.summaries.isEmpty())
     }
 
     /** The first check-in starts the record with no separate write to remember it. */

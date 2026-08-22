@@ -8,17 +8,19 @@ a bar.
 ## What it does
 
 - **Check in / check out** from the first tab. Every check-in *and* check-out is gated by an
-  on-device face check (ML Kit, offline), with **device biometric** as a fallback after repeated
-  face-detection failures. Captured frames are transient — verified, then deleted immediately.
+  on-device face check, with **device unlock** as a fallback. No photo is taken: the camera hardware
+  reports whether a face is in frame and the app reads only that count, so frames never leave the
+  camera pipeline and there is no image to store, show or delete.
 - **Net daily time** = the sum of your completed check-in/out intervals for the day (open intervals
   are excluded). Every day counts — 7 days a week, no weekend or holiday exemption.
 - **A day counts if it has a session.** A 45-minute day on a bad week counts as showing up exactly
-  as much as a nine-hour one, and streaks count consecutive days you turned up. Your hours are shown
-  everywhere — on the calendar, in the charts, in the export — as a quantity, never as a verdict.
-  Nothing is ever coloured red.
-- **Today counts the moment you check out.** Your streak, averages and calendar update there and
-  then, not at the next midnight. Until that first check-out the day simply isn't counted yet — it
-  never shows up as a day you missed, so the numbers only ever move up as a day goes on.
+  as much as a nine-hour one — the calendar draws both the same way. Your hours are shown everywhere
+  — in the totals, the charts and the export — as a quantity and never as a verdict: nothing is
+  ranked against your longest day or your own best, and nothing is ever coloured red.
+- **Today counts the moment you check out.** Your days-shown-up count, your charts and the calendar
+  update there and then, not at the next midnight. Until that first check-out the day simply isn't
+  counted yet — it never shows up as a day you missed, so the numbers only ever move up as a day
+  goes on.
 - **Sessions are immutable** — no editing, deleting, or manual entry, by design.
 - **A session reminder** every couple of hours while you're checked in. It only asks — ignoring it
   costs you nothing. A session you forget about closes itself at midnight, so a check-in left running
@@ -34,8 +36,8 @@ a bar.
 | Tab | What it shows |
 | --- | --- |
 | **Check In** | Live timer and the check-in/out button, with today's sessions a tap away |
-| **History** | Monthly calendar shaded by how long each day ran, plus the month's split and averages |
-| **Reports** | Daily-hours and monthly charts, the all-time split, streaks, and CSV export |
+| **History** | Monthly calendar marking every day you showed up, plus the month's days shown up and its averages |
+| **Reports** | Daily-hours and monthly charts, the all-time split, when your sessions start, how many you run a day, and CSV export |
 | **Settings** | A shortcut into Android's notification settings — where every one of the app's notifications is switched on and off — and About (privacy policy, feedback, open-source licenses) |
 
 ## Requirements
@@ -88,7 +90,7 @@ populated `keystore.properties`.
 
 Kotlin · Jetpack Compose (Material 3, a fixed indigo brand theme in light + dark, branded splash,
 `WindowSizeClass`-adaptive) · Room (via KSP, reactive `Flow` queries) · a `specialUse` foreground
-service for the live timer and presence reminder · CameraX + ML Kit face detection · BiometricPrompt
+service for the live timer and session reminder · CameraX preview + Camera2 HAL face detection · BiometricPrompt
 fallback. MVVM with a single reactive `UiState` per screen and lightweight manual DI (`AppContainer`).
 
 See [`CLAUDE.md`](CLAUDE.md) for architecture details, conventions, and non-obvious behaviors.

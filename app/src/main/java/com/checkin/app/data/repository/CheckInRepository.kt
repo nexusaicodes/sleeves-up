@@ -42,15 +42,20 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * stop before the start means a changed system clock or a corrupt row, and a negative duration
      * would poison every total that sums it.
      *
+     * [autoClosed] records that the boundary closed the session rather than the user, and defaults
+     * to false so every gated path stays as it was. It changes nothing about the row's duration or
+     * its immutability; the CSV export is the only thing that ever reads it.
+     *
      * The closed row comes back so a caller that wants to report what was recorded reads the stored
      * figure rather than recomputing it: a second subtraction at the call site would be a second
      * copy of the flooring rule, free to disagree with the row it describes.
      */
-    suspend fun checkOutAt(sessionId: Long, atMillis: Long): CheckInSession? {
+    suspend fun checkOutAt(sessionId: Long, atMillis: Long, autoClosed: Boolean = false): CheckInSession? {
         val session = dao.getSessionById(sessionId) ?: return null
         val closed = session.copy(
             stoppedAt = atMillis,
             duration = (atMillis - session.startedAt).coerceAtLeast(0L),
+            autoClosed = autoClosed,
         )
         dao.updateSession(closed)
         return closed
@@ -82,6 +87,13 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
     fun byDateKey(aggregates: List<DailyAggregate>): Map<String, DailyAggregate> = aggregates.associateBy { it.dateKey }
 
     fun sessionsForDateFlow(dateKey: String): Flow<List<CheckInSession>> = dao.getSessionsByDateFlow(dateKey)
+
+    /**
+     * Start instants of the completed sessions in the range, for the start-time split. Scoped
+     * identically to [dailyAggregatesFlow], so the two never describe different sets of sessions.
+     */
+    fun sessionStartsFlow(startDate: String, endDate: String): Flow<List<Long>> =
+        dao.getSessionStartsFlow(startDate, endDate)
 
     suspend fun getSessionsByDate(dateKey: String): List<CheckInSession> = dao.getSessionsByDate(dateKey)
 

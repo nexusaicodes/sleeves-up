@@ -3,7 +3,9 @@ package com.checkin.app
 import com.checkin.app.data.repository.CheckInRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 
@@ -98,5 +100,36 @@ class CheckInRepositoryTest {
         CheckInRepository(dao, FixedTime(5000L, day)).checkOutAt(id, 1000L)
 
         assertEquals(0L, dao.getSessionById(id)!!.duration)
+    }
+
+    /**
+     * The flag the CSV exports, and the only writer that sets it.
+     *
+     * A gated check-out is the user's own act, so it stays false however the instant was derived —
+     * the flag records who ended the session, never when.
+     */
+    @Test
+    fun `checkOutAt records that the boundary closed the session`() = runBlocking {
+        val dao = FakeCheckInSessionDao()
+        val repo = CheckInRepository(dao, FixedTime(1000L, LocalDate.of(2026, 6, 15)))
+        val session = repo.checkIn()
+
+        val closed = repo.checkOutAt(session.id, 5000L, autoClosed = true)!!
+
+        assertTrue(closed.autoClosed)
+        assertTrue(dao.getSessionById(session.id)!!.autoClosed)
+        // Recording it changes nothing else about the row.
+        assertEquals(4000L, closed.duration)
+        assertEquals("2026-06-15", closed.dateKey)
+    }
+
+    @Test
+    fun `a gated check-out is not recorded as auto-closed`() = runBlocking {
+        val dao = FakeCheckInSessionDao()
+        val repo = CheckInRepository(dao, FixedTime(1000L, LocalDate.of(2026, 6, 15)))
+        val session = repo.checkIn()
+
+        assertFalse(repo.checkOut(session.id)!!.autoClosed)
+        assertFalse(repo.checkOutAt(session.id, 9000L)!!.autoClosed)
     }
 }

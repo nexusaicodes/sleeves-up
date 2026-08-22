@@ -40,8 +40,14 @@ import java.time.temporal.WeekFields
 import java.util.Locale
 
 /**
- * @param peakDayMs the longest day on record, which every cell's strength is measured against. A day
- *   is drawn in one hue at a strength proportional to its hours — never as a verdict, and never red.
+ * A month of cells, each either a day the user showed up or a day they did not.
+ *
+ * **The shade is binary and must stay that way.** A cell used to be drawn at a strength proportional
+ * to its hours against the user's longest day; that made every ordinary day render as a partial
+ * version of their best one, and a single nine-hour day re-graded the whole history behind it. A
+ * 45-minute day and a nine-hour day are now the same mark, which is what "a day counts because it
+ * has a session" looks like on a calendar.
+ *
  * @param trackingStartDate the day of the first session, or null when there are none yet — in which
  *   case no day is inside the tracked window, so the whole month draws as days the record does not
  *   cover rather than as days that were missed.
@@ -60,7 +66,6 @@ fun CalendarGrid(
     trackingStartDate: LocalDate?,
     today: LocalDate,
     countedThrough: LocalDate,
-    peakDayMs: Long,
     onDayClick: (String) -> Unit,
     cellHeight: Dp = 48.dp,
 ) {
@@ -118,7 +123,6 @@ fun CalendarGrid(
                         DayCell(
                             day = dayNum,
                             summary = summary.takeIf { isTracked },
-                            peakDayMs = peakDayMs,
                             isSelected = isSelected,
                             isToday = isToday,
                             isOutsideWindow = isOutsideWindow,
@@ -137,10 +141,13 @@ fun CalendarGrid(
 }
 
 /**
- * How much of the day hue a cell's background may reach. A full-strength fill would win against the
- * day number sitting on it; this keeps the strongest day a tint rather than a block.
+ * The one weight a recorded day is drawn at. A full-strength fill would win against the day number
+ * sitting on it, so the hue stays a tint rather than a block.
+ *
+ * A constant, not a figure derived from the day's hours: every day the user showed up is drawn
+ * identically, whatever it held.
  */
-private const val BACKGROUND_STRENGTH = 0.35f
+private const val RECORDED_DAY_ALPHA = 0.35f
 
 /**
  * How far a day outside the tracked window is faded back.
@@ -148,9 +155,9 @@ private const val BACKGROUND_STRENGTH = 0.35f
  * **Only the future and the days before tracking began are faded — never a day the user missed.** The
  * fade separates "no record kept" from "in the record"; applied to the past it would land on exactly
  * the empty days the record covers, and a day drawn fainter for holding nothing is a verdict, which
- * this calendar never renders. It is the one mark here allowed to be colour-only, because a date
- * after today already reads as the future from the number itself — unlike the intensity shade, which
- * encodes hours nothing else on the cell says.
+ * this calendar never renders. It is allowed to be colour-only because a date after today already
+ * reads as the future from the number itself, and a date before the record began sits outside every
+ * count the screen states.
  */
 private const val OUTSIDE_WINDOW_ALPHA = 0.38f
 
@@ -158,7 +165,6 @@ private const val OUTSIDE_WINDOW_ALPHA = 0.38f
 private fun DayCell(
     day: Int,
     summary: DailyAggregate?,
-    peakDayMs: Long,
     isSelected: Boolean,
     isToday: Boolean,
     isOutsideWindow: Boolean,
@@ -167,12 +173,11 @@ private fun DayCell(
     onClick: () -> Unit,
 ) {
     // A day with no sessions gets no shade at all: an empty cell, not a coloured failure.
-    val fraction = DayIntensity.fractionOf(summary?.totalDurationMs ?: 0L, peakDayMs)
-    val dayShade = dayColor(fraction * BACKGROUND_STRENGTH)
+    val dayShade = dayColor().copy(alpha = RECORDED_DAY_ALPHA)
 
     val bgColor = when {
         isSelected -> MaterialTheme.colorScheme.primaryContainer
-        fraction > 0f -> dayShade
+        summary != null -> dayShade
         else -> Color.Transparent
     }
 
@@ -183,8 +188,8 @@ private fun DayCell(
         else -> MaterialTheme.colorScheme.onSurface
     }
 
-    // The shade stands for a quantity, so a screen reader is given the quantity itself — colour is
-    // never the only carrier.
+    // The shade says only that the day has a session, so the hours are stated here rather than left
+    // to a mark that no longer carries them.
     val cellDescription = summary?.let {
         stringResource(R.string.cd_day_worked, day, TimeFormat.durationShort(it.totalDurationMs))
     } ?: day.toString()
@@ -227,9 +232,9 @@ private fun CalendarGridPreview() {
     CheckInAppTheme {
         val month = YearMonth.of(2026, 6)
         val summaries = mapOf(
-            "2026-06-02" to DailyAggregate("2026-06-02", 8 * 3_600_000L, 1, 0L, 0L),
-            "2026-06-04" to DailyAggregate("2026-06-04", 4 * 3_600_000L, 1, 0L, 0L),
-            "2026-06-05" to DailyAggregate("2026-06-05", 45 * 60_000L, 1, 0L, 0L),
+            "2026-06-02" to DailyAggregate("2026-06-02", 8 * 3_600_000L, 1, 0L, 0L, 0),
+            "2026-06-04" to DailyAggregate("2026-06-04", 4 * 3_600_000L, 1, 0L, 0L, 0),
+            "2026-06-05" to DailyAggregate("2026-06-05", 45 * 60_000L, 1, 0L, 0L, 0),
         )
         CalendarGrid(
             yearMonth = month,
@@ -238,7 +243,6 @@ private fun CalendarGridPreview() {
             trackingStartDate = month.atDay(1),
             today = month.atDay(15),
             countedThrough = month.atDay(14),
-            peakDayMs = 8 * 3_600_000L,
             onDayClick = {},
         )
     }

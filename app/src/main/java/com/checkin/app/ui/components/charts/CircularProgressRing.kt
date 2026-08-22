@@ -21,9 +21,13 @@ import androidx.compose.ui.unit.dp
  * from the top. [content] is centered inside the ring. Purely presentational — the caller owns the
  * [progress] value (coerced to 0f..1f here).
  *
- * [contentDescription] must state how far along the arc is: the fill and its colour are the only
- * things carrying that, and neither reaches a screen reader. It goes on the arc rather than the whole
- * ring so [content] keeps announcing itself.
+ * [contentDescription] must state how far along the arc is wherever the arc means something: the fill
+ * and its colour are the only things carrying that, and neither reaches a screen reader. It goes on
+ * the arc rather than the whole ring so [content] keeps announcing itself.
+ *
+ * A [progress] of zero draws the track alone, which callers also use deliberately as a **frame** — a
+ * ring around a figure that measures nothing. Those state the figure instead, and pass a thinner
+ * stroke and a neutral colour so it does not read as a gauge stuck at zero.
  */
 @Composable
 fun CircularProgressRing(

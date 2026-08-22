@@ -1,5 +1,7 @@
 package com.checkin.app
 
+import com.checkin.app.data.SessionBand
+import com.checkin.app.data.StartBucket
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.platform.ExportResult
 import com.checkin.app.ui.reports.DayPoint
@@ -18,6 +20,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReportsViewModelTest {
@@ -142,11 +145,11 @@ class ReportsViewModelTest {
     }
 
     /**
-     * The streak is the one figure a user watches, and it is the reason counting reaches today at
+     * Days shown up is the figure a user watches, and it is the reason counting reaches today at
      * all: checking out has to extend it there and then, not at the next midnight.
      */
     @Test
-    fun `a check-out today extends the streak and the daily series straight away`() = runTest {
+    fun `a check-out today extends the counts and the daily series straight away`() = runTest {
         val dao = FakeCheckInSessionDao()
         val hour = 3_600_000L
         val today = LocalDate.of(2026, 6, 15)
@@ -156,20 +159,20 @@ class ReportsViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        assertEquals(2, viewModel.uiState.value.currentStreak)
+        assertEquals(2, viewModel.uiState.value.showedUpDays)
         assertEquals(2, viewModel.uiState.value.totalDays)
         assertEquals(LocalDate.of(2026, 6, 14), viewModel.uiState.value.dailySeries.last().date)
 
-        // Checked in but not out: the streak must not move on an intention.
+        // Checked in but not out: nothing must move on an intention.
         dao.seedOpen(today.toString(), startedAt = 0L)
         advanceUntilIdle()
-        assertEquals(2, viewModel.uiState.value.currentStreak)
+        assertEquals(2, viewModel.uiState.value.showedUpDays)
 
         dao.seedCompleted(today.toString(), startedAt = 0L, durationMs = 2 * hour)
         advanceUntilIdle()
 
-        assertEquals(3, viewModel.uiState.value.currentStreak)
-        assertEquals(3, viewModel.uiState.value.bestStreak)
+        assertEquals(3, viewModel.uiState.value.showedUpDays)
+        assertEquals(4 * hour, viewModel.uiState.value.totalWorkedMs)
         assertEquals(3, viewModel.uiState.value.totalDays)
         assertEquals(0, viewModel.uiState.value.missedDays)
         val series = viewModel.uiState.value.dailySeries
@@ -240,7 +243,6 @@ class ReportsViewModelTest {
     @Test
     fun `a 45-minute day counts as a day showed up`() = runTest {
         val dao = FakeCheckInSessionDao()
-        // Yesterday, so the streak this sustains is the live one.
         dao.seedCompleted("2026-06-14", startedAt = 0L, durationMs = 45 * 60_000L)
         val start = LocalDate.of(2026, 6, 10)
         dao.seedOpen(start.toString())
@@ -251,9 +253,60 @@ class ReportsViewModelTest {
 
         val state = viewModel.uiState.value
         assertEquals(5, state.totalDays) // 2026-06-10 .. 2026-06-14 inclusive
+        // No length threshold stands between a day and counting, here or anywhere else.
         assertEquals(1, state.showedUpDays)
-        // 45 minutes sustains the streak: no length threshold stands between a day and counting.
-        assertEquals(1, state.currentStreak)
+        assertEquals(4, state.missedDays)
+    }
+
+    /**
+     * The two descriptive splits, over the same window as everything else on the screen.
+     *
+     * The start-time split needs every session, not each day's first: a day worked in three blocks
+     * contributes three starts, which is exactly what the per-day aggregates cannot say.
+     */
+    @Test
+    fun `the splits describe every completed session in the window`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        val hour = 3_600_000L
+        val today = LocalDate.of(2026, 6, 15)
+        // 06-14, worked in three blocks: 09:00 morning, 13:00 afternoon, 20:00 evening.
+        val midnight = LocalDate.of(2026, 6, 14).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
+        dao.seedCompleted("2026-06-14", startedAt = midnight + 9 * hour, durationMs = hour)
+        dao.seedCompleted("2026-06-14", startedAt = midnight + 13 * hour, durationMs = hour)
+        dao.seedCompleted("2026-06-14", startedAt = midnight + 20 * hour, durationMs = hour)
+        // 06-13, one morning block.
+        val before = LocalDate.of(2026, 6, 13).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
+        dao.seedCompleted("2026-06-13", startedAt = before + 10 * hour, durationMs = hour)
+
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, today))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(2, state.startBuckets[StartBucket.MORNING])
+        assertEquals(1, state.startBuckets[StartBucket.AFTERNOON])
+        assertEquals(1, state.startBuckets[StartBucket.EVENING])
+        assertEquals(1, state.sessionBands[SessionBand.ONE])
+        assertEquals(0, state.sessionBands[SessionBand.TWO])
+        assertEquals(1, state.sessionBands[SessionBand.THREE_PLUS])
+        assertEquals(2f, state.avgSessionsPerDay, 0.001f)
+        assertEquals(4 * hour, state.totalWorkedMs)
+    }
+
+    /** An open session is in no split, exactly as it is in no total. */
+    @Test
+    fun `an open session contributes to neither split`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-06-13", startedAt = 0L, durationMs = 3_600_000L)
+        dao.seedOpen("2026-06-15", startedAt = 9 * 3_600_000L)
+
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.startBuckets.values.sum())
+        assertEquals(1, state.sessionBands[SessionBand.ONE])
     }
 
     @Test

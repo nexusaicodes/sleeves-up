@@ -20,4 +20,15 @@ data class CheckInSession(
 
     @ColumnInfo(name = "date_key")
     val dateKey: String,
+
+    /**
+     * True when the day-boundary alarm closed this session rather than the user checking out.
+     *
+     * A record of what happened, not a judgement on it and not an edit: the row is immutable either
+     * way, the duration is unchanged, and nothing in the app reads this. It exists so the CSV can
+     * say which stop instants the user chose and which midnight chose for them — a distinction the
+     * export could not otherwise carry, since a forgotten session is stamped at a plausible time.
+     */
+    @ColumnInfo(name = "auto_closed")
+    val autoClosed: Boolean = false,
 )

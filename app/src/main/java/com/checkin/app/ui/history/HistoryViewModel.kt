@@ -38,21 +38,7 @@ data class HistoryUiState(
     val summaries: Map<String, DailyAggregate> = emptyMap(),
     val selectedDateKey: String? = null,
     val selectedDaySessions: List<CheckInSession> = emptyList(),
-    /** Mean worked time per tracked day since tracking began, up to [countedThrough]. */
-    val allTimeAvgDailyMs: Long = 0L,
-    /**
-     * The longest single day on record, which is what a calendar cell's strength is measured
-     * against. All-time rather than per-month so a day reads the same however it is navigated to.
-     */
-    val peakDayMs: Long = 0L,
     val trackedDaysInMonth: Int = 0,
-    /**
-     * Longest run of consecutive days shown up *within the displayed month*. A run crossing a month
-     * boundary is truncated at it, which is what "this month" has to mean for a per-month figure.
-     */
-    val monthBestStreak: Int = 0,
-    /** The same figure over the whole record — the baseline [monthBestStreak] is measured against. */
-    val allTimeBestStreak: Int = 0,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -77,61 +63,34 @@ class HistoryViewModel(private val repository: CheckInRepository, private val ti
         if (key == null) flowOf(emptyList<CheckInSession>()) else repository.sessionsForDateFlow(key)
     }
 
-    // One day subscription drives the whole screen: the averaging window, the today marker, and the
+    // One day subscription drives the whole screen: the counting boundary, the today marker, and the
     // tracked-day count all roll together on refresh and at midnight, with no divergent poll loops.
     val uiState: StateFlow<HistoryUiState> = timeSource.dayTrigger(refresh)
         .flatMapLatest { today -> repository.trackingStartFlow().map { today to it } }
         .flatMapLatest { (today, start) ->
-            // One query serves every all-time figure: the mean per *tracked* day (so days without
-            // sessions stay in the denominator), the peak day the calendar shades against, and the
-            // best streak the month's own streak is ringed against. It runs through today, and how
-            // far of that range counts is decided per emission — today joins the moment it holds a
-            // completed session, and the whole screen is anchored to that one day.
-            val allTimeFlow = if (start == null || start.isAfter(today)) {
-                flowOf(AllTime(countedThrough = today.minusDays(1)))
-            } else {
-                repository.dailyAggregatesFlow(start.format(dateFormatter), today.format(dateFormatter))
-                    .map { aggregates ->
-                        val summaries = repository.byDateKey(aggregates)
-                        val countedThrough = ConsistencyStats.countedThrough(summaries, today)
-                        // The record's first day, still unfinished: there is no counted day to
-                        // divide by yet, let alone average.
-                        if (start.isAfter(countedThrough)) {
-                            AllTime(countedThrough = countedThrough)
-                        } else {
-                            val trackedDays = countedThrough.toEpochDay() - start.toEpochDay() + 1
-                            AllTime(
-                                avgDailyMs = ConsistencyStats.totalWorkedMs(summaries) / trackedDays,
-                                peakDayMs = ConsistencyStats.peakDayMs(summaries),
-                                bestStreak = ConsistencyStats.bestStreak(summaries, start, countedThrough),
-                                countedThrough = countedThrough,
-                            )
-                        }
-                    }
-            }
+            // A **one-day** query answers the only all-record question left: has today been checked
+            // out of yet. `countedThrough` is exactly "today's key is present", so the whole range
+            // never needs reading — it used to, because the longest day, the all-time average and
+            // the best streak were all ringed against on this screen, and all three are gone.
+            val todayKey = today.format(dateFormatter)
+            val countedThroughFlow = repository.dailyAggregatesFlow(todayKey, todayKey)
+                .map { ConsistencyStats.countedThrough(repository.byDateKey(it), today) }
             combine(
                 monthData,
                 selectedDateKey,
                 selectedSessions,
-                allTimeFlow,
-            ) { monthPair, selectedKey, sessions, allTime ->
+                countedThroughFlow,
+            ) { monthPair, selectedKey, sessions, countedThrough ->
                 val (month, summaries) = monthPair
-                val window = trackedWindow(month, start, allTime.countedThrough)
                 HistoryUiState(
                     currentMonth = month,
                     trackingStartDate = start,
                     today = today,
-                    countedThrough = allTime.countedThrough,
+                    countedThrough = countedThrough,
                     summaries = summaries,
                     selectedDateKey = selectedKey,
                     selectedDaySessions = sessions,
-                    allTimeAvgDailyMs = allTime.avgDailyMs,
-                    peakDayMs = allTime.peakDayMs,
-                    trackedDaysInMonth = window?.days() ?: 0,
-                    monthBestStreak = window?.let {
-                        ConsistencyStats.bestStreak(summaries, it.start, it.end)
-                    } ?: 0,
-                    allTimeBestStreak = allTime.bestStreak,
+                    trackedDaysInMonth = trackedWindow(month, start, countedThrough)?.days() ?: 0,
                 )
             }
         }.stateIn(
@@ -164,26 +123,14 @@ class HistoryViewModel(private val repository: CheckInRepository, private val ti
         selectedDateKey.value = if (selectedDateKey.value == dateKey) null else dateKey
     }
 
-    /**
-     * The all-time figures, carried together because one query produces all of them — including
-     * [countedThrough], which that query is also what decides.
-     */
-    private data class AllTime(
-        val avgDailyMs: Long = 0L,
-        val peakDayMs: Long = 0L,
-        val bestStreak: Int = 0,
-        val countedThrough: LocalDate,
-    )
-
     /** An inclusive run of tracked, counted days. */
     private data class TrackedWindow(val start: LocalDate, val end: LocalDate) {
         fun days(): Int = (end.toEpochDay() - start.toEpochDay() + 1).toInt()
     }
 
     /**
-     * The tracked, counted days of [month], or null when it holds none. Both the tracked-day count
-     * and the month's best streak are measured over exactly this window, so they cannot disagree
-     * about where the month begins or how much of today is in it.
+     * The tracked, counted days of [month], or null when it holds none — the denominator the
+     * showed-up ring fills against.
      *
      * A null [trackingStart] means nothing is recorded at all, so no month holds a tracked day —
      * which is what keeps a record with no sessions from reporting days that were missed.

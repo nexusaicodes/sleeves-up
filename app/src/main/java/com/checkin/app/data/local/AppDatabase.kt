@@ -6,8 +6,10 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.checkin.app.service.SessionSchedule
+import java.time.ZoneId
 
-@Database(entities = [CheckInSession::class], version = 5, exportSchema = false)
+@Database(entities = [CheckInSession::class], version = 6, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun checkInSessionDao(): CheckInSessionDao
 
@@ -55,6 +57,51 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * Records which sessions the day-boundary alarm closed, rather than the user.
+         *
+         * Additive and data-preserving: the column defaults to 0, and no existing value is rewritten.
+         * Nothing in the app reads it — it exists for the CSV export alone.
+         *
+         * **The backfill is best-effort, and deliberately so.** Going forward the flag is written by
+         * the one caller that closes a session at midnight, so it is exact. For rows already on
+         * disk there is nothing to read but the stop instant, so the migration re-derives it: a
+         * session stopped at exactly the midnight ending its own `date_key` was closed by the alarm,
+         * because the gate takes seconds to pass and a user cannot land on that millisecond. It
+         * misses two cases and cannot recover either — `onDayBoundaryFired` clamps its stop instant
+         * with `coerceAtMost(now)`, and the armed midnight was computed in the zone the session
+         * began in, so a session that crossed a zone change is stamped somewhere else entirely.
+         * Both under-report, which is the safe direction for a column that asserts something about
+         * the user's behaviour.
+         *
+         * `SessionSchedule.dayBoundaryOf` is reused rather than reimplemented in SQL: the midnight
+         * rule goes through the calendar (so a DST day still ends at midnight), and a second copy of
+         * it here is how the export would come to disagree with the alarm that wrote the rows.
+         */
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE sessions ADD COLUMN auto_closed INTEGER NOT NULL DEFAULT 0")
+                val zone = ZoneId.systemDefault()
+                val closedAtBoundary = mutableListOf<Long>()
+                db.query("SELECT id, stopped_at, date_key FROM sessions WHERE stopped_at IS NOT NULL").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val boundary = SessionSchedule.dayBoundaryOf(cursor.getString(2), zone)
+                        if (boundary != null && boundary == cursor.getLong(1)) {
+                            closedAtBoundary += cursor.getLong(0)
+                        }
+                    }
+                }
+                // Chunked so a long history cannot build one enormous expression. The ids come from
+                // this table's own primary key, so they are inlined rather than bound.
+                closedAtBoundary.chunked(BACKFILL_CHUNK).forEach { ids ->
+                    db.execSQL("UPDATE sessions SET auto_closed = 1 WHERE id IN (${ids.joinToString(",")})")
+                }
+            }
+        }
+
+        /** Ids per backfill statement — see [MIGRATION_5_6]. */
+        private const val BACKFILL_CHUNK = 500
+
+        /**
          * The re-check inside the lock is load-bearing, not boilerplate. Without it, two threads that
          * both read a null `cached` serialize and *both* build an `AppDatabase`, each with its own
          * connection pool; the second overwrites the field and the first caller is left holding an
@@ -66,7 +113,7 @@ abstract class AppDatabase : RoomDatabase() {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "_app",
-            ).addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            ).addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .fallbackToDestructiveMigration()
                 .build()
                 .also { cached = it }
