@@ -4,7 +4,6 @@ import com.checkin.app.R
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.repository.CheckInRepository
-import com.checkin.app.notify.EngagementTag
 import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.notify.NotificationAction
 import com.checkin.app.notify.NotificationChannels
@@ -12,11 +11,6 @@ import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.StringResolver
-import com.checkin.app.notify.log.EngagementEventType
-import com.checkin.app.notify.log.EngagementLog
-import com.checkin.app.notify.log.EngagementSource
-import com.checkin.app.notify.log.PRESENCE_CHECK_KEY
-import com.checkin.app.notify.log.ServiceEventType
 import java.time.ZoneId
 
 /**
@@ -41,7 +35,6 @@ class SessionLifecycleRunner(
     private val notifier: Notifier,
     private val strings: StringResolver,
     private val alarms: SessionAlarms,
-    private val log: EngagementLog,
     private val timeSource: TimeSource,
     private val zone: () -> ZoneId = { ZoneId.systemDefault() },
 ) {
@@ -86,8 +79,6 @@ class SessionLifecycleRunner(
 
         val boundaryAt = dayBoundaryFor(active)
         alarms.scheduleDayBoundaryAt(boundaryAt)
-
-        log.recordService(ServiceEventType.ALARM_SET, timeSource.nowMillis(), "$reminderAt/$boundaryAt")
     }
 
     /**
@@ -129,12 +120,6 @@ class SessionLifecycleRunner(
         val storedBoundary = alarms.dayBoundaryAt
         val boundaryAt = storedBoundary.takeIf { it > 0L } ?: dayBoundaryFor(active)
         alarms.scheduleDayBoundaryAt(boundaryAt)
-
-        // Logged only when something had to be re-derived. This runs on every app open, and a row
-        // per open is retention spent on entries that say nothing happened.
-        if (reminderAt != storedReminder || boundaryAt != storedBoundary) {
-            log.recordService(ServiceEventType.ALARM_SET, nowMs, "ensure $reminderAt/$boundaryAt")
-        }
         return true
     }
 
@@ -154,11 +139,8 @@ class SessionLifecycleRunner(
         if (!notifier.show(reminderSpec(silent))) return refused(firedAt)
 
         alarms.remindersSent = count
-        log.recordSessionReminder(EngagementEventType.SHOWN, firedAt)
 
-        val nextAt = SessionSchedule.nextReminderAt(firedAt)
-        alarms.scheduleReminderAt(nextAt)
-        log.recordService(ServiceEventType.ALARM_SET, firedAt, nextAt.toString())
+        alarms.scheduleReminderAt(SessionSchedule.nextReminderAt(firedAt))
         return Outcome.Reminded
     }
 
@@ -196,7 +178,6 @@ class SessionLifecycleRunner(
         repository.checkOutAt(active.id, closeAt, autoClosed = true)
         alarms.cancelAll()
         notifier.cancel(NotificationIds.SESSION_REMINDER)
-        log.recordService(ServiceEventType.STOPPED, timeSource.nowMillis(), "day boundary @$closeAt")
         return Outcome.Closed(closeAt)
     }
 
@@ -216,12 +197,12 @@ class SessionLifecycleRunner(
     }
 
     /**
-     * The platform would not display the reminder. Logged and re-armed without advancing the count,
-     * so the first reminder the user can actually see still alerts — silence is not an answer, and
-     * a reminder nobody saw must not be treated as one that was ignored.
+     * The platform would not display the reminder. Re-armed **without advancing the count**, so the
+     * first reminder the user can actually see still alerts — silence is not an answer, and a
+     * reminder nobody saw must not be treated as one that was ignored. Advancing here is the bug this
+     * exists to prevent: it marked the alert spent on a refusal and never alerted again all session.
      */
-    private suspend fun refused(firedAt: Long): Outcome {
-        log.recordService(ServiceEventType.DEGRADED, firedAt, "reminder post refused")
+    private fun refused(firedAt: Long): Outcome {
         alarms.scheduleReminderAt(SessionSchedule.nextReminderAt(firedAt))
         return Outcome.Refused
     }
@@ -241,8 +222,5 @@ class SessionLifecycleRunner(
             ),
         ),
         silent = silent,
-        // Recorded for visibility only — these rows drive no rule, and are scoped out of the nudge
-        // cap and attribution queries by their source.
-        tag = EngagementTag(EngagementSource.PRESENCE, PRESENCE_CHECK_KEY, variant = 0),
     )
 }

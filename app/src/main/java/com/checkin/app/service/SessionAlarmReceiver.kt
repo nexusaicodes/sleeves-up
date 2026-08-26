@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.checkin.app.CheckInApplication
-import com.checkin.app.notify.log.ServiceEventType
 import kotlinx.coroutines.launch
 
 /**
@@ -26,10 +25,11 @@ class SessionAlarmReceiver : BroadcastReceiver() {
      * The `catch` is load-bearing. `applicationScope` carries a `SupervisorJob` but **no**
      * `CoroutineExceptionHandler`, so an uncaught throw in a root `launch` reaches the default
      * handler and kills the process — taking the running session's notification with it, which is
-     * the exact failure these alarms exist to prevent. A DB read on a corrupt engagement database or
-     * a refused `setAndAllowWhileIdle` are both realistic sources.
+     * the exact failure these alarms exist to prevent. A DB read on a corrupt sessions database or
+     * a refused `setAndAllowWhileIdle` are both realistic sources. There is nowhere to report the
+     * swallowed failure to; the alarm chain re-arms itself regardless.
      */
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
     override fun onReceive(context: Context, intent: Intent?) {
         val action = intent?.action
         if (action != ACTION_REMINDER && action != ACTION_DAY_BOUNDARY) return
@@ -46,11 +46,6 @@ class SessionAlarmReceiver : BroadcastReceiver() {
                 } else {
                     runner.onReminderFired()
                 }
-                container.engagementLog.recordService(
-                    ServiceEventType.ALARM_FIRED,
-                    container.timeSource.nowMillis(),
-                    action,
-                )
                 // Only a live service has a notification to take down, and only a live service can
                 // be sent a command from here without tripping the background-start restriction.
                 if (CheckInService.isRunning) {
@@ -60,15 +55,9 @@ class SessionAlarmReceiver : BroadcastReceiver() {
                         container.serviceController.refreshFromDb()
                     }
                 }
-            } catch (e: Exception) {
-                // Best-effort breadcrumb; the log write is exactly what may have thrown.
-                runCatching {
-                    container.engagementLog.recordService(
-                        ServiceEventType.DEGRADED,
-                        container.timeSource.nowMillis(),
-                        "alarm threw: ${e.javaClass.simpleName}",
-                    )
-                }
+            } catch (_: Exception) {
+                // Absorbed on purpose: see the class KDoc. The next alarm in the chain is already
+                // armed, so a thrown pass costs this delivery and nothing beyond it.
             } finally {
                 pending.finish()
             }

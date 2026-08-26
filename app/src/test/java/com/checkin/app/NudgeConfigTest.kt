@@ -1,7 +1,7 @@
 package com.checkin.app
 
-import com.checkin.app.notify.engagement.NudgeConfig
-import com.checkin.app.notify.engagement.NudgeSchedule
+import com.checkin.app.notify.nudge.NudgeConfig
+import com.checkin.app.notify.nudge.NudgeSchedule
 import org.junit.Assert.assertTrue
 import org.junit.Test
 

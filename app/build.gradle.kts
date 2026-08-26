@@ -162,7 +162,8 @@ dependencies {
     // biometric 1.1.0 is still the newest stable, so the floor has to be stated here.
     implementation("androidx.fragment:fragment:1.8.2")
 
-    // Periodic evaluation pass for engagement nudges (see notify/engagement/NudgeWorker)
+    // Hourly backstop pass: the session-service revive, the nudge re-arm and the send-ledger
+    // prune all hang off it (see notify/nudge/NudgeWorker). Nudges are delivered by an alarm.
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     // Testing

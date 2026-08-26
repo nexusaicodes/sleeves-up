@@ -1,11 +1,11 @@
-package com.checkin.app.notify.engagement
+package com.checkin.app.notify.nudge
 
 /**
  * Decides which nudge — if any — to send for a given [NudgeSnapshot].
  *
- * This is the whole decision surface of the engagement system, and it is a pure function: no clock,
- * no database, no Android. Every experiment in timing, capping or targeting is a change here and
- * nowhere else, which is what keeps engagement work from reaching into tracking logic.
+ * This is the whole decision surface of the nudge layer, and it is a pure function: no clock, no
+ * database, no Android. A change to timing, capping or targeting is a change here and nowhere else,
+ * which is what keeps the nudge layer from reaching into tracking logic.
  *
  * **Nothing here asks whether the user wants nudges at all** — that is the notification channel's
  * question, and the channel is the only one who can answer it. A pref beside it would be subordinate

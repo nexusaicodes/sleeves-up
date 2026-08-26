@@ -1,4 +1,4 @@
-package com.checkin.app.notify.engagement
+package com.checkin.app.notify.nudge
 
 import java.time.Instant
 import java.time.ZoneId

@@ -1,12 +1,12 @@
-package com.checkin.app.notify.engagement
+package com.checkin.app.notify.nudge
 
 import com.checkin.app.notify.NotificationIds
 
 /**
- * The kinds of engagement notification the app can send. Order is the evaluation priority should two
+ * The kinds of nudge the app can send. Order is the evaluation priority should two
  * ever be eligible in one pass — the first match wins, so the most valuable nudge goes first; today
- * the checkpoint bands are disjoint, so at most one is. Names are persisted in the engagement log, so
- * renaming a constant orphans its history.
+ * the checkpoint bands are disjoint, so at most one is. Names are persisted in the send ledger, so renaming a
+ * constant orphans its history — and with it the per-checkpoint dedup for any send already recorded.
  *
  * [notificationId] must reference a dedicated constant in [NotificationIds], never derive from this
  * enum's ordinal or position: two nudges sharing an id replace each other in the tray, and reordering

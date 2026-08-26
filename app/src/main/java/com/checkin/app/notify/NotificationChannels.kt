@@ -21,19 +21,27 @@ object NotificationChannels {
     const val REMINDER = "reminder_channel"
 
     /**
-     * `_v2` because importance is frozen at creation and this channel needed to become `HIGH`. A new
-     * id is the only way to change it on an install that already has the channel, and it costs every
-     * per-channel choice the user had made there. Free exactly once, before there is an install base;
-     * a third id would not be, so get this one right.
+     * The check-in nudges. Named for what it is now that `notify/engagement/` is `notify/nudge/` —
+     * the previous two ids are retired below.
+     *
+     * A channel id is user-visible state: importance is frozen at creation, so a new id is the only
+     * way to change it on an install that already has the channel, and it costs every per-channel
+     * choice the user had made there. Both renames were free only because this app has never had an
+     * install base to charge — v1.1 and v2.0 reached Play at effectively zero installs. **That
+     * exemption is now spent.** Treat this id as frozen: a fourth one costs real users their
+     * settings, and the importance below can never be revised without one.
      */
-    const val ENGAGEMENT = "engagement_channel_v2"
+    const val NUDGE = "nudge_channel"
 
-    /** The pre-`_v2` engagement channel, deleted rather than left orphaned in the user's settings. */
-    private const val RETIRED_ENGAGEMENT = "engagement_channel"
+    /**
+     * Every id this channel has previously used, deleted rather than left orphaned in the user's
+     * settings as a switch that controls nothing. Append here when retiring an id; never reuse one.
+     */
+    private val RETIRED_NUDGE_CHANNELS = listOf("engagement_channel", "engagement_channel_v2")
 
     fun ensureAll(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        manager.deleteNotificationChannel(RETIRED_ENGAGEMENT)
+        RETIRED_NUDGE_CHANNELS.forEach(manager::deleteNotificationChannel)
 
         // DEFAULT rather than LOW buys placement, not noise. Below DEFAULT the shade files a
         // notification in the collapsed "Silent" group — and this one carries a deliberately stale
@@ -70,11 +78,11 @@ object NotificationChannels {
         // The daily cap is what keeps that from being noise; the channel is what lets them stop it.
         manager.createNotificationChannel(
             NotificationChannel(
-                ENGAGEMENT,
-                context.getString(R.string.engagement_channel_name),
+                NUDGE,
+                context.getString(R.string.nudge_channel_name),
                 NotificationManager.IMPORTANCE_HIGH,
             ).apply {
-                description = context.getString(R.string.engagement_channel_description)
+                description = context.getString(R.string.nudge_channel_description)
             },
         )
     }

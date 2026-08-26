@@ -4,30 +4,31 @@ package com.checkin.app.notify
  * Every notification id the app posts under, including nudges: posting twice under one id replaces
  * rather than adds, so every sender's ids must be visible in one place.
  *
- * A [com.checkin.app.notify.engagement.Nudge] constant's id must be a dedicated constant here, never
+ * A [com.checkin.app.notify.nudge.Nudge] constant's id must be a dedicated constant here, never
  * derived from the enum's ordinal or position — reordering the enum must not change any existing id.
  *
  * ### PendingIntent request codes — the whole allocation
  *
  * A separate namespace from the ids above, shared process-wide **and with previously installed
  * versions**, whose notifications and alarms survive an update. `PendingIntent` equality ignores
- * extras, so two senders on one code means one silently rewrites the other's target. Four files
+ * extras, so two senders on one code means one silently rewrites the other's target. Three files
  * allocate out of it, so the bands are listed here — the ids file — rather than being discoverable
- * only by opening all four and hoping:
+ * only by opening all three and hoping:
  *
  * | Band | Owner | Use |
  * |---|---|---|
- * | the id itself | `NotificationDismissReceiver` | that notification's delete intent |
  * | 1_000+ | `NotificationFactory.CONTENT_REQUEST_BASE` | a notification's tap target |
  * | 10_000+ | `NotificationFactory.ACTION_REQUEST_BASE` | its action buttons, `MAX_ACTIONS` apiece |
  * | 20_000, 20_001 | `service.SessionAlarms` | the session reminder and the day boundary |
- * | 20_010 | `notify.engagement.NudgeAlarms` | the nudge checkpoint |
+ * | 20_010 | `notify.nudge.NudgeAlarms` | the nudge checkpoint |
  *
- * The first row sits below every band and overlaps their numbering deliberately: it is the only
- * `getBroadcast` allocation here, and a broadcast to this receiver can never be equal to an
- * activity intent whatever the code. Reuse that exemption only for another broadcast.
+ * A fourth band once sat below these, overlapping their numbering: the bare notification id, used
+ * for each notification's delete intent. It was exempt because it was the only `getBroadcast`
+ * allocation here and a broadcast intent can never equal an activity one whatever the code. No
+ * notification sets a delete intent any more, so the band is unused — **claim a fresh one rather
+ * than reviving it**, unless what needs it is again a broadcast.
  *
- * **The values are frozen**, for the same reason the ids are. A fifth sender takes a fresh band
+ * **The values are frozen**, for the same reason the ids are. A fourth sender takes a fresh band
  * and adds a row here. The three bases live in `NotificationFactory`'s private companion, so the
  * numbers are restated above rather than linked — this table is the readable copy.
  *
@@ -48,7 +49,7 @@ object NotificationIds {
     /**
      * One per checkpoint nudge. Distinct ids rather than a shared one, so the tray never silently
      * swaps one message for another behind the app's back — when a later checkpoint *should* replace
-     * an earlier one, [com.checkin.app.notify.engagement.NudgeDispatcher] cancels its siblings
+     * an earlier one, [com.checkin.app.notify.nudge.NudgeDispatcher] cancels its siblings
      * explicitly, which is a decision in code rather than a side effect of an id collision.
      */
     const val NUDGE_NOT_CHECKED_IN_MORNING = 10

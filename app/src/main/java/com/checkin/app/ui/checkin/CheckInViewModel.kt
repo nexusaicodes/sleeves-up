@@ -10,7 +10,7 @@ import com.checkin.app.data.TimeSource
 import com.checkin.app.data.dayTrigger
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.repository.CheckInRepository
-import com.checkin.app.notify.engagement.EngagementReporter
+import com.checkin.app.notify.nudge.PostedNudges
 import com.checkin.app.platform.ServiceController
 import com.checkin.app.service.SessionLifecycleRunner
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -52,7 +52,7 @@ class CheckInViewModel(
     private val timeSource: TimeSource,
     private val serviceController: ServiceController,
     private val sessionLifecycleRunner: SessionLifecycleRunner,
-    private val engagementReporter: EngagementReporter,
+    private val postedNudges: PostedNudges,
 ) : ViewModel() {
 
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
@@ -143,9 +143,10 @@ class CheckInViewModel(
             // with no day-boundary close runs until the user notices, then writes a multi-day
             // duration onto a row the app gives no way to edit. Writing the row cannot be refused.
             sessionLifecycleRunner.arm(session.startedAt)
-            // Reported for every check-in, not just the one a notification tap opened — a nudge the
-            // user acted on from inside the app is still a nudge that worked.
-            engagementReporter.onCheckedIn(session.startedAt)
+            // Cleared on every check-in, not just the one a notification tap opened: a nudge asking
+            // for a check-in is stale whichever way the check-in was made, and one left in the tray
+            // sends the user back through the presence gate to reach a session already open.
+            postedNudges.retireAll()
             // No refresh: the inserted row is what `hasEverTracked` reads, and its flow already
             // carries it.
         }
@@ -176,7 +177,7 @@ class CheckInViewModel(
                     container.timeSource,
                     container.serviceController,
                     container.sessionLifecycleRunner,
-                    container.engagementReporter,
+                    container.postedNudges,
                 )
             }
         }

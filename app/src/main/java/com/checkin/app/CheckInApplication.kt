@@ -4,7 +4,7 @@ import android.app.Application
 import com.checkin.app.di.AppContainer
 import com.checkin.app.di.DefaultAppContainer
 import com.checkin.app.notify.NotificationChannels
-import com.checkin.app.notify.engagement.NudgeWorker
+import com.checkin.app.notify.nudge.NudgeWorker
 
 /** Owns the app-wide [AppContainer] (manual DI — no framework). */
 class CheckInApplication : Application() {
@@ -15,7 +15,7 @@ class CheckInApplication : Application() {
         super.onCreate()
         container = DefaultAppContainer(this)
         // Registered here rather than in the service, so a channel exists before anything tries to
-        // post to it — the engagement pass can run without the service ever having started.
+        // post to it — the hourly pass can run without the service ever having started.
         NotificationChannels.ensureAll(this)
         NudgeWorker.schedule(this)
         // Alarms do not survive a force stop or a package replace, and every process start is a free

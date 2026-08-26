@@ -1,4 +1,4 @@
-package com.checkin.app.notify.engagement
+package com.checkin.app.notify.nudge
 
 /**
  * Everything [NudgeEligibility] is allowed to look at, gathered by the caller. Passing a plain value

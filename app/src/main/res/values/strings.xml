@@ -77,34 +77,29 @@
     <string name="reminder_title">Still checked in?</string>
     <string name="reminder_text">Your session is still running. It closes on its own at midnight.</string>
 
-    <!-- Engagement nudges. This channel is the only opt-out there is — there is no in-app switch — so
+    <!-- Check-in nudges. This channel is the only opt-out there is — there is no in-app switch — so
          the name has to be the words a user hunting for one would look for, and the description has
          to say what turning it off actually stops. "Nudge" is internal vocabulary and stays out of
          both. A channel's name and description are updatable after creation; its id and importance
          are not. The name is near-synonymous with "Session Reminders" one row away, so the two
          descriptions carry the difference: muting the wrong one costs the prompt that catches a
          forgotten open session. -->
-    <string name="engagement_channel_name">Check-In Reminders</string>
-    <string name="engagement_channel_description">Occasional reminders when you haven\'t checked in. At most two a day.</string>
+    <string name="nudge_channel_name">Check-In Reminders</string>
+    <string name="nudge_channel_description">Occasional reminders when you haven\'t checked in. At most two a day.</string>
 
     <!-- One pair per checkpoint, because a second send in a day arriving as the same string reads as
-         a stuck loop rather than as a message that came back. Two variants each, A/B, and variant B
-         is a second *wording*, never a warmer or more urgent one — escalating across the day would
-         invent a deadline this app does not have, and would grade a day that is not over. No copy
-         names the hour: delivery is best-effort, so a stated time is a punctuality promise the app
-         cannot keep. -->
-    <string name="nudge_not_checked_in_morning_title_a">Ready when you are</string>
-    <string name="nudge_not_checked_in_morning_body_a">You haven\'t checked in yet today. Tap to start your session.</string>
-    <string name="nudge_not_checked_in_morning_title_b">Start the clock?</string>
-    <string name="nudge_not_checked_in_morning_body_b">Your day hasn\'t started in CheckIn yet. Tap to check in now.</string>
-    <string name="nudge_not_checked_in_afternoon_title_a">No session yet today</string>
-    <string name="nudge_not_checked_in_afternoon_body_a">Whenever you start, it counts — a short day is still a day shown up for.</string>
-    <string name="nudge_not_checked_in_afternoon_title_b">Nothing recorded today</string>
-    <string name="nudge_not_checked_in_afternoon_body_b">There\'s no session on today yet. Tap whenever you\'re ready to start one.</string>
-    <string name="nudge_not_checked_in_evening_title_a">Still time today</string>
-    <string name="nudge_not_checked_in_evening_body_a">Today\'s record closes at midnight. Tap to check in.</string>
-    <string name="nudge_not_checked_in_evening_title_b">The day\'s not over</string>
-    <string name="nudge_not_checked_in_evening_body_b">A short session lands on your calendar the same as a long one. Tap to start.</string>
+         a stuck loop rather than as a message that came back. Each checkpoint has exactly one
+         wording: the A/B arms are gone with the analytics that were the only thing able to tell them
+         apart. Copy never warms or grows more urgent across the day — escalating would invent a
+         deadline this app does not have, and would grade a day that is not over. No copy names the
+         hour: delivery is best-effort, so a stated time is a punctuality promise the app cannot
+         keep. -->
+    <string name="nudge_not_checked_in_morning_title">Ready when you are</string>
+    <string name="nudge_not_checked_in_morning_body">You haven\'t checked in yet today. Tap to start your session.</string>
+    <string name="nudge_not_checked_in_afternoon_title">No session yet today</string>
+    <string name="nudge_not_checked_in_afternoon_body">Whenever you start, it counts — a short day is still a day shown up for.</string>
+    <string name="nudge_not_checked_in_evening_title">Still time today</string>
+    <string name="nudge_not_checked_in_evening_body">Today\'s record closes at midnight. Tap to check in.</string>
 
     <!--
       The first-run welcome tour, shown once before anything is asked for. The order is the point:

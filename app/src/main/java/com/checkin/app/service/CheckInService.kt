@@ -15,8 +15,6 @@ import com.checkin.app.notify.NotificationFactory
 import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
-import com.checkin.app.notify.log.EngagementLog
-import com.checkin.app.notify.log.ServiceEventType
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -49,13 +47,17 @@ class CheckInService : Service() {
      * Both halves of the context are load-bearing. The handler stops a refused or throwing platform
      * call from taking the process — and with it the user's running session — down with it. The
      * **supervisor** job stops that same throw from taking the *scope* down: an exception handler
-     * reports a failure, it does not contain one, so under a plain `Job()` the first throw cancels
+     * absorbs a failure, it does not contain one, so under a plain `Job()` the first throw cancels
      * the scope for good and every later command becomes a silent no-op — including the reconcile
      * that would tear down an orphaned notification.
+     *
+     * The handler's body is deliberately empty: it exists to **absorb**, not to report. Nothing in
+     * the app reads a failure record, and without any handler at all an uncaught throw reaches the
+     * thread's default handler and crashes the process this scope exists to keep alive. Do not add a
+     * write here to give it something to do.
      */
     private val serviceScope = CoroutineScope(
-        Dispatchers.Main + SupervisorJob() +
-            CoroutineExceptionHandler { _, throwable -> logDegraded("scope: ${throwable.javaClass.simpleName}") },
+        Dispatchers.Main + SupervisorJob() + CoroutineExceptionHandler { _, _ -> },
     )
 
     private val container by lazy { (application as CheckInApplication).container }
@@ -66,10 +68,6 @@ class CheckInService : Service() {
 
     /** The same injectable clock the rest of the app reads, rather than a direct platform call. */
     private val timeSource: TimeSource by lazy { container.timeSource }
-
-    // Analytics only. Service rows are scoped out of the nudge cap and attribution queries, so
-    // writing here can't change what the engagement layer decides to send.
-    private val engagementLog: EngagementLog by lazy { container.engagementLog }
 
     /** The in-flight DB reconciliation. A later command cancels it so a stale snapshot can't win. */
     private var reconcileJob: Job? = null
@@ -136,7 +134,6 @@ class CheckInService : Service() {
         saveState()
 
         enterForeground()
-        logService(ServiceEventType.STARTED, sessionId.toString())
         // The session's alarms are deliberately not armed here. This start can be refused — a
         // restricted App Standby bucket, an OEM that declines a specialUse foreground service — and
         // a refusal must not cost the session its day-boundary close. Arming belongs to whoever
@@ -213,7 +210,6 @@ class CheckInService : Service() {
         reconcileJob = null
         isRunning = false
         sessionLifecycleRunner.cancel()
-        logService(ServiceEventType.STOPPED, sessionId.toString())
         clearState()
         cancelReminderNotification()
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -237,11 +233,10 @@ class CheckInService : Service() {
         try {
             startForeground(NotificationIds.TIMER, buildTimerNotification())
             isRunning = true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Cleared, not left standing: this instance is alive but has no notification, and
             // saying otherwise keeps the watchdog from putting one back.
             isRunning = false
-            logDegraded("startForeground: ${e.javaClass.simpleName}")
         }
     }
 
@@ -272,32 +267,6 @@ class CheckInService : Service() {
     private fun cancelReminderNotification() {
         notifier.cancel(NotificationIds.SESSION_REMINDER)
     }
-
-    /**
-     * Records an event, best-effort.
-     *
-     * The engagement log drives no tracking rule, so a failed write must not take the foreground
-     * service — and with it the user's running timer — down.
-     *
-     * Written on the **application** scope rather than [serviceScope] on purpose: half of what is
-     * worth recording here happens as the service ends — the `STOPPED` row, and the `DEGRADED` row
-     * the scope's own exception handler writes — and [serviceScope] is cancelled in `onDestroy`,
-     * dropping exactly those. The app scope carries a `SupervisorJob` and no exception handler,
-     * hence the `catch`.
-     */
-    @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    private fun logService(type: ServiceEventType, detail: String) {
-        val at = timeSource.nowMillis()
-        container.applicationScope.launch {
-            try {
-                engagementLog.recordService(type, at, detail)
-            } catch (e: Exception) {
-                // Nothing to recover: analytics is the only thing lost.
-            }
-        }
-    }
-
-    private fun logDegraded(detail: String) = logService(ServiceEventType.DEGRADED, detail)
 
     private fun saveState() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit {
@@ -331,8 +300,7 @@ class CheckInService : Service() {
     override fun onDestroy() {
         isRunning = false
         // Cancels the scope, not just the jobs held by name: nothing launched on it should outlive
-        // the service. The log writes deliberately do not run here (see [logService]), so the
-        // breadcrumbs for this very teardown still land.
+        // the service.
         serviceScope.cancel()
         reconcileJob = null
         super.onDestroy()

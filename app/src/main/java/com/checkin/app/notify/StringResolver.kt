@@ -8,7 +8,7 @@ import android.content.Context
  * Notification copy is held as resource ids so it stays localizable; this seam is what keeps
  * reading them from dragging a `Context` into the classes that decide what to post, so those stay
  * JVM-testable. Two consumers, in different packages:
- * [com.checkin.app.notify.engagement.NudgeDispatcher] and
+ * [com.checkin.app.notify.nudge.NudgeDispatcher] and
  * [com.checkin.app.service.SessionLifecycleRunner]. It lives here rather than in `platform/` because
  * both of them resolve notification copy and nothing else does.
  */

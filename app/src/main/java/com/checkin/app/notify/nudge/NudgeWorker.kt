@@ -1,4 +1,4 @@
-package com.checkin.app.notify.engagement
+package com.checkin.app.notify.nudge
 
 import android.content.Context
 import androidx.work.CoroutineWorker
@@ -31,7 +31,7 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             // start may be refused here — background foreground-service starts are restricted, and a
             // worker is not among the exemptions — which is why this is the last of the three revive
             // points rather than the only one. A refusal is logged, not thrown.
-            container.sessionWatchdog.reviveIfNeeded(source = "hourly pass")
+            container.sessionWatchdog.reviveIfNeeded()
             // Re-arm before dispatching: a checkpoint alarm lost to a force stop is repaired here
             // even on a pass that then finds nothing eligible to send.
             //
@@ -40,7 +40,7 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             // the dispatch and the prune — the two jobs this pass exists for.
             runCatching { container.nudgeAlarms.armNext(container.timeSource.nowMillis()) }
             container.nudgeDispatcher.runOnce()
-            container.engagementLog.prune(
+            container.nudgeSendLog.prune(
                 container.timeSource.nowMillis() - RETENTION_MS,
             )
         }.fold(
@@ -54,9 +54,35 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
     }
 
     companion object {
-        private const val WORK_NAME = "engagement_nudge_pass"
+        private const val WORK_NAME = "nudge_pass"
+
+        /**
+         * The name this work was enqueued under before `notify/engagement/` became `notify/nudge/`.
+         *
+         * A unique name is WorkManager's own persisted key, so renaming does not rename the existing
+         * work — it enqueues new work and leaves the old `WorkSpec` standing. Because the worker
+         * class moved packages in the same change, that orphan names a class that no longer
+         * resolves, so WorkManager cannot instantiate it and fails it on a schedule forever. Had only
+         * the name changed, it would have been worse: [ExistingPeriodicWorkPolicy.KEEP] would leave
+         * two live hourly passes, doubling every revive, re-arm and prune. Cancelling before the
+         * enqueue is what makes the rename a rename either way — the exact analogue of deleting a
+         * retired notification channel.
+         *
+         * Verified on device: after the upgrade `WorkName` joins one `WorkSpec` in state 5
+         * (CANCELLED) under this name, and one in state 0 (ENQUEUED) under [WORK_NAME].
+         *
+         * Keep this call for as long as any install may still hold the old work — nothing reports
+         * back that it is gone. Append rather than replace if the name ever changes again.
+         */
+        private const val RETIRED_WORK_NAME = "engagement_nudge_pass"
         private const val INTERVAL_MINUTES = 60L
-        private val RETENTION_MS = TimeUnit.DAYS.toMillis(180)
+
+        /**
+         * Nothing reads a send older than the start of today — [NudgeDispatcher] queries from
+         * midnight and no other reader exists. The week is slack for a clock moved backwards, not a
+         * decision to keep records: this ledger is scheduler state, and stale rows are just litter.
+         */
+        private val RETENTION_MS = TimeUnit.DAYS.toMillis(7)
 
         /**
          * Enqueued unconditionally at startup with [ExistingPeriodicWorkPolicy.KEEP], so it survives
@@ -64,6 +90,9 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
          * and a post to a channel the user has turned off is refused by `Notifier` rather than shown.
          */
         fun schedule(context: Context) {
+            // Before enqueuing, or KEEP preserves the orphan alongside the new one.
+            WorkManager.getInstance(context).cancelUniqueWork(RETIRED_WORK_NAME)
+
             val request = PeriodicWorkRequestBuilder<NudgeWorker>(
                 INTERVAL_MINUTES,
                 TimeUnit.MINUTES,

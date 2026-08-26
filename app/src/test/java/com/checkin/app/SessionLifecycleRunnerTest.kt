@@ -3,7 +3,6 @@ package com.checkin.app
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.StringResolver
-import com.checkin.app.notify.log.EngagementEventType
 import com.checkin.app.service.SessionLifecycleRunner
 import com.checkin.app.service.SessionSchedule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,14 +37,12 @@ class SessionLifecycleRunnerTest {
     private val repository = CheckInRepository(dao, time)
     private val notifier = FakeNotifier()
     private val alarms = FakeSessionAlarms()
-    private val log = FakeEngagementLog()
 
     private fun runner() = SessionLifecycleRunner(
         repository = repository,
         notifier = notifier,
         strings = StringResolver { "copy-$it" },
         alarms = alarms,
-        log = log,
         timeSource = time,
         zone = { zone },
     )
@@ -178,7 +175,6 @@ class SessionLifecycleRunnerTest {
         assertTrue(outcome is SessionLifecycleRunner.Outcome.Reminded)
         assertEquals(NotificationIds.SESSION_REMINDER, notifier.shown.single().id)
         assertEquals(SessionSchedule.nextReminderAt(now), alarms.lastReminder)
-        assertTrue(log.events.value.any { it.event == EngagementEventType.SHOWN.name })
     }
 
     /** The first alerts; the rest accumulate on the shade rather than buzzing every two hours. */
@@ -240,7 +236,6 @@ class SessionLifecycleRunnerTest {
             notifier = notifier,
             strings = StringResolver { "copy-$it" },
             alarms = alarms,
-            log = log,
             timeSource = late,
             zone = { zone },
         )
@@ -282,7 +277,6 @@ class SessionLifecycleRunnerTest {
             notifier = notifier,
             strings = StringResolver { "copy-$it" },
             alarms = alarms,
-            log = log,
             timeSource = FakeTimeSource(boundary + 60_000L, today.plusDays(1)),
             zone = { ZoneId.of("Asia/Karachi") },
         )
@@ -303,7 +297,6 @@ class SessionLifecycleRunnerTest {
             notifier = notifier,
             strings = StringResolver { "copy-$it" },
             alarms = alarms,
-            log = log,
             timeSource = FakeTimeSource(fireAt, today),
             zone = { zone },
         )

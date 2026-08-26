@@ -17,7 +17,7 @@ object PresenceCheckSignal {
         /** Notification "Check Out" action: success checks the active session out. */
         CHECK_OUT,
 
-        /** Engagement nudge tap: success starts a session. */
+        /** Nudge tap: success starts a session. */
         CHECK_IN,
     }
 

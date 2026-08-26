@@ -1,6 +1,6 @@
 package com.checkin.app
 
-import com.checkin.app.notify.engagement.NudgeSchedule
+import com.checkin.app.notify.nudge.NudgeSchedule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -93,7 +93,7 @@ class NudgeScheduleTest {
     }
 
     /**
-     * Strictly after, and that is load-bearing: [com.checkin.app.notify.engagement.NudgeAlarmReceiver]
+     * Strictly after, and that is load-bearing: [com.checkin.app.notify.nudge.NudgeAlarmReceiver]
      * re-arms from inside the pass the checkpoint just triggered, so an inclusive comparison would
      * schedule the instant that had only just fired and spin on it.
      */

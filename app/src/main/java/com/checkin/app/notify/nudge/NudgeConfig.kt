@@ -1,4 +1,4 @@
-package com.checkin.app.notify.engagement
+package com.checkin.app.notify.nudge
 
 /**
  * How often a nudge may be sent. Its own file because this is what anyone tuning nudge cadence is
@@ -9,9 +9,10 @@ package com.checkin.app.notify.engagement
  * Frequency is bounded three ways and the checkpoint hours are **not** one of them: this type holds
  * two of the bounds, and [NudgeSnapshot.alreadySentToday] is the third.
  *
- * **Cadence only.** The other nudge constant a reader may be hunting is the attribution window —
- * how long after a nudge a check-in still counts as caused by it — and that is not cadence, so it
- * lives with the reporter that applies it: `DefaultEngagementReporter.CONVERSION_WINDOW_MS`.
+ * **Cadence only, and there is no longer any other kind of nudge constant.** A reader may come here
+ * hunting an attribution window — how long after a nudge a check-in still counted as caused by it.
+ * There isn't one: conversion attribution was deleted along with the analytics that were its only
+ * consumer, and [NudgeSendLog] now records a send and nothing else.
  */
 data class NudgeConfig(
     /**

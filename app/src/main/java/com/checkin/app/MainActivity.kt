@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
-import com.checkin.app.notify.EngagementTag
 import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.ui.AppRoot
 import com.checkin.app.ui.checkin.CheckOutSignal
@@ -73,7 +72,7 @@ class MainActivity : FragmentActivity() {
         // app on a session whose service was killed shows a running timer — rendered from the row —
         // with nothing behind it, and the session stays lost.
         container.applicationScope.launch {
-            container.sessionWatchdog.reviveIfNeeded(source = "app open")
+            container.sessionWatchdog.reviveIfNeeded()
         }
     }
 
@@ -87,18 +86,10 @@ class MainActivity : FragmentActivity() {
             }
             intent?.getBooleanExtra(LaunchExtras.CHECK_IN, false) == true -> {
                 intent.removeExtra(LaunchExtras.CHECK_IN)
-                // Carried by the notification itself, so the open is attributed to the one tapped
-                // rather than to whichever the log holds as most recently shown. Absent on a
-                // notification posted by a release that predates the tag; the reporter falls back.
-                val key = intent.getStringExtra(EngagementTag.EXTRA_KEY)
-                val variant = intent.getIntExtra(EngagementTag.EXTRA_VARIANT, 0)
-                // The tap itself is worth recording even when the gate can't run — it is what the
-                // user did with the notification, not what the app managed to do about it.
-                (application as CheckInApplication).container.let { container ->
-                    container.applicationScope.launch {
-                        container.engagementReporter.onNudgeOpened(container.timeSource.nowMillis(), key, variant)
-                    }
-                }
+                // Retired on the tap rather than after the gate resolves: the notification has served
+                // its purpose the moment it is tapped, whether or not the check-in that follows
+                // completes. Nothing the app posts is autoCancel, so this cancel is the app's job.
+                (application as CheckInApplication).container.postedNudges.retireAll()
                 requestPresenceCheck(Reason.CHECK_IN)
             }
         }
@@ -140,7 +131,9 @@ class MainActivity : FragmentActivity() {
                     // Armed by the writer, not the service: a refused foreground start must not
                     // cost the session its day-boundary close.
                     container.sessionLifecycleRunner.arm(session.startedAt)
-                    container.engagementReporter.onCheckedIn(session.startedAt)
+                    // A nudge asking for a check-in is stale the moment one happens. Left posted,
+                    // tapping it later runs the full presence gate and resolves to nothing.
+                    container.postedNudges.retireAll()
                 }
             }
             Reason.NONE -> {}

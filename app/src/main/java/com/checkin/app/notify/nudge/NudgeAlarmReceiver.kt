@@ -1,10 +1,9 @@
-package com.checkin.app.notify.engagement
+package com.checkin.app.notify.nudge
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.checkin.app.CheckInApplication
-import com.checkin.app.notify.log.ServiceEventType
 import kotlinx.coroutines.launch
 
 /**
@@ -15,7 +14,7 @@ import kotlinx.coroutines.launch
  * rebooting, a deferrable worker getting a slot. This one runs off the alarm that just fired, so once
  * the first is armed the sequence continues on its own for as long as the process is allowed to exist.
  *
- * It lives in `notify/engagement/` rather than beside the session alarms because the engagement layer
+ * It lives in `notify/nudge/` rather than beside the session alarms because the engagement layer
  * is structurally isolated: it may read tracking state to build a snapshot, but it writes nothing to
  * `sessions` and nothing in `service/` depends on it.
  */
@@ -30,7 +29,7 @@ class NudgeAlarmReceiver : BroadcastReceiver() {
      * Without that, one bad pass would end the chain permanently and reproduce the silence this whole
      * mechanism exists to fix.
      */
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action != ACTION_CHECKPOINT) return
         val app = context.applicationContext as? CheckInApplication ?: return
@@ -41,20 +40,10 @@ class NudgeAlarmReceiver : BroadcastReceiver() {
         container.applicationScope.launch {
             try {
                 container.nudgeDispatcher.runOnce()
-                container.engagementLog.recordService(
-                    ServiceEventType.CHECKPOINT_FIRED,
-                    container.timeSource.nowMillis(),
-                    "nudge checkpoint",
-                )
-            } catch (e: Exception) {
-                // Best-effort breadcrumb; the log write is exactly what may have thrown.
-                runCatching {
-                    container.engagementLog.recordService(
-                        ServiceEventType.DEGRADED,
-                        container.timeSource.nowMillis(),
-                        "checkpoint threw: ${e.javaClass.simpleName}",
-                    )
-                }
+            } catch (_: Exception) {
+                // Absorbed: the re-arm below runs regardless, so a thrown pass costs this checkpoint
+                // and nothing after it. There is nowhere to report it to and nothing that would read
+                // such a report.
             } finally {
                 runCatching { container.nudgeAlarms.armNext(container.timeSource.nowMillis()) }
                 pending.finish()

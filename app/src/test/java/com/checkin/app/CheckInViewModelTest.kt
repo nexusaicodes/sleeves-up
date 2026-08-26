@@ -28,7 +28,7 @@ class CheckInViewModelTest {
         dao: FakeCheckInSessionDao,
         service: FakeServiceController,
         time: FakeTimeSource,
-        engagement: FakeEngagementReporter = FakeEngagementReporter(),
+        nudges: FakePostedNudges = FakePostedNudges(),
         alarms: FakeSessionAlarms = FakeSessionAlarms(),
     ): CheckInViewModel {
         val repo = CheckInRepository(dao, time)
@@ -39,10 +39,9 @@ class CheckInViewModelTest {
             notifier = FakeNotifier(),
             strings = StringResolver { "copy-$it" },
             alarms = alarms,
-            log = FakeEngagementLog(),
             timeSource = time,
         )
-        return CheckInViewModel(repo, time, service, reminder, engagement)
+        return CheckInViewModel(repo, time, service, reminder, nudges)
     }
 
     /**
@@ -160,18 +159,19 @@ class CheckInViewModelTest {
     }
 
     /**
-     * Every check-in is reported, not just the one a notification tap opened — otherwise a nudge the
-     * user acted on from inside the app is never credited, and the stale notification is left posted.
+     * Every check-in retires the posted nudges, not just the one a notification tap opened. Nothing
+     * the app posts is `autoCancel`, so a nudge left in the tray sends the user back through the
+     * full presence gate only to reach a session that is already open.
      */
     @Test
-    fun `an in-app check-in is reported to the engagement layer`() = runTest {
+    fun `an in-app check-in retires any posted nudge`() = runTest {
         val dao = FakeCheckInSessionDao()
-        val engagement = FakeEngagementReporter()
+        val nudges = FakePostedNudges()
         val viewModel = buildViewModel(
             dao,
             FakeServiceController(),
             FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)),
-            engagement,
+            nudges,
         )
 
         backgroundScope.launch { viewModel.uiState.collect {} }
@@ -179,7 +179,7 @@ class CheckInViewModelTest {
         viewModel.onAuthSuccess()
         advanceUntilIdle()
 
-        assertEquals(listOf(1000L), engagement.checkedInAt)
+        assertEquals(1, nudges.retireCount)
     }
 
     /**

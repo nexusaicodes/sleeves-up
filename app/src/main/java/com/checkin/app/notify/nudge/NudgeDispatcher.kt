@@ -1,16 +1,12 @@
-package com.checkin.app.notify.engagement
+package com.checkin.app.notify.nudge
 
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.repository.CheckInRepository
-import com.checkin.app.notify.EngagementTag
 import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.notify.NotificationChannels
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.StringResolver
-import com.checkin.app.notify.log.EngagementEventType
-import com.checkin.app.notify.log.EngagementLog
-import com.checkin.app.notify.log.EngagementSource
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -18,23 +14,23 @@ import java.time.format.DateTimeFormatter
 /**
  * Assembles a snapshot, asks [NudgeEligibility] what to send, and posts the result.
  *
- * For why several `Engagement*` types sit outside this package, see the tree map in
- * [com.checkin.app.notify.Notifier].
- *
  * [runOnce] is the only way a nudge is ever posted — there is no bypass and no forced send, so the
- * copy a device shows is whatever eligibility and the install's own variant bucket produce.
+ * copy a device shows is whatever eligibility produces.
  *
  * Every read here is a read-only observation of tracking state — this layer never writes to the
  * sessions table, and the decision itself stays in the pure rules.
+ *
+ * It also implements [PostedNudges], because retiring a posted nudge is cancelling notification ids
+ * this class already owns; a second holder of the [Notifier] and of `Nudge.entries` would be free to
+ * disagree with `runOnce` about which ids exist.
  */
 class NudgeDispatcher(
     private val strings: StringResolver,
     private val repository: CheckInRepository,
-    private val install: EngagementInstallId,
     private val notifier: Notifier,
-    private val log: EngagementLog,
+    private val log: NudgeSendLog,
     private val timeSource: TimeSource,
-) {
+) : PostedNudges {
 
     companion object {
         private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
@@ -55,28 +51,32 @@ class NudgeDispatcher(
         return sent
     }
 
+    /**
+     * Cancels every nudge id. Clears the whole set rather than one, because this is called from paths
+     * that cannot tell which nudge is posted — and a nudge asking for a check-in is stale the moment
+     * one happens, whichever checkpoint sent it.
+     */
+    override fun retireAll() {
+        Nudge.entries.forEach { notifier.cancel(it.notificationId) }
+    }
+
     private suspend fun send(nudge: Nudge, nowMillis: Long): Nudge? {
-        val variantCount = NudgeCatalog.variants(nudge).size
-        val variant = VariantAssigner.assign(install.installId(), nudge.name, variantCount)
-        val copy = NudgeCatalog.variant(nudge, variant)
+        val copy = NudgeCatalog.copyFor(nudge)
 
         val posted = notifier.show(
             NotificationSpec(
                 id = nudge.notificationId,
-                channelId = NotificationChannels.ENGAGEMENT,
+                channelId = NotificationChannels.NUDGE,
                 title = strings.get(copy.titleRes),
                 body = strings.get(copy.bodyRes),
                 launchExtra = LaunchExtras.CHECK_IN,
-                // Swiping a nudge away is the clearest signal it isn't wanted, and the only one the
-                // log can't infer from the absence of a check-in.
-                tag = EngagementTag(EngagementSource.NUDGE, nudge.name, variant),
             ),
         )
-        // Notifications can be refused (permission revoked). Logging a SHOWN we never showed would
-        // put an un-convertible event in the denominator and understate every conversion rate.
+        // Notifications can be refused (permission revoked). Recording a send that never reached the
+        // tray would spend a slot in the daily cap on a nudge the user was never shown.
         if (!posted) return null
 
-        log.record(nudge, variant, EngagementEventType.SHOWN, nowMillis)
+        log.record(nudge, nowMillis)
         return nudge
     }
 
@@ -86,9 +86,9 @@ class NudgeDispatcher(
         val hour = Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault()).hour
         val todaySessions = repository.getSessionsByDate(today.format(dateFormatter))
         val startOfDay = today.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        // Read from the log rather than a prefs tally, so the frequency rules survive a prefs wipe
-        // and can never drift out of step with what was actually sent. One query answers all three.
-        val shown = log.shownNudgesSince(startOfDay)
+        // One query answers all three frequency rules, so they cannot disagree about where the day
+        // started. This is the ledger's only read, and the only reason it exists.
+        val sent = log.sentSince(startOfDay)
 
         return NudgeSnapshot(
             nowMillis = now,
@@ -96,11 +96,11 @@ class NudgeDispatcher(
             // Deliberately the day's rows and not `getActiveSession()`: a session still open from an
             // earlier day is a lost day-boundary close, not a user who is present. See the field.
             hasCheckedInToday = todaySessions.isNotEmpty(),
-            alreadySentToday = shown.mapNotNullTo(mutableSetOf()) { showing ->
-                Nudge.entries.firstOrNull { it.name == showing.key }
+            alreadySentToday = sent.mapNotNullTo(mutableSetOf()) { sending ->
+                Nudge.entries.firstOrNull { it.name == sending.key }
             },
-            shownToday = shown.size,
-            lastShownAtMs = shown.maxOfOrNull { it.atMillis },
+            shownToday = sent.size,
+            lastShownAtMs = sent.maxOfOrNull { it.atMillis },
         )
     }
 }

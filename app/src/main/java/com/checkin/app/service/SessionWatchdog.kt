@@ -2,8 +2,6 @@ package com.checkin.app.service
 
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.repository.CheckInRepository
-import com.checkin.app.notify.log.EngagementLog
-import com.checkin.app.notify.log.ServiceEventType
 import com.checkin.app.platform.ServiceController
 
 /**
@@ -25,14 +23,13 @@ import com.checkin.app.platform.ServiceController
  * three callers, ordered by how likely they are to be allowed: `MainActivity.onStart` (a visible
  * Activity always is), `SessionRestoreReceiver` (`BOOT_COMPLETED` and `MY_PACKAGE_REPLACED` are
  * exempt), and `NudgeWorker`'s hourly pass (which may not be). That is why there are three and not
- * one. A refusal is logged rather than thrown, and the next caller tries again. Re-arming an alarm carries no such
- * restriction, which is the other reason it does not wait behind the service.
+ * one: a refusal is absorbed rather than thrown, and the next caller simply tries again. Re-arming an
+ * alarm carries no such restriction, which is the other reason it does not wait behind the service.
  */
 class SessionWatchdog(
     private val repository: CheckInRepository,
     private val serviceController: ServiceController,
     private val sessionLifecycleRunner: SessionLifecycleRunner,
-    private val log: EngagementLog,
     private val timeSource: TimeSource,
     /** Injected so the decision is testable without a live service. */
     private val serviceRunning: () -> Boolean = { CheckInService.isRunning },
@@ -44,23 +41,17 @@ class SessionWatchdog(
      *
      * Never throws, for the reason given in [SessionAlarmReceiver]: every caller is a
      * fire-and-forget `launch` on the app-wide scope. Killing the process would be a poor outcome
-     * for a mechanism whose whole job is recovering from one that died.
+     * for a mechanism whose whole job is recovering from one that died. There is nowhere to report
+     * the swallowed failure to — the next caller retrying *is* the recovery.
      */
-    @Suppress("TooGenericExceptionCaught")
-    suspend fun reviveIfNeeded(source: String): Boolean = try {
-        attemptRevive(source)
-    } catch (e: Exception) {
-        runCatching {
-            log.recordService(
-                ServiceEventType.DEGRADED,
-                timeSource.nowMillis(),
-                "revive threw ($source): ${e.javaClass.simpleName}",
-            )
-        }
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    suspend fun reviveIfNeeded(): Boolean = try {
+        attemptRevive()
+    } catch (_: Exception) {
         false
     }
 
-    private suspend fun attemptRevive(source: String): Boolean {
+    private suspend fun attemptRevive(): Boolean {
         // Alarms first, and unconditionally: a package replace clears them while leaving the row
         // open and the service perfectly able to restart itself, so gating this on the service
         // being down is exactly how a session loses its day-boundary close and keeps its timer.
@@ -73,12 +64,10 @@ class SessionWatchdog(
         // revive(), not startTimer(): that path takes its timing from the intent and rewrites the
         // render mirror from it, which is right for a session that has not begun and wrong for one
         // already running.
-        val started = serviceController.revive(active.id, active.startedAt)
-        log.recordService(
-            if (started) ServiceEventType.REVIVED else ServiceEventType.DEGRADED,
-            timeSource.nowMillis(),
-            if (started) source else "revive refused ($source)",
-        )
+        // The result is deliberately not inspected: a refusal is a normal outcome here, and the
+        // next of the three callers retries. Returning true says an attempt was made, not that it
+        // was allowed.
+        serviceController.revive(active.id, active.startedAt)
         return true
     }
 }

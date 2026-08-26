@@ -4,12 +4,11 @@
  *
  * This file holds the small fakes, one per seam, each a few lines of recording or canned answers:
  * FakeTimeSource (the clock, and the only place a midnight rollover is driven), FakeServiceController,
- * FakeNotifier, FakeCsvExporter, FakeEngagementInstallId, FakeEngagementReporter, FakeSessionAlarms.
+ * FakeNotifier, FakeCsvExporter, FakePostedNudges, FakeNudgeSendLog, FakeSessionAlarms.
  *
  * A fake gets its own file once it has behaviour worth reading on its own — an in-memory query
- * surface with ordering and filtering to honour. That is why FakeCheckInSessionDao and
- * FakeEngagementLog are separate: the second in particular mirrors the real log's source scoping,
- * because a fake that did not would let a test prove only the fake right.
+ * surface with ordering and filtering to honour. FakeCheckInSessionDao is the one that earns it;
+ * FakeNudgeSendLog does not, because the real ledger is now a single unfiltered range query.
  *
  * Every name here starts with Fake so `ls Fake*` and a grep for the seam's name both find it.
  */
@@ -19,8 +18,10 @@ import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
-import com.checkin.app.notify.engagement.EngagementInstallId
-import com.checkin.app.notify.engagement.EngagementReporter
+import com.checkin.app.notify.nudge.Nudge
+import com.checkin.app.notify.nudge.NudgeSendLog
+import com.checkin.app.notify.nudge.NudgeSending
+import com.checkin.app.notify.nudge.PostedNudges
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.ExportResult
 import com.checkin.app.platform.ServiceController
@@ -59,7 +60,16 @@ class FakeServiceController : ServiceController {
         return true
     }
 
+    /**
+     * [reviveAttempts] counts calls whether or not the start was allowed, because a refusal is an
+     * ordinary outcome the watchdog absorbs — [revived] alone cannot tell a refused attempt from one
+     * that was never made, which is exactly the distinction those tests are about.
+     */
+    var reviveAttempts = 0
+        private set
+
     override fun revive(sessionId: Long, startedAt: Long): Boolean {
+        reviveAttempts++
         if (!startAllowed) return false
         revived += sessionId
         return true
@@ -98,16 +108,30 @@ class FakeCsvExporter(var result: ExportResult = ExportResult.Success) : CsvExpo
     }
 }
 
-class FakeEngagementInstallId(private val installId: String = "fake-install") : EngagementInstallId {
-    override fun installId(): String = installId
+class FakePostedNudges : PostedNudges {
+    var retireCount = 0
+
+    override fun retireAll() {
+        retireCount++
+    }
 }
 
-class FakeEngagementReporter : EngagementReporter {
-    val checkedInAt = mutableListOf<Long>()
+/**
+ * In-memory send ledger. Small enough to live here because the real one has no scoping left to
+ * mirror — one unfiltered range query is the whole read surface.
+ */
+class FakeNudgeSendLog : NudgeSendLog {
+    val sends = mutableListOf<NudgeSending>()
 
-    override suspend fun onNudgeOpened(atMillis: Long, key: String?, variant: Int) = Unit
-    override suspend fun onCheckedIn(atMillis: Long) {
-        checkedInAt += atMillis
+    override suspend fun record(nudge: Nudge, atMillis: Long) {
+        sends += NudgeSending(nudge.name, atMillis)
+    }
+
+    override suspend fun sentSince(since: Long): List<NudgeSending> =
+        sends.filter { it.atMillis >= since }.sortedBy { it.atMillis }
+
+    override suspend fun prune(before: Long) {
+        sends.removeAll { it.atMillis < before }
     }
 }
 

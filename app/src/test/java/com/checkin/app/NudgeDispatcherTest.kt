@@ -3,13 +3,10 @@ package com.checkin.app
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.NotificationChannels
 import com.checkin.app.notify.StringResolver
-import com.checkin.app.notify.engagement.Nudge
-import com.checkin.app.notify.engagement.NudgeCatalog
-import com.checkin.app.notify.engagement.NudgeDispatcher
-import com.checkin.app.notify.engagement.NudgeSchedule
-import com.checkin.app.notify.engagement.VariantAssigner
-import com.checkin.app.notify.log.EngagementEventType
-import com.checkin.app.notify.log.EngagementSource
+import com.checkin.app.notify.nudge.Nudge
+import com.checkin.app.notify.nudge.NudgeCatalog
+import com.checkin.app.notify.nudge.NudgeDispatcher
+import com.checkin.app.notify.nudge.NudgeSchedule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -38,19 +35,18 @@ class NudgeDispatcherTest {
 
     private val time = FakeTimeSource(triggerHour, today)
     private val notifier = FakeNotifier()
-    private val log = FakeEngagementLog()
+    private val log = FakeNudgeSendLog()
     private val dao = FakeCheckInSessionDao()
 
     private fun dispatcher(clock: FakeTimeSource = time): NudgeDispatcher = NudgeDispatcher(
         strings = StringResolver { "copy-$it" },
         repository = CheckInRepository(dao, clock),
-        install = FakeEngagementInstallId(),
         notifier = notifier,
         log = log,
         timeSource = clock,
     )
 
-    private suspend fun shownCount() = log.shownNudgesSince(0L).size
+    private suspend fun shownCount() = log.sentSince(0L).size
 
     @Test
     fun `an eligible nudge is posted and logged`() = runTest {
@@ -152,39 +148,36 @@ class NudgeDispatcherTest {
         assertEquals(0, shownCount())
     }
 
-    /** The spec is what the tray and the dismissal receiver both read; a wrong field is invisible. */
+    /** The spec is what reaches the tray; a wrong id or channel is invisible until a device shows it. */
     @Test
-    fun `the posted spec carries the nudge's own id, channel and dismissal tag`() = runTest {
+    fun `the posted spec carries the nudge's own id and channel`() = runTest {
         dispatcher().runOnce()
 
         val spec = notifier.shown.single()
         assertEquals(Nudge.NOT_CHECKED_IN_MORNING.notificationId, spec.id)
-        assertEquals(NotificationChannels.ENGAGEMENT, spec.channelId)
-        assertEquals(EngagementSource.NUDGE, spec.tag?.source)
-        assertEquals(Nudge.NOT_CHECKED_IN_MORNING.name, spec.tag?.key)
+        assertEquals(NotificationChannels.NUDGE, spec.channelId)
     }
 
     /**
-     * The install's own bucket is the only wording a device ever sees — there is no override, so a
-     * dispatcher that assigned differently from [VariantAssigner] would silently split an experiment
-     * the log then reports as one. The variant is asserted on both the spec and the row, because a
-     * mismatch between them attributes a tap to copy the user was never shown.
+     * The catalog is the only source of a nudge's wording — there is no variant bucket and no
+     * override — so a dispatcher that resolved copy any other way would show a string no test reads.
      */
     @Test
-    fun `the posted variant is the install's own bucket`() = runTest {
-        val install = FakeEngagementInstallId()
-        val expected = VariantAssigner.assign(
-            install.installId(),
-            Nudge.NOT_CHECKED_IN_MORNING.name,
-            NudgeCatalog.variants(Nudge.NOT_CHECKED_IN_MORNING).size,
-        )
+    fun `the posted copy is the nudge's registered copy`() = runTest {
+        val copy = NudgeCatalog.copyFor(Nudge.NOT_CHECKED_IN_MORNING)
 
         dispatcher().runOnce()
 
-        assertEquals(expected, notifier.shown.single().tag?.variant)
-        assertEquals(
-            listOf(expected),
-            log.events.value.filter { it.event == EngagementEventType.SHOWN.name }.map { it.variant },
-        )
+        val spec = notifier.shown.single()
+        assertEquals("copy-${copy.titleRes}", spec.title)
+        assertEquals("copy-${copy.bodyRes}", spec.body)
+    }
+
+    /** Retiring is what stops a stale nudge sending the user through the gate to an open session. */
+    @Test
+    fun `retireAll cancels every nudge id`() = runTest {
+        dispatcher().retireAll()
+
+        assertEquals(Nudge.entries.map { it.notificationId }.toSet(), notifier.cancelled.toSet())
     }
 }
