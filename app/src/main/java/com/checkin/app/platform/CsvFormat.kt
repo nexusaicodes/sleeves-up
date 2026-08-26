@@ -8,8 +8,8 @@ import java.util.Locale
  * The CSV's shape, kept apart from the class that writes and shares the file.
  *
  * This is a data contract people script against, and it is pure, so it is the half a JVM test can
- * pin — [DefaultCsvExporter] needs a `Context` and cannot be. Filed under the exporter's name, the
- * frozen column order was three top-level privates inside a file about file I/O and share sheets.
+ * pin — [DefaultCsvExporter] needs a `Context` and cannot be. The frozen column order belongs with
+ * the functions that spell it, not inside a file about file I/O and share sheets.
  *
  * What is *not* here is the range: the exporter is handed two `date_key` strings already clamped by
  * `ReportScope.resolve`, so the file and the screen it was exported from cannot describe different

@@ -36,8 +36,8 @@ import kotlinx.coroutines.launch
  * The database row is authoritative for everything that ends up in a session's duration; the fields
  * here and the `checkin_timer_prefs` mirror are a cache for rendering.
  *
- * For which of the package's other eight files does what — they all begin `Session` and the prefix
- * discriminates nothing — see the layer map in [SessionSchedule]'s KDoc.
+ * For what the package's other eight files do — almost all are `Session`-prefixed, so the prefix discriminates nothing
+ * — see the layer map in [SessionSchedule]'s KDoc.
  */
 class CheckInService : Service() {
 

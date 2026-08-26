@@ -4,7 +4,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 /*
- * What the two line charts plot: one point per day, one per month.
+ * What the two time-series charts plot: one point per day (a line), one per month (a bar).
  *
  * Beside ReportScope rather than in the ViewModel file, which otherwise declared three public types
  * where every other screen's declares one -- its own UiState. Both series are gap-filled by the

@@ -9,8 +9,7 @@ package com.checkin.app.notify.nudge
  * through the full presence gate and then resolves to nothing, which reads as a check-in that
  * silently failed.
  *
- * This is what is left of a reporter that also recorded opens and conversions. The recording had no
- * reader and is gone; the cancelling was always the half that changed what the user sees.
+ * Cancelling only — this seam records nothing; see [NudgeSendLog] for why.
  */
 interface PostedNudges {
     fun retireAll()

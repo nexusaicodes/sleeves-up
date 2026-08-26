@@ -37,9 +37,9 @@ package com.checkin.app.notify
 object NotificationIds {
 
     /**
-     * The ongoing check-in timer. A foreground-service notification, but swipeable at this minSdk
-     * even though it is posted `ongoing` — see [NotificationSpec.ongoing]. Nothing re-posts it after
-     * a dismissal; the session reminder and the day boundary are the coverage.
+     * The ongoing check-in timer. A foreground-service notification, swipeable from Android 14
+     * despite being posted `ongoing` — see [NotificationSpec.ongoing]. Nothing re-posts it after a
+     * dismissal; the session reminder and the day boundary are the coverage.
      */
     const val TIMER = 1
 

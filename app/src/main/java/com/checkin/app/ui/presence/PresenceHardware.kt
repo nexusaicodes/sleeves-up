@@ -25,8 +25,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
  * detect, how to build a preview that reports it, whether a device unlock exists to fall back to,
  * and how to reach the settings screen that creates one.
  *
- * Separate from the screen because none of it is UI, and because the screen was 563 lines under a
- * name that announced only the last of its jobs.
+ * Separate from the screen because none of it is UI: the screen composes, this asks the device.
  */
 
 private const val TAG = "PresenceHardware"

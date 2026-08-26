@@ -13,8 +13,9 @@ data class NotificationSpec(
     val launchExtra: String? = null,
     val actions: List<NotificationAction> = emptyList(),
     /**
-     * A live status line rather than a message. The user can swipe one away at this minSdk, and
-     * nothing re-posts it afterwards — that would override a decision made with full information.
+     * A live status line rather than a message. From Android 14 the user can swipe one away even
+     * though it is posted `ongoing` — on 13 it stays undismissible — and nothing re-posts it
+     * afterwards, which would override a decision made with full information.
      */
     val ongoing: Boolean = false,
     val silent: Boolean = false,

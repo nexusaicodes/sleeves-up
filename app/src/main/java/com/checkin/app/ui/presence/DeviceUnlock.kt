@@ -45,9 +45,10 @@ internal const val DEVICE_UNLOCK_OFFERED_AFTER_MS = 10_000L
  * the camera path stays shut for good. Keying the [remember] on [activity] re-registers a live
  * callback on every recreation, which is what makes that flag safe to save across one.
  *
- * Every callback is held through [rememberUpdatedState] for the same reason: the prompt is
- * remembered across recompositions and would otherwise capture the first lambda it was given and
- * hold it for the life of the screen.
+ * The callbacks the prompt captures are held through [rememberUpdatedState] for the same reason: it
+ * is remembered across recompositions and would otherwise hold the first lambdas it was given for
+ * the life of the screen. The returned lambda is rebuilt each composition, so what it calls
+ * directly needs no such wrapping.
  *
  * The caller owns the flag rather than this function, because the same flag also gates the camera's
  * success effect. [onRaised] and [onEnded] bracket the prompt being up; [onEnded] fires on **any**

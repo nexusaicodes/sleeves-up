@@ -24,11 +24,6 @@ import androidx.core.content.ContextCompat
  *   ledger of what was already sent today. The whole decision surface is one pure function over a
  *   plain value object; the rest is copy, scheduling and the alarm that wakes it.
  *
- * There was a third package, `notify/log/`, holding a general engagement log — opens, dismissals,
- * conversions, per-variant buckets, service lifecycle rows. Nothing ever read any of it back, and it
- * is gone; what survives is [com.checkin.app.notify.nudge.NudgeSendLog], which exists solely
- * because the frequency rules must know what was already sent today.
- *
  * `notify/` is the shared base but not a leaf — [Nudge] imports [NotificationIds] back out of here —
  * so do not read the layering as a one-way arrow. The invariant that actually holds is the outer
  * one: **nothing under `notify/` writes to `sessions`.** It may read tracking state to decide what

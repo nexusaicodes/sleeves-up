@@ -2,7 +2,7 @@ package com.checkin.app.notify
 
 /**
  * The boolean extras a notification sets on its tap intent to tell [com.checkin.app.MainActivity]
- * what the user was answering. Both open the presence gate; neither is ever read by a service.
+ * what the user was answering. Each opens the presence gate; none is ever read by a service.
  *
  * They live here rather than in `nudge/` because all three senders already deal in this
  * package — the timer, the session reminder and every nudge — while the Activity that reads them

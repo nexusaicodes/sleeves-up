@@ -10,9 +10,9 @@ interface ServiceController {
     /**
      * Starts the timer service for a session that has just begun. **Not the revive path** — see
      * [revive] for one already running; the two take their timing from different places and are not
-     * interchangeable. Returns false when the platform refused the start —
-     * background foreground-service starts are restricted, and the watchdog calls this from contexts
-     * where that refusal is a normal outcome to be logged and retried, not a crash.
+     * interchangeable. Returns false when the platform refused the start, since background
+     * foreground-service starts are restricted. Neither writer inspects it — the row is written
+     * either way, and [SessionWatchdog] is what repairs a session left with no service.
      */
     fun startTimer(sessionId: Long, startedAt: Long): Boolean
 

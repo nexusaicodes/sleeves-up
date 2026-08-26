@@ -26,8 +26,8 @@ import java.time.format.DateTimeFormatter
 
 /**
  * What the gate is being opened for, so that passing it performs the action the user asked for
- * rather than a fixed one. The root gate's equivalent is `PresenceCheckSignal.Reason`, which carries
- * the same three cases for a check requested from a notification.
+ * rather than a fixed one. The root gate's equivalent is `PresenceCheckSignal.Reason`, which covers the same actions for a check requested from
+ * a notification — with check-out split in two, one value per `ClosedBy`.
  */
 sealed class PresenceAction {
     data object None : PresenceAction()

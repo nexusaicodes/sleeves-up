@@ -51,7 +51,7 @@ HOW IT WORKS
 
 WHAT YOU SEE
 • A calendar that marks every day you showed up — one mark, the same for a short day and a long one
-• A monthly summary led by the days you showed up, out of the days tracked, with your average day beside it
+• Tap any day to see the sessions it held, start to finish, and what the day came to
 • Reports with daily and monthly hours, when in the day your sessions start, and how many you run a day
 • CSV export through the system share sheet
 
@@ -112,7 +112,7 @@ is what makes them easy to write back in.
 | attendance | The vocabulary was renamed out of the app; the tab is History. |
 | streak · consecutive days · keep the chain going | A streak is a number the next day can take away. The calendar shows consecutive days visually and the app counts none of them. |
 | longest day · best day · personal best · your record | Nothing ranks one of the user's days against the others, and nothing is a baseline anything else is drawn against. |
-| shaded by how long · intensity · ringed against your best | The calendar is binary and the one ring left fills against the month's tracked days, never against a figure the user previously achieved. |
+| shaded by how long · intensity · ringed against your best | The calendar is binary, and no arc in the app fills to measure anything — the Check-In gauge's sweep is motion, not a score. |
 
 ## Categorisation & contact
 

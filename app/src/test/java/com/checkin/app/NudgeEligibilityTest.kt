@@ -189,7 +189,7 @@ class NudgeEligibilityTest {
 
         assertTrue(
             "A gap of ${NudgeConfig().minGapMs}ms would suppress punctual checkpoints ${closest}ms apart",
-            NudgeConfig().minGapMs <= closest,
+            NudgeConfig().minGapMs < closest,
         )
     }
 

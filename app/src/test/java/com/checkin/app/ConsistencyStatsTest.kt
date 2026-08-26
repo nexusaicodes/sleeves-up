@@ -59,8 +59,8 @@ class ConsistencyStatsTest {
 
     /**
      * The load-bearing half. An in-progress day never reaches the aggregates, so counting stops at
-     * yesterday — which is what keeps a morning from opening with a missed day, a dipped average and
-     * a streak of zero that the first check-out would then take back.
+     * yesterday — which is what keeps a morning from opening with a missed day and a dipped total
+     * that the first check-out would then take back.
      */
     @Test
     fun `counting stops at yesterday while today is unfinished`() {

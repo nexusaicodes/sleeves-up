@@ -35,9 +35,9 @@ complexity:
 exceptions:
   TooGenericExceptionCaught:
     # Catching broad exceptions is load-bearing in a few seams — a refused foreground start must
-    # never take the running session down, a watchdog revive runs on a scope with no handler, and
-    # an intent launcher must return false rather than throw. Those sites carry a site-level
-    # @Suppress naming the reason; a new one needs the same justification.
+    # never take the running session down, and a watchdog revive runs on a scope with no handler.
+    # Those sites carry a site-level @Suppress naming the reason; a new one needs the same
+    # justification.
     active: true
   SwallowedException:
     active: true

@@ -88,9 +88,8 @@
     <string name="nudge_channel_description">Occasional reminders when you haven\'t checked in. At most two a day.</string>
 
     <!-- One pair per checkpoint, because a second send in a day arriving as the same string reads as
-         a stuck loop rather than as a message that came back. Each checkpoint has exactly one
-         wording: the A/B arms are gone with the analytics that were the only thing able to tell them
-         apart. Copy never warms or grows more urgent across the day — escalating would invent a
+         a stuck loop rather than as a message that came back. Each checkpoint has exactly one wording — no variants: nothing in the app can tell two arms apart, so a second one is
+only a second string to keep in step. Copy never warms or grows more urgent across the day — escalating would invent a
          deadline this app does not have, and would grade a day that is not over. No copy names the
          hour: delivery is best-effort, so a stated time is a punctuality promise the app cannot
          keep. -->

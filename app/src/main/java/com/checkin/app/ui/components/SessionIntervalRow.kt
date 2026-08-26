@@ -110,8 +110,7 @@ internal fun SessionIntervalRow(session: CheckInSession) {
  * The open session's mark: three dots breathing in sequence, in the duration column's place.
  *
  * Drawn rather than an emoji glyph, which would vary by device font, ignore the theme colour and sit
- * on its own baseline. It holds still when the system animation scale is off — see
- * [animationsEnabled], which is where that reasoning lives now that a second surface honours it.
+ * on its own baseline. It holds still when the system animation scale is off — see [animationsEnabled], which is where that reasoning lives.
  */
 @Composable
 private fun OngoingPulse(color: Color) {

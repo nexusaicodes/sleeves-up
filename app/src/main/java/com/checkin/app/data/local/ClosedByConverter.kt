@@ -7,7 +7,7 @@ import androidx.room.TypeConverter
  *
  * An ordinal would reshuffle the whole table the moment a value is inserted into the enum, silently
  * relabelling every historical row, and the string is the value the CSV prints anyway — one
- * spelling, written once, read by the export and by the migration that back-fills it.
+ * spelling, written once, read by the export and by anything a future migration would match on.
  *
  * An unrecognised string reads back as null (a hand-edited or corrupt row) rather than throwing, on
  * the same principle as everything else here: a session's hours must survive a value nobody can

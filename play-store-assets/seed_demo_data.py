@@ -84,8 +84,8 @@ def main(db_path: str) -> None:
     conn = sqlite3.connect(db_path)
     conn.execute("DELETE FROM sessions")
     conn.executemany(
-        # `auto_closed` is left to its DEFAULT 0: every seeded session is one the demo user
-        # checked out of, which is what the screenshots should show.
+        # `closed_by` is omitted, so it stores NULL: nothing on screen reads it and only the CSV export does, so the
+        # screenshots are unaffected either way.
         "INSERT INTO sessions (started_at, stopped_at, duration, date_key) VALUES (?, ?, ?, ?)",
         rows,
     )

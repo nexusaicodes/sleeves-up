@@ -7,8 +7,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Sizing shared by Reports' two [DonutChart]s — the start-time split and the sessions-per-day
- * split.
+ * Sizing shared by Reports' three [DonutChart]s — the days split, the start-time split and the
+ * sessions-per-day split.
  *
  * Separate from the call site so the stroke and the diameter are stated once beside the reasoning
  * that fixes them, rather than as two bare literals inside a Composable.
