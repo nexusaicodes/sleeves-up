@@ -10,6 +10,27 @@ import androidx.core.content.ContextCompat
 /**
  * Seam over the platform notification manager so the engagement layer can be unit-tested without
  * Android, and so posting is refused rather than thrown when notifications aren't permitted.
+ *
+ * ### Reading the `notify` tree
+ *
+ * Three packages, split by what a file is *for* rather than by what it is named — several
+ * `Engagement*` types sit outside `engagement/`, and that is deliberate:
+ *
+ * - **`notify/`** — the plumbing every notification shares, whoever sends it: how one is described
+ *   ([NotificationSpec]), built ([NotificationFactory]), posted (this file), and whether posting is
+ *   even possible ([NotificationDelivery], pure). Its ids and request codes are in
+ *   [NotificationIds]. It also holds what rides a notification's intents — [EngagementTag] and
+ *   [LaunchExtras] outbound, [EngagementRouting]/[EngagementTarget] decoding inbound — which is why
+ *   those live here and not in `engagement/`: they are intent payloads, and the session reminder
+ *   uses the same machinery a nudge does.
+ * - **`notify/engagement/`** — deciding *whether and when* to send a nudge, and sending it. The
+ *   whole decision surface is one pure function over a plain value object; the rest is copy,
+ *   scheduling and the alarm that wakes it.
+ * - **`notify/log/`** — the separate analytics database and the pure rules read off it. Nothing
+ *   here posts anything.
+ *
+ * The direction of dependency runs `log/` ← `engagement/` → `notify/`, and never back into the
+ * app's session data: `notify` may read tracking state, and never writes to it.
  */
 interface Notifier {
     /**

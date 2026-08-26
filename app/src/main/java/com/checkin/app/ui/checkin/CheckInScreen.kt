@@ -231,6 +231,9 @@ private val SESSION_LIST_MAX = 180.dp
 /** Below this an expanded list shows barely a row, so the whole screen scrolls instead. */
 private val SESSION_LIST_MIN = 96.dp
 
+// The gauge's own three sizes are the remaining term in this budget and live in TimerGauge.kt,
+// beside the composable they size.
+
 @Composable
 private fun CheckInOutButton(isRunning: Boolean, onCheckIn: () -> Unit, onCheckOut: () -> Unit) {
     val start = startActionColors()

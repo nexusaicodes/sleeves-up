@@ -26,7 +26,8 @@ import java.time.format.DateTimeFormatter
  * - **Orchestration**, where the decisions live: [SessionLifecycleRunner] (arms both alarms, handles
  *   the reminder, **and closes the session at the day boundary** — the app's only un-gated
  *   check-out), [SessionWatchdog] (repairs a service or alarms lost to a kill),
- *   [ServiceReconciler] (whether a live service still has a row behind it).
+ *   [ServiceReconciler] (whether a live service still has a row behind it — a decision, but a pure
+ *   and unit-tested one, so look for it here rather than among the Android files).
  *
  * Plus the two receivers ([SessionAlarmReceiver], [SessionRestoreReceiver]) and [CheckInService]
  * itself, which owns the ongoing notification and nothing else — it runs no ticker and arms no

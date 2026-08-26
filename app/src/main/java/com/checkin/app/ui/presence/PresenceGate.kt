@@ -42,6 +42,10 @@ private val PRESENCE_PERMISSIONS = arrayOf(
  * feature actually demands it: the prominent disclosure, then the runtime permissions, then the
  * capture itself. Nothing is asked at launch, so the app is fully browsable before a first check-in.
  * [onDismiss] backs out at any stage, leaving the caller's action unperformed.
+ *
+ * Two callers, and both matter: `AppRoot` raises it above the whole app for a check requested from
+ * a notification, and `AppNavScaffold` raises it over the nav host for one requested from the
+ * Check-In tab. Same gate, different z-rank — a change here lands on both.
  */
 @Composable
 fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
