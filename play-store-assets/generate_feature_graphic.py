@@ -1,72 +1,115 @@
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
-import os
+"""Regenerates play-store-assets/feature-graphic.png (1024x500).
+
+Three elements and no more: the wordmark, the tagline, and a fragment of the binary
+calendar. Deliberately **no device frame** -- at 1024x500 a phone shrinks to a thumbnail and
+spends the half of the canvas the words need. The graphic runs in Play placements and in most
+third-party listings and blog embeds, so it is read small and read once.
+
+The calendar fragment bleeds off the right edge rather than sitting centred in reserve space:
+a month that ends inside the canvas reads as a complete object to be inspected, and a month
+that runs off it reads as a record that continues -- which is the thing being sold.
+
+It is **not a perfect month**, for the same reason the listing screenshots may not show one:
+an unbroken grid says "this app is for people who never miss", which is the opposite of the
+pitch. The gaps are the honest part.
+
+Type is the app's own: Outfit for the wordmark, Manrope for the tagline, loaded from
+app/src/main/res/font. That is the same split Type.kt makes on screen -- Outfit on display
+sizes, Manrope on reading sizes -- and the files are committed, so this script needs no font
+fallback chain and renders identically on any machine.
+
+Run from the repo root:  python3 play-store-assets/generate_feature_graphic.py
+"""
+
+import sys
+
+from PIL import Image, ImageDraw, ImageFont
+
+sys.path.insert(0, "play-store-assets")
+from generate_icons import CORNER_FRAC  # noqa: E402  -- one source for the cell's shape
 
 W, H = 1024, 500
-ICON = "app/src/main/ic_launcher-playstore.png"
 OUT = "play-store-assets/feature-graphic.png"
+FONT_DIR = "app/src/main/res/font"
 
-# Gradient endpoints, deliberately deeper than the launcher indigo (#3F51B5). The icon tile is
-# flat brand indigo, so the field has to sit below it in value or the tile disappears into it.
+# Gradient endpoints, deliberately deeper than the launcher indigo (#3F51B5): the filled
+# cells are near-white and the empty ones are a whisper of it, so the field has to sit well
+# below both in value or the grid stops reading as two states.
 TOP = (46, 59, 132)      # #2E3B84
 BOT = (26, 33, 84)       # #1A2154
 
-def font(paths, size):
-    for p in paths:
-        if os.path.exists(p):
-            try:
-                return ImageFont.truetype(p, size)
-            except Exception:
-                pass
-    return ImageFont.load_default()
+WORDMARK = "Sleeves Up"
+TAGLINE = "A day counts because you showed up."
 
-BOLD = ["/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-        "/Library/Fonts/Arial Bold.ttf",
-        "/System/Library/Fonts/Helvetica.ttc"]
-REG  = ["/System/Library/Fonts/Supplemental/Arial.ttf",
-        "/Library/Fonts/Arial.ttf",
-        "/System/Library/Fonts/Helvetica.ttc"]
+# --- the calendar fragment -------------------------------------------------------------
 
-img = Image.new("RGB", (W, H), TOP)
-px = img.load()
-# diagonal gradient
-for y in range(H):
-    for x in range(0, W, 1):
-        t = (x / W * 0.45 + y / H * 0.55)
-        r = int(TOP[0] + (BOT[0]-TOP[0]) * t)
-        g = int(TOP[1] + (BOT[1]-TOP[1]) * t)
-        b = int(TOP[2] + (BOT[2]-TOP[2]) * t)
-        px[x, y] = (r, g, b)
+COLS, ROWS = 7, 5
+CELL = 62
+GAP = 14
+GRID_X, GRID_Y = 646, 58
 
-draw = ImageDraw.Draw(img, "RGBA")
-# faint vertical grid lines (launcher motif)
-for x in range(0, W, 64):
-    draw.line([(x, 0), (x, H)], fill=(255, 255, 255, 16), width=1)
+# Five weeks with eleven gaps in them. Scattered rather than clustered, and never a whole
+# empty row: a blank week reads as a fortnight off, which is a story this graphic is not
+# telling. Rows are weeks, so the two-day gaps that fall together read as a weekend without
+# the graphic ever having to claim weekends are exempt -- they are not.
+EMPTY = frozenset({
+    (0, 0), (0, 5),
+    (1, 3), (1, 6),
+    (2, 1),
+    (3, 2), (3, 5), (3, 6),
+    (4, 0), (4, 4),
+})
 
-# --- app icon, rounded, with soft shadow ---
-icon = Image.open(ICON).convert("RGBA").resize((300, 300), Image.LANCZOS)
-rad = 66
-mask = Image.new("L", (300, 300), 0)
-ImageDraw.Draw(mask).rounded_rectangle([0, 0, 299, 299], radius=rad, fill=255)
-icon.putalpha(mask)
 
-ix, iy = 90, (H - 300) // 2
-# shadow
-shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-sd = ImageDraw.Draw(shadow)
-sd.rounded_rectangle([ix+8, iy+14, ix+300+8, iy+300+14], radius=rad, fill=(0, 0, 0, 110))
-shadow = shadow.filter(ImageFilter.GaussianBlur(16))
-img.paste(shadow, (0, 0), shadow)
-img.paste(icon, (ix, iy), icon)
+def font(name, size):
+    return ImageFont.truetype(f"{FONT_DIR}/{name}.ttf", size)
 
-# --- text block ---
-tx = 470
-f_title = font(BOLD, 96)
-f_sub   = font(REG, 46)
-f_tag   = font(BOLD, 27)
 
-draw.text((tx, 150), "CheckIn", font=f_title, fill=(255, 255, 255, 255))
-draw.text((tx+4, 258), "Solopreneur Tracker", font=f_sub, fill=(255, 255, 255, 235))
-draw.text((tx+4, 322), "Private  ·  On-device  ·  No account", font=f_tag, fill=(210, 216, 255, 255))
+def gradient():
+    """Diagonal gradient, built small and scaled: a per-pixel Python loop over half a
+    million pixels costs seconds and buys nothing a bilinear upscale does not."""
+    small = Image.new("RGB", (64, 64))
+    px = small.load()
+    for y in range(64):
+        for x in range(64):
+            t = (x / 64) * 0.45 + (y / 64) * 0.55
+            px[x, y] = tuple(int(a + (b - a) * t) for a, b in zip(TOP, BOT))
+    return small.resize((W, H), Image.BILINEAR)
 
-img.save(OUT, "PNG")
-print("wrote", OUT, img.size)
+
+def main():
+    img = gradient()
+    draw = ImageDraw.Draw(img, "RGBA")
+
+    radius = int(CELL * CORNER_FRAC)
+    for row in range(ROWS):
+        for col in range(COLS):
+            x0 = GRID_X + col * (CELL + GAP)
+            y0 = GRID_Y + row * (CELL + GAP)
+            filled = (row, col) not in EMPTY
+            draw.rounded_rectangle(
+                [x0, y0, x0 + CELL, y0 + CELL],
+                radius=radius,
+                fill=(255, 255, 255, 235) if filled else (255, 255, 255, 28),
+            )
+
+    f_word = font("outfit_bold", 92)
+    f_tag = font("manrope_medium", 29)
+
+    tx = 72
+    draw.text((tx, 186), WORDMARK, font=f_word, fill=(255, 255, 255, 255))
+    draw.text((tx + 3, 300), TAGLINE, font=f_tag, fill=(206, 214, 255, 255))
+
+    # The text must not collide with the grid. Asserted rather than eyeballed: the wordmark
+    # is the one string here that a rename would lengthen, and a silent overlap in a 1024px
+    # graphic is the kind of thing that ships.
+    right = max(draw.textbbox((tx, 186), WORDMARK, font=f_word)[2],
+                draw.textbbox((tx + 3, 300), TAGLINE, font=f_tag)[2])
+    assert right < GRID_X - 24, f"text reaches {right}, grid starts at {GRID_X}"
+
+    img.save(OUT, "PNG")
+    print(f"wrote {OUT} {img.size}  text right edge {right} of {GRID_X}")
+
+
+if __name__ == "__main__":
+    main()

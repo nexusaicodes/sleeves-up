@@ -1,4 +1,4 @@
-# CheckIn
+# Sleeves Up
 
 A personal Android tracker built around **showing up**. It records your working time through
 authenticated **check-in / check-out** intervals and shows the record building up over time. There

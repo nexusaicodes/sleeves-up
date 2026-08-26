@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
  * the links out, and the licences.
  */
 @Composable
-fun SettingsScreen(innerPadding: PaddingValues, onOpenLicenses: () -> Unit) {
+fun SettingsScreen(innerPadding: PaddingValues, onOpenPrivacy: () -> Unit, onOpenLicenses: () -> Unit) {
     // Screen-scoped, not item-scoped: the About card that posts these messages is a lazy item, and a
     // scope remembered inside it is cancelled the moment the card scrolls away.
     val snackbarHostState = LocalSnackbarHostState.current
@@ -40,6 +40,12 @@ fun SettingsScreen(innerPadding: PaddingValues, onOpenLicenses: () -> Unit) {
         ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        item { AboutCard(onOpenLicenses = onOpenLicenses, showMessage = showMessage) }
+        item {
+            AboutCard(
+                onOpenPrivacy = onOpenPrivacy,
+                onOpenLicenses = onOpenLicenses,
+                showMessage = showMessage,
+            )
+        }
     }
 }

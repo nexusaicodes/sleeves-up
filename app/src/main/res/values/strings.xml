@@ -4,16 +4,16 @@
     notification channel names ("Check-In Timer", "Session Reminders"), which Android renders as the
     titles of one list; everything a user reads as a line rather than a heading — row labels,
     buttons, help text, empty states — is sentence case ("Grant access", "Showed up").
-    The only exceptions are the product name CheckIn and the "Check In"/"Check Out" actions it is
-    named after.
+    The only exceptions are the product name Sleeves Up and the "Check In"/"Check Out" actions the
+    app is built around.
 
     Nothing here grades a day. There is no target, no half day and no absence — a day is one the user
     showed up for or one they didn't, and the copy must not reintroduce a verdict.
 -->
 <resources>
-    <!-- App Name. "CheckIn" is the product (matching the Play listing); "Check In" with a space is
-         the action, and the two are not interchangeable — see nav_check_in and check_in below. -->
-    <string name="app_name">CheckIn</string>
+    <!-- App Name. "Sleeves Up" is the product (matching the Play listing); "Check In" is the
+         action, and the two are not interchangeable — see nav_check_in and check_in below. -->
+    <string name="app_name">Sleeves Up</string>
 
     <!-- Navigation -->
     <string name="nav_check_in">Check In</string>
@@ -21,6 +21,7 @@
     <string name="nav_reports">Reports</string>
     <string name="nav_settings">Settings</string>
     <string name="nav_licenses">Open Source</string>
+    <string name="nav_privacy">Privacy</string>
 
     <!-- Check-In Screen -->
     <string name="check_in">Check In</string>
@@ -119,7 +120,7 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
     <string name="welcome_presence_title">Presence, checked on this device</string>
     <string name="welcome_presence_body">The front camera confirms someone\'s there at check-in and check-out. No photo is taken and no image ever leaves the camera.</string>
     <string name="welcome_reminders_title">A reminder if the day gets away</string>
-    <string name="welcome_reminders_body">If you haven\'t checked in, CheckIn says so — at most twice a day. Turn them off with a long press on any reminder.</string>
+    <string name="welcome_reminders_body">If you haven\'t checked in, Sleeves Up says so — at most twice a day. Turn them off with a long press on any reminder.</string>
     <!-- Spoken by the dot row. HorizontalPager publishes a scroll range and no page count, so
          without this a screen reader is never told where in the tour it is. -->
     <string name="welcome_page_position">Page %1$d of %2$d</string>
@@ -229,6 +230,7 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
     <string name="about_section">About</string>
     <string name="about_version">Version %1$s (build %2$d)</string>
     <string name="about_developer">Nexus AI Technology Labs</string>
+    <string name="about_privacy_on_device">What this app collects</string>
     <string name="about_privacy_policy">Privacy policy</string>
     <string name="about_feedback">Send feedback</string>
     <string name="about_rate">Rate on Google Play</string>
@@ -238,8 +240,24 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
     <string name="about_no_browser">No browser found. Link copied to the clipboard.</string>
     <string name="about_no_handler">Nothing on this device can open that.</string>
 
+    <!-- Privacy. Every line is a claim about a mechanism, not a promise about conduct:
+         each states the thing that makes it true, because a negative nobody can check is
+         worth nothing. Re-verify the internet line against the merged manifest before a
+         release — a new dependency can make it false without a word here changing. -->
+    <string name="privacy_cannot_title">What This App Does Not Do</string>
+    <string name="privacy_no_internet_title">No internet permission</string>
+    <string name="privacy_no_internet_body">It cannot upload anything, because it cannot reach the network at all.</string>
+    <string name="privacy_no_account_title">No account, no server</string>
+    <string name="privacy_no_account_body">There is nothing to sign in to. Your sessions live in a database on this phone.</string>
+    <string name="privacy_no_photo_title">No photo is taken</string>
+    <string name="privacy_no_photo_body">Your camera reports whether a face is in frame. The app reads that count and nothing else.</string>
+    <string name="privacy_no_analytics_title">No analytics, no ads</string>
+    <string name="privacy_no_analytics_body">Nothing here measures how you use the app, and no third-party code collects anything.</string>
+    <string name="privacy_check_title">How to Check</string>
+    <string name="privacy_check_body">You don\'t have to take this on trust. Android lists every permission an app declares under App info, and Google Play lists them on the store page. This app has no network permission to list.</string>
+
     <!-- Open source licenses -->
-    <string name="licenses_intro">CheckIn is built on these projects. Grouped by upstream project rather than by artifact.</string>
+    <string name="licenses_intro">Sleeves Up is built on these projects. Grouped by upstream project rather than by artifact.</string>
     <!-- Named after the licence it opens: these buttons sit below every library card, far from any
          context. The text is bundled rather than linked because Apache-2.0 section 4(a) and the OFL
          both oblige the app to ship a copy, and an offline device could not fetch one. -->
