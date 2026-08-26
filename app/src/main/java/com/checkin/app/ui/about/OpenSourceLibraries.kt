@@ -51,7 +51,7 @@ data class OpenSourceLibrary(
  * libyuv it embeds.
  *
  * **This list is the resolved classpath, not the dependency block.** Guava's ListenableFuture,
- * AutoValue's annotations, JSpecify and javax.inject are all redistributed in the APK without
+ * AutoValue's annotations and JSpecify are all redistributed in the APK without
  * appearing in `app/build.gradle.kts`, so a list built from that file alone would omit them.
  *
  * Every entry is now Apache-2.0, the OFL, or the BSD that rides along with CameraX — no proprietary
@@ -121,12 +121,6 @@ val OPEN_SOURCE_LIBRARIES: List<OpenSourceLibrary> = listOf(
         name = "JSpecify",
         coordinates = "org.jspecify:jspecify",
         copyright = "Copyright © The JSpecify Authors",
-        licenses = listOf(LibraryLicense.APACHE_2_0),
-    ),
-    OpenSourceLibrary(
-        name = "javax.inject",
-        coordinates = "javax.inject:javax.inject:1",
-        copyright = "Copyright © The JSR-330 Expert Group",
         licenses = listOf(LibraryLicense.APACHE_2_0),
     ),
     // The two bundled typefaces. Not Maven artifacts, so their `coordinates` names the resource
