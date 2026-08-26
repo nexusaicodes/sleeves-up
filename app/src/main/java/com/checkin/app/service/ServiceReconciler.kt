@@ -3,9 +3,10 @@ package com.checkin.app.service
 import com.checkin.app.data.local.CheckInSession
 
 /**
- * Decides how [CheckInService] should reconcile its restored (advisory) timer-prefs state against the
- * authoritative active-session row after a process restart. Pure so it is JVM-unit-testable — the
- * Service itself is not.
+ * Decides whether a restarted [CheckInService] has a session to keep running: the active-session
+ * row is the authority, so this reads it alone and the restored timer-prefs mirror gets no vote.
+ * That is the whole reconciliation — a row means adopt it, no row means the notification is an
+ * orphan. Pure so it is JVM-unit-testable, which the Service is not.
  */
 object ServiceReconciler {
 

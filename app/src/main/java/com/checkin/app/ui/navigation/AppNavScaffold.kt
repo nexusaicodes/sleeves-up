@@ -33,13 +33,13 @@ import com.checkin.app.ui.presence.PresenceGate
 @Composable
 fun AppNavScaffold(navController: NavHostController) {
     // Hoisted here (shared with the Check-In tab) so its presence gate can render full-screen above
-    // the chrome — the preview and confirm button must not be covered by the bottom nav.
+    // the chrome — the camera preview and the gate's own controls must not sit under the bottom nav.
     val checkInViewModel: CheckInViewModel = viewModel(factory = CheckInViewModel.Factory)
     val checkInState by checkInViewModel.uiState.collectAsStateWithLifecycle()
 
     if (checkInState.showPresenceGate) {
         // Full-screen modal gate: the Scaffold is not composed underneath (gate XOR chrome), so the
-        // nav bar can't overlap the confirm button. Back dismisses the gate.
+        // nav bar can't overlap the gate's dismiss and device-unlock controls. Back dismisses it.
         BackHandler { checkInViewModel.dismissPresenceGate() }
         PresenceGate(
             onAuthSuccess = { checkInViewModel.onAuthSuccess() },

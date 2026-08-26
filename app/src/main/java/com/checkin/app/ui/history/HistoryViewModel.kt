@@ -71,8 +71,8 @@ class HistoryViewModel(private val repository: CheckInRepository, private val ti
             }
         }
 
-    // One day subscription drives the whole screen: the counting boundary, the today marker, and the
-    // tracked-day count all roll together on refresh and at midnight, with no divergent poll loops.
+    // One day subscription drives the whole screen: the counting boundary, the today marker and the
+    // selected day's rows all roll together on refresh and at midnight, with no divergent poll loops.
     val uiState: StateFlow<HistoryUiState> = timeSource.dayTrigger(refresh)
         .flatMapLatest { today -> repository.trackingStartFlow().map { today to it } }
         .flatMapLatest { (today, start) ->

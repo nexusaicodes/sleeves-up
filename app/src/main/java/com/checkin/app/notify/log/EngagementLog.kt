@@ -11,11 +11,13 @@ import com.checkin.app.notify.engagement.Nudge
 data class NudgeShowing(val key: String, val atMillis: Long)
 
 /**
- * The write side of the engagement database. Three kinds of row, kept apart by
- * [EngagementSource] rather than by table: what each **nudge** did (so nudges can be judged on
- * whether they actually produce check-ins rather than on whether they were sent), what the
- * **session reminder** did, and **service and alarm lifecycle** — see [recordService], which is not
- * a notification at all and must stay invisible to the cap and to attribution.
+ * The app's whole interface to the engagement database — the writes, plus the three reads that
+ * drive behaviour ([shownNudgesSince] feeds the frequency rules; the two `record*` calls below both
+ * query before they write). Three kinds of row, kept apart by [EngagementSource] rather than by
+ * table: what each **nudge** did (so nudges can be judged on whether they actually produce
+ * check-ins rather than on whether they were sent), what the **session reminder** did, and
+ * **service and alarm lifecycle** — see [recordService], which is not a notification at all and
+ * must stay invisible to the cap and to attribution.
  *
  * Conversion is attributed in Kotlin rather than SQL because the sessions table lives in a different
  * database — the deliberate cost of keeping engagement data isolated from session data.
@@ -48,8 +50,11 @@ interface EngagementLog {
     suspend fun recordConversionIfAttributable(atMillis: Long, windowMs: Long): Nudge?
 
     /**
-     * Records a tap against whichever nudge was most recently shown within [windowMs]. The tap
-     * itself carries no identity, so attribution has to come from the log rather than the intent.
+     * Records a tap against whichever nudge was most recently shown within [windowMs] — the
+     * fallback for a tap that carries no identity of its own. A live notification rides its
+     * [com.checkin.app.notify.EngagementTag] on the intent and is credited directly by
+     * `DefaultEngagementReporter`; this path is for one posted by an earlier release, whose
+     * `PendingIntent` outlives the update with no tag on it.
      */
     suspend fun recordOpenedForLastShown(atMillis: Long, windowMs: Long): Nudge?
 
