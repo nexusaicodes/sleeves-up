@@ -13,7 +13,16 @@ private const val MINUTES_PER_HOUR = 60L
 private const val SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR
 private const val MILLIS_PER_MINUTE = MILLIS_PER_SECOND * SECONDS_PER_MINUTE
 
-/** Single source of truth for time/duration formatting used across service, view-models and screens. */
+/**
+ * Single source of truth for time/duration formatting used across service, view-models and screens.
+ *
+ * **`date_key` is deliberately not formatted here, and stays raw ISO wherever it is stored or
+ * queried.** `CheckInSessionDao`'s range queries depend on its lexicographic ordering and the CSV
+ * `Date` column is machine-read, so the private `ISO_LOCAL_DATE` formatters in `ConsistencyStats`,
+ * `CheckInRepository` and `DefaultCsvExporter` are three separate machine-facing uses, not drift to
+ * be consolidated into this object. Only the display side comes here — [dateKeyWithWeekday] is the
+ * entry point that takes a `date_key` and returns something a user reads.
+ */
 object TimeFormat {
 
     private val clockFormatter = DateTimeFormatter.ofPattern("hh:mm a", Locale.US)

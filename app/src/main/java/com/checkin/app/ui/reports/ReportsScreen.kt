@@ -63,6 +63,13 @@ import java.util.Locale
 
 private const val MS_PER_HOUR = 3_600_000f
 
+/**
+ * The Reports tab: every figure, chart and the CSV export read the one window that
+ * [com.checkin.app.ui.reports.ReportScope.resolve] produces from the selected scope.
+ *
+ * **Width is capped in `NavigationGraph`**, which wraps this screen in `ConstrainedContent` — the
+ * cap is not set here, so a large-screen layout question is answered one file over.
+ */
 @Composable
 fun ReportsScreen(
     innerPadding: PaddingValues,

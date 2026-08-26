@@ -29,6 +29,17 @@ interface CheckInSessionDao {
     @Query("SELECT * FROM sessions WHERE date_key = :dateKey ORDER BY started_at ASC")
     fun getSessionsByDateFlow(dateKey: String): Flow<List<CheckInSession>>
 
+    /**
+     * The day summaries in a range. **This statement and [getDailyAggregatesFlow]'s are deliberately
+     * identical and must stay so** — one serves the CSV export, which needs an answer once, and the
+     * other serves the screens, which need to re-render on every write. Room cannot express both
+     * return types off one declaration, so the SQL is duplicated; the cost is that editing one and
+     * missing the other makes the file and the screen it was exported from disagree, silently.
+     * Change them together.
+     *
+     * `stopped_at IS NOT NULL` is what makes only completed sessions aggregate: an open session
+     * contributes nothing anywhere until check-out.
+     */
     @Query(
         """
         SELECT date_key AS dateKey,

@@ -23,6 +23,12 @@ import androidx.core.content.edit
  *
  * Deliberately **not** `setAlarmClock`: that is the only API that puts an alarm icon in the status
  * bar and an entry on the lock screen, which would tell every user the app had set them an alarm.
+ *
+ * This is an interface plus its Android implementation, which is the shape `platform/` holds — and
+ * it lives here anyway, on purpose. The seams in `platform/` are general-purpose and say nothing
+ * about sessions; this one persists a session's armed instants and its reminder count, so it is
+ * inseparable from the session mechanics around it. `platform/ServiceController` is the boundary
+ * that stayed general.
  */
 interface SessionAlarms {
     /** Arms the next reminder at [atMillis], replacing any already set. */
@@ -98,10 +104,10 @@ class AndroidSessionAlarms(private val context: Context) : SessionAlarms {
 
     /**
      * One PendingIntent per action, reused, so scheduling replaces rather than accumulates and
-     * [cancelAll] can find both. Request codes sit in their own band clear of the notification codes
-     * in [com.checkin.app.notify.NotificationFactory], which share this process-wide namespace, and
-     * the two alarms take distinct codes — equality ignores extras, so a shared code would make each
-     * alarm silently overwrite the other.
+     * [cancelAll] can find both. Request codes sit in their own band clear of every other sender's —
+     * the whole allocation is listed in [com.checkin.app.notify.NotificationIds] — and the two alarms
+     * take distinct codes, since equality ignores extras and a shared code would make each alarm
+     * silently overwrite the other.
      */
     private fun pendingIntent(action: String): PendingIntent = PendingIntent.getBroadcast(
         context,

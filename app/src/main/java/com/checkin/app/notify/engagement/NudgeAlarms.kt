@@ -46,9 +46,10 @@ class AndroidNudgeAlarms(private val context: Context) : NudgeAlarms {
 
     /**
      * One PendingIntent, rebuilt identically each time so arming replaces rather than accumulates.
-     * The request code sits clear of both the session alarms' band and the notification codes in
-     * [com.checkin.app.notify.NotificationFactory] — all three share one process-wide namespace, and
-     * equality ignores extras, so a collision would make one silently overwrite another.
+     * The request code sits clear of every other sender's band — the whole allocation is listed in
+     * [com.checkin.app.notify.NotificationIds] — because all of them share one process-wide
+     * namespace and equality ignores extras, so a collision would make one silently overwrite
+     * another.
      */
     private fun pendingIntent(): PendingIntent = PendingIntent.getBroadcast(
         context,

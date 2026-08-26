@@ -103,7 +103,10 @@ class NotificationFactory(private val context: Context) {
          */
         const val CONTENT_REQUEST_BASE = 1_000
 
-        /** Clear of the content codes, with room for [MAX_ACTIONS] per notification. */
+        /**
+         * Clear of the content codes, with room for [MAX_ACTIONS] per notification. Both bands, and
+         * the two the alarms use, are listed together in [NotificationIds].
+         */
         const val ACTION_REQUEST_BASE = 10_000
 
         /** Actions per notification the request-code scheme has room for. Android shows three. */

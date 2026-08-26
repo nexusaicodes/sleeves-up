@@ -6,6 +6,24 @@ package com.checkin.app.notify
  *
  * A [com.checkin.app.notify.engagement.Nudge] constant's id must be a dedicated constant here, never
  * derived from the enum's ordinal or position — reordering the enum must not change any existing id.
+ *
+ * ### PendingIntent request codes — the whole allocation
+ *
+ * A separate namespace from the ids above, shared process-wide **and with previously installed
+ * versions**, whose notifications and alarms survive an update. [PendingIntent] equality ignores
+ * extras, so two senders on one code means one silently rewrites the other's target. Three files
+ * allocate out of it, so the bands are listed here — the ids file — rather than being discoverable
+ * only by opening all three and hoping:
+ *
+ * | Band | Owner | Use |
+ * |---|---|---|
+ * | 1_000+ | [NotificationFactory.CONTENT_REQUEST_BASE] | a notification's tap target |
+ * | 10_000+ | [NotificationFactory.ACTION_REQUEST_BASE] | its action buttons, [NotificationFactory.MAX_ACTIONS] apiece |
+ * | 20_000, 20_001 | `service.SessionAlarms` | the session reminder and the day boundary |
+ * | 20_010 | `notify.engagement.NudgeAlarms` | the nudge checkpoint |
+ *
+ * **The values are frozen**, for the same reason the ids are. A fourth sender takes a fresh band
+ * and adds a row here.
  */
 object NotificationIds {
 

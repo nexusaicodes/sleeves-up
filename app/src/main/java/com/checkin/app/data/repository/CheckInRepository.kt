@@ -21,6 +21,13 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * screen, so the one-open-session invariant is enforced here rather than at each call site. A
      * second open row would never be closed (`getActiveSession()` returns one) and its hours would
      * never reach `duration`.
+     *
+     * **Writing the row is half of a check-in; the caller owns the other half.** This does not start
+     * the foreground service and does not arm either session alarm — whoever writes the row arms it,
+     * because a service start can be refused (a restricted standby bucket, an OEM declining a
+     * `specialUse` foreground start) while a row write cannot, so arming behind the start would let
+     * a refusal silently produce a session with no day-boundary close. Both writers do it:
+     * `CheckInViewModel.executeCheckIn` and `MainActivity.onRootGatePassed`. A new caller must too.
      */
     suspend fun checkIn(): CheckInSession {
         dao.getActiveSession()?.let { return it }

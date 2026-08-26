@@ -49,6 +49,15 @@ import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
 
+/**
+ * The History tab: a calendar, and the sessions of whichever day you tap. It derives nothing — no
+ * summary, no average, no ratio; that work belongs to Reports, and two tabs computing the same class
+ * of figure at two scopes is how they come to disagree.
+ *
+ * **Width is not capped here, and that is decided in `NavigationGraph`** — this screen manages its
+ * own, going two-pane on expanded widths, so it is the one destination the graph does not wrap in
+ * `ConstrainedContent`.
+ */
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun HistoryScreen(

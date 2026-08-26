@@ -21,10 +21,11 @@ import com.checkin.app.platform.ServiceController
  * [SessionReminderRunner.ensureArmed] for what that repair costs to skip.
  *
  * The revive is best-effort by necessity. Starting a foreground service from the background is
- * restricted, so the call can be refused outright depending on where it is invoked from; the callers
- * are ordered by how likely they are to be allowed — a visible Activity always is, a
- * `BOOT_COMPLETED` receiver is exempt, and the hourly background pass may not be. A refusal is
- * logged rather than thrown, and the next caller tries again. Re-arming an alarm carries no such
+ * restricted, so the call can be refused outright depending on where it is invoked from. There are
+ * three callers, ordered by how likely they are to be allowed: `MainActivity.onStart` (a visible
+ * Activity always is), `SessionRestoreReceiver` (`BOOT_COMPLETED` and `MY_PACKAGE_REPLACED` are
+ * exempt), and `NudgeWorker`'s hourly pass (which may not be). That is why there are three and not
+ * one. A refusal is logged rather than thrown, and the next caller tries again. Re-arming an alarm carries no such
  * restriction, which is the other reason it does not wait behind the service.
  */
 class SessionWatchdog(
