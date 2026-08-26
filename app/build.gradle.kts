@@ -30,6 +30,10 @@ android {
         versionCode = (project.findProperty("VERSION_CODE") as String? ?: "1").toInt()
         versionName = project.findProperty("VERSION_NAME") as String? ?: "1.0"
 
+        // AGP template residue: there is no androidTest source set, so nothing runs this. Kept
+        // as the declaration a future instrumentation set would need, and harmless until then —
+        // adding one also means adding the androidx.test dependency that puts this class on a
+        // classpath. See the test-source note further down this file.
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -145,7 +149,7 @@ dependencies {
     implementation("androidx.camera:camera-view:1.5.0")
 
     // Device-unlock fallback, offered when the camera cannot run a check or has looked without
-    // finding anyone for AuthGate.BIOMETRIC_FALLBACK_AFTER_MS
+    // finding anyone for DeviceUnlock.DEVICE_UNLOCK_OFFERED_AFTER_MS
     implementation("androidx.biometric:biometric:1.1.0")
 
     // Declared only to raise the version biometric 1.1.0 would otherwise pin, and it is load-bearing:
@@ -173,9 +177,11 @@ dependencies {
 // The open-source licence list in ui/about/OpenSourceLibraries.kt is hand-written: it groups ~220
 // resolved artifacts into the upstream projects a reader can act on, and carries the corrections a
 // generator reading POMs alone gets wrong where a POM is silent — today that is CameraX's embedded
-// libyuv BSD, the one non-Apache row left. What it cannot do is notice a new
-// dependency, so this task supplies the half that can be automated: every group id on the release
-// runtime classpath must be covered by some entry's `coordinates`, or the build fails naming it.
+// libyuv BSD, the one non-Apache row among the Maven groups — the two bundled typefaces carry the
+// OFL, and are matched against res/font/ rather than against a coordinate. What it cannot do is
+// notice a new dependency, so this task supplies the half that can be automated: every group id on
+// the release runtime classpath must be covered by some entry's `coordinates`, or the build fails
+// naming it.
 val licenseSourceFile = layout.projectDirectory
     .file("src/main/java/com/checkin/app/ui/about/OpenSourceLibraries.kt")
 
@@ -184,7 +190,7 @@ val fontExtensions = setOf("ttf", "otf", "ttc", "xml")
 
 tasks.register("verifyLicenseCoverage") {
     group = "verification"
-    description = "Fails if a group id on the release runtime classpath has no licence entry."
+    description = "Fails if a release-classpath group id or a res/font typeface has no licence entry."
 
     val source = licenseSourceFile
     val fonts = layout.projectDirectory.dir("src/main/res/font")

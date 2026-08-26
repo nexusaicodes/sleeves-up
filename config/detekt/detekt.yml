@@ -71,7 +71,7 @@ style:
     # @Preview functions are invoked by the IDE/tooling, never by app code.
     ignoreAnnotated: ['Preview', 'PreviewLightDark', 'PreviewScreenSizes']
   ForbiddenComment:
-    # Flag work markers left behind, but not the plain word "STOPSHIP"-free prose comments.
+    # Only colon-suffixed markers are flagged, so prose containing the bare word is left alone.
     comments:
       - reason: 'Unresolved work marker left in the source.'
         value: 'TODO:'
