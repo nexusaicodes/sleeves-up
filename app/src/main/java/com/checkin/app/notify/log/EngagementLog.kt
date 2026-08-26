@@ -29,8 +29,14 @@ interface EngagementLog {
      * Records a session-reminder event. Kept to its own entry point rather than widening [record],
      * because everything a nudge needs — a variant, a place in the frequency cap, eligibility for
      * conversion credit — is exactly what a reminder must not have.
+     *
+     * The row it writes is keyed [PRESENCE_CHECK_KEY] under [EngagementSource.PRESENCE], and those
+     * two strings say "presence" where this method says "session reminder". They are stored in
+     * `engagement.db` and frozen; the method name is not, and it follows what the app calls the
+     * thing everywhere else — "presence" here would collide with the camera gate in `ui/presence/`,
+     * which this has nothing to do with.
      */
-    suspend fun recordPresenceCheck(event: EngagementEventType, atMillis: Long)
+    suspend fun recordSessionReminder(event: EngagementEventType, atMillis: Long)
 
     /**
      * Records an infrastructure lifecycle event — the foreground service, a session alarm, or the
@@ -85,7 +91,7 @@ class RoomEngagementLog(private val dao: EngagementEventDao) : EngagementLog {
         )
     }
 
-    override suspend fun recordPresenceCheck(event: EngagementEventType, atMillis: Long) {
+    override suspend fun recordSessionReminder(event: EngagementEventType, atMillis: Long) {
         dao.insert(
             EngagementEvent(
                 at = atMillis,

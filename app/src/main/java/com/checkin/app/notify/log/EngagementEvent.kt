@@ -4,21 +4,6 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-/** What happened to a notification we sent. */
-enum class EngagementEventType {
-    /** Posted to the system tray. */
-    SHOWN,
-
-    /** The user tapped it. */
-    OPENED,
-
-    /** The user swiped it away. */
-    DISMISSED,
-
-    /** The user checked in soon enough after a SHOWN for it to plausibly be the cause. */
-    CONVERTED,
-}
-
 /**
  * One notification lifecycle event. [key], [source] and [event] are stored as names rather than
  * ordinals so reordering an enum can't silently reinterpret history.

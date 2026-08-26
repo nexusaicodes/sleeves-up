@@ -154,7 +154,7 @@ class SessionLifecycleRunner(
         if (!notifier.show(reminderSpec(silent))) return refused(firedAt)
 
         alarms.remindersSent = count
-        log.recordPresenceCheck(EngagementEventType.SHOWN, firedAt)
+        log.recordSessionReminder(EngagementEventType.SHOWN, firedAt)
 
         val nextAt = SessionSchedule.nextReminderAt(firedAt)
         alarms.scheduleReminderAt(nextAt)

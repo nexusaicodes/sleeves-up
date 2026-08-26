@@ -26,7 +26,7 @@ class FakeEngagementLog : EngagementLog {
         )
     }
 
-    override suspend fun recordPresenceCheck(event: EngagementEventType, atMillis: Long) {
+    override suspend fun recordSessionReminder(event: EngagementEventType, atMillis: Long) {
         events.value = events.value + EngagementEvent(
             id = events.value.size + 1L,
             at = atMillis,

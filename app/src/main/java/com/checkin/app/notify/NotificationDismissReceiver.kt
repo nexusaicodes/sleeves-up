@@ -44,7 +44,7 @@ class NotificationDismissReceiver : BroadcastReceiver() {
                     )
 
                     EngagementTarget.PresenceTarget ->
-                        container.engagementLog.recordPresenceCheck(EngagementEventType.DISMISSED, at)
+                        container.engagementLog.recordSessionReminder(EngagementEventType.DISMISSED, at)
                 }
             } finally {
                 pending.finish()

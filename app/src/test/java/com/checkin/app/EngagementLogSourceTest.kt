@@ -12,6 +12,10 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
+ * [com.checkin.app.notify.log.EngagementLog] scoped by
+ * [com.checkin.app.notify.log.EngagementSource] — the name is those two types, not one called
+ * `EngagementLogSource`.
+ *
  * The session reminder and the nudges share one table, and two of the log's questions must only ever
  * see nudge rows: the daily frequency cap, and "which notification earned this action".
  *
@@ -30,8 +34,8 @@ class EngagementLogSourceTest {
     fun `a session reminder does not count toward the nudge daily cap`() = runTest {
         val log = FakeEngagementLog()
 
-        log.recordPresenceCheck(EngagementEventType.SHOWN, 1_000L)
-        log.recordPresenceCheck(EngagementEventType.SHOWN, 2_000L)
+        log.recordSessionReminder(EngagementEventType.SHOWN, 1_000L)
+        log.recordSessionReminder(EngagementEventType.SHOWN, 2_000L)
 
         // maxPerDay is 1; if these counted, the day's real nudge would never be sent.
         assertEquals(0, log.shownNudgesSince(0L).size)
@@ -47,7 +51,7 @@ class EngagementLogSourceTest {
 
         log.record(Nudge.NOT_CHECKED_IN_MORNING, variant = 0, event = EngagementEventType.SHOWN, atMillis = nudgeAt)
         // Fired after the nudge, so it is the most recent SHOWN row in the table.
-        log.recordPresenceCheck(EngagementEventType.SHOWN, nudgeAt + 10 * 60 * 1000L)
+        log.recordSessionReminder(EngagementEventType.SHOWN, nudgeAt + 10 * 60 * 1000L)
 
         assertEquals(
             Nudge.NOT_CHECKED_IN_MORNING,
@@ -83,7 +87,7 @@ class EngagementLogSourceTest {
         val nudgeAt = 10 * hour
 
         log.record(Nudge.NOT_CHECKED_IN_MORNING, variant = 0, event = EngagementEventType.SHOWN, atMillis = nudgeAt)
-        log.recordPresenceCheck(EngagementEventType.DISMISSED, nudgeAt + 60_000L)
+        log.recordSessionReminder(EngagementEventType.DISMISSED, nudgeAt + 60_000L)
 
         assertEquals(
             Nudge.NOT_CHECKED_IN_MORNING,
@@ -97,7 +101,7 @@ class EngagementLogSourceTest {
         val nudgeAt = 10 * hour
 
         log.record(Nudge.NOT_CHECKED_IN_MORNING, variant = 0, event = EngagementEventType.SHOWN, atMillis = nudgeAt)
-        log.recordPresenceCheck(EngagementEventType.SHOWN, nudgeAt + 5 * 60 * 1000L)
+        log.recordSessionReminder(EngagementEventType.SHOWN, nudgeAt + 5 * 60 * 1000L)
 
         assertEquals(
             Nudge.NOT_CHECKED_IN_MORNING,
@@ -110,7 +114,7 @@ class EngagementLogSourceTest {
     fun `a session reminder alone credits nothing`() = runTest {
         val log = FakeEngagementLog()
 
-        log.recordPresenceCheck(EngagementEventType.SHOWN, 10 * hour)
+        log.recordSessionReminder(EngagementEventType.SHOWN, 10 * hour)
 
         assertNull(log.recordConversionIfAttributable(10 * hour + 60_000L, window))
         assertNull(log.recordOpenedForLastShown(10 * hour + 60_000L, window))
@@ -152,7 +156,7 @@ class EngagementLogSourceTest {
     fun `presence events are still visible in the log`() = runTest {
         val log = FakeEngagementLog()
 
-        log.recordPresenceCheck(EngagementEventType.SHOWN, 1_000L)
+        log.recordSessionReminder(EngagementEventType.SHOWN, 1_000L)
         log.record(Nudge.NOT_CHECKED_IN_MORNING, variant = 0, event = EngagementEventType.SHOWN, atMillis = 2_000L)
 
         val all = log.events.value
