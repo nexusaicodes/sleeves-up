@@ -115,7 +115,7 @@ private fun ClaimRow(icon: ImageVector, title: String, body: String, last: Boole
             modifier = Modifier.size(24.dp),
         )
         Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,

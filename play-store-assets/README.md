@@ -1,6 +1,6 @@
 # Play Store assets
 
-Graphics for the Google Play listing of **CheckIn - Solopreneur Tracker**.
+Graphics for the Google Play listing of **Sleeves Up**.
 
 | File | Spec | Use |
 |---|---|---|

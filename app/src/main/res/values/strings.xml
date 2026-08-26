@@ -253,7 +253,7 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
     <string name="privacy_no_photo_body">Your camera reports whether a face is in frame. The app reads that count and nothing else.</string>
     <string name="privacy_no_analytics_title">No analytics, no ads</string>
     <string name="privacy_no_analytics_body">Nothing here measures how you use the app, and no third-party code collects anything.</string>
-    <string name="privacy_check_title">How To Check</string>
+    <string name="privacy_check_title">How to Check</string>
     <string name="privacy_check_body">You don\'t have to take this on trust. Android lists every permission an app declares under App info, and Google Play lists them on the store page. This app has no network permission to list.</string>
 
     <!-- Open source licenses -->
