@@ -4,7 +4,7 @@
  *
  * This file holds the small fakes, one per seam, each a few lines of recording or canned answers:
  * FakeTimeSource (the clock, and the only place a midnight rollover is driven), FakeServiceController,
- * FakeNotifier, FakeCsvExporter, FakeEngagementInstall, FakeEngagementReporter, FakeSessionAlarms.
+ * FakeNotifier, FakeCsvExporter, FakeEngagementInstallId, FakeEngagementReporter, FakeSessionAlarms.
  *
  * A fake gets its own file once it has behaviour worth reading on its own — an in-memory query
  * surface with ordering and filtering to honour. That is why FakeCheckInSessionDao and
@@ -19,7 +19,7 @@ import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
-import com.checkin.app.notify.engagement.EngagementInstall
+import com.checkin.app.notify.engagement.EngagementInstallId
 import com.checkin.app.notify.engagement.EngagementReporter
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.ExportResult
@@ -98,7 +98,7 @@ class FakeCsvExporter(var result: ExportResult = ExportResult.Success) : CsvExpo
     }
 }
 
-class FakeEngagementInstall(private val installId: String = "fake-install") : EngagementInstall {
+class FakeEngagementInstallId(private val installId: String = "fake-install") : EngagementInstallId {
     override fun installId(): String = installId
 }
 

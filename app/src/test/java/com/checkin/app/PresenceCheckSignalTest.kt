@@ -1,7 +1,7 @@
 package com.checkin.app
 
-import com.checkin.app.service.PresenceCheckSignal
-import com.checkin.app.service.PresenceCheckSignal.Reason
+import com.checkin.app.ui.presence.PresenceCheckSignal
+import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

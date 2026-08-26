@@ -11,11 +11,11 @@ import com.checkin.app.notify.NotificationFactory
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.engagement.AndroidNudgeAlarms
 import com.checkin.app.notify.engagement.DefaultEngagementReporter
-import com.checkin.app.notify.engagement.EngagementInstall
+import com.checkin.app.notify.engagement.EngagementInstallId
 import com.checkin.app.notify.engagement.EngagementReporter
 import com.checkin.app.notify.engagement.NudgeAlarms
 import com.checkin.app.notify.engagement.NudgeDispatcher
-import com.checkin.app.notify.engagement.SharedPrefsEngagementInstall
+import com.checkin.app.notify.engagement.SharedPrefsEngagementInstallId
 import com.checkin.app.notify.log.EngagementDatabase
 import com.checkin.app.notify.log.EngagementLog
 import com.checkin.app.notify.log.RoomEngagementLog
@@ -86,7 +86,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val csvExporter: CsvExporter = DefaultCsvExporter(appContext)
 
-    private val engagementInstall: EngagementInstall = SharedPrefsEngagementInstall.create(appContext)
+    private val engagementInstallId: EngagementInstallId = SharedPrefsEngagementInstallId.create(appContext)
 
     override val notificationFactory = NotificationFactory(appContext)
 
@@ -100,7 +100,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
         NudgeDispatcher(
             strings = AndroidStringResolver(appContext),
             repository = repository,
-            install = engagementInstall,
+            install = engagementInstallId,
             notifier = notifier,
             log = engagementLog,
             timeSource = timeSource,

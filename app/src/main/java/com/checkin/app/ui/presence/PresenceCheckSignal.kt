@@ -1,4 +1,4 @@
-package com.checkin.app.service
+package com.checkin.app.ui.presence
 
 import kotlinx.coroutines.flow.MutableStateFlow
 

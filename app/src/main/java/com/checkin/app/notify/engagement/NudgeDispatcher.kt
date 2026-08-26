@@ -27,7 +27,7 @@ import java.time.format.DateTimeFormatter
 class NudgeDispatcher(
     private val strings: StringResolver,
     private val repository: CheckInRepository,
-    private val install: EngagementInstall,
+    private val install: EngagementInstallId,
     private val notifier: Notifier,
     private val log: EngagementLog,
     private val timeSource: TimeSource,

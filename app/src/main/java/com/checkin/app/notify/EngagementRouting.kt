@@ -5,12 +5,6 @@ import com.checkin.app.notify.log.EngagementSource
 import com.checkin.app.notify.log.PRESENCE_CHECK_KEY
 import com.checkin.app.notify.log.RoomEngagementLog
 
-/** What a notification's tag turned out to name. */
-sealed interface EngagementTarget {
-    data class NudgeTarget(val nudge: Nudge, val variant: Int) : EngagementTarget
-    data object PresenceTarget : EngagementTarget
-}
-
 /**
  * Maps a notification tag's payload back to the notification it identifies.
  *

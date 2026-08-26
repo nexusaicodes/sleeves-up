@@ -42,7 +42,6 @@ import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.SessionIntervalRow
-import com.checkin.app.ui.history.components.CalendarGrid
 import com.checkin.app.util.TimeFormat
 import java.time.YearMonth
 import java.time.format.TextStyle

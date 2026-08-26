@@ -28,12 +28,12 @@ import androidx.navigation.compose.rememberNavController
 import com.checkin.app.notify.EngagementTag
 import com.checkin.app.platform.PromptSettings
 import com.checkin.app.service.CheckInService
-import com.checkin.app.service.PresenceCheckSignal
-import com.checkin.app.service.PresenceCheckSignal.Reason
 import com.checkin.app.ui.checkin.CheckOutCelebration
 import com.checkin.app.ui.checkin.CheckOutSignal
 import com.checkin.app.ui.checkin.raiseCheckOutCelebration
 import com.checkin.app.ui.navigation.AppNavScaffold
+import com.checkin.app.ui.presence.PresenceCheckSignal
+import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import com.checkin.app.ui.presence.PresenceGate
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.ui.welcome.FirstRun

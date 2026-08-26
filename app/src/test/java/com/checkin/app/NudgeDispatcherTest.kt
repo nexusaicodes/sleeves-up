@@ -44,7 +44,7 @@ class NudgeDispatcherTest {
     private fun dispatcher(clock: FakeTimeSource = time): NudgeDispatcher = NudgeDispatcher(
         strings = StringResolver { "copy-$it" },
         repository = CheckInRepository(dao, clock),
-        install = FakeEngagementInstall(),
+        install = FakeEngagementInstallId(),
         notifier = notifier,
         log = log,
         timeSource = clock,
@@ -172,7 +172,7 @@ class NudgeDispatcherTest {
      */
     @Test
     fun `the posted variant is the install's own bucket`() = runTest {
-        val install = FakeEngagementInstall()
+        val install = FakeEngagementInstallId()
         val expected = VariantAssigner.assign(
             install.installId(),
             Nudge.NOT_CHECKED_IN_MORNING.name,

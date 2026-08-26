@@ -15,12 +15,12 @@ import java.util.UUID
  * The bucketing id is genuinely the app's to keep: it decides which wording of a nudge this install
  * sees, so it has to be stable for the life of the install and identical across every read.
  */
-interface EngagementInstall {
+interface EngagementInstallId {
     /** Stable per-install id for variant bucketing. Random, local, and never leaves the device. */
     fun installId(): String
 }
 
-class SharedPrefsEngagementInstall(private val prefs: SharedPreferences) : EngagementInstall {
+class SharedPrefsEngagementInstallId(private val prefs: SharedPreferences) : EngagementInstallId {
 
     companion object {
         /**
@@ -41,7 +41,7 @@ class SharedPrefsEngagementInstall(private val prefs: SharedPreferences) : Engag
         const val NAME = "engagement_prefs"
         private const val KEY_INSTALL_ID = "install_id"
 
-        fun create(context: Context) = SharedPrefsEngagementInstall(
+        fun create(context: Context) = SharedPrefsEngagementInstallId(
             context.applicationContext.getSharedPreferences(NAME, Context.MODE_PRIVATE),
         )
     }

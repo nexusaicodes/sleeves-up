@@ -7,7 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class FeedbackDraftTest {
+class FeedbackTest {
 
     private fun draft(manufacturer: String = "Google", model: String = "Pixel 8") = Feedback.draft(
         app = AppBuild(versionName = "1.2", versionCode = 20260726),
