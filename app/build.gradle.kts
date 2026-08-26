@@ -263,6 +263,29 @@ tasks.register("verifyLicenseCoverage") {
                 "from the font's own name table rather than guessing."
         }
 
+        // The reverse direction. The two checks above fail on something shipped with no entry;
+        // neither fails on an entry covering nothing shipped, so a dependency that leaves the graph
+        // strands its attribution and the screen keeps crediting a library the APK does not carry.
+        // That is not a licence risk, but it is a false statement in the one screen whose whole job
+        // is to be accurate about what the app redistributes, and nothing else would ever catch it:
+        // javax.inject sat there for months after ML Kit took it off the classpath.
+        val inert = coordinates.filterNot { pattern ->
+            if (pattern.startsWith("font:")) {
+                val stem = pattern.removePrefix("font:")
+                fontNames.any { if (stem.endsWith("*")) it.startsWith(stem.dropLast(1)) else it == stem }
+            } else {
+                val prefix = pattern.substringBefore(':').removeSuffix(".*")
+                resolved.any { it == prefix || it.startsWith("$prefix.") }
+            }
+        }
+
+        check(inert.isEmpty()) {
+            "These entries in ${source.asFile.name} cover nothing the app ships:\n" +
+                inert.joinToString("\n") { "  - $it" } +
+                "\n\nA dependency or typeface was removed and its attribution left behind. Delete " +
+                "the entry — the Licenses screen must not credit what the APK does not carry."
+        }
+
         val summary = "Licence coverage: ${resolved.size} group ids and ${fontNames.size} fonts, " +
             "all covered by ${declared.size} entries."
         logger.lifecycle(summary)
@@ -279,7 +302,8 @@ val docMapFile: RegularFile = rootProject.layout.projectDirectory.file("CLAUDE.m
 
 tasks.register("verifyDocMap") {
     group = "verification"
-    description = "Fails if a main-source .kt file is missing from CLAUDE.md, or CLAUDE.md names a .kt that is gone."
+    description =
+        "Fails if CLAUDE.md and the main sources disagree, or a comment names a gone member of a project type."
 
     val doc = docMapFile
     val mainSource = layout.projectDirectory.dir("src/main/java")
@@ -287,9 +311,11 @@ tasks.register("verifyDocMap") {
     // trees. Only main is required to be *documented* — a fixture is found from the test that uses it.
     val testSource = layout.projectDirectory.dir("src/test/java")
     val stamp = layout.buildDirectory.file("reports/docMap.txt")
+    val buildScript = layout.projectDirectory.file("build.gradle.kts")
     inputs.file(doc)
     inputs.dir(mainSource)
     inputs.dir(testSource)
+    inputs.file(buildScript)
     outputs.file(stamp)
 
     doLast {
@@ -331,8 +357,48 @@ tasks.register("verifyDocMap") {
                 "\n\nA rename updates both ends, or the map sends a reader somewhere empty."
         }
 
+        // Third direction, and the one the two above cannot see: a comment naming a member that has
+        // been renamed or deleted off a project type. Both halves are deliberately narrow, because a
+        // noisy gate here is worse than none — this file's own lint reasoning applies.
+        //
+        // Only *top-level* project types count as owners. That excludes platform names the prose
+        // legitimately discusses without calling (Intent.ACTION_SEND, Face.getScore), and it excludes
+        // nested types whose simple name collides with a platform one — `ServiceReconciler.Result` is
+        // why, since NudgeWorker rightly writes `Result.failure()` for a method it never calls.
+        //
+        // What it does NOT catch: a reference whose *owner* is gone entirely, which is how
+        // `AuthGate.BIOMETRIC_FALLBACK_AFTER_MS` survived in this file. Catching that needs a rule
+        // that can tell a deleted project type from a platform one, and every version tried flagged
+        // real platform references — measured at 14 false positives to 1 true one. Left uncaught on
+        // purpose rather than gated dishonestly.
+        val commentPattern = Regex("""/\*(?s:.*?)\*/|//[^\n]*""")
+        val sourceText = (sourceFiles + buildScript.asFile).joinToString("\n") { it.readText() }
+        val codeOnly = commentPattern.replace(sourceText, " ")
+        val codeWords = Regex("""[A-Za-z_][A-Za-z0-9_]*""").findAll(codeOnly).map { it.value }.toSet()
+        val topLevelTypes = Regex(
+            """(?m)^(?:internal |private |public |abstract |sealed |data |open )*(?:class|object|interface)\s+([A-Z][A-Za-z0-9_]*)""",
+        ).findAll(codeOnly).map { it.groupValues[1] }.toSet()
+
+        val staleMembers = sortedSetOf<String>()
+        commentPattern.findAll(sourceText).forEach { comment ->
+            Regex("""\b([A-Z][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)\b""")
+                .findAll(comment.value)
+                .forEach { match ->
+                    val owner = match.groupValues[1]
+                    val member = match.groupValues[2]
+                    if (owner in topLevelTypes && member !in codeWords) staleMembers += "$owner.$member"
+                }
+        }
+        check(staleMembers.isEmpty()) {
+            "These comments name a member that no longer exists on a project type:\n" +
+                staleMembers.joinToString("\n") { "  - $it" } +
+                "\n\nA rename updates the prose beside it, or the comment sends a reader after a " +
+                "symbol they cannot grep for."
+        }
+
         val summary = "Doc map: ${sourceFiles.size} main sources all named in CLAUDE.md, " +
-            "${namedPaths.size} explicit paths all resolve."
+            "${namedPaths.size} explicit paths all resolve, ${topLevelTypes.size} project types " +
+            "with no stale member references."
         logger.lifecycle(summary)
         stamp.get().asFile.apply { parentFile.mkdirs() }.writeText("$summary\n")
     }

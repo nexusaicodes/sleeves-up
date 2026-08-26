@@ -75,7 +75,8 @@ reason.
 ```bash
 ./gradlew staticAnalysis     # ktlintCheck + detekt
 ./gradlew ktlintFormat       # auto-fix formatting
-./gradlew :app:verifyDocMap  # every source file is named in CLAUDE.md, and every name resolves
+./gradlew :app:verifyDocMap  # CLAUDE.md names every source file, every name resolves, and no
+                             # comment points at a member a project type no longer has
 ```
 
 CI runs `staticAnalysis` and `verifyDocMap` together as its first step: neither needs a compiled
