@@ -1,17 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Notification status-bar icon: the brand mark on a 24dp viewport. The system keeps only
      the alpha channel and tints the result, so this must be a white silhouette on
-     transparent. pathData comes from play-store-assets/generate_icons.py. -->
+     transparent. Scaled to span 20 of 24 by its painted width — the grid's own edge, not the
+     pitch span, which would count a half-gap nobody draws. pathData comes from
+     play-store-assets/generate_icons.py. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:pathData="M13.88,3.15 C9.59,2.24 5.26,4.54 3.61,8.61 C1.97,12.68 3.48,17.35 7.21,19.67 C10.93,22.00 15.79,21.32 18.72,18.05 C21.66,14.79 21.83,9.89 19.13,6.43 L10.82,16.33 L7.17,12.68"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="2.91"
-        android:strokeLineCap="butt"
-        android:strokeLineJoin="miter"
-        android:strokeMiterLimit="4" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M3.34,2.00 L6.77,2.00 C7.51,2.00 8.11,2.60 8.11,3.34 L8.11,6.77 C8.11,7.51 7.51,8.11 6.77,8.11 L3.34,8.11 C2.60,8.11 2.00,7.51 2.00,6.77 L2.00,3.34 C2.00,2.60 2.60,2.00 3.34,2.00 Z M10.29,2.00 L13.71,2.00 C14.45,2.00 15.06,2.60 15.06,3.34 L15.06,6.77 C15.06,7.51 14.45,8.11 13.71,8.11 L10.29,8.11 C9.55,8.11 8.94,7.51 8.94,6.77 L8.94,3.34 C8.94,2.60 9.55,2.00 10.29,2.00 Z M17.23,2.00 L20.66,2.00 C21.40,2.00 22.00,2.60 22.00,3.34 L22.00,6.77 C22.00,7.51 21.40,8.11 20.66,8.11 L17.23,8.11 C16.49,8.11 15.89,7.51 15.89,6.77 L15.89,3.34 C15.89,2.60 16.49,2.00 17.23,2.00 Z M3.34,8.94 L6.77,8.94 C7.51,8.94 8.11,9.55 8.11,10.29 L8.11,13.71 C8.11,14.45 7.51,15.06 6.77,15.06 L3.34,15.06 C2.60,15.06 2.00,14.45 2.00,13.71 L2.00,10.29 C2.00,9.55 2.60,8.94 3.34,8.94 Z M10.29,8.94 L13.71,8.94 C14.45,8.94 15.06,9.55 15.06,10.29 L15.06,13.71 C15.06,14.45 14.45,15.06 13.71,15.06 L10.29,15.06 C9.55,15.06 8.94,14.45 8.94,13.71 L8.94,10.29 C8.94,9.55 9.55,8.94 10.29,8.94 Z M10.29,15.89 L13.71,15.89 C14.45,15.89 15.06,16.49 15.06,17.23 L15.06,20.66 C15.06,21.40 14.45,22.00 13.71,22.00 L10.29,22.00 C9.55,22.00 8.94,21.40 8.94,20.66 L8.94,17.23 C8.94,16.49 9.55,15.89 10.29,15.89 Z M17.23,15.89 L20.66,15.89 C21.40,15.89 22.00,16.49 22.00,17.23 L22.00,20.66 C22.00,21.40 21.40,22.00 20.66,22.00 L17.23,22.00 C16.49,22.00 15.89,21.40 15.89,20.66 L15.89,17.23 C15.89,16.49 16.49,15.89 17.23,15.89 Z" />
 </vector>

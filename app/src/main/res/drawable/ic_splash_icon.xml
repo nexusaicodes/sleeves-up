@@ -6,17 +6,21 @@
 
   The scale is here rather than in the mark itself because the two surfaces want different
   sizes. The launcher foreground is sized against the 72dp window a launcher shows, which
-  deliberately leaves room inside the 66dp safe circle; the splash has no such neighbours,
-  and at that size the mark read small and soft in the middle of a full-screen indigo field.
+  deliberately leaves room inside the 66dp safe circle; the splash has no such neighbours.
   Android's splash guidance is an icon of 288dp whose content sits inside a 192dp circle —
-  two thirds of the canvas — and the mark's own extent is 48.9 of 108, so it was filling
-  about two thirds of the room it had.
+  two thirds of the canvas, which is a radius of 36 in this drawable's 108 units.
 
-  The inset is negative, which expands rather than pads: -15% a side scales by 1.30, landing
-  the mark at 63.6 of 108 (88% of that circle) with the stroke thickening in proportion.
-  Fractions are resolved against the bounds the platform hands this drawable, so it follows
-  whatever icon size the device uses instead of assuming 288dp.
+  The mark's own corner reaches 29.34 of 108, so it starts at 82% of that circle. The inset
+  is negative, which expands rather than pads: -8% a side scales by 1.16, landing the corner
+  at 34.0 (94% of the circle) and the painted grid at 50.1 of 108. Fractions are resolved
+  against the bounds the platform hands this drawable, so it follows whatever icon size the
+  device uses instead of assuming 288dp.
+
+  Note this figure is not the mark's old one and must not be copied from it. A square mark is
+  bounded by its corner where the previous ring was bounded by its edge, so the same -15% that
+  suited a ring would push this grid's corner to 38.3 — past the circle, and past the point
+  where a splash implementation that does mask would start clipping it.
 -->
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
     android:drawable="@drawable/ic_launcher_foreground"
-    android:inset="-15%" />
+    android:inset="-8%" />

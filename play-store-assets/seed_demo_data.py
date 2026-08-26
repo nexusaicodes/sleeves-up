@@ -1,4 +1,4 @@
-"""Seed a representative CheckIn history into a pulled `_app` database.
+"""Seed a representative Sleeves Up history into a pulled `_app` database.
 
 Demo data for Play Store screenshots. Shapes it to show what the app actually does:
 a handful of missed days so the split is not a flat 100%, sessions starting across
@@ -18,12 +18,16 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 
 TZ = timezone(timedelta(hours=4))          # the device's zone; date_key must agree with it
-TODAY = date(2026, 8, 22)
+TODAY = date(2026, 8, 27)
 START = TODAY - timedelta(days=57)         # ~8 weeks, enough for two months of bars
 MISS_CHANCE = {5: 0.55, 6: 0.65}           # Sat/Sun are the days most often skipped
 WEEKDAY_MISS = 0.10
 
-random.seed(20260822)                       # reproducible: same screenshots on a re-run
+# Reproducible: same screenshots on a re-run. The value is *searched*, not arbitrary — it is
+# the seed for which July lands on exactly 24 days shown up of 31, which is what the summary
+# screenshot's caption states. Change TODAY and this number stops meaning anything; re-search
+# it rather than leaving a caption asserting a figure the data no longer produces.
+random.seed(20260006)
 
 
 def millis(d: date, hour: int, minute: int) -> int:
@@ -66,7 +70,11 @@ def main(db_path: str) -> None:
     # A few evenings, so the start-time split has a real third slice. The generator above starts
     # its blocks in the morning and early afternoon, so without these the evening slice is a
     # sliver and the chart reads as if the app could not see one.
-    for offset in (4, 11, 18, 25, 33):
+    # Offsets deliberately land on weekdays and are spread across *both* months: the generator
+    # starts its blocks in the morning and early afternoon, so without these the evening slice is a
+    # sliver. Each one replaces that day's rows, so it also forces a session there — which is why
+    # the seed search above counts them as days shown up rather than assuming they are free.
+    for offset in (4, 11, 18, 25, 35, 42, 49, 56):
         d = TODAY - timedelta(days=offset)
         rows = [r for r in rows if r[3] != d.isoformat()]
         for s, e in ((9 * 60 + 20, 12 * 60 + 40), (19 * 60 + 30, 22 * 60 + 15)):

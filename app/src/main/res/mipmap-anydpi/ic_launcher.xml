@@ -4,6 +4,6 @@
     <foreground android:drawable="@drawable/ic_launcher_foreground" />
     <!-- Themed icons (Android 13+) reuse the foreground rather than carrying their own copy
          of the path: the system supplies the background and tints the shape, so the same
-         stroke-on-transparent drawable serves both. -->
+         fill-on-transparent drawable serves both. -->
     <monochrome android:drawable="@drawable/ic_launcher_foreground" />
 </adaptive-icon>

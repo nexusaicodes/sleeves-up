@@ -24,13 +24,13 @@ object Feedback {
     const val ADDRESS = "saksham@nexusai.world"
 
     fun draft(app: AppBuild, device: DeviceBuild): FeedbackDraft = FeedbackDraft(
-        subject = "CheckIn feedback (${app.versionName})",
+        subject = "Sleeves Up feedback (${app.versionName})",
         // Leading blank lines put the cursor above the footer in every mail app worth the name.
         body = buildString {
             append("\n\n")
             append("---\n")
             append("These lines help me reproduce problems. Delete them if you'd rather not share.\n")
-            append("App: CheckIn ${app.versionName} (${app.versionCode})\n")
+            append("App: Sleeves Up ${app.versionName} (${app.versionCode})\n")
             append("Device: ${deviceName(device.manufacturer, device.model)}\n")
             append("Android: ${device.androidRelease} (API ${device.sdkInt})\n")
         },

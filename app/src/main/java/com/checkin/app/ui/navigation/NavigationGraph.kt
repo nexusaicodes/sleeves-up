@@ -10,6 +10,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.checkin.app.ui.about.LicensesScreen
+import com.checkin.app.ui.about.PrivacyScreen
 import com.checkin.app.ui.checkin.CheckInScreen
 import com.checkin.app.ui.checkin.CheckInViewModel
 import com.checkin.app.ui.components.ConstrainedContent
@@ -47,13 +48,19 @@ internal fun NavigationGraph(
             ConstrainedContent {
                 SettingsScreen(
                     innerPadding = innerPadding,
-                    // launchSingleTop: a double tap on the row would otherwise push two identical
-                    // Licenses entries, so the first back press appears to do nothing.
+                    // launchSingleTop: a double tap on a row would otherwise push two identical
+                    // entries, so the first back press appears to do nothing.
+                    onOpenPrivacy = {
+                        navController.navigate(Screen.Privacy.route) { launchSingleTop = true }
+                    },
                     onOpenLicenses = {
                         navController.navigate(Screen.Licenses.route) { launchSingleTop = true }
                     },
                 )
             }
+        }
+        composable(Screen.Privacy.route) {
+            ConstrainedContent { PrivacyScreen(innerPadding = innerPadding) }
         }
         composable(Screen.Licenses.route) {
             ConstrainedContent { LicensesScreen(innerPadding = innerPadding) }

@@ -1,21 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  CheckIn brand mark: one unbroken stroke that opens as a progress ring and resolves into
-  a check. This single file is the launcher foreground, the themed (monochrome) layer and
-  the splash icon (windowSplashScreenAnimatedIcon in themes.xml). Keep it that way: a
-  second copy of the mark is a copy that can drift out of sync.
+  Sleeves Up brand mark: the binary calendar. Nine cells, seven filled, two empty. A day is
+  a cell or it is nothing, which is the product's whole thesis as a shape — what you read is
+  density, never depth. Nothing here is shaded or ramped; there is no fraction in this file.
 
-  Geometry is authored in play-store-assets/generate_icons.py, which emits this pathData
-  and the matching 512px Play icon from the same numbers. Edit there, not here. Arcs are
-  cubic Beziers rather than SVG arc commands so PathParser has no flags to interpret.
+  This single file is the launcher foreground, the themed (monochrome) layer and the splash
+  icon (windowSplashScreenAnimatedIcon in themes.xml). Keep it that way: a second copy of
+  the mark is a copy that can drift out of sync, which is exactly how a raster launcher icon
+  and a vector splash once shipped as two different logos under one name.
 
-  Sized against the 72dp window the launcher shows rather than the 66dp safe circle:
-  filling the safe circle reads oversized beside other icons. Furthest extent 24.46 of 33,
-  which includes the mitre overshoot at the check's vertex — the widest point of the mark.
+  Geometry is authored in play-store-assets/generate_icons.py, which emits this pathData and
+  the matching 512px Play icon from the same numbers. Edit there, not here. Corners are cubic
+  Beziers rather than SVG arc commands so PathParser has no flags to interpret.
 
-  Butt caps and mitred joins, not round: the ring's opening reads as a cut rather than a
-  taper, and the check comes to a point. The splash draws this same file scaled up through
-  drawable/ic_splash_icon.xml, where softness showed most.
+  A fill, not a stroke: there is no cap, join or mitre to keep in step with the raster, which
+  is why the generator needs none of the polygon stroking its predecessor did.
+
+  Sized by the grid's side rather than by its corner distance. A square reaches further at
+  the corner than a circle does at its edge for the same apparent size, so matching the old
+  ring's presence means a side of 45, not 49; the corner then lands at 29.34 of 33, inside
+  the safe circle without the mark reading undersized beside other launcher icons.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -23,10 +27,6 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:pathData="M58.31,33.73 C48.47,31.64 38.56,36.92 34.79,46.24 C31.02,55.56 34.49,66.24 43.02,71.57 C51.55,76.90 62.67,75.34 69.40,67.86 C76.13,60.39 76.52,49.17 70.33,41.24 L51.30,63.92 L42.93,55.55"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="6.66"
-        android:strokeLineCap="butt"
-        android:strokeLineJoin="miter"
-        android:strokeMiterLimit="4" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M35.30,32.40 L42.70,32.40 C44.30,32.40 45.60,33.70 45.60,35.30 L45.60,42.70 C45.60,44.30 44.30,45.60 42.70,45.60 L35.30,45.60 C33.70,45.60 32.40,44.30 32.40,42.70 L32.40,35.30 C32.40,33.70 33.70,32.40 35.30,32.40 Z M50.30,32.40 L57.70,32.40 C59.30,32.40 60.60,33.70 60.60,35.30 L60.60,42.70 C60.60,44.30 59.30,45.60 57.70,45.60 L50.30,45.60 C48.70,45.60 47.40,44.30 47.40,42.70 L47.40,35.30 C47.40,33.70 48.70,32.40 50.30,32.40 Z M65.30,32.40 L72.70,32.40 C74.30,32.40 75.60,33.70 75.60,35.30 L75.60,42.70 C75.60,44.30 74.30,45.60 72.70,45.60 L65.30,45.60 C63.70,45.60 62.40,44.30 62.40,42.70 L62.40,35.30 C62.40,33.70 63.70,32.40 65.30,32.40 Z M35.30,47.40 L42.70,47.40 C44.30,47.40 45.60,48.70 45.60,50.30 L45.60,57.70 C45.60,59.30 44.30,60.60 42.70,60.60 L35.30,60.60 C33.70,60.60 32.40,59.30 32.40,57.70 L32.40,50.30 C32.40,48.70 33.70,47.40 35.30,47.40 Z M50.30,47.40 L57.70,47.40 C59.30,47.40 60.60,48.70 60.60,50.30 L60.60,57.70 C60.60,59.30 59.30,60.60 57.70,60.60 L50.30,60.60 C48.70,60.60 47.40,59.30 47.40,57.70 L47.40,50.30 C47.40,48.70 48.70,47.40 50.30,47.40 Z M50.30,62.40 L57.70,62.40 C59.30,62.40 60.60,63.70 60.60,65.30 L60.60,72.70 C60.60,74.30 59.30,75.60 57.70,75.60 L50.30,75.60 C48.70,75.60 47.40,74.30 47.40,72.70 L47.40,65.30 C47.40,63.70 48.70,62.40 50.30,62.40 Z M65.30,62.40 L72.70,62.40 C74.30,62.40 75.60,63.70 75.60,65.30 L75.60,72.70 C75.60,74.30 74.30,75.60 72.70,75.60 L65.30,75.60 C63.70,75.60 62.40,74.30 62.40,72.70 L62.40,65.30 C62.40,63.70 63.70,62.40 65.30,62.40 Z" />
 </vector>

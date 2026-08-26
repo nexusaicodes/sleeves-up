@@ -21,13 +21,13 @@ class FeedbackTest {
 
     @Test
     fun `subject names the app and the version`() {
-        assertEquals("CheckIn feedback (1.2)", draft().subject)
+        assertEquals("Sleeves Up feedback (1.2)", draft().subject)
     }
 
     @Test
     fun `body carries the diagnostics needed to reproduce a report`() {
         val body = draft().body
-        assertTrue(body, body.contains("App: CheckIn 1.2 (20260726)"))
+        assertTrue(body, body.contains("App: Sleeves Up 1.2 (20260726)"))
         assertTrue(body, body.contains("Device: Google Pixel 8"))
         assertTrue(body, body.contains("Android: 16 (API 36)"))
     }

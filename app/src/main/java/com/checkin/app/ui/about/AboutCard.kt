@@ -22,7 +22,7 @@ import com.checkin.app.ui.components.SectionDivider
 /**
  * The four meta links, then app identity as a footer.
  *
- * A card rather than its own screen: it is six rows, and a dedicated destination for that would add
+ * A card rather than its own screen: it is seven rows, and a dedicated destination for that would add
  * a tap without adding anything to read. Only the license list — which is longer than the whole of
  * Settings — earns a route of its own.
  *
@@ -31,7 +31,12 @@ import com.checkin.app.ui.components.SectionDivider
  * taking the fallback snackbar with it, exactly when the user needs to read it.
  */
 @Composable
-fun AboutCard(onOpenLicenses: () -> Unit, showMessage: (String) -> Unit, modifier: Modifier = Modifier) {
+fun AboutCard(
+    onOpenPrivacy: () -> Unit,
+    onOpenLicenses: () -> Unit,
+    showMessage: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
 
     // Built once: none of these inputs can change while the process is alive.
@@ -52,6 +57,12 @@ fun AboutCard(onOpenLicenses: () -> Unit, showMessage: (String) -> Unit, modifie
     val noHandler = stringResource(R.string.about_no_handler)
 
     SectionCard(title = stringResource(R.string.about_section), modifier = modifier) {
+        ActionRow(
+            label = stringResource(R.string.about_privacy_on_device),
+            icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            onClick = onOpenPrivacy,
+        )
         ActionRow(
             label = stringResource(R.string.about_privacy_policy),
             icon = Icons.AutoMirrored.Filled.OpenInNew,
