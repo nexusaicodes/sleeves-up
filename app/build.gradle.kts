@@ -95,6 +95,19 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    lint {
+        // An unreferenced resource is dead weight a reader has to rule out: two plausible empty-state
+        // strings for one screen, and no way to tell from the file which one is drawn. Nothing else
+        // catches it — verifyLicenseCoverage guards res/font against the classpath, ktlint and detekt
+        // never see resources at all, and lint is the only gate that reads them.
+        //
+        // An error rather than the default warning, for the same reason detekt runs at maxIssues = 0:
+        // a warning nobody has to clear is a finding that accumulates. Anything genuinely referenced
+        // only indirectly — from the manifest, a theme, or the icon generator — takes a scoped
+        // tools:ignore carrying the reason, never a blanket disable here.
+        error += "UnusedResources"
+    }
 }
 
 dependencies {
