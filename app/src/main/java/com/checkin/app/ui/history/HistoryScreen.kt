@@ -44,9 +44,6 @@ import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.SessionIntervalRow
 import com.checkin.app.util.TimeFormat
 import java.time.YearMonth
-import java.time.format.TextStyle
-import java.time.temporal.WeekFields
-import java.util.Locale
 
 /**
  * The History tab: a calendar, and the sessions of whichever day you tap. It derives nothing — no
@@ -92,7 +89,7 @@ fun HistoryScreen(
             SECTION_SPACING - slotBudget
         // The floor wins over fitting: 48dp is the minimum tap target, so a 6-row month on a small
         // screen scrolls a little rather than shrinking its days below it.
-        val cellHeight = (gridBudget / weeksIn(uiState.currentMonth))
+        val cellHeight = (gridBudget / weekRowsIn(uiState.currentMonth))
             .coerceIn(MIN_CELL_HEIGHT, MAX_CELL_HEIGHT)
 
         HistoryContent(
@@ -172,17 +169,6 @@ private fun LazyListScope.calendarItems(uiState: HistoryUiState, viewModel: Hist
             cellHeight = cellHeight,
         )
     }
-}
-
-private const val DAYS_PER_WEEK = 7
-
-/** Rendered week rows for [month] — the same 4-6 range the grid lays out. */
-private fun weeksIn(month: YearMonth): Int {
-    val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
-    val startOffset =
-        (month.atDay(1).dayOfWeek.value - firstDayOfWeek.value + DAYS_PER_WEEK) % DAYS_PER_WEEK
-    // Round up: a partial trailing week still occupies a row.
-    return (startOffset + month.lengthOfMonth() + DAYS_PER_WEEK - 1) / DAYS_PER_WEEK
 }
 
 private val MIN_CELL_HEIGHT = 48.dp
@@ -307,7 +293,7 @@ private fun MonthSelector(currentMonth: YearMonth, onPrevious: () -> Unit, onNex
             )
         }
         Text(
-            text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${currentMonth.year}",
+            text = TimeFormat.monthYear(currentMonth),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
         )

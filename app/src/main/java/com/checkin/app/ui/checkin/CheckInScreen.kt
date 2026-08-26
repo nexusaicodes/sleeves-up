@@ -221,7 +221,15 @@ private val COMPACT_HEIGHT_THRESHOLD = 560.dp
  */
 private val ACTION_BOTTOM_GAP = 16.dp
 
-/** Date row + the collapsed sessions pill + its spacer + the 64.dp action, plus breathing room. */
+/**
+ * The primary action's height, and a term of [FIXED_CONTENT_HEIGHT] below rather than a loose
+ * literal at the button: a `Column` measures its non-weighted children in declaration order, so this
+ * is space the session list cannot have, and changing it at the call site alone would leave the fit
+ * budget describing a button that is no longer this tall.
+ */
+private val ACTION_HEIGHT = 64.dp
+
+/** Date row + the collapsed sessions pill + its spacer + [ACTION_HEIGHT], plus breathing room. */
 private val FIXED_CONTENT_HEIGHT = 168.dp
 
 /** The pill's floor: a tighter look must never shrink the tap target below what a thumb needs. */
@@ -258,7 +266,7 @@ private fun CheckInOutButton(isRunning: Boolean, onCheckIn: () -> Unit, onCheckO
         onClick = if (isRunning) onCheckOut else onCheckIn,
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp),
+            .height(ACTION_HEIGHT),
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = contentColor,

@@ -5,6 +5,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.util.Locale
 
 private const val MILLIS_PER_SECOND = 1_000L
@@ -106,4 +107,15 @@ object TimeFormat {
      */
     fun axisMonth(month: YearMonth, multiYear: Boolean): String =
         month.format(if (multiYear) axisMonthWithYearFormatter else axisMonthFormatter)
+
+    /**
+     * A month heading a user reads in full (e.g. "August 2026").
+     *
+     * Spelled out and always carrying the year, unlike [axisMonth], because this is a heading read
+     * on its own rather than a label under a bar with a title above it. Two screens show one — the
+     * History month selector and the Reports scope label — and they are the same heading, so they
+     * come from here: built inline they were free to disagree, and a change would land on one.
+     */
+    fun monthYear(month: YearMonth): String =
+        "${month.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${month.year}"
 }

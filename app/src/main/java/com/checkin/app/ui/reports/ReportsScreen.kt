@@ -56,7 +56,6 @@ import com.checkin.app.ui.components.charts.DonutChartDefaults
 import com.checkin.app.ui.components.charts.LineChart
 import com.checkin.app.ui.theme.dayColor
 import com.checkin.app.util.TimeFormat
-import java.time.format.TextStyle
 import java.util.Locale
 
 private const val MILLIS_PER_HOUR = 3_600_000f
@@ -209,8 +208,7 @@ private fun ScopeSelector(
  */
 @Composable
 private fun scopeLabel(scope: ReportScope, inline: Boolean = false): String = when (scope) {
-    is ReportScope.Month ->
-        "${scope.month.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${scope.month.year}"
+    is ReportScope.Month -> TimeFormat.monthYear(scope.month)
     ReportScope.AllTime ->
         stringResource(if (inline) R.string.scope_all_time_inline else R.string.scope_all_time)
 }
