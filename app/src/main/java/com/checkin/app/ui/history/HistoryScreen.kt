@@ -209,8 +209,8 @@ private val TEXT_CONTENT_HEIGHT = 110.dp
  *
  * Three states, and the middle one is the reason this is a slot rather than a conditional: every day
  * in the grid is tappable, including one with nothing on it and one in the future. Falling back to
- * something else there — as this screen used to, to a month summary — makes the tap read as though
- * it did nothing at all.
+ * something else there — a summary, or the previous day's rows — makes the tap read as though it
+ * did nothing at all.
  *
  * There is no aggregation here beyond the day's own total, which is the sum of the rows printed
  * directly beneath it. History states what was recorded; the deriving belongs on Reports.

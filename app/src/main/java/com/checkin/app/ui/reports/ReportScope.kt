@@ -23,13 +23,10 @@ data class ReportWindow(val start: LocalDate, val end: LocalDate) {
 /**
  * The counted days this scope covers, or null when it covers none.
  *
- * **This is the one place a range is clamped, and that is the reason it exists.** The screen and the
- * CSV export each used to clamp with their own arithmetic — `statsFlow` running the tracking start
- * to today and deciding per emission how much of today counted, `exportCsv` taking
- * `max(1st, trackingStart) .. min(monthEnd, countedThrough)` inline. Two clampings that happened to
- * agree is not the same as one clamping, and the export is the half nobody re-reads: a file whose
- * range drifted from the screen it was exported from would assert absences on days the screen was
- * counting.
+ * **This is the one place a range is clamped, and that is the reason it exists.** Two clampings that
+ * happen to agree is not the same as one clamping, and the export is the half nobody re-reads: a
+ * file whose range drifted from the screen it was exported from would assert absences on days the
+ * screen was counting. Neither the screen nor `exportCsv` may derive a window of its own.
  *
  * Both ends matter, and for different reasons. The **start** never precedes [trackingStart], or the
  * gap-filling export writes out days before the user had ever opened the app as days they recorded

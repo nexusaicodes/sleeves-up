@@ -78,8 +78,8 @@ class HistoryViewModel(private val repository: CheckInRepository, private val ti
         .flatMapLatest { (today, start) ->
             // A **one-day** query answers the only all-record question left: has today been checked
             // out of yet. `countedThrough` is exactly "today's key is present", so the whole range
-            // never needs reading — it used to, because the longest day, the all-time average and
-            // the best streak were all ringed against on this screen, and all three are gone.
+            // never needs reading — this screen ranks nothing and so has no all-record baseline to
+            // measure a day against.
             val todayKey = today.format(dateFormatter)
             val countedThroughFlow = repository.dailyAggregatesFlow(todayKey, todayKey)
                 .map { ConsistencyStats.countedThrough(repository.byDateKey(it), today) }

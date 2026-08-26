@@ -537,11 +537,9 @@ class ReportsViewModelTest {
     }
 
     /**
-     * The export follows the scope, which is what makes an arbitrary past month exportable at all —
-     * the old This month / All time pair could not express one.
-     *
-     * It also means the file and the screen read the one `resolve`, so they cannot describe
-     * different days. They used to clamp separately, with their own arithmetic.
+     * The export follows the scope, which is what makes an arbitrary past month exportable at all,
+     * and what makes the file and the screen read the one `resolve` — so the two cannot describe
+     * different days.
      */
     @Test
     fun `an export under a past month scope writes that month's clamped window`() = runTest {

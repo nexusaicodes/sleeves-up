@@ -187,7 +187,7 @@ private fun DayCell(
     }
 
     // The shade says only that the day has a session, so the hours are stated here rather than left
-    // to a mark that no longer carries them.
+    // to a mark that does not carry them.
     val cellDescription = summary?.let {
         stringResource(R.string.cd_day_worked, day, TimeFormat.durationShort(it.totalDurationMs))
     } ?: day.toString()

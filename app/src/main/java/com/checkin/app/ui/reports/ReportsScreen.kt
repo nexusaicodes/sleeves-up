@@ -239,9 +239,8 @@ private fun EmptyScope(scope: ReportScope) {
 /**
  * Every scalar the scope produces, as one dense table.
  *
- * The figures used to be spread between two donut holes, two legends and a stats card four cards
- * apart, so `totalDays` and `showedUpDays` each rendered twice with nothing added the second time.
- * They are stated once, here, and the charts below carry only what a chart adds.
+ * Every scalar is stated once, here, and the charts below carry only what a chart adds. Spread
+ * across the holes and legends instead, a figure renders twice with nothing added the second time.
  *
  * **Every row is a quantity and none is a rank.** The two averages arrived from History's deleted
  * month card, and they are allowed here for the reason they were refused there: a row states a
@@ -342,9 +341,8 @@ private fun SplitCard(uiState: ReportsUiState) {
                 ),
                 // Nothing tracked yet still has to read as a ring rather than as blank space.
                 emptyColor = missed,
-                // The hole is left empty: it used to print `totalDays` over a "days tracked"
-                // caption, which the stats table directly above now states, and a chart repeating a
-                // number rather than showing a shape is the duplication this layout removed.
+                // The hole is left empty: the stats table directly above states `totalDays`, and a
+                // chart repeating a number rather than showing a shape adds nothing.
                 modifier = Modifier.size(DonutChartDefaults.size()),
             )
             Spacer(Modifier.width(20.dp))
