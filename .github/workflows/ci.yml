@@ -33,11 +33,12 @@ jobs:
 
       # Static analysis runs before the build: ktlint and detekt need no compiled classpath, so a
       # style or code-smell failure is reported in seconds rather than after a full assemble.
-      - name: Static analysis (ktlint + detekt)
+      # verifyDocMap joins them for the same reason — it only reads CLAUDE.md and the source tree.
+      - name: Static analysis (ktlint + detekt) and doc map
         run: >-
           ./gradlew --stacktrace
           -Dorg.gradle.java.installations.paths="$JAVA_HOME"
-          staticAnalysis
+          staticAnalysis :app:verifyDocMap
 
       # Android SDK (platform/build-tools for compileSdk 36) is preinstalled on the
       # ubuntu-latest runner and exposed via ANDROID_HOME/ANDROID_SDK_ROOT.

@@ -73,9 +73,13 @@ file — the tree is clean, and a new finding is meant to be fixed or suppressed
 reason.
 
 ```bash
-./gradlew staticAnalysis   # what CI runs: ktlintCheck + detekt
-./gradlew ktlintFormat     # auto-fix formatting
+./gradlew staticAnalysis     # ktlintCheck + detekt
+./gradlew ktlintFormat       # auto-fix formatting
+./gradlew :app:verifyDocMap  # every source file is named in CLAUDE.md, and every name resolves
 ```
+
+CI runs `staticAnalysis` and `verifyDocMap` together as its first step: neither needs a compiled
+classpath, so a style, smell or stale-doc failure reports in seconds rather than after a full build.
 
 Run the same gate before each commit (once per clone):
 

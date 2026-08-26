@@ -264,4 +264,72 @@ tasks.register("verifyLicenseCoverage") {
     }
 }
 
-tasks.named("check") { dependsOn("verifyLicenseCoverage") }
+// CLAUDE.md is the tree's map, and the way it goes wrong is mechanical: a file is added, renamed or
+// moved and the prose keeps the old name. Two audits running months apart found the same class of
+// defect — a paragraph naming a symbol that no longer existed, and a file the map never mentioned —
+// so it is checked rather than re-read. Only the file-name half is automated: what a file *does* is
+// prose and stays human, exactly as with the licence list.
+val docMapFile: RegularFile = rootProject.layout.projectDirectory.file("CLAUDE.md")
+
+tasks.register("verifyDocMap") {
+    group = "verification"
+    description = "Fails if a main-source .kt file is missing from CLAUDE.md, or CLAUDE.md names a .kt that is gone."
+
+    val doc = docMapFile
+    val mainSource = layout.projectDirectory.dir("src/main/java")
+    // The map names test files too (Fakes.kt, the guards), so the dangling-path half searches both
+    // trees. Only main is required to be *documented* — a fixture is found from the test that uses it.
+    val testSource = layout.projectDirectory.dir("src/test/java")
+    val stamp = layout.buildDirectory.file("reports/docMap.txt")
+    inputs.file(doc)
+    inputs.dir(mainSource)
+    inputs.dir(testSource)
+    outputs.file(stamp)
+
+    doLast {
+        val text = doc.asFile.readText()
+        // Bare-word match, so a name counts however the prose wraps it in backticks or punctuation.
+        val words = Regex("""[A-Za-z_][A-Za-z0-9_]*""").findAll(text).map { it.value }.toSet()
+
+        val sourceFiles = mainSource.asFile.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
+        check(sourceFiles.isNotEmpty()) {
+            "Found no .kt files under ${mainSource.asFile}. This check would otherwise pass by " +
+                "finding nothing to compare against."
+        }
+
+        val undocumented = sourceFiles
+            .filterNot { it.nameWithoutExtension in words }
+            .map { it.relativeTo(mainSource.asFile).path }
+            .sorted()
+        check(undocumented.isEmpty()) {
+            "These files exist but CLAUDE.md never names them:\n" +
+                undocumented.joinToString("\n") { "  - $it" } +
+                "\n\nAdd each to the Key Source Paths list with a phrase saying what it holds. A file " +
+                "the map omits is one a newcomer can only find by grepping for something they cannot name."
+        }
+
+        // The other direction: the map naming a .kt path that no longer resolves, which is what a
+        // rename leaves behind. Only explicit paths are checked — a bare symbol may legitimately name
+        // something deleted, and this file documents plenty of those on purpose.
+        val namedPaths = Regex("""`([A-Za-z0-9_/.]+\.kt)`""").findAll(text).map { it.groupValues[1] }.toSet()
+        val allSources = sourceFiles +
+            testSource.asFile.walkTopDown().filter { it.isFile && it.extension == "kt" }
+        val dangling = namedPaths.filterNot { path ->
+            allSources.any { it.path.endsWith(path) } ||
+                rootProject.layout.projectDirectory.file(path).asFile.exists() ||
+                layout.projectDirectory.file(path).asFile.exists()
+        }.sorted()
+        check(dangling.isEmpty()) {
+            "CLAUDE.md names these files, and none of them exists:\n" +
+                dangling.joinToString("\n") { "  - $it" } +
+                "\n\nA rename updates both ends, or the map sends a reader somewhere empty."
+        }
+
+        val summary = "Doc map: ${sourceFiles.size} main sources all named in CLAUDE.md, " +
+            "${namedPaths.size} explicit paths all resolve."
+        logger.lifecycle(summary)
+        stamp.get().asFile.apply { parentFile.mkdirs() }.writeText("$summary\n")
+    }
+}
+
+tasks.named("check") { dependsOn("verifyLicenseCoverage", "verifyDocMap") }
