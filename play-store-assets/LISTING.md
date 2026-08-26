@@ -37,9 +37,13 @@ Sleeves Up
 
 The previous title was `CheckIn - Solopreneur Tracker` (28). The same shape does not fit — `Sleeves
 Up - Solopreneur Tracker` is 32 and `Sleeves Up: Solopreneur Tracker` is 31, both over the limit —
-so the title is the bare wordmark and the keywords move into the short description, which is
-indexed too. If a keyword suffix is wanted later, `Sleeves Up - Check In Daily` (27) and
-`Sleeves Up: Work Tracker` (24) both fit; the bare name is the choice to beat, not a default.
+so the title is the bare wordmark. **The keywords do not move to the short description — they
+move to the full description, which is indexed too**, and that is where
+"check-in tracker", "solopreneurs", "freelancers" and "remote workers" now sit. The short
+description is spent instead on the two claims no competitor can copy, because it is the field a
+stranger actually reads and the one Play truncates least. If a keyword suffix is wanted later,
+`Sleeves Up - Check In Daily` (27) and `Sleeves Up: Work Tracker` (24) both fit; the bare name is
+the choice to beat, not a default.
 
 **The Play title is user-facing and the package is not.** `applicationId` stays
 `com.nexusai.checkin.app` — frozen at the first upload — and every internal name (the
@@ -55,9 +59,11 @@ No internet permission. No photo taken. A day counts because you showed up.
 ## Full description (4000 max)
 
 ```
+Sleeves up or sleeves down. There is no third state, and that is the whole app: a day counts because you showed up for it, not because its hours cleared a bar.
+
 Sleeves Up is a private, on-device check-in tracker for solopreneurs, freelancers and remote workers — no account, no sign-in, no server.
 
-A day counts because it has a session, not because its hours cleared a bar. There is no target to meet, no half-day tier and no deficit to fall into: a 45-minute day counts as a day you showed up for exactly as much as a nine-hour one. Your hours stay visible everywhere — totals, charts, the calendar, the CSV export — as a quantity, never as a grade.
+A day counts because it has a session — no target to meet, no half-day tier, no deficit to fall into. A 45-minute day counts as a day you showed up for exactly as much as a nine-hour one. Your hours stay visible everywhere — totals, charts, the calendar, the CSV export — as a quantity, never as a grade.
 
 HOW IT WORKS
 • Check in to start a session, check out to end it. Your time for the day is the sum of your completed sessions.
@@ -133,6 +139,7 @@ is what makes them easy to write back in.
 | attendance | The vocabulary was renamed out of the app; the tab is History. |
 | streak · consecutive days · keep the chain going | A streak is a number the next day can take away. The calendar shows consecutive days visually and the app counts none of them. |
 | longest day · best day · personal best · your record | Nothing ranks one of the user's days against the others, and nothing is a baseline anything else is drawn against. |
+| roll up your sleeves · sleeves up! (as an instruction) · let's get to work | The name describes a state, not an order. Nobody has ever rolled their sleeves up for nine hours, so the metaphor carries no measurement — which is exactly what lets it sit on an app where hours grade nothing. Said *at* the user on a cadence it becomes a mascot, and a mascot is the gamification register this app has none of. Gloss it once in the listing; never in a notification, a celebration or an empty state. |
 | shaded by how long · intensity · ringed against your best | The calendar is binary, and no arc in the app fills to measure anything — the Check-In gauge's sweep is motion, not a score. |
 
 ## Categorisation & contact
@@ -170,7 +177,7 @@ screenshot corroborates.
 |---|---|---|---|
 | 1 | `01-calendar.png` | A full month, binary, with two or three gaps | A day counts because you showed up. |
 | 2 | `02-face-check.png` | The presence gate mid-check | Check in with a face check that takes no photo. |
-| 3 | `03-summary.png` | Days shown up against days elapsed; hours below, plain | 24 days out of 30. Hours are a number, not a grade. |
+| 3 | `03-summary.png` | Days shown up against days tracked; hours below, plain | 24 days out of 31. Hours are a number, not a grade. |
 | 4 | `04-running.png` | The timer notification pulled down over the app | A live timer while you're in. Nothing gets subtracted. |
 | 5 | `05-start-times.png` | The morning / afternoon / evening split | See when you actually start. No bucket is the right one. |
 | 6 | `06-privacy.png` | The in-app privacy screen | No internet permission at all. It cannot upload, because it cannot connect. |
