@@ -28,7 +28,7 @@ class SessionWatchdogTest {
     private val today = LocalDate.of(2026, 6, 15)
     private val now = today.atTime(9, 0).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-    private val time = FixedTime(now, today)
+    private val time = FakeTimeSource(now, today)
     private val dao = FakeCheckInSessionDao()
     private val repository = CheckInRepository(dao, time)
     private val controller = FakeServiceController()

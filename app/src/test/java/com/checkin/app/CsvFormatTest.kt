@@ -13,7 +13,7 @@ import org.junit.Test
  * renamed, retyped or moved. `DefaultCsvExporter` needs a `Context` and so cannot be tested here,
  * which is exactly how a reorder could otherwise land with nothing failing.
  */
-class CsvRowTest {
+class CsvFormatTest {
 
     @Test
     fun `the header is the agreed column order`() {

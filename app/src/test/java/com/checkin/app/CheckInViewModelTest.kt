@@ -27,7 +27,7 @@ class CheckInViewModelTest {
     private fun buildViewModel(
         dao: FakeCheckInSessionDao,
         service: FakeServiceController,
-        time: FixedTime,
+        time: FakeTimeSource,
         engagement: FakeEngagementReporter = FakeEngagementReporter(),
         alarms: FakeSessionAlarms = FakeSessionAlarms(),
     ): CheckInViewModel {
@@ -59,7 +59,7 @@ class CheckInViewModelTest {
         val viewModel = buildViewModel(
             dao,
             service,
-            FixedTime(1000L, LocalDate.of(2026, 6, 15)),
+            FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)),
             alarms = alarms,
         )
 
@@ -83,7 +83,7 @@ class CheckInViewModelTest {
         val viewModel = buildViewModel(
             dao,
             FakeServiceController(),
-            FixedTime(1000L, LocalDate.of(2026, 6, 15)),
+            FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)),
             alarms = alarms,
         )
 
@@ -113,7 +113,7 @@ class CheckInViewModelTest {
             val viewModel = buildViewModel(
                 dao,
                 FakeServiceController(),
-                FixedTime(0L, LocalDate.of(2026, 6, 15)),
+                FakeTimeSource(0L, LocalDate.of(2026, 6, 15)),
             )
 
             backgroundScope.launch { viewModel.uiState.collect {} }
@@ -143,7 +143,7 @@ class CheckInViewModelTest {
     fun `the first check-in inserts a session, starts the timer, and starts the record`() = runTest {
         val dao = FakeCheckInSessionDao()
         val service = FakeServiceController()
-        val viewModel = buildViewModel(dao, service, FixedTime(1000L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, service, FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
 
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
@@ -170,7 +170,7 @@ class CheckInViewModelTest {
         val viewModel = buildViewModel(
             dao,
             FakeServiceController(),
-            FixedTime(1000L, LocalDate.of(2026, 6, 15)),
+            FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)),
             engagement,
         )
 
@@ -191,7 +191,7 @@ class CheckInViewModelTest {
     fun `an existing user is never reported as a first run, only as not yet loaded`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedCompleted("2026-06-01", startedAt = 0L, durationMs = 3_600_000L)
-        val viewModel = buildViewModel(dao, FakeServiceController(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeServiceController(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
 
         assertTrue(viewModel.uiState.value.loading)
 
@@ -206,7 +206,7 @@ class CheckInViewModelTest {
     fun `day rollover advances today's date key without a resume`() = runTest {
         val dao = FakeCheckInSessionDao()
         val service = FakeServiceController()
-        val time = FixedTime(1000L, LocalDate.of(2026, 6, 15))
+        val time = FakeTimeSource(1000L, LocalDate.of(2026, 6, 15))
         val viewModel = buildViewModel(dao, service, time)
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
@@ -226,7 +226,7 @@ class CheckInViewModelTest {
             com.checkin.app.data.local.CheckInSession(startedAt = 500L, dateKey = "2026-06-14"),
         )
         val viewModel =
-            buildViewModel(dao, FakeServiceController(), FixedTime(1000L, LocalDate.of(2026, 6, 15)))
+            buildViewModel(dao, FakeServiceController(), FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -243,7 +243,7 @@ class CheckInViewModelTest {
     fun `check-out closes the session and stops the timer`() = runTest {
         val dao = FakeCheckInSessionDao()
         val service = FakeServiceController()
-        val viewModel = buildViewModel(dao, service, FixedTime(1000L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, service, FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
 
         viewModel.requestCheckIn()

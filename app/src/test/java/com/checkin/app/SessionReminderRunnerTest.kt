@@ -33,7 +33,7 @@ class SessionReminderRunnerTest {
     /** The midnight that ends the session's day — what a boundary close must always stamp. */
     private val boundary = LocalDateTime.of(2026, 6, 16, 0, 0).atZone(zone).toInstant().toEpochMilli()
 
-    private val time = FixedTime(now, today)
+    private val time = FakeTimeSource(now, today)
     private val dao = FakeCheckInSessionDao()
     private val repository = CheckInRepository(dao, time)
     private val notifier = FakeNotifier()
@@ -234,7 +234,7 @@ class SessionReminderRunnerTest {
     fun `the boundary closes the session stamped at midnight, not at the fire time`() = runTest {
         val session = repository.checkIn()
         // The alarm lands late — well into the following day.
-        val late = FixedTime(boundary + 3 * 60 * 60 * 1000L, today.plusDays(1))
+        val late = FakeTimeSource(boundary + 3 * 60 * 60 * 1000L, today.plusDays(1))
         val runner = SessionReminderRunner(
             repository = CheckInRepository(dao, late),
             notifier = notifier,
@@ -283,7 +283,7 @@ class SessionReminderRunnerTest {
             strings = StringResolver { "copy-$it" },
             alarms = alarms,
             log = log,
-            timeSource = FixedTime(boundary + 60_000L, today.plusDays(1)),
+            timeSource = FakeTimeSource(boundary + 60_000L, today.plusDays(1)),
             zone = { ZoneId.of("Asia/Karachi") },
         )
 
@@ -304,7 +304,7 @@ class SessionReminderRunnerTest {
             strings = StringResolver { "copy-$it" },
             alarms = alarms,
             log = log,
-            timeSource = FixedTime(fireAt, today),
+            timeSource = FakeTimeSource(fireAt, today),
             zone = { zone },
         )
 

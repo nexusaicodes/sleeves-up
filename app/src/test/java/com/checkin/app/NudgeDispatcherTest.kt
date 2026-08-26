@@ -36,12 +36,12 @@ class NudgeDispatcherTest {
     private val triggerHour = today.atTime(NudgeSchedule.Checkpoint.MORNING.hour, 0)
         .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-    private val time = FixedTime(triggerHour, today)
+    private val time = FakeTimeSource(triggerHour, today)
     private val notifier = FakeNotifier()
     private val log = FakeEngagementLog()
     private val dao = FakeCheckInSessionDao()
 
-    private fun dispatcher(clock: FixedTime = time): NudgeDispatcher = NudgeDispatcher(
+    private fun dispatcher(clock: FakeTimeSource = time): NudgeDispatcher = NudgeDispatcher(
         strings = StringResolver { "copy-$it" },
         repository = CheckInRepository(dao, clock),
         install = FakeEngagementInstall(),
@@ -90,7 +90,7 @@ class NudgeDispatcherTest {
         val beforeFirstCheckpoint = today.atTime(NudgeSchedule.Checkpoint.MORNING.hour - 1, 0)
             .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-        val sent = dispatcher(FixedTime(beforeFirstCheckpoint, today)).runOnce()
+        val sent = dispatcher(FakeTimeSource(beforeFirstCheckpoint, today)).runOnce()
 
         assertNull(sent)
         assertTrue(notifier.shown.isEmpty())
@@ -125,7 +125,7 @@ class NudgeDispatcherTest {
         val laterInTheBand = today.atTime(NudgeSchedule.Checkpoint.AFTERNOON.hour - 1, 0)
             .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-        assertNull(dispatcher(FixedTime(laterInTheBand, today)).runOnce())
+        assertNull(dispatcher(FakeTimeSource(laterInTheBand, today)).runOnce())
         assertEquals(1, shownCount())
         assertEquals(1, notifier.shown.size)
     }

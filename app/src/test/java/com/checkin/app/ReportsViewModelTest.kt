@@ -31,7 +31,7 @@ class ReportsViewModelTest {
     private fun buildViewModel(
         dao: FakeCheckInSessionDao,
         exporter: FakeCsvExporter,
-        time: FixedTime,
+        time: FakeTimeSource,
     ): ReportsViewModel {
         val repo = CheckInRepository(dao, time)
         return ReportsViewModel(repo, time, exporter)
@@ -41,7 +41,7 @@ class ReportsViewModelTest {
     fun `tracking that starts today yields all-zero stats`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedOpen("2026-06-15")
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
 
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
@@ -63,7 +63,7 @@ class ReportsViewModelTest {
     @Test
     fun `a record with no sessions reports no tracked days and no missed days`() = runTest {
         val dao = FakeCheckInSessionDao()
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -81,7 +81,7 @@ class ReportsViewModelTest {
         dao.seedCompleted("2026-06-12", startedAt = 0L, durationMs = 3_600_000L)
         dao.seedCompleted("2026-06-03", startedAt = 0L, durationMs = 3_600_000L)
         dao.seedCompleted("2026-06-09", startedAt = 0L, durationMs = 3_600_000L)
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -96,7 +96,7 @@ class ReportsViewModelTest {
     fun `an open session counts as the tracking start`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedOpen("2026-06-10")
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -112,7 +112,7 @@ class ReportsViewModelTest {
         dao.seedCompleted("2026-06-12", startedAt = 0L, durationMs = 8 * 3_600_000L)
         val start = LocalDate.of(2026, 6, 10)
         dao.seedOpen(start.toString())
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -130,7 +130,7 @@ class ReportsViewModelTest {
         dao.seedCompleted("2026-06-12", startedAt = 0L, durationMs = eightHours)
         val start = LocalDate.of(2026, 6, 10)
         dao.seedOpen(start.toString())
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -155,7 +155,7 @@ class ReportsViewModelTest {
         val today = LocalDate.of(2026, 6, 15)
         dao.seedCompleted("2026-06-13", startedAt = 0L, durationMs = hour)
         dao.seedCompleted("2026-06-14", startedAt = 0L, durationMs = hour)
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, today))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, today))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -188,7 +188,7 @@ class ReportsViewModelTest {
     fun `the all-time daily series is capped to its trailing window`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedOpen("2025-01-01")
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         viewModel.selectAllTime()
         advanceUntilIdle()
@@ -210,7 +210,7 @@ class ReportsViewModelTest {
         val dao = FakeCheckInSessionDao()
         dao.seedCompleted("2026-02-01", startedAt = 0L, durationMs = 3_600_000L)
         dao.seedCompleted("2026-03-10", startedAt = 0L, durationMs = 3_600_000L)
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         repeat(3) { viewModel.previousMonth() }
         advanceUntilIdle()
@@ -234,7 +234,7 @@ class ReportsViewModelTest {
     fun `a month holding the tracking start opens at it rather than at the first`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedCompleted("2026-03-10", startedAt = 0L, durationMs = 3_600_000L)
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         repeat(3) { viewModel.previousMonth() }
         advanceUntilIdle()
@@ -257,7 +257,7 @@ class ReportsViewModelTest {
     fun `toggling all time twice returns to a month scope`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedCompleted("2026-06-10", startedAt = 0L, durationMs = 3_600_000L)
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -274,7 +274,7 @@ class ReportsViewModelTest {
     fun `a month before the record resolves to an empty scope`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedCompleted("2026-06-10", startedAt = 0L, durationMs = 3_600_000L)
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         viewModel.previousMonth()
         advanceUntilIdle()
@@ -293,7 +293,7 @@ class ReportsViewModelTest {
         val fourHours = 4 * 3_600_000L
         dao.seedCompleted("2026-04-02", startedAt = 0L, durationMs = fourHours)
         dao.seedOpen("2026-04-01")
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         viewModel.selectAllTime()
         advanceUntilIdle()
@@ -323,7 +323,7 @@ class ReportsViewModelTest {
         val fourHours = 4 * 3_600_000L
         dao.seedCompleted("2026-06-12", startedAt = 0L, durationMs = fourHours)
         dao.seedCompleted("2026-06-13x", startedAt = 0L, durationMs = 9 * 3_600_000L)
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
 
         backgroundScope.launch { viewModel.uiState.collect {} }
         viewModel.selectAllTime()
@@ -342,7 +342,7 @@ class ReportsViewModelTest {
         dao.seedCompleted("2026-06-14", startedAt = 0L, durationMs = 45 * 60_000L)
         val start = LocalDate.of(2026, 6, 10)
         dao.seedOpen(start.toString())
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
 
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
@@ -374,7 +374,7 @@ class ReportsViewModelTest {
         val before = LocalDate.of(2026, 6, 13).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
         dao.seedCompleted("2026-06-13", startedAt = before + 10 * hour, durationMs = hour)
 
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, today))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, today))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -396,7 +396,7 @@ class ReportsViewModelTest {
         dao.seedCompleted("2026-06-13", startedAt = 0L, durationMs = 3_600_000L)
         dao.seedOpen("2026-06-15", startedAt = 9 * 3_600_000L)
 
-        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -411,7 +411,7 @@ class ReportsViewModelTest {
         dao.seedCompleted("2026-06-12", startedAt = 0L, durationMs = 3_600_000L)
         val exporter = FakeCsvExporter(ExportResult.Success)
         dao.seedOpen("2026-06-10")
-        val viewModel = buildViewModel(dao, exporter, FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, exporter, FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
 
         val events = mutableListOf<ExportResult>()
@@ -431,7 +431,7 @@ class ReportsViewModelTest {
         dao.seedCompleted("2026-06-12", startedAt = 0L, durationMs = 3_600_000L)
         val exporter = FakeCsvExporter(ExportResult.Success)
         dao.seedOpen("2026-06-10")
-        val viewModel = buildViewModel(dao, exporter, FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, exporter, FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
 
         // First collector receives the event, then goes away (e.g. the screen is recreated).
         val first = mutableListOf<ExportResult>()
@@ -462,7 +462,7 @@ class ReportsViewModelTest {
         val viewModel = buildViewModel(
             dao,
             exporter,
-            FixedTime(0L, LocalDate.of(2026, 6, 15)),
+            FakeTimeSource(0L, LocalDate.of(2026, 6, 15)),
         )
 
         viewModel.exportCsv()
@@ -484,7 +484,7 @@ class ReportsViewModelTest {
         val viewModel = buildViewModel(
             dao,
             exporter,
-            FixedTime(0L, LocalDate.of(2026, 6, 25)),
+            FakeTimeSource(0L, LocalDate.of(2026, 6, 25)),
         )
 
         viewModel.exportCsv()
@@ -502,7 +502,7 @@ class ReportsViewModelTest {
         val viewModel = buildViewModel(
             dao,
             exporter,
-            FixedTime(0L, LocalDate.of(2026, 6, 15)),
+            FakeTimeSource(0L, LocalDate.of(2026, 6, 15)),
         )
 
         viewModel.selectAllTime()
@@ -524,7 +524,7 @@ class ReportsViewModelTest {
         dao.seedCompleted("2026-06-05", startedAt = 0L, durationMs = 3_600_000L)
         dao.seedCompleted(today.toString(), startedAt = 0L, durationMs = 3_600_000L)
         val exporter = FakeCsvExporter(ExportResult.Success)
-        val viewModel = buildViewModel(dao, exporter, FixedTime(0L, today))
+        val viewModel = buildViewModel(dao, exporter, FakeTimeSource(0L, today))
 
         viewModel.exportCsv()
         advanceUntilIdle()
@@ -549,7 +549,7 @@ class ReportsViewModelTest {
         dao.seedCompleted("2026-02-01", startedAt = 0L, durationMs = 3_600_000L)
         dao.seedCompleted("2026-03-10", startedAt = 0L, durationMs = 3_600_000L)
         val exporter = FakeCsvExporter(ExportResult.Success)
-        val viewModel = buildViewModel(dao, exporter, FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, exporter, FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
 
         repeat(3) { viewModel.previousMonth() }
         viewModel.exportCsv()
@@ -564,7 +564,7 @@ class ReportsViewModelTest {
         val dao = FakeCheckInSessionDao()
         dao.seedCompleted("2026-06-10", startedAt = 0L, durationMs = 3_600_000L)
         val exporter = FakeCsvExporter(ExportResult.Success)
-        val viewModel = buildViewModel(dao, exporter, FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, exporter, FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
 
         val events = mutableListOf<ExportResult>()
         backgroundScope.launch { viewModel.exportEvents.collect { events += it } }
@@ -592,7 +592,7 @@ class ReportsViewModelTest {
         val viewModel = buildViewModel(
             dao,
             exporter,
-            FixedTime(0L, LocalDate.of(2026, 6, 15)),
+            FakeTimeSource(0L, LocalDate.of(2026, 6, 15)),
         )
 
         val events = mutableListOf<ExportResult>()
@@ -615,7 +615,7 @@ class ReportsViewModelTest {
         val viewModel = buildViewModel(
             dao,
             exporter,
-            FixedTime(0L, LocalDate.of(2026, 6, 1)),
+            FakeTimeSource(0L, LocalDate.of(2026, 6, 1)),
         )
 
         val events = mutableListOf<ExportResult>()

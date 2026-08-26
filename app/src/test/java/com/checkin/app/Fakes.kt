@@ -1,3 +1,18 @@
+/*
+ * The suite mocks nothing — every seam is stood up by hand, so JUnit and the coroutines test
+ * dispatcher are the only test dependencies.
+ *
+ * This file holds the small fakes, one per seam, each a few lines of recording or canned answers:
+ * FakeTimeSource (the clock, and the only place a midnight rollover is driven), FakeServiceController,
+ * FakeNotifier, FakeCsvExporter, FakeEngagementInstall, FakeEngagementReporter, FakeSessionAlarms.
+ *
+ * A fake gets its own file once it has behaviour worth reading on its own — an in-memory query
+ * surface with ordering and filtering to honour. That is why FakeCheckInSessionDao and
+ * FakeEngagementLog are separate: the second in particular mirrors the real log's source scoping,
+ * because a fake that did not would let a test prove only the fake right.
+ *
+ * Every name here starts with Fake so `ls Fake*` and a grep for the seam's name both find it.
+ */
 package com.checkin.app
 
 import com.checkin.app.data.TimeSource
@@ -16,7 +31,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 /** Deterministic clock. [day] is mutable so tests can drive a midnight rollover. */
-class FixedTime(private val now: Long, date: LocalDate, private val zone: ZoneId = ZoneId.of("UTC")) : TimeSource {
+class FakeTimeSource(private val now: Long, date: LocalDate, private val zone: ZoneId = ZoneId.of("UTC")) : TimeSource {
     val day = MutableStateFlow(date)
     override fun nowMillis(): Long = now
     override fun today(): LocalDate = day.value

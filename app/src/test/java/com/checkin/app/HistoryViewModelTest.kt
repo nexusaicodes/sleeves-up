@@ -20,7 +20,7 @@ class HistoryViewModelTest {
     @get:Rule
     val mainRule = MainDispatcherRule()
 
-    private fun buildViewModel(dao: FakeCheckInSessionDao, time: FixedTime): HistoryViewModel {
+    private fun buildViewModel(dao: FakeCheckInSessionDao, time: FakeTimeSource): HistoryViewModel {
         val repo = CheckInRepository(dao, time)
         return HistoryViewModel(repo, time)
     }
@@ -29,7 +29,7 @@ class HistoryViewModelTest {
     fun `selectDay toggles the selection`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedOpen("2026-06-01")
-        val viewModel = buildViewModel(dao, FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -52,7 +52,7 @@ class HistoryViewModelTest {
         val today = LocalDate.of(2026, 6, 15)
         val fourHours = 4 * 3_600_000L
         dao.seedOpen(today.toString())
-        val viewModel = buildViewModel(dao, FixedTime(0L, today))
+        val viewModel = buildViewModel(dao, FakeTimeSource(0L, today))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -78,7 +78,7 @@ class HistoryViewModelTest {
         val today = LocalDate.of(2026, 6, 15)
         dao.seedCompleted("2026-06-13", startedAt = 0L, durationMs = 5 * hour)
         dao.seedCompleted("2026-06-14", startedAt = 0L, durationMs = 3 * hour)
-        val viewModel = buildViewModel(dao, FixedTime(0L, today))
+        val viewModel = buildViewModel(dao, FakeTimeSource(0L, today))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -104,7 +104,7 @@ class HistoryViewModelTest {
         val start = LocalDate.of(2026, 6, 15)
         val fourHours = 4 * 3_600_000L
         dao.seedCompleted(start.toString(), startedAt = 0L, durationMs = fourHours)
-        val time = FixedTime(0L, start)
+        val time = FakeTimeSource(0L, start)
         val viewModel = buildViewModel(dao, time)
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
@@ -127,7 +127,7 @@ class HistoryViewModelTest {
         dao.seedOpen("2026-06-01")
         // June 30th is June's last day, so the month cannot absorb the in-progress today by running
         // past it — counting has to stop short of today on its own.
-        val viewModel = buildViewModel(dao, FixedTime(0L, today))
+        val viewModel = buildViewModel(dao, FakeTimeSource(0L, today))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -143,7 +143,7 @@ class HistoryViewModelTest {
     @Test
     fun `a record with no sessions has no tracking start`() = runTest {
         val dao = FakeCheckInSessionDao()
-        val viewModel = buildViewModel(dao, FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -156,7 +156,7 @@ class HistoryViewModelTest {
     @Test
     fun `the tracking start appears as soon as a session exists`() = runTest {
         val dao = FakeCheckInSessionDao()
-        val viewModel = buildViewModel(dao, FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
         assertNull(viewModel.uiState.value.trackingStartDate)
@@ -171,7 +171,7 @@ class HistoryViewModelTest {
     fun `month navigation shifts the visible month and clears selection`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedOpen("2026-06-01")
-        val viewModel = buildViewModel(dao, FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
