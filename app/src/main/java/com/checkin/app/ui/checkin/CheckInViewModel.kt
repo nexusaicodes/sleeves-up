@@ -23,6 +23,17 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 
+/**
+ * What the gate is being opened for, so that passing it performs the action the user asked for
+ * rather than a fixed one. The root gate's equivalent is `PresenceCheckSignal.Reason`, which carries
+ * the same three cases for a check requested from a notification.
+ */
+sealed class PresenceAction {
+    data object None : PresenceAction()
+    data object CheckIn : PresenceAction()
+    data object CheckOut : PresenceAction()
+}
+
 /** Immutable snapshot the Check-In screen renders. Elapsed time is screen-driven, not held here. */
 data class CheckInUiState(
     val loading: Boolean = true,
@@ -170,10 +181,4 @@ class CheckInViewModel(
             }
         }
     }
-}
-
-sealed class PresenceAction {
-    data object None : PresenceAction()
-    data object CheckIn : PresenceAction()
-    data object CheckOut : PresenceAction()
 }
