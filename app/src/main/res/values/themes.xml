@@ -4,6 +4,9 @@
          The icon is ic_splash_icon, which is the launcher foreground scaled up rather than a
          second copy of the mark — see that file for why the splash wants its own size. -->
     <style name="Theme.CheckInApp.Starting" parent="Theme.SplashScreen">
+        <!-- Deliberately the icon's own background layer: the splash and the adaptive icon show
+             the same flat indigo behind the same mark, so one colour keeps them in step. Changing
+             it changes both. -->
         <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_icon</item>
         <item name="postSplashScreenTheme">@style/Theme.CheckInApp</item>

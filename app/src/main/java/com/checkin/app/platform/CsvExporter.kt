@@ -5,17 +5,12 @@ import android.content.Intent
 import androidx.core.content.FileProvider
 import com.checkin.app.R
 import com.checkin.app.data.local.DailyAggregate
-import com.checkin.app.util.TimeFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileWriter
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Locale
-
-/** Decimal hours is the CSV's unit, so the divisor is a Double. */
-private const val MILLIS_PER_HOUR = 3_600_000.0
 
 /** Outcome of a CSV export — a typed result so no user-facing strings live in the ViewModel. */
 sealed interface ExportResult {
@@ -52,39 +47,23 @@ class DefaultCsvExporter(private val context: Context) : CsvExporter {
         ExportResult.Failure(e.message)
     }
 
-    /**
-     * Writes one row per day across the range, gap-filling days with no sessions as zeros.
-     *
-     * There is deliberately no Status column. Any wording for one would be a verdict on the day, and
-     * this is the one artifact that leaves the device — zero hours and zero sessions already say a
-     * day had nothing recorded, without grading it.
-     */
+    /** Writes one row per day across the range, gap-filling days with no sessions as zeros. */
     private fun writeCsv(startKey: String, endKey: String, summaries: Map<String, DailyAggregate>): File {
         val exportDir = File(context.cacheDir, "exports").also { it.mkdirs() }
         val file = File(exportDir, "checkin_${startKey}_$endKey.csv")
 
         FileWriter(file).use { writer ->
-            writer.write("Date,First Check In,Last Check Out,Total Hours,Session Count\n")
+            writer.write(csvHeader())
 
             var current = LocalDate.parse(startKey, dateFormatter)
             val end = LocalDate.parse(endKey, dateFormatter)
             while (!current.isAfter(end)) {
                 val key = current.format(dateFormatter)
-                writer.write(row(key, summaries[key]))
+                writer.write(csvRow(key, summaries[key]))
                 current = current.plusDays(1)
             }
         }
         return file
-    }
-
-    private fun row(key: String, summary: DailyAggregate?): String {
-        val firstIn = summary?.firstCheckIn?.let { TimeFormat.clock(it) } ?: ""
-        val lastOut = summary?.lastCheckOut?.let { TimeFormat.clock(it) } ?: ""
-        val totalHrs = summary
-            ?.let { String.format(Locale.US, "%.2f", it.totalDurationMs / MILLIS_PER_HOUR) }
-            ?: "0.00"
-        val count = summary?.sessionCount?.toString() ?: "0"
-        return "$key,$firstIn,$lastOut,$totalHrs,$count\n"
     }
 
     private fun share(csvFile: File) {

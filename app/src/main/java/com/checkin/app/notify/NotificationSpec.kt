@@ -3,7 +3,7 @@ package com.checkin.app.notify
 /** A button on a notification. Tapping it opens the Activity with [launchExtra] set. */
 data class NotificationAction(val iconRes: Int, val label: String, val launchExtra: String)
 
-/** A notification to post. Presentation only — the decision to send lives in the engagement rules. */
+/** A notification to post. Presentation only — the decision to send lives in the caller's rules. */
 data class NotificationSpec(
     val id: Int,
     val channelId: String,
@@ -13,9 +13,9 @@ data class NotificationSpec(
     val launchExtra: String? = null,
     val actions: List<NotificationAction> = emptyList(),
     /**
-     * A live status line rather than a message. The user can swipe one away at this minSdk, but it
-     * carries no [tag]: dismissing a status line says nothing about whether its content was wanted,
-     * which is the only question the engagement log asks of a dismissal.
+     * A live status line rather than a message. From Android 14 the user can swipe one away even
+     * though it is posted `ongoing` — on 13 it stays undismissible — and nothing re-posts it
+     * afterwards, which would override a decision made with full information.
      */
     val ongoing: Boolean = false,
     val silent: Boolean = false,
@@ -31,13 +31,4 @@ data class NotificationSpec(
      * [com.checkin.app.service.CheckInService.timerSpec]).
      */
     val chronometerBase: Long? = null,
-    /**
-     * Set to record what the user does with this notification.
-     *
-     * Notifications that carry one are deliberately not auto-cancelling: the platform can deliver a
-     * delete intent when an auto-cancel tap removes a notification, which is indistinguishable from
-     * a real swipe. Whoever handles the tap cancels it instead, and an app-initiated cancel delivers
-     * nothing — so everything that reaches the receiver is a genuine dismissal.
-     */
-    val tag: EngagementTag? = null,
 )

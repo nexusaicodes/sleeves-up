@@ -5,9 +5,11 @@ words describing it land in the same commit.
 
 **Two rules govern every line below.**
 
-1. **Nothing grades a day.** There is no target, no half-day tier and no deficit — see the no-target
-   entry in `CLAUDE.md`. Copy that implies an hours bar reintroduces the failure the app was rebuilt
-   to remove, whatever it is called.
+1. **Nothing grades a day, and hours rank nothing.** There is no target, no half-day tier and no
+   deficit — see the no-target entry in `CLAUDE.md` — and since 2.1 no personal best either: the
+   calendar is binary, and no figure in the app is drawn against the user's own record. Copy that
+   implies an hours bar reintroduces the failure the app was rebuilt to remove, whatever it is
+   called, and copy that implies a personal best to beat does the same thing one level up.
 2. **"No internet permission" is a claim to re-verify, not to assume.** It holds because presence
    detection is done by the camera HAL and nothing on the classpath declares `INTERNET`; the merged
    manifest's only additions are `ACCESS_NETWORK_STATE` and `WAKE_LOCK` from `androidx.work`,
@@ -46,12 +48,11 @@ HOW IT WORKS
 • A live timer runs in a notification while you are checked in. Nothing is ever subtracted from a session.
 • Sessions are immutable by design — no editing, no deleting, no manual entry.
 • Forget to check out and the session closes automatically at midnight, on the day it began.
-• Consecutive days with a session build a streak.
 
 WHAT YOU SEE
-• A calendar shaded by how long each day ran, measured against your own longest day
-• Monthly summaries — days shown up, best streak, average day, longest day — each ringed against your own all-time best, so a full ring means "this month matches your best"
-• Reports with daily and monthly trends, your current streak, and an all-time split
+• A calendar that marks every day you showed up — one mark, the same for a short day and a long one
+• Tap any day to see the sessions it held, start to finish, and what the day came to
+• Reports with daily and monthly hours, when in the day your sessions start, and how many you run a day
 • CSV export through the system share sheet
 
 PRIVATE BY DESIGN
@@ -76,23 +77,23 @@ CheckIn is a self-discipline tool, not a substitute for any employer or legal ti
 
 ## What's new (500 max, per release)
 
-Play keeps these per version code, so the text below is 2.0's and is replaced wholesale at the next
-release rather than appended to. It is subject to both rules at the top of this file: **2.0's leading
-claim is the removal of the hours target, which is the one change an existing user will notice** —
-the camera rework is larger in the code and invisible in the app until a check runs.
+Play keeps these per version code, so the text below is 2.1's and is replaced wholesale at the next
+release rather than appended to. It is subject to both rules at the top of this file: **2.1's leading
+claim is that hours have stopped ranking anything**, which is what an existing user actually sees —
+the calendar and the month card both look different the moment they open the app.
 
-Two things are deliberately absent. The **crash on granting a permission** (fragment 1.8.2, see
-`CLAUDE.md`) is a real fix and is not named: release notes are read by people deciding whether to
-care about an update, and a bug report is not what earns that. And nothing here **grades a day**,
-which rules out the obvious framing — "track your hours", "hit your goal" — for the release that
-deleted the mechanism those describe.
+Two things are deliberately absent. The wording must not **advertise what was taken away** as a loss:
+"no more streaks" reads as a feature removal to someone who never had the app, so the copy states
+what a day looks like now instead. And nothing here **grades a day**, which rules out the obvious
+framing — "track your hours", "hit your goal", "beat your best" — for the release that finished
+deleting the mechanism those describe.
 
 ```
-2.0 changes what a day means. There is no hours target any more — no half-days, no deficit. A day counts because you showed up, and hours are a number, never a grade.
+2.0 stopped grading a day by its hours. 2.1 stops hours grading anything at all.
 
-The face check now runs on the camera hardware itself. No photo is taken, and the app holds no internet permission at all. It passes the moment it sees you, with device unlock if it cannot.
+Every day you showed up is now one mark on the calendar, whether it held 45 minutes or nine hours — nothing is drawn fainter for being shorter, and nothing is measured against your longest day. Your hours are still all there, as a number.
 
-Also: a first-run tour, reminders twice a day at most, and today counts as soon as you check out.
+Two new charts instead: when in the day your sessions start, and how many you run a day. Both are there to recognise yourself in, not to score.
 ```
 
 ---
@@ -109,6 +110,9 @@ is what makes them easy to write back in.
 | periodic presence check · re-verify | Only check-in and check-out are gated. There is no mid-session check. |
 | selfie · photo · capture | The camera reports a face count as metadata. No image is ever produced. |
 | attendance | The vocabulary was renamed out of the app; the tab is History. |
+| streak · consecutive days · keep the chain going | A streak is a number the next day can take away. The calendar shows consecutive days visually and the app counts none of them. |
+| longest day · best day · personal best · your record | Nothing ranks one of the user's days against the others, and nothing is a baseline anything else is drawn against. |
+| shaded by how long · intensity · ringed against your best | The calendar is binary, and no arc in the app fills to measure anything — the Check-In gauge's sweep is motion, not a score. |
 
 ## Categorisation & contact
 

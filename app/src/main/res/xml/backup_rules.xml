@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
     <!-- Excludes the sessions DB from cloud backup, along with the prefs that describe rows or
-         prompts a restore does not carry. Applies below API 31 only; the app's minSdk is 34, so
+         prompts a restore does not carry. Applies below API 31 only; the app's minSdk is 33, so
          data_extraction_rules.xml is authoritative — mirrored here for hygiene, and it carries the
          reasoning. -->
     <exclude domain="database" path="_app" />

@@ -1,8 +1,8 @@
 package com.checkin.app
 
-import com.checkin.app.notify.engagement.Nudge
-import com.checkin.app.notify.engagement.NudgeCatalog
-import com.checkin.app.notify.engagement.NudgeSchedule
+import com.checkin.app.notify.nudge.Nudge
+import com.checkin.app.notify.nudge.NudgeCatalog
+import com.checkin.app.notify.nudge.NudgeSchedule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -17,36 +17,19 @@ class NudgeCatalogTest {
     @Test
     fun `every nudge has copy`() {
         Nudge.entries.forEach { nudge ->
-            assertTrue("$nudge has no copy registered", NudgeCatalog.variants(nudge).isNotEmpty())
+            assertTrue("$nudge has no copy registered", runCatching { NudgeCatalog.copyFor(nudge) }.isSuccess)
         }
     }
 
     /**
-     * Variants are bucketed per install against `variants(nudge).size`, so an uneven count would give
-     * the checkpoints different split ratios and make their conversion rates incomparable — the one
-     * thing the variant column exists to measure.
+     * Distinct copy per nudge. A second send in a day arriving as the same string reads as a stuck
+     * loop rather than as a message that came back, which is the whole reason there is one wording
+     * per checkpoint instead of one shared wording sent twice.
      */
     @Test
-    fun `every nudge offers the same number of variants`() {
-        val counts = Nudge.entries.map { NudgeCatalog.variants(it).size }.distinct()
-        assertEquals("variant counts differ across nudges: $counts", 1, counts.size)
-    }
-
-    /** Distinct copy per variant and per nudge — a duplicate would silently halve an experiment. */
-    @Test
-    fun `no two variants share a resource pair`() {
-        val all = Nudge.entries.flatMap { NudgeCatalog.variants(it) }
+    fun `no two nudges share a resource pair`() {
+        val all = Nudge.entries.map { NudgeCatalog.copyFor(it) }
         assertEquals(all.size, all.toSet().size)
-    }
-
-    /** Wrapping, so a stale or forced index can never index past the list. */
-    @Test
-    fun `an out of range variant index wraps`() {
-        val nudge = Nudge.entries.first()
-        val count = NudgeCatalog.variants(nudge).size
-
-        assertEquals(NudgeCatalog.variant(nudge, 0), NudgeCatalog.variant(nudge, count))
-        assertEquals(NudgeCatalog.variant(nudge, count - 1), NudgeCatalog.variant(nudge, -1))
     }
 
     /** One nudge per checkpoint, so no band can resolve to a nudge that does not exist. */

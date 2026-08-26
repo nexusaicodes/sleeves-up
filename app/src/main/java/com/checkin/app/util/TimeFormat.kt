@@ -2,8 +2,10 @@ package com.checkin.app.util
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.util.Locale
 
 private const val MILLIS_PER_SECOND = 1_000L
@@ -12,7 +14,18 @@ private const val MINUTES_PER_HOUR = 60L
 private const val SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR
 private const val MILLIS_PER_MINUTE = MILLIS_PER_SECOND * SECONDS_PER_MINUTE
 
-/** Single source of truth for time/duration formatting used across service, view-models and screens. */
+/**
+ * Single source of truth for time/duration formatting used across service, view-models and screens.
+ *
+ * **`date_key` is deliberately not formatted here, and stays raw ISO wherever it is stored or
+ * queried.** `CheckInSessionDao`'s range queries depend on its lexicographic ordering and the CSV
+ * `Date` column is machine-read. The rule that follows: **every file that produces or parses a
+ * `date_key` keeps its own private `ISO_LOCAL_DATE`, and none of them is drift to be consolidated
+ * here** — there are around ten, across `data/`, `service/`, `notify/` and each ViewModel, and
+ * they are machine-facing to a one. Only the display side comes here, so the test to apply is
+ * whether a user reads the result, not whether the code formats a date. [dateKeyWithWeekday] is
+ * the entry point that takes a `date_key` and returns something a user reads.
+ */
 object TimeFormat {
 
     private val clockFormatter = DateTimeFormatter.ofPattern("hh:mm a", Locale.US)
@@ -23,6 +36,11 @@ object TimeFormat {
     // parts that earn their space differ.
     private val dateWithYearFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)
     private val dateWithWeekdayFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.US)
+
+    /** Chart axes: short enough to sit under a point without crowding its neighbours. */
+    private val axisDayFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.US)
+    private val axisMonthFormatter = DateTimeFormatter.ofPattern("MMM", Locale.US)
+    private val axisMonthWithYearFormatter = DateTimeFormatter.ofPattern("MMM ''yy", Locale.US)
 
     /**
      * Live elapsed for a running clock: "0m 0s" through "59m 59s", then "1h 0m" onward. Seconds are
@@ -75,4 +93,29 @@ object TimeFormat {
     fun dateKeyWithWeekday(dateKey: String?): String? = dateKey
         ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         ?.let(::dateWithWeekday)
+
+    /** A day under a chart axis (e.g. "Jul 25"). The chart's own title supplies the year. */
+    fun axisDay(date: LocalDate): String = date.format(axisDayFormatter)
+
+    /**
+     * A month under a chart axis, carrying the year only when the series spans more than one.
+     *
+     * A bare "MMM" is what a month axis wants — three characters under a bar — and it is a lie the
+     * moment the record is long enough to hold two Augusts, which is exactly the series the all-time
+     * scope draws. [multiYear] is the series' own question, asked once by the caller rather than per
+     * label, so every bar in one chart is formatted the same way.
+     */
+    fun axisMonth(month: YearMonth, multiYear: Boolean): String =
+        month.format(if (multiYear) axisMonthWithYearFormatter else axisMonthFormatter)
+
+    /**
+     * A month heading a user reads in full (e.g. "August 2026").
+     *
+     * Spelled out and always carrying the year, unlike [axisMonth], because this is a heading read
+     * on its own rather than a label under a bar with a title above it. Two screens show one — the
+     * History month selector and the Reports scope label — and they are the same heading, so they
+     * come from here: built inline they were free to disagree, and a change would land on one.
+     */
+    fun monthYear(month: YearMonth): String =
+        "${month.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${month.year}"
 }

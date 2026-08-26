@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.checkin.app.CheckInApplication
-import com.checkin.app.notify.log.ServiceEventType
 import kotlinx.coroutines.launch
 
 /**
@@ -13,11 +12,11 @@ import kotlinx.coroutines.launch
  *
  * Both events end the process and take the foreground service with it, and `START_STICKY` does not
  * survive either. Both also **clear the session's alarms**, which is the more serious loss — see
- * [SessionReminderRunner.ensureArmed].
+ * [SessionLifecycleRunner.ensureArmed].
  *
  * `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED` are two of the few contexts explicitly permitted to
  * start a foreground service from the background, which is why the restore is attempted here rather
- * than left to the next app launch. The hourly [com.checkin.app.notify.engagement.NudgeWorker] pass
+ * than left to the next app launch. The hourly [com.checkin.app.notify.nudge.NudgeWorker] pass
  * would eventually repair the alarms on its own — WorkManager reschedules itself across a package
  * replace — but it is deferrable, and an update landing at 23:00 could miss midnight entirely.
  *
@@ -29,31 +28,18 @@ import kotlinx.coroutines.launch
  */
 class SessionRestoreReceiver : BroadcastReceiver() {
 
-    /** See [SessionAlarmReceiver] for why the `catch` is required rather than tidy. */
-    @Suppress("TooGenericExceptionCaught")
+    /** [SessionWatchdog.reviveIfNeeded] never throws; the `finally` below is for the re-arm. */
     override fun onReceive(context: Context, intent: Intent?) {
-        // A short label rather than the fully qualified action: this string is stored verbatim as
-        // the log row's key.
-        val source = when (intent?.action) {
-            Intent.ACTION_BOOT_COMPLETED -> "boot"
-            Intent.ACTION_MY_PACKAGE_REPLACED -> "update"
-            else -> return
-        }
+        // Both actions get the identical repair; the receiver only needs to know it was one of them.
+        val action = intent?.action
+        if (action != Intent.ACTION_BOOT_COMPLETED && action != Intent.ACTION_MY_PACKAGE_REPLACED) return
         val app = context.applicationContext as? CheckInApplication ?: return
         val container = app.container
 
         val pending = goAsync()
         container.applicationScope.launch {
             try {
-                container.sessionWatchdog.reviveIfNeeded(source)
-            } catch (e: Exception) {
-                runCatching {
-                    container.engagementLog.recordService(
-                        ServiceEventType.DEGRADED,
-                        container.timeSource.nowMillis(),
-                        "restore threw: ${e.javaClass.simpleName}",
-                    )
-                }
+                container.sessionWatchdog.reviveIfNeeded()
             } finally {
                 // In the `finally`, exactly as in NudgeAlarmReceiver: both actions that reach here
                 // cancel the package's alarms, and on a device the user is not opening this is the

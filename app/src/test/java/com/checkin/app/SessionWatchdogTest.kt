@@ -1,10 +1,9 @@
 package com.checkin.app
 
+import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.StringResolver
-import com.checkin.app.notify.log.EngagementSource
-import com.checkin.app.notify.log.ServiceEventType
-import com.checkin.app.service.SessionReminderRunner
+import com.checkin.app.service.SessionLifecycleRunner
 import com.checkin.app.service.SessionWatchdog
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -28,39 +27,31 @@ class SessionWatchdogTest {
     private val today = LocalDate.of(2026, 6, 15)
     private val now = today.atTime(9, 0).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-    private val time = FixedTime(now, today)
+    private val time = FakeTimeSource(now, today)
     private val dao = FakeCheckInSessionDao()
     private val repository = CheckInRepository(dao, time)
     private val controller = FakeServiceController()
-    private val log = FakeEngagementLog()
     private val alarms = FakeSessionAlarms()
 
-    private val reminder = SessionReminderRunner(
+    private val reminder = SessionLifecycleRunner(
         repository = repository,
         notifier = FakeNotifier(),
         strings = StringResolver { "copy-$it" },
         alarms = alarms,
-        log = log,
         timeSource = time,
     )
 
     private fun watchdog(serviceRunning: Boolean) =
-        SessionWatchdog(repository, controller, reminder, log, time) { serviceRunning }
-
-    private fun serviceEvents() = log.events.value.filter { it.source == EngagementSource.SERVICE.name }
-
-    /** Arming writes its own SERVICE rows; the revive assertions are only about the revive. */
-    private fun reviveEvents() = serviceEvents().filter { it.event != ServiceEventType.ALARM_SET.name }
+        SessionWatchdog(repository, controller, reminder, time) { serviceRunning }
 
     @Test
     fun `an open session with no service is revived`() = runTest {
         val session = repository.checkIn()
 
-        val acted = watchdog(serviceRunning = false).reviveIfNeeded("test")
+        val acted = watchdog(serviceRunning = false).reviveIfNeeded()
 
         assertTrue(acted)
         assertEquals(listOf(session.id), controller.revived)
-        assertEquals(ServiceEventType.REVIVED.name, reviveEvents().single().event)
     }
 
     /**
@@ -73,7 +64,7 @@ class SessionWatchdogTest {
     fun `a revive never uses the check-in path`() = runTest {
         repository.checkIn()
 
-        watchdog(serviceRunning = false).reviveIfNeeded("test")
+        watchdog(serviceRunning = false).reviveIfNeeded()
 
         assertTrue("revive must not start a fresh timer", controller.started.isEmpty())
         assertEquals(1, controller.revived.size)
@@ -83,11 +74,11 @@ class SessionWatchdogTest {
     fun `a live service is left alone`() = runTest {
         repository.checkIn()
 
-        val acted = watchdog(serviceRunning = true).reviveIfNeeded("test")
+        val acted = watchdog(serviceRunning = true).reviveIfNeeded()
 
         assertFalse(acted)
         assertTrue(controller.revived.isEmpty())
-        assertTrue(reviveEvents().isEmpty())
+        assertEquals(0, controller.reviveAttempts)
     }
 
     /**
@@ -99,7 +90,7 @@ class SessionWatchdogTest {
     fun `alarms are ensured even when the service is healthy`() = runTest {
         repository.checkIn()
 
-        watchdog(serviceRunning = true).reviveIfNeeded("test")
+        watchdog(serviceRunning = true).reviveIfNeeded()
 
         assertEquals(1, alarms.reminders.size)
         assertEquals(1, alarms.dayBoundaries.size)
@@ -108,7 +99,7 @@ class SessionWatchdogTest {
     /** No open row means nothing to time — starting a service here would post an orphan timer. */
     @Test
     fun `no open session means no revive`() = runTest {
-        val acted = watchdog(serviceRunning = false).reviveIfNeeded("test")
+        val acted = watchdog(serviceRunning = false).reviveIfNeeded()
 
         assertFalse(acted)
         assertTrue(controller.revived.isEmpty())
@@ -119,7 +110,7 @@ class SessionWatchdogTest {
     fun `no open session drops any alarms still standing`() = runTest {
         alarms.seedArmed(reminderAt = now + 1, boundaryAt = now + 2)
 
-        watchdog(serviceRunning = false).reviveIfNeeded("test")
+        watchdog(serviceRunning = false).reviveIfNeeded()
 
         assertEquals(1, alarms.cancelCount)
         assertEquals(0L, alarms.dayBoundaryAt)
@@ -128,9 +119,9 @@ class SessionWatchdogTest {
     @Test
     fun `a session already checked out is not revived`() = runTest {
         val session = repository.checkIn()
-        repository.checkOut(session.id)
+        repository.checkOut(session.id, ClosedBy.IN_APP)
 
-        val acted = watchdog(serviceRunning = false).reviveIfNeeded("test")
+        val acted = watchdog(serviceRunning = false).reviveIfNeeded()
 
         assertFalse(acted)
         assertTrue(controller.revived.isEmpty())
@@ -138,20 +129,19 @@ class SessionWatchdogTest {
 
     /**
      * Starting a foreground service from the background is restricted, so a refusal is an ordinary
-     * outcome for the hourly caller. It has to be recorded rather than thrown — a silent refusal is
-     * indistinguishable from never having tried, which is the state this whole mechanism exists to
-     * make visible.
+     * outcome for the hourly caller. It is absorbed rather than thrown, and the attempt still counts
+     * as having acted — the next of the three callers is what retries.
      */
     @Test
-    fun `a refused start is logged as degraded rather than thrown`() = runTest {
+    fun `a refused start is absorbed rather than thrown`() = runTest {
         repository.checkIn()
         controller.startAllowed = false
 
-        val acted = watchdog(serviceRunning = false).reviveIfNeeded("hourly pass")
+        val acted = watchdog(serviceRunning = false).reviveIfNeeded()
 
         assertTrue("the attempt still counts as having acted", acted)
-        assertEquals(ServiceEventType.DEGRADED.name, reviveEvents().single().event)
-        assertTrue(reviveEvents().single().key.contains("hourly pass"))
+        assertEquals("the revive was attempted", 1, controller.reviveAttempts)
+        assertTrue("but was refused", controller.revived.isEmpty())
     }
 
     /**
@@ -160,25 +150,15 @@ class SessionWatchdogTest {
      * mechanism whose whole job is recovering from a process that already died once.
      */
     @Test
-    fun `a throwing revive is recorded rather than propagated`() = runTest {
+    fun `a throwing revive is absorbed rather than propagated`() = runTest {
         repository.checkIn()
-        val exploding = SessionWatchdog(repository, controller, reminder, log, time) {
+        val exploding = SessionWatchdog(repository, controller, reminder, time) {
             error("service state unavailable")
         }
 
-        val acted = exploding.reviveIfNeeded("test")
+        val acted = exploding.reviveIfNeeded()
 
         assertFalse(acted)
-        assertEquals(ServiceEventType.DEGRADED.name, reviveEvents().single().event)
-        assertTrue(reviveEvents().single().key.contains("threw"))
-    }
-
-    @Test
-    fun `the revive records where it came from`() = runTest {
-        repository.checkIn()
-
-        watchdog(serviceRunning = false).reviveIfNeeded("boot")
-
-        assertEquals("boot", reviveEvents().single().key)
+        assertTrue(controller.revived.isEmpty())
     }
 }

@@ -1,7 +1,7 @@
 package com.checkin.app
 
 import com.checkin.app.notify.NotificationIds
-import com.checkin.app.notify.engagement.Nudge
+import com.checkin.app.notify.nudge.Nudge
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

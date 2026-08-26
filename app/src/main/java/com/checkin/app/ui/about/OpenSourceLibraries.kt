@@ -51,7 +51,7 @@ data class OpenSourceLibrary(
  * libyuv it embeds.
  *
  * **This list is the resolved classpath, not the dependency block.** Guava's ListenableFuture,
- * AutoValue's annotations, JSpecify and javax.inject are all redistributed in the APK without
+ * AutoValue's annotations and JSpecify are all redistributed in the APK without
  * appearing in `app/build.gradle.kts`, so a list built from that file alone would omit them.
  *
  * Every entry is now Apache-2.0, the OFL, or the BSD that rides along with CameraX — no proprietary
@@ -60,10 +60,16 @@ data class OpenSourceLibrary(
  * encoders off the classpath with it, and those carried the only non-open-source terms the app ever
  * redistributed.
  *
- * Keeping this by hand means it can drift when a dependency is added. `OpenSourceLibrariesTest`
- * guards the shape of the list, but it cannot see the Gradle graph — regenerate the group list with
- * `./gradlew :app:dependencies --configuration releaseRuntimeClasspath` and re-check this file when
- * `app/build.gradle.kts` changes.
+ * Keeping this by hand means it can drift when a dependency is added, so drift detection is
+ * automated while the wording stays human. Two checks cover it: `OpenSourceLibrariesTest` guards the
+ * shape of the list but cannot see the Gradle graph, and **`./gradlew :app:verifyLicenseCoverage`**
+ * (defined in `app/build.gradle.kts`, hooked to `check`, run in CI) resolves the release runtime
+ * classpath and fails naming any group id no entry's `coordinates` covers. It checks `res/font/`
+ * the same way, since a typeface is redistributed like a dependency but has no Maven coordinate.
+ *
+ * So a new dependency does not need anyone to remember: the build says which group is unattributed.
+ * To write the entry, list the graph with
+ * `./gradlew :app:dependencies --configuration releaseRuntimeClasspath` and group by Maven group id.
  */
 val OPEN_SOURCE_LIBRARIES: List<OpenSourceLibrary> = listOf(
     OpenSourceLibrary(
@@ -115,12 +121,6 @@ val OPEN_SOURCE_LIBRARIES: List<OpenSourceLibrary> = listOf(
         name = "JSpecify",
         coordinates = "org.jspecify:jspecify",
         copyright = "Copyright © The JSpecify Authors",
-        licenses = listOf(LibraryLicense.APACHE_2_0),
-    ),
-    OpenSourceLibrary(
-        name = "javax.inject",
-        coordinates = "javax.inject:javax.inject:1",
-        copyright = "Copyright © The JSR-330 Expert Group",
         licenses = listOf(LibraryLicense.APACHE_2_0),
     ),
     // The two bundled typefaces. Not Maven artifacts, so their `coordinates` names the resource

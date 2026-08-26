@@ -1,26 +1,10 @@
 package com.checkin.app.ui.presence
 
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
-import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
-import android.hardware.camera2.TotalCaptureResult
 import android.os.SystemClock
-import android.provider.Settings
 import android.util.Log
-import androidx.annotation.OptIn
 import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
-import androidx.biometric.BiometricPrompt
-import androidx.camera.camera2.interop.Camera2CameraInfo
-import androidx.camera.camera2.interop.Camera2Interop
-import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
@@ -81,60 +65,6 @@ private const val TAG = "PresenceCheckScreen"
 /** How long the "you're here" confirmation stays up before the gate hands control back. */
 private const val SUCCESS_CONFIRMATION_MS = 800L
 
-private fun deviceUnlockStatus(context: Context): Int =
-    BiometricManager.from(context).canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
-
-// Both Camera2 interop helpers are top-level rather than inline in the composable because
-// `@OptIn` does not reach into a lambda or an anonymous object body as far as lint's Java-side
-// marker analysis is concerned — annotated there, `UnsafeOptInUsageError` still fires.
-
-/**
- * The face-detection mode the front camera advertises, or null when it offers none — which is also
- * the answer when the characteristics cannot be read at all, since the recovery is identical.
- */
-@OptIn(markerClass = [ExperimentalCamera2Interop::class])
-@Suppress("TooGenericExceptionCaught")
-private fun frontCameraDetectMode(provider: ProcessCameraProvider): Int? = try {
-    val info = provider.getCameraInfo(CameraSelector.DEFAULT_FRONT_CAMERA)
-    FaceDetectSupport.preferredMode(
-        Camera2CameraInfo.from(info).getCameraCharacteristic(
-            CameraCharacteristics.STATISTICS_INFO_AVAILABLE_FACE_DETECT_MODES,
-        ),
-    )
-} catch (e: Exception) {
-    Log.e(TAG, "Could not read face-detect modes", e)
-    null
-}
-
-/** A preview that asks the HAL for [mode] and hands every capture result to [onResult]. */
-@OptIn(markerClass = [ExperimentalCamera2Interop::class])
-private fun faceDetectingPreview(mode: Int, onResult: (TotalCaptureResult) -> Unit): Preview {
-    val builder = Preview.Builder()
-    Camera2Interop.Extender(builder)
-        .setCaptureRequestOption(CaptureRequest.STATISTICS_FACE_DETECT_MODE, mode)
-        .setSessionCaptureCallback(
-            object : CameraCaptureSession.CaptureCallback() {
-                override fun onCaptureCompleted(
-                    session: CameraCaptureSession,
-                    request: CaptureRequest,
-                    result: TotalCaptureResult,
-                ) = onResult(result)
-            },
-        )
-    return builder.build()
-}
-
-/** False when nothing on the device handles the intent, so the caller can say so instead. */
-private fun openScreenLockSettings(context: Context): Boolean = try {
-    context.startActivity(
-        Intent(Settings.ACTION_SECURITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-    )
-    true
-} catch (e: ActivityNotFoundException) {
-    Log.e(TAG, "No screen-lock settings activity", e)
-    false
-}
-
 /**
  * The check stage of [PresenceGate]: the front camera confirms someone is there, reached once the
  * disclosure and the permission request are behind it.
@@ -152,7 +82,7 @@ private fun openScreenLockSettings(context: Context): Boolean = try {
  *
  * Device unlock is offered immediately when the camera cannot run a check at all — no face-detection
  * mode, a mode the HAL then declines to apply, an unavailable provider, or a bind that threw — and
- * otherwise once the camera has looked for [AuthGate.BIOMETRIC_FALLBACK_AFTER_MS] without finding
+ * otherwise once the camera has looked for [DEVICE_UNLOCK_OFFERED_AFTER_MS] without finding
  * anyone. With no tap there is no attempt to count, so time is what unlocks the fallback; without it
  * a camera that detects perfectly well but never resolves this particular user would leave the
  * screen with no exit but Dismiss. [onAuthSuccess] fires once either path passes.
@@ -244,57 +174,18 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     // carries the check-in itself, so a stale one writes against state the caller has since replaced.
     val currentOnAuthSuccess by rememberUpdatedState(onAuthSuccess)
 
-    // Built here rather than on the button tap, and rebuilt whenever the activity is. BiometricPrompt
-    // registers its callback against the host activity and the prompt outlives a recreation of that
-    // activity beneath it, so a callback captured at tap time belongs to a composition a rotation has
-    // since discarded: the cancel that follows is delivered to dead state, `usingDeviceUnlock` is
-    // never cleared, and the camera path stays shut for good. Rebuilding in composition re-registers
-    // a live callback every time, which is what makes that flag safe to save across the recreation.
-    val biometricPrompt = remember(activity) {
-        activity?.let { host ->
-            BiometricPrompt(
-                host,
-                ContextCompat.getMainExecutor(host),
-                object : BiometricPrompt.AuthenticationCallback() {
-                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                        currentOnAuthSuccess()
-                    }
-
-                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                        usingDeviceUnlock = false
-                        if (errorCode != BiometricPrompt.ERROR_USER_CANCELED &&
-                            errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON
-                        ) {
-                            errorMessage = errString.toString()
-                        }
-                    }
-                },
-            )
-        }
-    }
-    val promptInfo = remember(promptTitle, promptSubtitle) {
-        BiometricPrompt.PromptInfo.Builder()
-            .setTitle(promptTitle)
-            .setSubtitle(promptSubtitle)
-            .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
-            .build()
-    }
-
-    fun launchBiometric() {
-        if (biometricPrompt == null) {
-            errorMessage = unavailableMessage
-            return
-        }
-        usingDeviceUnlock = true
-        // The platform can refuse the prompt outright — an authenticator combination it rejects, a
-        // fragment transaction past onSaveInstanceState. Only an error callback clears the flag, and
-        // a refusal delivers none, so a throw left unhandled would shut the camera path too.
-        runCatching { biometricPrompt.authenticate(promptInfo) }.onFailure { e ->
-            Log.e(TAG, "Device unlock could not be raised", e)
-            usingDeviceUnlock = false
-            errorMessage = unavailableMessage
-        }
-    }
+    // Rebuilt whenever the activity is, so the prompt's callback is always live — see
+    // [rememberDeviceUnlock] for why that is what makes `usingDeviceUnlock` safe to save.
+    val launchBiometric = rememberDeviceUnlock(
+        activity = activity,
+        promptTitle = promptTitle,
+        promptSubtitle = promptSubtitle,
+        unavailableMessage = unavailableMessage,
+        onSucceeded = { currentOnAuthSuccess() },
+        onRaised = { usingDeviceUnlock = true },
+        onEnded = { usingDeviceUnlock = false },
+        onError = { errorMessage = it },
+    )
 
     // The check itself. Keyed on Unit and latched by `first`, so the face leaving frame during the
     // confirmation cannot cancel a check that has already passed — which keying on the live value
@@ -318,7 +209,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     LaunchedEffect(Unit) {
         if (searchTimedOut) return@LaunchedEffect
         val spent = SystemClock.elapsedRealtime() - searchStartedAt
-        delay((AuthGate.BIOMETRIC_FALLBACK_AFTER_MS - spent).coerceIn(0L, AuthGate.BIOMETRIC_FALLBACK_AFTER_MS))
+        delay((DEVICE_UNLOCK_OFFERED_AFTER_MS - spent).coerceIn(0L, DEVICE_UNLOCK_OFFERED_AFTER_MS))
         searchTimedOut = true
     }
 
@@ -426,7 +317,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                             cameraUsableFlow.value = true
                         } catch (e: Exception) {
                             // The user is now on a screen whose only control can never enable, so the
-                            // fallback has to be offered here rather than left to the failure ladder.
+                            // fallback has to be offered here rather than left to the wait before it.
                             Log.e(TAG, "Camera bind failed", e)
                             cameraUsableFlow.value = false
                         }

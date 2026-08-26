@@ -63,13 +63,6 @@
                 android:value="Runs a user-initiated check-in session: shows the ongoing timer notification for the session the user started, active only while the user is checked in. The periodic session reminder and the automatic close at midnight are scheduled separately and do not keep this service running." />
         </service>
 
-        <!-- Records a notification the user swiped away. Internal only: nothing outside the app has
-             any reason to report a dismissal, and an exported receiver could forge one. -->
-        <receiver
-            android:name=".notify.NotificationDismissReceiver"
-            android:enabled="true"
-            android:exported="false" />
-
         <!-- Fires an open session's periodic reminder and its day-boundary close. Internal only: the
              actions are app-private and an exported receiver would let anything on the device close
              a user's session. It handles both itself rather than waking the service, because the
@@ -86,11 +79,11 @@
         </receiver>
 
         <!-- The daily check-in nudge. Its own receiver rather than a third action on the session one:
-             the engagement layer is structurally isolated from service/, and this alarm has no
+             notify/nudge/ is structurally isolated from service/, and this alarm has no
              session to reason about. Not exported — the alarm is the app's own PendingIntent, so
              nothing outside the app has cause to deliver this action. -->
         <receiver
-            android:name=".notify.engagement.NudgeAlarmReceiver"
+            android:name=".notify.nudge.NudgeAlarmReceiver"
             android:enabled="true"
             android:exported="false">
             <intent-filter>

@@ -2,6 +2,7 @@ package com.checkin.app
 
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.CheckInSessionDao
+import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.local.DailyAggregate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,13 +25,14 @@ class FakeCheckInSessionDao : CheckInSessionDao {
         store.value = store.value + CheckInSession(id = nextId++, startedAt = startedAt, dateKey = dateKey)
     }
 
-    fun seedCompleted(dateKey: String, startedAt: Long, durationMs: Long) {
+    fun seedCompleted(dateKey: String, startedAt: Long, durationMs: Long, closedBy: ClosedBy = ClosedBy.IN_APP) {
         store.value = store.value + CheckInSession(
             id = nextId++,
             startedAt = startedAt,
             stoppedAt = startedAt + durationMs,
             duration = durationMs,
             dateKey = dateKey,
+            closedBy = closedBy,
         )
     }
 
@@ -64,6 +66,15 @@ class FakeCheckInSessionDao : CheckInSessionDao {
     override fun getDailyAggregatesFlow(startDate: String, endDate: String): Flow<List<DailyAggregate>> =
         store.map { aggregate(startDate, endDate) }
 
+    // Mirrors the query's scoping exactly — completed sessions only, keyed on `date_key` — because a
+    // fake that filtered differently would let the start-time split describe a set of sessions the
+    // aggregates had excluded, and the test could only ever prove the fake right.
+    override fun getSessionStartsFlow(startDate: String, endDate: String): Flow<List<Long>> = store.map { list ->
+        list.filter { it.stoppedAt != null && it.dateKey in startDate..endDate }
+            .map { it.startedAt }
+            .sorted()
+    }
+
     override suspend fun getFirstDateKey(): String? = store.value.minOfOrNull { it.dateKey }
 
     override fun getFirstDateKeyFlow(): Flow<String?> = store.map { list -> list.minOfOrNull { it.dateKey } }
@@ -78,6 +89,10 @@ class FakeCheckInSessionDao : CheckInSessionDao {
                 sessionCount = list.size,
                 firstCheckIn = list.minOf { it.startedAt },
                 lastCheckOut = list.maxOf { it.stoppedAt ?: 0L },
+                dayBoundaryCheckOuts = list.count { it.closedBy == ClosedBy.DAY_BOUNDARY },
+                inAppCheckOuts = list.count { it.closedBy == ClosedBy.IN_APP },
+                timerNotificationCheckOuts = list.count { it.closedBy == ClosedBy.TIMER_NOTIFICATION },
+                reminderNotificationCheckOuts = list.count { it.closedBy == ClosedBy.REMINDER_NOTIFICATION },
             )
         }
         .sortedBy { it.dateKey }

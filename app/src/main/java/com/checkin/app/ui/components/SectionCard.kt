@@ -14,14 +14,25 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
  * A titled block on a settings-style list. The heading is a plain [Text] rather than a top app bar
  * title — the nav scaffold owns that — so these stack inside a scrolling list.
+ *
+ * [contentSpacing] is the gap under the heading. It is a parameter rather than a constant because a
+ * card holding a chart wants more air under its title than a card holding rows does — see
+ * [ChartCard], which is this card with that one value fixed.
  */
 @Composable
-fun SectionCard(title: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+fun SectionCard(
+    title: String,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    contentSpacing: Dp = 12.dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -34,7 +45,14 @@ fun SectionCard(title: String, modifier: Modifier = Modifier, content: @Composab
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(modifier = Modifier.height(contentSpacing))
             content()
         }
     }

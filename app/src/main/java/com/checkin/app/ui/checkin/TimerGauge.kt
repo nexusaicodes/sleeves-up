@@ -24,6 +24,12 @@ import com.checkin.app.util.TimeFormat
 /** The sweep's period: the ring completes one turn per hour of the open session. */
 private const val MILLIS_PER_HOUR = 60 * 60 * 1000f
 
+/**
+ * The gauge's share of the fit budget. `CheckInScreen` picks between these — the compact size on a
+ * short viewport, otherwise a fraction of the height clamped to the range — so they are part of the
+ * same arithmetic as that file's own `FIXED_CONTENT_HEIGHT` block, and changing one means
+ * re-checking the other.
+ */
 internal val COMPACT_GAUGE = 150.dp
 internal val GAUGE_MIN = 190.dp
 internal val GAUGE_MAX = 260.dp

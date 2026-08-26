@@ -23,13 +23,14 @@ allprojects {
         // turns a finding into permanent invisible debt; the tree is clean, so a new finding gets a
         // real fix or a site-level @Suppress carrying its reason.
         baseline = rootProject.file("config/detekt/baseline.xml")
+        // No androidTest set is listed because there is none: the suite is pure JVM and no
+        // instrumentation dependency is declared. The kotlin/ dirs are listed against the day one
+        // is added; absent dirs cost nothing.
         source.setFrom(
             "src/main/java",
             "src/main/kotlin",
             "src/test/java",
             "src/test/kotlin",
-            "src/androidTest/java",
-            "src/androidTest/kotlin",
         )
     }
 

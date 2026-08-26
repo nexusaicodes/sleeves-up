@@ -28,8 +28,13 @@ object ChartGeometry {
      *
      * What a ring's hole can actually hold. The hole is round, so its full diameter is only available
      * along the centre line — content bounded by the diameter still overhangs the arc at the top and
-     * bottom of its own height. Declared once here because both the donut and the history stat tiles
-     * bound their centred content by it, and two copies is how the two would drift apart.
+     * bottom of its own height. Applied inside [DonutChart] rather than at a call site, because
+     * `CircularProgressRing` deliberately does *not* apply it — the Check-In gauge's 45sp clock is
+     * wider than the square and must not wrap.
+     *
+     * Currently **dormant**: every donut in the app leaves its hole empty, so the bound has no live
+     * caller. Kept anyway — the next caption to go in a hole is exactly the case it exists for, and
+     * it lives here rather than in either drawing so the two cannot disagree about it again.
      */
     const val INSCRIBED_SQUARE = 0.707f
 

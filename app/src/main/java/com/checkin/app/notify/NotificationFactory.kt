@@ -26,11 +26,13 @@ class NotificationFactory(private val context: Context) {
             .setSmallIcon(R.drawable.ic_stat_checkin)
             .setContentTitle(spec.title)
             .setContentText(spec.body)
-            .setContentIntent(launchIntent(contentRequestCode(spec.id), spec.launchExtra, spec.tag))
+            .setContentIntent(launchIntent(contentRequestCode(spec.id), spec.launchExtra))
             .setOngoing(spec.ongoing)
             .setSilent(spec.silent)
-            // Always false. A tapped notification is cancelled by whoever handles the tap, so the
-            // only delete intent the platform ever delivers is a real user dismissal.
+            // Always false, so the app decides when a notification leaves the tray. Whoever handles
+            // a tap cancels it explicitly — `PostedNudges.retireAll` for a nudge, the service for the
+            // reminder — which keeps that cancel in one place per notification instead of splitting
+            // it between the platform and the handler.
             .setAutoCancel(false)
 
         // An ongoing notification is a live status line, not a message: expanding it would only
@@ -52,12 +54,8 @@ class NotificationFactory(private val context: Context) {
             builder.addAction(
                 action.iconRes,
                 action.label,
-                launchIntent(actionRequestCode(spec.id, index), action.launchExtra, spec.tag),
+                launchIntent(actionRequestCode(spec.id, index), action.launchExtra),
             )
-        }
-
-        spec.tag?.let {
-            builder.setDeleteIntent(NotificationDismissReceiver.pendingIntent(context, spec.id, it))
         }
 
         return builder.build()
@@ -69,16 +67,10 @@ class NotificationFactory(private val context: Context) {
      * action would end up behind the notification's own body tap. Distinct request codes are what
      * keeps them apart.
      */
-    private fun launchIntent(requestCode: Int, launchExtra: String?, tag: EngagementTag?): PendingIntent {
+    private fun launchIntent(requestCode: Int, launchExtra: String?): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             launchExtra?.let { putExtra(it, true) }
-            // Identity travels with the tap, so an open is attributed to the notification actually
-            // tapped rather than to whichever the log happens to hold as most recently shown.
-            tag?.let {
-                putExtra(EngagementTag.EXTRA_KEY, it.key)
-                putExtra(EngagementTag.EXTRA_VARIANT, it.variant)
-            }
         }
         return PendingIntent.getActivity(
             context,
@@ -103,7 +95,10 @@ class NotificationFactory(private val context: Context) {
          */
         const val CONTENT_REQUEST_BASE = 1_000
 
-        /** Clear of the content codes, with room for [MAX_ACTIONS] per notification. */
+        /**
+         * Clear of the content codes, with room for [MAX_ACTIONS] per notification. Both bands, and
+         * the two the alarms use, are listed together in [NotificationIds].
+         */
         const val ACTION_REQUEST_BASE = 10_000
 
         /** Actions per notification the request-code scheme has room for. Android shows three. */

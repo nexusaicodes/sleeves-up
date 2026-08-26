@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Casing: section and card titles are Title Case ("Overall Stats", "All-Time Split"), and so are
+    Casing: section and card titles are Title Case ("The Numbers", "Days Split"), and so are
     notification channel names ("Check-In Timer", "Session Reminders"), which Android renders as the
     titles of one list; everything a user reads as a line rather than a heading — row labels,
     buttons, help text, empty states — is sentence case ("Grant access", "Showed up").
@@ -77,34 +77,28 @@
     <string name="reminder_title">Still checked in?</string>
     <string name="reminder_text">Your session is still running. It closes on its own at midnight.</string>
 
-    <!-- Engagement nudges. This channel is the only opt-out there is — there is no in-app switch — so
+    <!-- Check-in nudges. This channel is the only opt-out there is — there is no in-app switch — so
          the name has to be the words a user hunting for one would look for, and the description has
          to say what turning it off actually stops. "Nudge" is internal vocabulary and stays out of
          both. A channel's name and description are updatable after creation; its id and importance
          are not. The name is near-synonymous with "Session Reminders" one row away, so the two
          descriptions carry the difference: muting the wrong one costs the prompt that catches a
          forgotten open session. -->
-    <string name="engagement_channel_name">Check-In Reminders</string>
-    <string name="engagement_channel_description">Occasional reminders when you haven\'t checked in. At most two a day.</string>
+    <string name="nudge_channel_name">Check-In Reminders</string>
+    <string name="nudge_channel_description">Occasional reminders when you haven\'t checked in. At most two a day.</string>
 
     <!-- One pair per checkpoint, because a second send in a day arriving as the same string reads as
-         a stuck loop rather than as a message that came back. Two variants each, A/B, and variant B
-         is a second *wording*, never a warmer or more urgent one — escalating across the day would
-         invent a deadline this app does not have, and would grade a day that is not over. No copy
-         names the hour: delivery is best-effort, so a stated time is a punctuality promise the app
-         cannot keep. -->
-    <string name="nudge_not_checked_in_morning_title_a">Ready when you are</string>
-    <string name="nudge_not_checked_in_morning_body_a">You haven\'t checked in yet today. Tap to start your session.</string>
-    <string name="nudge_not_checked_in_morning_title_b">Start the clock?</string>
-    <string name="nudge_not_checked_in_morning_body_b">Your day hasn\'t started in CheckIn yet. Tap to check in now.</string>
-    <string name="nudge_not_checked_in_afternoon_title_a">No session yet today</string>
-    <string name="nudge_not_checked_in_afternoon_body_a">Whenever you start, it counts — a short day is still a day shown up for.</string>
-    <string name="nudge_not_checked_in_afternoon_title_b">Nothing recorded today</string>
-    <string name="nudge_not_checked_in_afternoon_body_b">There\'s no session on today yet. Tap whenever you\'re ready to start one.</string>
-    <string name="nudge_not_checked_in_evening_title_a">Still time today</string>
-    <string name="nudge_not_checked_in_evening_body_a">Today\'s record closes at midnight. Tap to check in.</string>
-    <string name="nudge_not_checked_in_evening_title_b">The day\'s not over</string>
-    <string name="nudge_not_checked_in_evening_body_b">A short session lands on your calendar the same as a long one. Tap to start.</string>
+         a stuck loop rather than as a message that came back. Each checkpoint has exactly one wording — no variants: nothing in the app can tell two arms apart, so a second one is
+only a second string to keep in step. Copy never warms or grows more urgent across the day — escalating would invent a
+         deadline this app does not have, and would grade a day that is not over. No copy names the
+         hour: delivery is best-effort, so a stated time is a punctuality promise the app cannot
+         keep. -->
+    <string name="nudge_not_checked_in_morning_title">Ready when you are</string>
+    <string name="nudge_not_checked_in_morning_body">You haven\'t checked in yet today. Tap to start your session.</string>
+    <string name="nudge_not_checked_in_afternoon_title">No session yet today</string>
+    <string name="nudge_not_checked_in_afternoon_body">Whenever you start, it counts — a short day is still a day shown up for.</string>
+    <string name="nudge_not_checked_in_evening_title">Still time today</string>
+    <string name="nudge_not_checked_in_evening_body">Today\'s record closes at midnight. Tap to check in.</string>
 
     <!--
       The first-run welcome tour, shown once before anything is asked for. The order is the point:
@@ -135,8 +129,6 @@
 
     <!-- Empty / first-run states -->
     <string name="empty_checkin_title">Ready when you are</string>
-    <string name="empty_reports_title">No completed days yet</string>
-    <string name="empty_reports_message">Your charts, streaks, and totals appear here once your first tracked day is over.</string>
     <string name="empty_day_detail_title">No day selected</string>
     <string name="empty_day_detail_message">Tap a day in the calendar to see its sessions.</string>
 
@@ -144,10 +136,11 @@
     <string name="cd_day_worked">%1$d, %2$s worked</string>
     <string name="cd_expand_sessions">Show today\'s sessions</string>
     <string name="cd_collapse_sessions">Hide today\'s sessions</string>
-    <string name="cd_month_split">Month split: %1$s showed up, %2$s missed</string>
-    <!-- A ring's fill is a ratio and colour carries none of it, so each tile states both figures. -->
-    <string name="cd_stat_vs_all_time">%1$s this month: %2$s, against %3$s all time</string>
-    <string name="cd_alltime_split">All-time split: %1$s showed up, %2$s missed</string>
+    <string name="cd_days_split">Days split: %1$s showed up, %2$s missed</string>
+    <!-- Three counts, so none can be a plural's own quantity: each is worded through a plural first
+         and arrives here as a phrase. -->
+    <string name="cd_start_time_split">Start times: %1$s in the morning, %2$s in the afternoon, %3$s in the evening</string>
+    <string name="cd_sessions_per_day_split">Sessions per day: %1$s with one session, %2$s with two, %3$s with three or more. Average %4$s.</string>
     <!-- The gauge is the open session, never the day's total (see TimerGauge), so this must name the
          session rather than the day. Its ring sweeps hourly and means nothing as a fraction, so this
          states the time and only the time — a sweep position read as progress would invent a goal. -->
@@ -156,49 +149,76 @@
     <!-- History Screen -->
     <string name="previous_month">Previous month</string>
     <string name="next_month">Next month</string>
-    <string name="day_detail_title">Sessions on %1$s</string>
-    <string name="stat_showed_up">Showed up</string>
-    <string name="stat_missed">Missed</string>
-    <string name="stat_days_label">days tracked</string>
-    <string name="stat_avg_per_day">Avg / day</string>
-    <string name="stat_longest_day">Longest day</string>
-    <!-- Each summary ring is filled against the user's own record, so every tile names that
-         baseline underneath. Never a target: this app has none, and a ring measured against one
-         would be that target under another name. -->
-    <plurals name="stat_baseline_of_days">
-        <item quantity="one">of %1$d day</item>
-        <item quantity="other">of %1$d days</item>
-    </plurals>
-    <string name="stat_baseline_all_time">all time %1$s</string>
+    <!-- The day the user tapped, and what it held: a count and the sum of the rows printed
+         directly beneath it. History states what was recorded and derives nothing — the averages
+         and ratios that used to sit here live on Reports. -->
+    <string name="day_sessions_summary">%1$s · %2$s</string>
+    <!-- A tracked day with nothing on it, and a day that has not happened yet. States the absence
+         without judging it, in the same register as the calendar's untinted cell. -->
+    <string name="empty_day_sessions_message">No sessions recorded on this day.</string>
 
     <!-- Reports Screen -->
-    <string name="overall_stats_title">Overall Stats</string>
+    <!-- The scope selector's end-stop, read as a standalone label. -->
+    <string name="scope_all_time">All time</string>
+    <!-- The same scope read inside a sentence ("Export all time"), where the Title Case form lands a
+         capital mid-clause. A month name needs no such pair — it is a proper noun either way. -->
+    <string name="scope_all_time_inline">all time</string>
+    <!-- A scope covering no counted day: a month outside the record, or a record whose only day is
+         a today still in progress. States the absence without rendering it as a row of zeros, which
+         would assert the user showed up on none of some number of days. -->
+    <string name="empty_scope_title">Nothing recorded here</string>
+    <string name="empty_scope_message">No completed day in %1$s. Use the arrows to look at another month.</string>
+    <!-- The all-time counterpart. The month arrows are disabled under this scope, so pointing at
+         them would name a control the user cannot press. -->
+    <string name="empty_scope_message_all_time">No day has been checked out of yet. Check out of a session and it appears here.</string>
+    <string name="scope_stats_title">The Numbers</string>
+    <string name="stat_showed_up">Showed up</string>
+    <string name="stat_missed">Missed</string>
     <string name="stat_tracking_since">Tracking since</string>
-    <!-- Every day in the window, including days with no sessions — not "days I recorded". -->
-    <string name="stat_total_tracked_days">Days since tracking started</string>
-    <!-- Streaks count consecutive days with any session: showing up is the unit, not the hours. -->
-    <string name="stat_current_streak">Current streak</string>
-    <string name="stat_best_streak">Best streak</string>
+    <!-- Every day in the scope, including days with no sessions — not "days I recorded". -->
+    <string name="stat_tracked_days">Days tracked</string>
+    <!-- Totals and averages, stated and left alone. Nothing is measured against any of them, and
+         none of them may grow a ring: the only denominator available is the user's own all-time
+         equivalent, which is a personal best under another name. -->
+    <string name="stat_total_hours">Total hours</string>
+    <string name="stat_total_sessions">Total sessions</string>
+    <string name="stat_avg_per_day">Hours per tracked day</string>
+    <string name="stat_sessions_per_day">Sessions per day showed up</string>
     <string name="chart_daily_hours_title">Daily Hours</string>
     <!-- The dashed line is the window's own mean, not a target — nothing here is a bar to clear. -->
     <plurals name="chart_daily_hours_subtitle">
-        <item quantity="one">Last %1$d day · dashed line = average</item>
-        <item quantity="other">Last %1$d days · dashed line = average</item>
+        <item quantity="one">%1$d day · dashed line = average</item>
+        <item quantity="other">%1$d days · dashed line = average</item>
     </plurals>
-    <string name="chart_split_title">All-Time Split</string>
+    <!-- Scope-neutral on purpose: the card was "All-Time Split" and said so while rendering a
+         single month's figures the moment Reports gained a scope. No title here may name a span —
+         the selector above states which one is active. -->
+    <string name="chart_split_title">Days Split</string>
     <string name="chart_monthly_title">Hours by Month</string>
+    <!-- States the window and nothing else. No superlative: naming the window's longest day ranks
+         one of the user's days against the others, which nothing in the app does. -->
     <plurals name="cd_daily_hours_chart">
-        <item quantity="one">Daily hours over the last %1$d day. Best day %2$s.</item>
-        <item quantity="other">Daily hours over the last %1$d days. Best day %2$s.</item>
+        <item quantity="one">Daily hours over %1$d day.</item>
+        <item quantity="other">Daily hours over %1$d days.</item>
     </plurals>
     <string name="cd_monthly_chart">Hours by month: %1$s</string>
+    <!-- The two descriptive splits. Neither ranks its slices: there is no better hour to start at
+         and no right number of blocks to break a day into, and any copy implying one would be the
+         deleted daily target applied to the shape of a day instead of its length. -->
+    <string name="chart_start_times_title">Start Times</string>
+    <string name="chart_sessions_per_day_title">Sessions Per Day</string>
+    <string name="bucket_morning">Morning</string>
+    <string name="bucket_afternoon">Afternoon</string>
+    <string name="bucket_evening">Evening</string>
+    <string name="band_three_plus">3 or more</string>
     <plurals name="days_count">
         <item quantity="one">%d day</item>
         <item quantity="other">%d days</item>
     </plurals>
     <string name="export_title">Export Data</string>
-    <string name="export_this_month">This month</string>
-    <string name="export_all_time">All time</string>
+    <!-- One button following the scope selector: a second way to choose a range is a control that
+         can disagree with the screen above it. -->
+    <string name="export_scope">Export %1$s</string>
     <string name="export_chooser_title">Export Sessions</string>
     <!-- Posted once the file exists and the share sheet is up; the user has not picked a target yet. -->
     <string name="export_success">CSV ready to share</string>

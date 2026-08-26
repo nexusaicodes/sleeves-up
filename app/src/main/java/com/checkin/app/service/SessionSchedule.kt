@@ -12,6 +12,26 @@ import java.time.format.DateTimeFormatter
  * The cadence is a plain interval, deliberately not randomized: nothing here verifies anything, so
  * there is no check for a predictable time to defeat. Neither instant derives from a daily target —
  * there is none.
+ *
+ * ### Reading the `service` package
+ *
+ * Every file here is about a session, so the `Session` prefix discriminates nothing — what separates
+ * them is which of three layers a file is on, and the names do not say. They are:
+ *
+ * - **Pure math**, no Android, unit-tested: this file (cadence and the two midnight derivations) and
+ *   [SessionClock] (the notification's chronometer base and elapsed time). Neither schedules
+ *   anything; both are asked what an instant should be.
+ * - **Platform seam**, an interface plus its Android implementation: [SessionAlarms], which is what
+ *   actually reaches `AlarmManager`, and which persists the armed instants and the reminder count.
+ * - **Orchestration**, where the decisions live: [SessionLifecycleRunner] (arms both alarms, handles
+ *   the reminder, **and closes the session at the day boundary** — the app's only un-gated
+ *   check-out), [SessionWatchdog] (repairs a service or alarms lost to a kill),
+ *   [ServiceReconciler] (whether a live service still has a row behind it — a decision, but a pure
+ *   and unit-tested one, so look for it here rather than among the Android files).
+ *
+ * Plus the two receivers ([SessionAlarmReceiver], [SessionRestoreReceiver]) and [CheckInService]
+ * itself, which owns the ongoing notification and nothing else — it runs no ticker and arms no
+ * alarm.
  */
 object SessionSchedule {
 

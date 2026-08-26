@@ -21,9 +21,16 @@ import androidx.compose.ui.unit.dp
  * from the top. [content] is centered inside the ring. Purely presentational — the caller owns the
  * [progress] value (coerced to 0f..1f here).
  *
- * [contentDescription] must state how far along the arc is: the fill and its colour are the only
- * things carrying that, and neither reaches a screen reader. It goes on the arc rather than the whole
- * ring so [content] keeps announcing itself.
+ * [contentDescription] must state how far along the arc is wherever the arc means something: the fill
+ * and its colour are the only things carrying that, and neither reaches a screen reader. It goes on
+ * the arc rather than the whole ring so [content] keeps announcing itself.
+ *
+ * **This ring measures nothing, and nothing in this app may make it.** Its one caller is
+ * `TimerGauge`, whose sweep is motion rather than measurement. The ring fills that once graded a
+ * figure against a baseline — the month's days-shown-up ratio, the longest day, the best run — are
+ * deleted, and a fill drawn against the user's own best ratchets: beat it once and every ordinary
+ * day behind it re-renders as a partial version of that one. Presence may be measured; hours may
+ * not. See the no-grading rule in CLAUDE.md before adding a second caller.
  */
 @Composable
 fun CircularProgressRing(

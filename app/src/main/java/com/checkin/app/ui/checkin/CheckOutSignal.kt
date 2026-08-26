@@ -12,10 +12,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * [MainActivity][com.checkin.app.MainActivity] through the root presence gate. A celebration owned
  * by `CheckInViewModel` would simply not appear for the notification path, and the user cannot tell
  * which writer closed their session. This is the same shape, and the same reason, as
- * [PresenceCheckSignal][com.checkin.app.service.PresenceCheckSignal].
+ * [PresenceCheckSignal][com.checkin.app.ui.presence.PresenceCheckSignal], its sibling one
+ * package over.
  *
  * **The day-boundary close deliberately does not raise this.** It runs through
- * `SessionReminderRunner.onDayBoundaryFired` and never reaches either writer, which is exactly
+ * `SessionLifecycleRunner.onDayBoundaryFired` and never reaches either writer, which is exactly
  * right: it closes a session the user forgot about, usually at midnight with the app dead.
  * Congratulating someone for a session the app ended on their behalf would be praise for the one
  * check-out they did not make.
@@ -41,7 +42,7 @@ object CheckOutSignal {
      * How long an unshown celebration stays live.
      *
      * Deliberately far shorter than [PresenceCheckSignal.EXPIRY_MS]
-     * [com.checkin.app.service.PresenceCheckSignal.EXPIRY_MS], because the two are waiting for
+     * [com.checkin.app.ui.presence.PresenceCheckSignal.EXPIRY_MS], because the two are waiting for
      * different things. That gate expects a legitimate round trip out of the app — it sends the user
      * to system settings and waits for them to come back. This one is a reaction to something the
      * user *just* did, and nothing about it survives the moment: a congratulation for a session

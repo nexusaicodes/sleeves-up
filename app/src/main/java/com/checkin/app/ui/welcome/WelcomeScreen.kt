@@ -217,7 +217,8 @@ private val DOT_SIZE = 8.dp
 private val DOT_GAP = 4.dp
 private val DOTS_TO_ACTION_GAP = 24.dp
 
-/** Echoes the Check-In screen's primary action, which is the control this button hands over to. */
+/** A comfortable full-width action. Independent of the Check-In screen's 64.dp primary button,
+ *  which is sized by that screen's fit budget rather than by how a button should look. */
 private val ACTION_MIN_HEIGHT = 56.dp
 private val ACTION_CORNER = 16.dp
 

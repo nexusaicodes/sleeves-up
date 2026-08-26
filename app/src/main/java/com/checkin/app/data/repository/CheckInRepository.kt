@@ -4,6 +4,7 @@ import com.checkin.app.data.SystemTimeSource
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.CheckInSessionDao
+import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.local.DailyAggregate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -21,6 +22,13 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * screen, so the one-open-session invariant is enforced here rather than at each call site. A
      * second open row would never be closed (`getActiveSession()` returns one) and its hours would
      * never reach `duration`.
+     *
+     * **Writing the row is half of a check-in; the caller owns the other half.** This does not start
+     * the foreground service and does not arm either session alarm — whoever writes the row arms it,
+     * because a service start can be refused (a restricted standby bucket, an OEM declining a
+     * `specialUse` foreground start) while a row write cannot, so arming behind the start would let
+     * a refusal silently produce a session with no day-boundary close. Both writers do it:
+     * `CheckInViewModel.executeCheckIn` and `MainActivity.onRootGatePassed`. A new caller must too.
      */
     suspend fun checkIn(): CheckInSession {
         dao.getActiveSession()?.let { return it }
@@ -31,7 +39,8 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
         return session.copy(id = dao.insertSession(session))
     }
 
-    suspend fun checkOut(sessionId: Long): CheckInSession? = checkOutAt(sessionId, timeSource.nowMillis())
+    suspend fun checkOut(sessionId: Long, closedBy: ClosedBy): CheckInSession? =
+        checkOutAt(sessionId, timeSource.nowMillis(), closedBy)
 
     /**
      * Closes [sessionId] stamped at [atMillis] rather than now, returning the closed row, or null
@@ -42,15 +51,25 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * stop before the start means a changed system clock or a corrupt row, and a negative duration
      * would poison every total that sums it.
      *
+     * [closedBy] records *what* ended the session — which surface the user checked out from, or the
+     * midnight alarm. It changes nothing about the row's duration or its immutability; the CSV
+     * export is the only thing that ever reads it, and nothing displays it.
+     *
+     * It has **no default**, deliberately. Its predecessor was a boolean defaulting to false, so a
+     * caller that never mentioned it silently asserted a value — which was harmless while there were
+     * two endings and one of them was the default, and is a wrong answer now that there are four.
+     * A new check-out path must state which one it is, or it does not compile.
+     *
      * The closed row comes back so a caller that wants to report what was recorded reads the stored
      * figure rather than recomputing it: a second subtraction at the call site would be a second
      * copy of the flooring rule, free to disagree with the row it describes.
      */
-    suspend fun checkOutAt(sessionId: Long, atMillis: Long): CheckInSession? {
+    suspend fun checkOutAt(sessionId: Long, atMillis: Long, closedBy: ClosedBy): CheckInSession? {
         val session = dao.getSessionById(sessionId) ?: return null
         val closed = session.copy(
             stoppedAt = atMillis,
             duration = (atMillis - session.startedAt).coerceAtLeast(0L),
+            closedBy = closedBy,
         )
         dao.updateSession(closed)
         return closed
@@ -60,9 +79,9 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * Checks out whatever session is open, for callers that don't hold its id. Returns the closed
      * row, or null when nothing was open.
      */
-    suspend fun checkOutActiveSession(): CheckInSession? {
+    suspend fun checkOutActiveSession(closedBy: ClosedBy): CheckInSession? {
         val active = dao.getActiveSession() ?: return null
-        return checkOut(active.id)
+        return checkOut(active.id, closedBy)
     }
 
     suspend fun getActiveSession(): CheckInSession? = dao.getActiveSession()
@@ -82,6 +101,13 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
     fun byDateKey(aggregates: List<DailyAggregate>): Map<String, DailyAggregate> = aggregates.associateBy { it.dateKey }
 
     fun sessionsForDateFlow(dateKey: String): Flow<List<CheckInSession>> = dao.getSessionsByDateFlow(dateKey)
+
+    /**
+     * Start instants of the completed sessions in the range, for the start-time split. Scoped
+     * identically to [dailyAggregatesFlow], so the two never describe different sets of sessions.
+     */
+    fun sessionStartsFlow(startDate: String, endDate: String): Flow<List<Long>> =
+        dao.getSessionStartsFlow(startDate, endDate)
 
     suspend fun getSessionsByDate(dateKey: String): List<CheckInSession> = dao.getSessionsByDate(dateKey)
 

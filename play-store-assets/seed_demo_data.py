@@ -1,9 +1,14 @@
 """Seed a representative CheckIn history into a pulled `_app` database.
 
 Demo data for Play Store screenshots. Shapes it to show what the app actually does:
-varying day lengths so the calendar shades at different intensities, a handful of
-missed days so the split is not a flat 100%, multi-session days so the Check-In
-list has something to expand, and an open session today so the gauge is running.
+a handful of missed days so the split is not a flat 100%, sessions starting across
+the morning, afternoon and evening so the start-time split has all three slices,
+days of one, two and three blocks so the sessions-per-day split has all three, and
+an open session today so the gauge is running.
+
+Day *lengths* are still varied, but nothing renders them any more — the calendar is
+one mark per day shown up, whether it held 45 minutes or nine hours. They vary here
+only so the hours charts are not a flat line.
 
 Usage: python3 seed.py <path-to-_app>
 """
@@ -13,12 +18,12 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 
 TZ = timezone(timedelta(hours=4))          # the device's zone; date_key must agree with it
-TODAY = date(2026, 8, 20)
+TODAY = date(2026, 8, 22)
 START = TODAY - timedelta(days=57)         # ~8 weeks, enough for two months of bars
 MISS_CHANCE = {5: 0.55, 6: 0.65}           # Sat/Sun are the days most often skipped
 WEEKDAY_MISS = 0.10
 
-random.seed(20260820)                       # reproducible: same screenshots on a re-run
+random.seed(20260822)                       # reproducible: same screenshots on a re-run
 
 
 def millis(d: date, hour: int, minute: int) -> int:
@@ -58,12 +63,15 @@ def main(db_path: str) -> None:
             rows.append((started, stopped, stopped - started, d.isoformat()))
         d += timedelta(days=1)
 
-    # One long day, so the calendar has a real peak to shade everything else against.
-    peak = TODAY - timedelta(days=9)
-    rows = [r for r in rows if r[3] != peak.isoformat()]
-    for s, e in ((8 * 60 + 45, 13 * 60 + 10), (14 * 60, 18 * 60 + 40)):
-        started, stopped = millis(peak, 0, 0) + s * 60_000, millis(peak, 0, 0) + e * 60_000
-        rows.append((started, stopped, stopped - started, peak.isoformat()))
+    # A few evenings, so the start-time split has a real third slice. The generator above starts
+    # its blocks in the morning and early afternoon, so without these the evening slice is a
+    # sliver and the chart reads as if the app could not see one.
+    for offset in (4, 11, 18, 25, 33):
+        d = TODAY - timedelta(days=offset)
+        rows = [r for r in rows if r[3] != d.isoformat()]
+        for s, e in ((9 * 60 + 20, 12 * 60 + 40), (19 * 60 + 30, 22 * 60 + 15)):
+            started, stopped = millis(d, 0, 0) + s * 60_000, millis(d, 0, 0) + e * 60_000
+            rows.append((started, stopped, stopped - started, d.isoformat()))
 
     # Today: two closed sessions, then one still running — the gauge counts up from it and
     # the primary action reads Check Out.
@@ -76,6 +84,8 @@ def main(db_path: str) -> None:
     conn = sqlite3.connect(db_path)
     conn.execute("DELETE FROM sessions")
     conn.executemany(
+        # `closed_by` is omitted, so it stores NULL: nothing on screen reads it and only the CSV export does, so the
+        # screenshots are unaffected either way.
         "INSERT INTO sessions (started_at, stopped_at, duration, date_key) VALUES (?, ?, ?, ?)",
         rows,
     )

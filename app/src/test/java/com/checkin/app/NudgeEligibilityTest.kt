@@ -1,10 +1,10 @@
 package com.checkin.app
 
-import com.checkin.app.notify.engagement.Nudge
-import com.checkin.app.notify.engagement.NudgeConfig
-import com.checkin.app.notify.engagement.NudgeEligibility
-import com.checkin.app.notify.engagement.NudgeSchedule
-import com.checkin.app.notify.engagement.NudgeSnapshot
+import com.checkin.app.notify.nudge.Nudge
+import com.checkin.app.notify.nudge.NudgeConfig
+import com.checkin.app.notify.nudge.NudgeEligibility
+import com.checkin.app.notify.nudge.NudgeSchedule
+import com.checkin.app.notify.nudge.NudgeSnapshot
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -189,7 +189,7 @@ class NudgeEligibilityTest {
 
         assertTrue(
             "A gap of ${NudgeConfig().minGapMs}ms would suppress punctual checkpoints ${closest}ms apart",
-            NudgeConfig().minGapMs <= closest,
+            NudgeConfig().minGapMs < closest,
         )
     }
 

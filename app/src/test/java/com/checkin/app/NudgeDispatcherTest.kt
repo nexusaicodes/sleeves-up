@@ -3,13 +3,10 @@ package com.checkin.app
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.NotificationChannels
 import com.checkin.app.notify.StringResolver
-import com.checkin.app.notify.engagement.Nudge
-import com.checkin.app.notify.engagement.NudgeCatalog
-import com.checkin.app.notify.engagement.NudgeDispatcher
-import com.checkin.app.notify.engagement.NudgeSchedule
-import com.checkin.app.notify.engagement.VariantAssigner
-import com.checkin.app.notify.log.EngagementEventType
-import com.checkin.app.notify.log.EngagementSource
+import com.checkin.app.notify.nudge.Nudge
+import com.checkin.app.notify.nudge.NudgeCatalog
+import com.checkin.app.notify.nudge.NudgeDispatcher
+import com.checkin.app.notify.nudge.NudgeSchedule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -19,9 +16,9 @@ import org.junit.Test
 import java.time.LocalDate
 
 /**
- * The dispatcher's failure mode is silent: a nudge logged but never posted looks identical in the
- * data to one nobody acted on, so the conversion rate quietly drops with nothing to point at. These
- * pin the invariant that the log only ever records what the platform actually accepted.
+ * The dispatcher's failure mode is silent: a send recorded for a notification that never reached
+ * the tray spends one of the day's two slots, so the checkpoint that would have been shown is
+ * suppressed by a message nobody saw. These pin that the log only records what the platform took.
  *
  * Copy resolution sits behind [StringResolver], which is what keeps the dispatcher reachable from a
  * JVM-only suite — a `Context` for `getString` would put it out of reach.
@@ -36,21 +33,20 @@ class NudgeDispatcherTest {
     private val triggerHour = today.atTime(NudgeSchedule.Checkpoint.MORNING.hour, 0)
         .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-    private val time = FixedTime(triggerHour, today)
+    private val time = FakeTimeSource(triggerHour, today)
     private val notifier = FakeNotifier()
-    private val log = FakeEngagementLog()
+    private val log = FakeNudgeSendLog()
     private val dao = FakeCheckInSessionDao()
 
-    private fun dispatcher(clock: FixedTime = time): NudgeDispatcher = NudgeDispatcher(
+    private fun dispatcher(clock: FakeTimeSource = time): NudgeDispatcher = NudgeDispatcher(
         strings = StringResolver { "copy-$it" },
         repository = CheckInRepository(dao, clock),
-        install = FakeEngagementInstall(),
         notifier = notifier,
-        log = log,
+        sendLog = { log },
         timeSource = clock,
     )
 
-    private suspend fun shownCount() = log.shownNudgesSince(0L).size
+    private suspend fun shownCount() = log.sentSince(0L).size
 
     @Test
     fun `an eligible nudge is posted and logged`() = runTest {
@@ -63,10 +59,9 @@ class NudgeDispatcherTest {
     }
 
     /**
-     * POST_NOTIFICATIONS is revocable at any time. A refused post that still logged SHOWN would put
-     * an un-actionable event in the denominator and understate every conversion rate — and, since
-     * the daily cap counts from the log, would burn one of the day's slots on a notification nobody
-     * saw.
+     * POST_NOTIFICATIONS is revocable at any time, and the daily cap counts from the log — so a
+     * refused post that still recorded would burn one of the day's slots on a notification nobody
+     * saw, and the later checkpoint that slot belonged to would never fire.
      */
     @Test
     fun `a refused post records nothing`() = runTest {
@@ -90,7 +85,7 @@ class NudgeDispatcherTest {
         val beforeFirstCheckpoint = today.atTime(NudgeSchedule.Checkpoint.MORNING.hour - 1, 0)
             .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-        val sent = dispatcher(FixedTime(beforeFirstCheckpoint, today)).runOnce()
+        val sent = dispatcher(FakeTimeSource(beforeFirstCheckpoint, today)).runOnce()
 
         assertNull(sent)
         assertTrue(notifier.shown.isEmpty())
@@ -125,7 +120,7 @@ class NudgeDispatcherTest {
         val laterInTheBand = today.atTime(NudgeSchedule.Checkpoint.AFTERNOON.hour - 1, 0)
             .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-        assertNull(dispatcher(FixedTime(laterInTheBand, today)).runOnce())
+        assertNull(dispatcher(FakeTimeSource(laterInTheBand, today)).runOnce())
         assertEquals(1, shownCount())
         assertEquals(1, notifier.shown.size)
     }
@@ -152,39 +147,36 @@ class NudgeDispatcherTest {
         assertEquals(0, shownCount())
     }
 
-    /** The spec is what the tray and the dismissal receiver both read; a wrong field is invisible. */
+    /** The spec is what reaches the tray; a wrong id or channel is invisible until a device shows it. */
     @Test
-    fun `the posted spec carries the nudge's own id, channel and dismissal tag`() = runTest {
+    fun `the posted spec carries the nudge's own id and channel`() = runTest {
         dispatcher().runOnce()
 
         val spec = notifier.shown.single()
         assertEquals(Nudge.NOT_CHECKED_IN_MORNING.notificationId, spec.id)
-        assertEquals(NotificationChannels.ENGAGEMENT, spec.channelId)
-        assertEquals(EngagementSource.NUDGE, spec.tag?.source)
-        assertEquals(Nudge.NOT_CHECKED_IN_MORNING.name, spec.tag?.key)
+        assertEquals(NotificationChannels.NUDGE, spec.channelId)
     }
 
     /**
-     * The install's own bucket is the only wording a device ever sees — there is no override, so a
-     * dispatcher that assigned differently from [VariantAssigner] would silently split an experiment
-     * the log then reports as one. The variant is asserted on both the spec and the row, because a
-     * mismatch between them attributes a tap to copy the user was never shown.
+     * The catalog is the only source of a nudge's wording — there is no variant bucket and no
+     * override — so a dispatcher that resolved copy any other way would show a string no test reads.
      */
     @Test
-    fun `the posted variant is the install's own bucket`() = runTest {
-        val install = FakeEngagementInstall()
-        val expected = VariantAssigner.assign(
-            install.installId(),
-            Nudge.NOT_CHECKED_IN_MORNING.name,
-            NudgeCatalog.variants(Nudge.NOT_CHECKED_IN_MORNING).size,
-        )
+    fun `the posted copy is the nudge's registered copy`() = runTest {
+        val copy = NudgeCatalog.copyFor(Nudge.NOT_CHECKED_IN_MORNING)
 
         dispatcher().runOnce()
 
-        assertEquals(expected, notifier.shown.single().tag?.variant)
-        assertEquals(
-            listOf(expected),
-            log.events.value.filter { it.event == EngagementEventType.SHOWN.name }.map { it.variant },
-        )
+        val spec = notifier.shown.single()
+        assertEquals("copy-${copy.titleRes}", spec.title)
+        assertEquals("copy-${copy.bodyRes}", spec.body)
+    }
+
+    /** Retiring is what stops a stale nudge sending the user through the gate to an open session. */
+    @Test
+    fun `retireAll cancels every nudge id`() = runTest {
+        dispatcher().retireAll()
+
+        assertEquals(Nudge.entries.map { it.notificationId }.toSet(), notifier.cancelled.toSet())
     }
 }

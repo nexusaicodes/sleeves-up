@@ -2,7 +2,7 @@ package com.checkin.app
 
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.StringResolver
-import com.checkin.app.service.SessionReminderRunner
+import com.checkin.app.service.SessionLifecycleRunner
 import com.checkin.app.ui.checkin.CheckInViewModel
 import com.checkin.app.ui.checkin.CheckOutSignal
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,22 +27,21 @@ class CheckInViewModelTest {
     private fun buildViewModel(
         dao: FakeCheckInSessionDao,
         service: FakeServiceController,
-        time: FixedTime,
-        engagement: FakeEngagementReporter = FakeEngagementReporter(),
+        time: FakeTimeSource,
+        nudges: FakePostedNudges = FakePostedNudges(),
         alarms: FakeSessionAlarms = FakeSessionAlarms(),
     ): CheckInViewModel {
         val repo = CheckInRepository(dao, time)
         // The real runner over fakes rather than a stand-in: the ViewModel owns the session's alarm
         // lifetime, and a stub would let the two drift without a test noticing.
-        val reminder = SessionReminderRunner(
+        val reminder = SessionLifecycleRunner(
             repository = repo,
             notifier = FakeNotifier(),
             strings = StringResolver { "copy-$it" },
             alarms = alarms,
-            log = FakeEngagementLog(),
             timeSource = time,
         )
-        return CheckInViewModel(repo, time, service, reminder, engagement)
+        return CheckInViewModel(repo, time, service, reminder, nudges)
     }
 
     /**
@@ -59,7 +58,7 @@ class CheckInViewModelTest {
         val viewModel = buildViewModel(
             dao,
             service,
-            FixedTime(1000L, LocalDate.of(2026, 6, 15)),
+            FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)),
             alarms = alarms,
         )
 
@@ -83,7 +82,7 @@ class CheckInViewModelTest {
         val viewModel = buildViewModel(
             dao,
             FakeServiceController(),
-            FixedTime(1000L, LocalDate.of(2026, 6, 15)),
+            FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)),
             alarms = alarms,
         )
 
@@ -113,7 +112,7 @@ class CheckInViewModelTest {
             val viewModel = buildViewModel(
                 dao,
                 FakeServiceController(),
-                FixedTime(0L, LocalDate.of(2026, 6, 15)),
+                FakeTimeSource(0L, LocalDate.of(2026, 6, 15)),
             )
 
             backgroundScope.launch { viewModel.uiState.collect {} }
@@ -143,7 +142,7 @@ class CheckInViewModelTest {
     fun `the first check-in inserts a session, starts the timer, and starts the record`() = runTest {
         val dao = FakeCheckInSessionDao()
         val service = FakeServiceController()
-        val viewModel = buildViewModel(dao, service, FixedTime(1000L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, service, FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
 
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
@@ -160,18 +159,19 @@ class CheckInViewModelTest {
     }
 
     /**
-     * Every check-in is reported, not just the one a notification tap opened — otherwise a nudge the
-     * user acted on from inside the app is never credited, and the stale notification is left posted.
+     * Every check-in retires the posted nudges, not just the one a notification tap opened. Nothing
+     * the app posts is `autoCancel`, so a nudge left in the tray sends the user back through the
+     * full presence gate only to reach a session that is already open.
      */
     @Test
-    fun `an in-app check-in is reported to the engagement layer`() = runTest {
+    fun `an in-app check-in retires any posted nudge`() = runTest {
         val dao = FakeCheckInSessionDao()
-        val engagement = FakeEngagementReporter()
+        val nudges = FakePostedNudges()
         val viewModel = buildViewModel(
             dao,
             FakeServiceController(),
-            FixedTime(1000L, LocalDate.of(2026, 6, 15)),
-            engagement,
+            FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)),
+            nudges,
         )
 
         backgroundScope.launch { viewModel.uiState.collect {} }
@@ -179,7 +179,7 @@ class CheckInViewModelTest {
         viewModel.onAuthSuccess()
         advanceUntilIdle()
 
-        assertEquals(listOf(1000L), engagement.checkedInAt)
+        assertEquals(1, nudges.retireCount)
     }
 
     /**
@@ -191,7 +191,7 @@ class CheckInViewModelTest {
     fun `an existing user is never reported as a first run, only as not yet loaded`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedCompleted("2026-06-01", startedAt = 0L, durationMs = 3_600_000L)
-        val viewModel = buildViewModel(dao, FakeServiceController(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, FakeServiceController(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
 
         assertTrue(viewModel.uiState.value.loading)
 
@@ -206,7 +206,7 @@ class CheckInViewModelTest {
     fun `day rollover advances today's date key without a resume`() = runTest {
         val dao = FakeCheckInSessionDao()
         val service = FakeServiceController()
-        val time = FixedTime(1000L, LocalDate.of(2026, 6, 15))
+        val time = FakeTimeSource(1000L, LocalDate.of(2026, 6, 15))
         val viewModel = buildViewModel(dao, service, time)
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
@@ -226,7 +226,7 @@ class CheckInViewModelTest {
             com.checkin.app.data.local.CheckInSession(startedAt = 500L, dateKey = "2026-06-14"),
         )
         val viewModel =
-            buildViewModel(dao, FakeServiceController(), FixedTime(1000L, LocalDate.of(2026, 6, 15)))
+            buildViewModel(dao, FakeServiceController(), FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -243,7 +243,7 @@ class CheckInViewModelTest {
     fun `check-out closes the session and stops the timer`() = runTest {
         val dao = FakeCheckInSessionDao()
         val service = FakeServiceController()
-        val viewModel = buildViewModel(dao, service, FixedTime(1000L, LocalDate.of(2026, 6, 15)))
+        val viewModel = buildViewModel(dao, service, FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
 
         viewModel.requestCheckIn()

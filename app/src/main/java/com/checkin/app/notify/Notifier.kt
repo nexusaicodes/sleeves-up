@@ -8,15 +8,33 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 
 /**
- * Seam over the platform notification manager so the engagement layer can be unit-tested without
- * Android, and so posting is refused rather than thrown when notifications aren't permitted.
+ * Seam over the platform notification manager so the nudge layer can be unit-tested without Android,
+ * and so posting is refused rather than thrown when notifications aren't permitted.
+ *
+ * ### Reading the `notify` tree
+ *
+ * Two packages, split by what a file is *for*:
+ *
+ * - **`notify/`** — the plumbing every notification shares, whoever sends it: how one is described
+ *   ([NotificationSpec]), built ([NotificationFactory]), posted (this file), and whether posting is
+ *   even possible ([NotificationDelivery], pure). Its ids and request codes are in
+ *   [NotificationIds], and [LaunchExtras] is what rides a notification's tap intent — it lives here
+ *   rather than in `nudge/` because the session reminder uses the same machinery a nudge does.
+ * - **`notify/nudge/`** — deciding *whether and when* to send a nudge, sending it, and the
+ *   ledger of what was already sent today. The whole decision surface is one pure function over a
+ *   plain value object; the rest is copy, scheduling and the alarm that wakes it.
+ *
+ * `notify/` is the shared base but not a leaf — [Nudge] imports [NotificationIds] back out of here —
+ * so do not read the layering as a one-way arrow. The invariant that actually holds is the outer
+ * one: **nothing under `notify/` writes to `sessions`.** It may read tracking state to decide what
+ * to say, and never writes it back.
  */
 interface Notifier {
     /**
      * Posts [spec], returning false when it could not be displayed.
      *
      * The return value is load-bearing, not advisory: the session reminder decides whether to
-     * advance its alert ladder on the strength of it, and the engagement log records a `SHOWN` from
+     * advance its alert ladder on the strength of it, and the send ledger records the send from
      * it, so "true" has to mean the notification is genuinely on the shade.
      */
     fun show(spec: NotificationSpec): Boolean

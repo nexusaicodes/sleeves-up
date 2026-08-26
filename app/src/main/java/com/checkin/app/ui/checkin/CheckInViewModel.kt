@@ -9,10 +9,11 @@ import com.checkin.app.CheckInApplication
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.dayTrigger
 import com.checkin.app.data.local.CheckInSession
+import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
-import com.checkin.app.notify.engagement.EngagementReporter
+import com.checkin.app.notify.nudge.PostedNudges
 import com.checkin.app.platform.ServiceController
-import com.checkin.app.service.SessionReminderRunner
+import com.checkin.app.service.SessionLifecycleRunner
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,6 +23,17 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
+
+/**
+ * What the gate is being opened for, so that passing it performs the action the user asked for
+ * rather than a fixed one. The root gate's equivalent is `PresenceCheckSignal.Reason`, which covers the same actions for a check requested from
+ * a notification — with check-out split in two, one value per `ClosedBy`.
+ */
+sealed class PresenceAction {
+    data object None : PresenceAction()
+    data object CheckIn : PresenceAction()
+    data object CheckOut : PresenceAction()
+}
 
 /** Immutable snapshot the Check-In screen renders. Elapsed time is screen-driven, not held here. */
 data class CheckInUiState(
@@ -40,8 +52,8 @@ class CheckInViewModel(
     private val repository: CheckInRepository,
     private val timeSource: TimeSource,
     private val serviceController: ServiceController,
-    private val sessionReminder: SessionReminderRunner,
-    private val engagementReporter: EngagementReporter,
+    private val sessionLifecycleRunner: SessionLifecycleRunner,
+    private val postedNudges: PostedNudges,
 ) : ViewModel() {
 
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
@@ -131,10 +143,11 @@ class CheckInViewModel(
             // restricted standby bucket, an OEM that declines the foreground start — and a session
             // with no day-boundary close runs until the user notices, then writes a multi-day
             // duration onto a row the app gives no way to edit. Writing the row cannot be refused.
-            sessionReminder.arm(session.startedAt)
-            // Reported for every check-in, not just the one a notification tap opened — a nudge the
-            // user acted on from inside the app is still a nudge that worked.
-            engagementReporter.onCheckedIn(session.startedAt)
+            sessionLifecycleRunner.arm(session.startedAt)
+            // Cleared on every check-in, not just the one a notification tap opened: a nudge asking
+            // for a check-in is stale whichever way the check-in was made, and one left in the tray
+            // sends the user back through the presence gate to reach a session already open.
+            postedNudges.retireAll()
             // No refresh: the inserted row is what `hasEverTracked` reads, and its flow already
             // carries it.
         }
@@ -143,10 +156,10 @@ class CheckInViewModel(
     private fun executeCheckOut() {
         viewModelScope.launch {
             val active = repository.getActiveSession() ?: return@launch
-            val closed = repository.checkOut(active.id)
+            val closed = repository.checkOut(active.id, ClosedBy.IN_APP)
             // Before `stop()`, and not left to it: that command is a no-op when the service has
             // already been killed, which would leave both alarms standing over a closed session.
-            sessionReminder.cancel()
+            sessionLifecycleRunner.cancel()
             serviceController.stop()
             // The other writer, MainActivity.onRootGatePassed, raises this too — a check-out from
             // the notification earned the same acknowledgement as one from the button.
@@ -164,16 +177,10 @@ class CheckInViewModel(
                     container.repository,
                     container.timeSource,
                     container.serviceController,
-                    container.sessionReminderRunner,
-                    container.engagementReporter,
+                    container.sessionLifecycleRunner,
+                    container.postedNudges,
                 )
             }
         }
     }
-}
-
-sealed class PresenceAction {
-    data object None : PresenceAction()
-    data object CheckIn : PresenceAction()
-    data object CheckOut : PresenceAction()
 }

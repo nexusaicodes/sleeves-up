@@ -23,20 +23,16 @@ private val OnStartDark = Color(0xFF0A2E12)
 private val OnStopDark = Color(0xFF3B0A0A)
 
 /**
- * Theme-aware colour for a day, at [fraction] of full strength.
+ * Theme-aware colour for a day the user showed up.
  *
- * Strength is carried in the alpha channel rather than by interpolating toward the surface, so a
- * cell composites correctly over whatever it is drawn on in either theme. A [fraction] of zero is
- * fully transparent — a day with nothing recorded is an empty cell, not a coloured one.
+ * There is deliberately **one** strength and no overload taking a fraction. A day used to be drawn
+ * at an alpha proportional to its hours against the user's longest day, which made the shade a
+ * ranking: one nine-hour day permanently re-rendered every ordinary day as a fainter version of it.
+ * A day either has a session or it does not, and that is the whole of what a cell says.
+ *
+ * Callers that need this over a background at reduced weight apply their own alpha for legibility —
+ * a fixed constant, never a figure derived from a duration.
  */
-@Composable
-@ReadOnlyComposable
-fun dayColor(fraction: Float): Color {
-    val base = if (isSystemInDarkTheme()) PresentDark else PresentLight
-    return base.copy(alpha = fraction.coerceIn(0f, 1f))
-}
-
-/** Full-strength day colour, for legends and any mark that isn't standing for a quantity. */
 @Composable
 @ReadOnlyComposable
 fun dayColor(): Color = if (isSystemInDarkTheme()) PresentDark else PresentLight

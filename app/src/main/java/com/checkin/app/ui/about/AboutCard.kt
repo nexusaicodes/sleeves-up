@@ -1,28 +1,21 @@
 package com.checkin.app.ui.about
 
 import android.os.Build
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.checkin.app.BuildConfig
 import com.checkin.app.R
+import com.checkin.app.ui.components.ActionRow
 import com.checkin.app.ui.components.SectionCard
 import com.checkin.app.ui.components.SectionDivider
 
@@ -59,7 +52,7 @@ fun AboutCard(onOpenLicenses: () -> Unit, showMessage: (String) -> Unit, modifie
     val noHandler = stringResource(R.string.about_no_handler)
 
     SectionCard(title = stringResource(R.string.about_section), modifier = modifier) {
-        MetaRow(
+        ActionRow(
             label = stringResource(R.string.about_privacy_policy),
             icon = Icons.AutoMirrored.Filled.OpenInNew,
             contentDescription = stringResource(R.string.about_open_link),
@@ -73,7 +66,7 @@ fun AboutCard(onOpenLicenses: () -> Unit, showMessage: (String) -> Unit, modifie
                 showMessage(if (copied) noBrowser else noHandler)
             }
         }
-        MetaRow(
+        ActionRow(
             label = stringResource(R.string.about_feedback),
             icon = Icons.AutoMirrored.Filled.OpenInNew,
             contentDescription = stringResource(R.string.about_open_link),
@@ -84,7 +77,7 @@ fun AboutCard(onOpenLicenses: () -> Unit, showMessage: (String) -> Unit, modifie
                 showMessage(if (copied) noEmailApp else noHandler)
             }
         }
-        MetaRow(
+        ActionRow(
             label = stringResource(R.string.about_rate),
             icon = Icons.AutoMirrored.Filled.OpenInNew,
             contentDescription = stringResource(R.string.about_open_link),
@@ -100,7 +93,7 @@ fun AboutCard(onOpenLicenses: () -> Unit, showMessage: (String) -> Unit, modifie
                 showMessage(if (copied) noBrowser else noHandler)
             }
         }
-        MetaRow(
+        ActionRow(
             label = stringResource(R.string.about_licenses),
             icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
@@ -137,25 +130,4 @@ private fun Identity() {
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth(),
     )
-}
-
-@Composable
-private fun MetaRow(label: String, icon: ImageVector, contentDescription: String?, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            // 48dp of height is the minimum tap target; the vertical padding gets it there without
-            // pinning the row, so it still grows with a large font scale.
-            .padding(vertical = 14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
 }
