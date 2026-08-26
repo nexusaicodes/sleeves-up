@@ -30,7 +30,7 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             // chance to recover roughly hourly rather than waiting for the user to open the app. The
             // start may be refused here — background foreground-service starts are restricted, and a
             // worker is not among the exemptions — which is why this is the last of the three revive
-            // points rather than the only one. A refusal is logged, not thrown.
+            // points rather than the only one. It reports a refusal as `false` and never throws.
             container.sessionWatchdog.reviveIfNeeded()
             // Re-arm before dispatching: a checkpoint alarm lost to a force stop is repaired here
             // even on a pass that then finds nothing eligible to send.
@@ -90,15 +90,17 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
          * and a post to a channel the user has turned off is refused by `Notifier` rather than shown.
          */
         fun schedule(context: Context) {
-            // Before enqueuing, or KEEP preserves the orphan alongside the new one.
-            WorkManager.getInstance(context).cancelUniqueWork(RETIRED_WORK_NAME)
+            val workManager = WorkManager.getInstance(context)
+            // Before enqueuing, or KEEP preserves the orphan alongside the new one. One instance for
+            // both calls, so the ordering is visibly on the thing it has to be ordered on.
+            workManager.cancelUniqueWork(RETIRED_WORK_NAME)
 
             val request = PeriodicWorkRequestBuilder<NudgeWorker>(
                 INTERVAL_MINUTES,
                 TimeUnit.MINUTES,
             ).build()
 
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            workManager.enqueueUniquePeriodicWork(
                 WORK_NAME,
                 ExistingPeriodicWorkPolicy.KEEP,
                 request,

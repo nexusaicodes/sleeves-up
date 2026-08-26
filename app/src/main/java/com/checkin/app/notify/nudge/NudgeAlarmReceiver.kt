@@ -14,8 +14,8 @@ import kotlinx.coroutines.launch
  * rebooting, a deferrable worker getting a slot. This one runs off the alarm that just fired, so once
  * the first is armed the sequence continues on its own for as long as the process is allowed to exist.
  *
- * It lives in `notify/nudge/` rather than beside the session alarms because the engagement layer
- * is structurally isolated: it may read tracking state to build a snapshot, but it writes nothing to
+ * It lives in `notify/nudge/` rather than beside the session alarms because `notify/nudge/` is
+ * structurally isolated: it may read tracking state to build a snapshot, but it writes nothing to
  * `sessions` and nothing in `service/` depends on it.
  */
 class NudgeAlarmReceiver : BroadcastReceiver() {

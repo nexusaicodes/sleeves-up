@@ -28,8 +28,7 @@ import kotlinx.coroutines.launch
  */
 class SessionRestoreReceiver : BroadcastReceiver() {
 
-    /** See [SessionAlarmReceiver] for why the `catch` is required rather than tidy. */
-    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    /** [SessionWatchdog.reviveIfNeeded] never throws; the `finally` below is for the re-arm. */
     override fun onReceive(context: Context, intent: Intent?) {
         // Both actions get the identical repair; the receiver only needs to know it was one of them.
         val action = intent?.action
@@ -41,8 +40,6 @@ class SessionRestoreReceiver : BroadcastReceiver() {
         container.applicationScope.launch {
             try {
                 container.sessionWatchdog.reviveIfNeeded()
-            } catch (_: Exception) {
-                // Absorbed: the hourly worker pass is the next chance at the same repair.
             } finally {
                 // In the `finally`, exactly as in NudgeAlarmReceiver: both actions that reach here
                 // cancel the package's alarms, and on a device the user is not opening this is the

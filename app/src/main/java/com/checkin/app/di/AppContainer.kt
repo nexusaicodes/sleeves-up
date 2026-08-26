@@ -96,7 +96,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
             strings = AndroidStringResolver(appContext),
             repository = repository,
             notifier = notifier,
-            log = nudgeSendLog,
+            log = { nudgeSendLog },
             timeSource = timeSource,
         )
     }

@@ -16,9 +16,9 @@ import org.junit.Test
 import java.time.LocalDate
 
 /**
- * The dispatcher's failure mode is silent: a nudge logged but never posted looks identical in the
- * data to one nobody acted on, so the conversion rate quietly drops with nothing to point at. These
- * pin the invariant that the log only ever records what the platform actually accepted.
+ * The dispatcher's failure mode is silent: a send recorded for a notification that never reached
+ * the tray spends one of the day's two slots, so the checkpoint that would have been shown is
+ * suppressed by a message nobody saw. These pin that the log only records what the platform took.
  *
  * Copy resolution sits behind [StringResolver], which is what keeps the dispatcher reachable from a
  * JVM-only suite — a `Context` for `getString` would put it out of reach.
@@ -42,7 +42,7 @@ class NudgeDispatcherTest {
         strings = StringResolver { "copy-$it" },
         repository = CheckInRepository(dao, clock),
         notifier = notifier,
-        log = log,
+        log = { log },
         timeSource = clock,
     )
 
@@ -59,10 +59,9 @@ class NudgeDispatcherTest {
     }
 
     /**
-     * POST_NOTIFICATIONS is revocable at any time. A refused post that still logged SHOWN would put
-     * an un-actionable event in the denominator and understate every conversion rate — and, since
-     * the daily cap counts from the log, would burn one of the day's slots on a notification nobody
-     * saw.
+     * POST_NOTIFICATIONS is revocable at any time, and the daily cap counts from the log — so a
+     * refused post that still recorded would burn one of the day's slots on a notification nobody
+     * saw, and the later checkpoint that slot belonged to would never fire.
      */
     @Test
     fun `a refused post records nothing`() = runTest {

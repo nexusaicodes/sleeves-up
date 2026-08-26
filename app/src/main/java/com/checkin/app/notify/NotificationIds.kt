@@ -32,7 +32,7 @@ package com.checkin.app.notify
  * and adds a row here. The three bases live in `NotificationFactory`'s private companion, so the
  * numbers are restated above rather than linked — this table is the readable copy.
  *
- * For how the three `notify` packages divide up, see the tree map in [Notifier].
+ * For how the two `notify` packages divide up, see the tree map in [Notifier].
  */
 object NotificationIds {
 
