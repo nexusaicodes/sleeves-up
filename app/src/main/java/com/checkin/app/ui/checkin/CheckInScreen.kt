@@ -2,14 +2,7 @@ package com.checkin.app.ui.checkin
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -48,16 +40,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -67,10 +55,9 @@ import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.service.SessionClock
 import com.checkin.app.ui.components.EmptyState
-import com.checkin.app.ui.components.animationsEnabled
+import com.checkin.app.ui.components.SessionIntervalRow
 import com.checkin.app.ui.theme.startActionColors
 import com.checkin.app.ui.theme.stopActionColors
-import com.checkin.app.ui.theme.tabularFigures
 import com.checkin.app.util.TimeFormat
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -352,126 +339,16 @@ private fun TodaySessions(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     items(sessions, key = { session -> session.id }) { session ->
-                        IntervalRow(session)
+                        SessionIntervalRow(session)
                     }
                 }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    sessions.forEach { session -> IntervalRow(session) }
+                    sessions.forEach { session -> SessionIntervalRow(session) }
                 }
             }
         }
     }
 }
-
-/**
- * One session as a ledger row — the clock range it covered, and what that came to.
- *
- * **Two columns and no label**, because a third would only paraphrase one of these. A word for where
- * in the day it fell ("Morning") restates the start time sitting beside it, and an ordinal restates
- * both the row order and the session count in the header directly above.
- *
- * **Nothing here ticks.** The open interval shows `ongoing` in place of an end time and a pulse in
- * place of a duration, because a second live clock beside the gauge is a number the user has to
- * reconcile with the one above it. The gauge is where elapsed time is read; this list is the shape
- * of the day.
- */
-@Composable
-private fun IntervalRow(session: CheckInSession) {
-    val running = session.stoppedAt == null
-    val color = if (running) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-    val range = "${TimeFormat.clock(session.startedAt)} - " +
-        if (running) {
-            stringResource(R.string.session_in_progress)
-        } else {
-            session.stoppedAt?.let { TimeFormat.clock(it) }.orEmpty()
-        }
-    // Spoken form of the row. An open one needs no join: the pulse carries no text, and `range`
-    // already ends in "ongoing".
-    val duration = session.duration?.takeUnless { running }?.let { TimeFormat.durationShort(it) }
-    val rowDescription = duration?.let { stringResource(R.string.cd_session_row, range, it) } ?: range
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp)
-            // One announcement per row: read as separate nodes it arrives as disconnected fragments.
-            .clearAndSetSemantics { contentDescription = rowDescription },
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = range,
-            // Tabular so the clock times stack into a column instead of shifting per digit width.
-            style = MaterialTheme.typography.bodySmall.tabularFigures(),
-            color = color,
-            maxLines = 1,
-            // The range is the column that absorbs the squeeze, so it states when it has been cut:
-            // at a large font scale it can outgrow what is left beside the duration, and a clipped
-            // clock time would end mid-character with nothing to say so.
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-        Box(
-            modifier = Modifier.width(DURATION_COLUMN),
-            contentAlignment = Alignment.CenterEnd,
-        ) {
-            if (running) {
-                OngoingPulse(color = color)
-            } else {
-                Text(
-                    text = duration.orEmpty(),
-                    style = MaterialTheme.typography.bodySmall.tabularFigures(),
-                    fontWeight = FontWeight.SemiBold,
-                    color = color,
-                    maxLines = 1,
-                )
-            }
-        }
-    }
-}
-
-/**
- * The open session's mark: three dots breathing in sequence, in the duration column's place.
- *
- * Drawn rather than an emoji glyph, which would vary by device font, ignore the theme colour and sit
- * on its own baseline. It holds still when the system animation scale is off — see
- * [animationsEnabled], which is where that reasoning lives now that a second surface honours it.
- */
-@Composable
-private fun OngoingPulse(color: Color) {
-    val animated = animationsEnabled()
-    val transition = rememberInfiniteTransition(label = "ongoing")
-
-    Row(horizontalArrangement = Arrangement.spacedBy(PULSE_DOT_GAP)) {
-        repeat(PULSE_DOTS) { dot ->
-            val alpha by transition.animateFloat(
-                initialValue = PULSE_MIN_ALPHA,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(PULSE_CYCLE_MS, delayMillis = dot * PULSE_STAGGER_MS),
-                    repeatMode = RepeatMode.Reverse,
-                ),
-                label = "ongoing-dot-$dot",
-            )
-            Box(
-                modifier = Modifier
-                    .size(PULSE_DOT_SIZE)
-                    .alpha(if (animated) alpha else 1f)
-                    .background(color, CircleShape),
-            )
-        }
-    }
-}
-
-/** Fits "12h 59m", so a settled duration and the pulse occupy the same slot. */
-private val DURATION_COLUMN = 56.dp
-
-private const val PULSE_DOTS = 3
-private const val PULSE_CYCLE_MS = 600
-private const val PULSE_STAGGER_MS = 200
-private const val PULSE_MIN_ALPHA = 0.25f
-private val PULSE_DOT_SIZE = 5.dp
-private val PULSE_DOT_GAP = 3.dp
 
 private fun formatDateHeader(dateKey: String): String = TimeFormat.dateKeyWithWeekday(dateKey).orEmpty()

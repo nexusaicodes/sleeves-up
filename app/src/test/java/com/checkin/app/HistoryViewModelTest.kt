@@ -43,9 +43,8 @@ class HistoryViewModelTest {
     }
 
     /**
-     * The record's very first day, counted the moment it is checked out of. This also pins the
-     * denominator the showed-up ring fills against: an unfinished first day leaves zero tracked
-     * days, and a ring measured against that must be empty rather than a division by zero.
+     * The record's very first day, counted the moment it is checked out of — and not before, which
+     * is what keeps an in-progress first day out of every window the screen draws.
      */
     @Test
     fun `the first day of the record counts as soon as it is checked out of`() = runTest {
@@ -57,16 +56,14 @@ class HistoryViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        // Checked in but never out: nothing is counted, and nothing divides by zero.
+        // Checked in but never out: nothing is counted anywhere.
         assertTrue(viewModel.uiState.value.summaries.isEmpty())
-        assertEquals(0, viewModel.uiState.value.trackedDaysInMonth)
         assertEquals(today.minusDays(1), viewModel.uiState.value.countedThrough)
 
         dao.seedCompleted(today.toString(), startedAt = 0L, durationMs = fourHours)
         advanceUntilIdle()
 
         assertEquals(today, viewModel.uiState.value.countedThrough)
-        assertEquals(1, viewModel.uiState.value.trackedDaysInMonth)
         assertEquals(fourHours, viewModel.uiState.value.summaries.getValue(today.toString()).totalDurationMs)
     }
 
@@ -85,21 +82,18 @@ class HistoryViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        assertEquals(2, viewModel.uiState.value.trackedDaysInMonth)
         assertEquals(2, viewModel.uiState.value.summaries.size)
 
         // An open session on today moves nothing: only completed ones aggregate.
         dao.seedOpen(today.toString(), startedAt = 0L)
         advanceUntilIdle()
-        assertEquals(2, viewModel.uiState.value.trackedDaysInMonth)
         assertEquals(today.minusDays(1), viewModel.uiState.value.countedThrough)
 
-        // Checking out extends the counted window and the month's own days at once.
+        // Checking out extends the counted window.
         dao.seedCompleted(today.toString(), startedAt = 0L, durationMs = 7 * hour)
         advanceUntilIdle()
 
         assertEquals(today, viewModel.uiState.value.countedThrough)
-        assertEquals(3, viewModel.uiState.value.trackedDaysInMonth)
         assertEquals(3, viewModel.uiState.value.summaries.size)
     }
 
@@ -115,7 +109,6 @@ class HistoryViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        assertEquals(1, viewModel.uiState.value.trackedDaysInMonth)
         assertEquals(fourHours, viewModel.uiState.value.summaries.getValue(start.toString()).totalDurationMs)
 
         time.day.value = LocalDate.of(2026, 6, 16)
@@ -124,63 +117,31 @@ class HistoryViewModelTest {
         assertEquals(LocalDate.of(2026, 6, 16), viewModel.uiState.value.today)
         // 06-15 is now a past day rather than a counted today, which must read identically.
         assertEquals(start, viewModel.uiState.value.countedThrough)
-        assertEquals(1, viewModel.uiState.value.trackedDaysInMonth)
         assertEquals(fourHours, viewModel.uiState.value.summaries.getValue(start.toString()).totalDurationMs)
-    }
-
-    /**
-     * Absent days stay in the tracked-day count, which is what the showed-up ring fills against —
-     * so a month shown up for once reads as one day of many rather than as a full ring.
-     */
-    @Test
-    fun `the tracked-day count keeps days with no sessions in it`() = runTest {
-        val dao = FakeCheckInSessionDao()
-        dao.seedCompleted("2026-06-01", startedAt = 0L, durationMs = 6 * 3_600_000L)
-        // 06-02 and 06-03 have no sessions at all.
-        val viewModel = buildViewModel(dao, FixedTime(0L, LocalDate.of(2026, 6, 4)))
-        backgroundScope.launch { viewModel.uiState.collect {} }
-        advanceUntilIdle()
-
-        // Window is 06-01..06-03 — three tracked days, one of them shown up for.
-        assertEquals(3, viewModel.uiState.value.trackedDaysInMonth)
-        assertEquals(1, viewModel.uiState.value.summaries.size)
     }
 
     @Test
     fun `on the last calendar day of the month an unfinished today still does not count`() = runTest {
         val dao = FakeCheckInSessionDao()
+        val today = LocalDate.of(2026, 6, 30)
         dao.seedOpen("2026-06-01")
-        // Today is June 30th (June's last day): monthEnd == today, so the in-progress day must not count.
-        val viewModel = buildViewModel(dao, FixedTime(0L, LocalDate.of(2026, 6, 30)))
+        // June 30th is June's last day, so the month cannot absorb the in-progress today by running
+        // past it — counting has to stop short of today on its own.
+        val viewModel = buildViewModel(dao, FixedTime(0L, today))
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        assertEquals(29, viewModel.uiState.value.trackedDaysInMonth)
-    }
-
-    /** An empty ring is the honest reading of a month with nothing behind it — not a crash. */
-    @Test
-    fun `a month before tracking began reports no tracked days`() = runTest {
-        val dao = FakeCheckInSessionDao()
-        dao.seedOpen("2026-06-01")
-        val viewModel = buildViewModel(dao, FixedTime(0L, LocalDate.of(2026, 6, 15)))
-        backgroundScope.launch { viewModel.uiState.collect {} }
-        advanceUntilIdle()
-
-        viewModel.previousMonth()
-        advanceUntilIdle()
-
-        assertEquals(0, viewModel.uiState.value.trackedDaysInMonth)
+        assertEquals(today.minusDays(1), viewModel.uiState.value.countedThrough)
         assertTrue(viewModel.uiState.value.summaries.isEmpty())
     }
 
     /**
-     * With nothing recorded there is no day the record covers, so no month reports tracked days —
-     * and none reports missed ones either. A start that could exist without the sessions behind it
-     * would shade a whole history of days the user had supposedly failed to show up for.
+     * With nothing recorded there is no day the record covers. A start that could exist without the
+     * sessions behind it would shade a whole history of days the user had supposedly failed to show
+     * up for — which is why it is read off the sessions rather than stored.
      */
     @Test
-    fun `a record with no sessions has no tracking start and no tracked days`() = runTest {
+    fun `a record with no sessions has no tracking start`() = runTest {
         val dao = FakeCheckInSessionDao()
         val viewModel = buildViewModel(dao, FixedTime(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
@@ -188,7 +149,6 @@ class HistoryViewModelTest {
 
         val state = viewModel.uiState.value
         assertNull(state.trackingStartDate)
-        assertEquals(0, state.trackedDaysInMonth)
         assertTrue(state.summaries.isEmpty())
     }
 
@@ -205,8 +165,6 @@ class HistoryViewModelTest {
         advanceUntilIdle()
 
         assertEquals(LocalDate.of(2026, 6, 12), viewModel.uiState.value.trackingStartDate)
-        // 06-12 .. 06-14: the tracked window opens at the first session, not at the month's start.
-        assertEquals(3, viewModel.uiState.value.trackedDaysInMonth)
     }
 
     @Test

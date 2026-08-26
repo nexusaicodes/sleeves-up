@@ -38,7 +38,6 @@ data class HistoryUiState(
     val summaries: Map<String, DailyAggregate> = emptyMap(),
     val selectedDateKey: String? = null,
     val selectedDaySessions: List<CheckInSession> = emptyList(),
-    val trackedDaysInMonth: Int = 0,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -90,7 +89,6 @@ class HistoryViewModel(private val repository: CheckInRepository, private val ti
                     summaries = summaries,
                     selectedDateKey = selectedKey,
                     selectedDaySessions = sessions,
-                    trackedDaysInMonth = trackedWindow(month, start, countedThrough)?.days() ?: 0,
                 )
             }
         }.stateIn(
@@ -121,27 +119,6 @@ class HistoryViewModel(private val repository: CheckInRepository, private val ti
 
     fun selectDay(dateKey: String) {
         selectedDateKey.value = if (selectedDateKey.value == dateKey) null else dateKey
-    }
-
-    /** An inclusive run of tracked, counted days. */
-    private data class TrackedWindow(val start: LocalDate, val end: LocalDate) {
-        fun days(): Int = (end.toEpochDay() - start.toEpochDay() + 1).toInt()
-    }
-
-    /**
-     * The tracked, counted days of [month], or null when it holds none — the denominator the
-     * showed-up ring fills against.
-     *
-     * A null [trackingStart] means nothing is recorded at all, so no month holds a tracked day —
-     * which is what keeps a record with no sessions from reporting days that were missed.
-     */
-    private fun trackedWindow(month: YearMonth, trackingStart: LocalDate?, countedThrough: LocalDate): TrackedWindow? {
-        if (trackingStart == null) return null
-        val effectiveStart = maxOf(trackingStart, month.atDay(1))
-        // A fully-past month ends at its own last day; the current one ends wherever counting
-        // currently reaches, which is today only once today has been checked out of.
-        val effectiveEnd = minOf(month.atEndOfMonth(), countedThrough)
-        return TrackedWindow(effectiveStart, effectiveEnd).takeIf { !effectiveStart.isAfter(effectiveEnd) }
     }
 
     companion object {

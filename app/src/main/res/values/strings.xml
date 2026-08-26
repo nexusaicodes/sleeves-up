@@ -144,10 +144,6 @@
     <string name="cd_day_worked">%1$d, %2$s worked</string>
     <string name="cd_expand_sessions">Show today\'s sessions</string>
     <string name="cd_collapse_sessions">Hide today\'s sessions</string>
-    <string name="cd_month_split">Month split: %1$s showed up, %2$s missed</string>
-    <!-- The tiles beside the ring measure nothing, so each states its label and its figure and stops
-         there. Nothing here may name an all-time baseline: that comparison is what was removed. -->
-    <string name="cd_month_stat">%1$s this month: %2$s</string>
     <string name="cd_alltime_split">All-time split: %1$s showed up, %2$s missed</string>
     <!-- Three counts, so none can be a plural's own quantity: each is worded through a plural first
          and arrives here as a phrase. -->
@@ -161,21 +157,18 @@
     <!-- History Screen -->
     <string name="previous_month">Previous month</string>
     <string name="next_month">Next month</string>
-    <string name="day_detail_title">Sessions on %1$s</string>
+    <!-- The day the user tapped, and what it held: a count and the sum of the rows printed
+         directly beneath it. History states what was recorded and derives nothing — the averages
+         and ratios that used to sit here live on Reports. -->
+    <string name="day_sessions_summary">%1$s · %2$s</string>
+    <!-- A tracked day with nothing on it, and a day that has not happened yet. States the absence
+         without judging it, in the same register as the calendar's untinted cell. -->
+    <string name="empty_day_sessions_message">No sessions recorded on this day.</string>
+
+    <!-- Reports Screen -->
     <string name="stat_showed_up">Showed up</string>
     <string name="stat_missed">Missed</string>
     <string name="stat_days_label">days tracked</string>
-    <string name="stat_avg_per_day">Avg / day</string>
-    <string name="stat_sessions_per_day">Sessions / day</string>
-    <!-- The one baseline left in the app, and it is the month itself — a fixed number of days the
-         calendar sets. **Never an all-time figure**: a ring filled against the user's own best
-         re-renders every ordinary month as a partial version of their good one. -->
-    <plurals name="stat_baseline_of_days">
-        <item quantity="one">of %1$d day</item>
-        <item quantity="other">of %1$d days</item>
-    </plurals>
-
-    <!-- Reports Screen -->
     <string name="overall_stats_title">Overall Stats</string>
     <string name="stat_tracking_since">Tracking since</string>
     <!-- Every day in the window, including days with no sessions — not "days I recorded". -->

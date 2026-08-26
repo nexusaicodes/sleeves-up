@@ -36,7 +36,7 @@ a bar.
 | Tab | What it shows |
 | --- | --- |
 | **Check In** | Live timer and the check-in/out button, with today's sessions a tap away |
-| **History** | Monthly calendar marking every day you showed up, plus the month's days shown up and its averages |
+| **History** | Monthly calendar marking every day you showed up; tap any day to see that day's sessions. Raw record, no stats — those live in Reports |
 | **Reports** | Daily-hours and monthly charts, the all-time split, when your sessions start, how many you run a day, and CSV export |
 | **Settings** | A shortcut into Android's notification settings — where every one of the app's notifications is switched on and off — and About (privacy policy, feedback, open-source licenses) |
 

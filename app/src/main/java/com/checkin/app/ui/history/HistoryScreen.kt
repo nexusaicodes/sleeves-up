@@ -3,6 +3,7 @@ package com.checkin.app.ui.history
 import android.app.Activity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -11,13 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Event
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -42,8 +41,8 @@ import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.EmptyState
+import com.checkin.app.ui.components.SessionIntervalRow
 import com.checkin.app.ui.history.components.CalendarGrid
-import com.checkin.app.ui.history.components.MonthSummaryCard
 import com.checkin.app.util.TimeFormat
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -67,8 +66,6 @@ fun HistoryScreen(
     val widthSizeClass = calculateWindowSizeClass(LocalContext.current as Activity).widthSizeClass
     val topPad = innerPadding.calculateTopPadding() + 16.dp
     val bottomPad = innerPadding.calculateBottomPadding() + 8.dp
-    val hasDetail = uiState.selectedDateKey != null &&
-        uiState.selectedDaySessions.any { it.stoppedAt != null }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         // Cells are sized from what the grid can actually have: the real viewport (not the physical
@@ -77,7 +74,7 @@ fun HistoryScreen(
         val available = maxHeight - topPad - bottomPad
         val textGrowth = TEXT_CONTENT_HEIGHT * (LocalDensity.current.fontScale - 1f).coerceAtLeast(0f)
         val gridBudget = available - MONTH_SELECTOR_HEIGHT - WEEKDAY_HEADER_HEIGHT -
-            SUMMARY_CARD_HEIGHT - SECTION_SPACING * 2 - textGrowth
+            DETAIL_SLOT_HEIGHT - SECTION_SPACING * 2 - textGrowth
         // The floor wins over fitting: 48dp is the minimum tap target, so a 6-row month on a small
         // screen scrolls a little rather than shrinking its days below it.
         val cellHeight = (gridBudget / weeksIn(uiState.currentMonth))
@@ -88,7 +85,6 @@ fun HistoryScreen(
             viewModel = viewModel,
             widthSizeClass = widthSizeClass,
             cellHeight = cellHeight,
-            hasDetail = hasDetail,
             topPad = topPad,
             bottomPad = bottomPad,
         )
@@ -101,12 +97,11 @@ private fun HistoryContent(
     viewModel: HistoryViewModel,
     widthSizeClass: WindowWidthSizeClass,
     cellHeight: Dp,
-    hasDetail: Boolean,
     topPad: Dp,
     bottomPad: Dp,
 ) {
     if (widthSizeClass == WindowWidthSizeClass.Expanded) {
-        // Two-pane: calendar + summary on the left, the selected day's detail on the right.
+        // Two-pane: the calendar on the left, the selected day's sessions on the right.
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -119,24 +114,13 @@ private fun HistoryContent(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 calendarItems(uiState, viewModel, cellHeight)
-                monthSummaryItem(uiState)
             }
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 contentPadding = PaddingValues(top = topPad, bottom = bottomPad),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (hasDetail) {
-                    dayDetailItems(uiState)
-                } else {
-                    item {
-                        EmptyState(
-                            icon = Icons.Default.Event,
-                            title = stringResource(R.string.empty_day_detail_title),
-                            message = stringResource(R.string.empty_day_detail_message),
-                        )
-                    }
-                }
+                daySlotItems(uiState)
             }
         }
     } else {
@@ -147,9 +131,7 @@ private fun HistoryContent(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 calendarItems(uiState, viewModel, cellHeight)
-                // Detail takes the summary's slot rather than appending below it, so selecting a day
-                // never turns this into a scrolling screen.
-                if (hasDetail) dayDetailItems(uiState) else monthSummaryItem(uiState)
+                daySlotItems(uiState)
             }
         }
     }
@@ -177,16 +159,6 @@ private fun LazyListScope.calendarItems(uiState: HistoryUiState, viewModel: Hist
     }
 }
 
-private fun LazyListScope.monthSummaryItem(uiState: HistoryUiState) {
-    item {
-        MonthSummaryCard(
-            summaries = uiState.summaries,
-            trackedDaysInMonth = uiState.trackedDaysInMonth,
-            formatDuration = TimeFormat::durationShort,
-        )
-    }
-}
-
 private const val DAYS_PER_WEEK = 7
 
 /** Rendered week rows for [month] — the same 4-6 range the grid lays out. */
@@ -209,39 +181,100 @@ private val MONTH_SELECTOR_HEIGHT = 48.dp
 private val WEEKDAY_HEADER_HEIGHT = 20.dp
 
 /**
- * The summary card: 16dp padding top and bottom, a 104dp hero ring over two label lines, 12dp, then a
- * row of 76dp frame rings over one label line — 32 + 142 + 12 + 98, rounded up for margin.
+ * The day-detail slot, sized to whichever of its states is tallest.
  *
- * It is a constant rather than a measurement because the grid above has to be sized before the card
- * below it is laid out. **Keep it in step with `MonthSummaryCard`** — over-stating it costs the grid
- * height it could have used, and under-stating it pushes the card off the bottom of the viewport.
+ * That is the placeholder rather than the sessions: `EmptyState` is 24dp of padding at each end, a
+ * 48dp icon, 12dp, a title line, 4dp and a two-line message — around 176dp, against roughly 140dp
+ * for a date, a summary line and three ledger rows.
+ *
+ * It is a constant rather than a measurement because the grid above has to be sized before the slot
+ * below it is laid out. **Keep it in step with [daySlotItems]** — over-stating it costs the grid height
+ * it could have used, and under-stating it pushes the slot off the bottom of the viewport.
  */
-private val SUMMARY_CARD_HEIGHT = 288.dp
+private val DETAIL_SLOT_HEIGHT = 180.dp
 private val SECTION_SPACING = 16.dp
 
 /**
- * The part of the above that grows with the user's font setting: three label lines plus both ring
- * diameters, which are scaled by `fontScale` so the `sp` value inside them keeps fitting.
+ * The part of the above that grows with the user's font setting: the slot is text all the way down
+ * now — a title, a two-line message, or a date, a summary line and the ledger rows.
  *
- * Deliberately generous. The rings stop growing at their caps while this stays linear, so the figure
- * cannot be right at every scale, and the two errors are not symmetric: over-stating only shrinks the
- * grid, which the 48dp cell floor absorbs by scrolling, whereas under-stating clips the card.
+ * Deliberately generous, and the two errors are not symmetric: over-stating only shrinks the grid,
+ * which the 48dp cell floor absorbs by scrolling, whereas under-stating clips the slot.
  */
-private val TEXT_CONTENT_HEIGHT = 150.dp
+private val TEXT_CONTENT_HEIGHT = 110.dp
 
-private fun LazyListScope.dayDetailItems(uiState: HistoryUiState) {
-    item {
-        // `selectedDateKey` is the internal ISO key; the heading reads it back as a date.
-        TimeFormat.dateKeyWithWeekday(uiState.selectedDateKey)?.let { date ->
+/**
+ * The selected day, as the rows the record actually holds.
+ *
+ * Three states, and the middle one is the reason this is a slot rather than a conditional: every day
+ * in the grid is tappable, including one with nothing on it and one in the future. Falling back to
+ * something else there — as this screen used to, to a month summary — makes the tap read as though
+ * it did nothing at all.
+ *
+ * There is no aggregation here beyond the day's own total, which is the sum of the rows printed
+ * directly beneath it. History states what was recorded; the deriving belongs on Reports.
+ */
+private fun LazyListScope.daySlotItems(uiState: HistoryUiState) {
+    val dateKey = uiState.selectedDateKey
+    val sessions = uiState.selectedDaySessions
+
+    when {
+        dateKey == null -> item {
+            EmptyState(
+                icon = Icons.Default.Event,
+                title = stringResource(R.string.empty_day_detail_title),
+                message = stringResource(R.string.empty_day_detail_message),
+            )
+        }
+
+        sessions.isEmpty() -> item {
+            EmptyState(
+                icon = Icons.Default.Event,
+                // Names the day rather than restating "no day selected" — the tap did land.
+                title = TimeFormat.dateKeyWithWeekday(dateKey).orEmpty(),
+                message = stringResource(R.string.empty_day_sessions_message),
+            )
+        }
+
+        // Header and rows are **one** item, not one per session: the enclosing LazyColumn spaces
+        // its items for cards, and a ledger set at that pitch reads as a list of unrelated lines
+        // rather than as the shape of a day. The rows carry their own 4dp, as they do on Check-In.
+        else -> item {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                DayHeader(dateKey, sessions)
+                // The open session is wanted: History would otherwise render today as incomplete
+                // against the Check-In screen, with nothing on the tab to explain the difference.
+                sessions.forEach { session -> SessionIntervalRow(session) }
+            }
+        }
+    }
+}
+
+/**
+ * The day, and what it held.
+ *
+ * The total sums only the completed intervals — an open one carries no `duration` — which is the
+ * same figure the rows below print, added up. Nothing is measured against it.
+ */
+@Composable
+private fun DayHeader(dateKey: String, sessions: List<CheckInSession>) {
+    Column(modifier = Modifier.padding(bottom = 4.dp)) {
+        TimeFormat.dateKeyWithWeekday(dateKey)?.let { date ->
             Text(
-                text = stringResource(R.string.day_detail_title, date),
+                text = date,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
         }
-    }
-    items(uiState.selectedDaySessions.filter { it.stoppedAt != null }, key = { it.id }) { session ->
-        DayDetailRow(session, TimeFormat::durationShort)
+        Text(
+            text = stringResource(
+                R.string.day_sessions_summary,
+                pluralStringResource(R.plurals.sessions_count, sessions.size, sessions.size),
+                TimeFormat.durationShort(sessions.sumOf { it.duration ?: 0L }),
+            ),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -267,34 +300,6 @@ private fun MonthSelector(currentMonth: YearMonth, onPrevious: () -> Unit, onNex
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = stringResource(R.string.next_month),
-            )
-        }
-    }
-}
-
-@Composable
-private fun DayDetailRow(session: CheckInSession, formatDuration: (Long) -> String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "${TimeFormat.clock(session.startedAt)} - ${session.stoppedAt?.let {
-                    TimeFormat.clock(it)
-                } ?: ""}",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                text = session.duration?.let { formatDuration(it) } ?: "",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
             )
         }
     }
