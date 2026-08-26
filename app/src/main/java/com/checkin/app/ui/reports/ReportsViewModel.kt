@@ -34,12 +34,6 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
-/** A day's worked time, for the daily-hours chart. */
-data class DayPoint(val date: LocalDate, val workedMs: Long)
-
-/** A month's worked time, for the monthly-totals chart. */
-data class MonthPoint(val month: YearMonth, val workedMs: Long)
-
 data class ReportsUiState(
     val loading: Boolean = true,
     /** What span every figure below describes. The selector sets it; nothing else may narrow it. */

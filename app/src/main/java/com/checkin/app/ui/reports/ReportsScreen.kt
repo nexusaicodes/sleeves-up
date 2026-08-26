@@ -1,8 +1,6 @@
 package com.checkin.app.ui.reports
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,11 +8,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -22,8 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,9 +43,13 @@ import com.checkin.app.R
 import com.checkin.app.data.SessionBand
 import com.checkin.app.data.StartBucket
 import com.checkin.app.platform.ExportResult
+import com.checkin.app.ui.components.AxisLabel
+import com.checkin.app.ui.components.ChartCard
 import com.checkin.app.ui.components.EmptyState
+import com.checkin.app.ui.components.LegendRow
 import com.checkin.app.ui.components.LocalSnackbarHostState
 import com.checkin.app.ui.components.SectionDivider
+import com.checkin.app.ui.components.StatsRow
 import com.checkin.app.ui.components.charts.BarChart
 import com.checkin.app.ui.components.charts.DonutChart
 import com.checkin.app.ui.components.charts.DonutChartDefaults
@@ -61,7 +59,7 @@ import com.checkin.app.util.TimeFormat
 import java.time.format.TextStyle
 import java.util.Locale
 
-private const val MS_PER_HOUR = 3_600_000f
+private const val MILLIS_PER_HOUR = 3_600_000f
 
 /**
  * The Reports tab: every figure, chart and the CSV export read the one window that
@@ -285,7 +283,7 @@ private fun ScopeStatsCard(uiState: ReportsUiState) {
 
 @Composable
 private fun DailyHoursCard(uiState: ReportsUiState) {
-    val hours = uiState.dailySeries.map { it.workedMs / MS_PER_HOUR }
+    val hours = uiState.dailySeries.map { it.workedMs / MILLIS_PER_HOUR }
     // The chart's own mean, not a configured bar: it shows where the window sits relative to itself
     // rather than against a target a day could fall short of.
     val average = if (hours.isEmpty()) 0f else hours.sum() / hours.size
@@ -371,7 +369,7 @@ private fun SplitCard(uiState: ReportsUiState) {
  */
 @Composable
 private fun MonthlyHoursCard(uiState: ReportsUiState) {
-    val hours = uiState.monthlySeries.map { it.workedMs / MS_PER_HOUR }
+    val hours = uiState.monthlySeries.map { it.workedMs / MILLIS_PER_HOUR }
     // Asked once for the series rather than per label, so every bar in one chart is formatted alike.
     val multiYear = uiState.monthlySeries.map { it.month.year }.distinct().size > 1
     val label = { point: MonthPoint -> TimeFormat.axisMonth(point.month, multiYear) }
@@ -549,93 +547,5 @@ private fun ExportCard(scope: ReportScope, onExport: () -> Unit) {
             Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(R.string.export_scope, scopeLabel(scope, inline = true)))
         }
-    }
-}
-
-@Composable
-private fun ChartCard(title: String, subtitle: String? = null, content: @Composable () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            content()
-        }
-    }
-}
-
-@Composable
-private fun LegendRow(color: Color, label: String, count: Int) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.size(10.dp).background(color, CircleShape))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(text = "$count", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-private fun AxisLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
-
-/**
- * One label-value line of the stats table.
- *
- * **The label is the half that gives way, never the value.** Under a plain `SpaceBetween` both
- * children compete for the width and the label wins, because it is measured first — at a 2x font
- * scale "Sessions per day showed up" left its value wrapping to three lines of one character each,
- * so "2.2" rendered as a vertical `2` `.` `2`. A wrapped number stops reading as a number at all,
- * where a wrapped label is merely a label on two lines.
- *
- * The value is therefore unweighted (it is measured first and takes what it needs, on one line) and
- * the label is weighted (it takes the remainder and wraps into it). Same order of sacrifice as the
- * session ledger row, for the same reason.
- */
-@Composable
-private fun StatsRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-        )
     }
 }

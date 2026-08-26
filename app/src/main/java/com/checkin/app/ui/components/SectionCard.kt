@@ -14,14 +14,25 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
  * A titled block on a settings-style list. The heading is a plain [Text] rather than a top app bar
  * title — the nav scaffold owns that — so these stack inside a scrolling list.
+ *
+ * [contentSpacing] is the gap under the heading. It is a parameter rather than a constant because a
+ * card holding a chart wants more air under its title than a card holding rows does — see
+ * [ChartCard], which is this card with that one value fixed.
  */
 @Composable
-fun SectionCard(title: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+fun SectionCard(
+    title: String,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    contentSpacing: Dp = 12.dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -34,11 +45,33 @@ fun SectionCard(title: String, modifier: Modifier = Modifier, content: @Composab
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(modifier = Modifier.height(contentSpacing))
             content()
         }
     }
 }
+
+/**
+ * A [SectionCard] holding a chart: the same card, with the wider gap under the heading that a plot
+ * needs and an optional [subtitle] for the span or unit the chart covers.
+ *
+ * Its own name rather than a spacing argument at seven call sites, and a delegation rather than a
+ * second Card — the two were separate copies that had already drifted 4dp apart, which is how a card
+ * comes to look slightly different depending on which tab you meet it on.
+ */
+@Composable
+fun ChartCard(title: String, subtitle: String? = null, content: @Composable ColumnScope.() -> Unit) {
+    SectionCard(title = title, subtitle = subtitle, contentSpacing = CHART_CONTENT_SPACING, content = content)
+}
+
+private val CHART_CONTENT_SPACING = 16.dp
 
 /**
  * A rule between groups of rows inside a [SectionCard], with its own spacing.
