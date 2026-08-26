@@ -53,7 +53,7 @@ interface CheckInSessionDao {
                COUNT(*) AS sessionCount,
                MIN(started_at) AS firstCheckIn,
                MAX(stopped_at) AS lastCheckOut,
-               COALESCE(SUM(CASE WHEN closed_by = 'day_boundary' THEN 1 ELSE 0 END), 0) AS autoClosedSessions,
+               COALESCE(SUM(CASE WHEN closed_by = 'day_boundary' THEN 1 ELSE 0 END), 0) AS dayBoundaryCheckOuts,
                COALESCE(SUM(CASE WHEN closed_by = 'in_app' THEN 1 ELSE 0 END), 0) AS inAppCheckOuts,
                COALESCE(SUM(CASE WHEN closed_by = 'timer_notification' THEN 1 ELSE 0 END), 0)
                    AS timerNotificationCheckOuts,
@@ -75,7 +75,7 @@ interface CheckInSessionDao {
                COUNT(*) AS sessionCount,
                MIN(started_at) AS firstCheckIn,
                MAX(stopped_at) AS lastCheckOut,
-               COALESCE(SUM(CASE WHEN closed_by = 'day_boundary' THEN 1 ELSE 0 END), 0) AS autoClosedSessions,
+               COALESCE(SUM(CASE WHEN closed_by = 'day_boundary' THEN 1 ELSE 0 END), 0) AS dayBoundaryCheckOuts,
                COALESCE(SUM(CASE WHEN closed_by = 'in_app' THEN 1 ELSE 0 END), 0) AS inAppCheckOuts,
                COALESCE(SUM(CASE WHEN closed_by = 'timer_notification' THEN 1 ELSE 0 END), 0)
                    AS timerNotificationCheckOuts,

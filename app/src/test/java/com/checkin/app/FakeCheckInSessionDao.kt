@@ -89,7 +89,7 @@ class FakeCheckInSessionDao : CheckInSessionDao {
                 sessionCount = list.size,
                 firstCheckIn = list.minOf { it.startedAt },
                 lastCheckOut = list.maxOf { it.stoppedAt ?: 0L },
-                autoClosedSessions = list.count { it.closedBy == ClosedBy.DAY_BOUNDARY },
+                dayBoundaryCheckOuts = list.count { it.closedBy == ClosedBy.DAY_BOUNDARY },
                 inAppCheckOuts = list.count { it.closedBy == ClosedBy.IN_APP },
                 timerNotificationCheckOuts = list.count { it.closedBy == ClosedBy.TIMER_NOTIFICATION },
                 reminderNotificationCheckOuts = list.count { it.closedBy == ClosedBy.REMINDER_NOTIFICATION },

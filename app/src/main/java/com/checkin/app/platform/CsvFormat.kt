@@ -27,19 +27,17 @@ private const val MILLIS_PER_HOUR = 3_600_000.0
  *
  * There is deliberately no Status column. Any wording for one would be a verdict on the day, and this
  * is the one artifact that leaves the device — zero hours and zero sessions already say a day held
- * nothing, without grading it. `Auto Closed Sessions` is not that column and must not become it: it
- * counts sessions the midnight alarm closed because the user forgot to, which is a fact about what
- * happened to a *session*, not an assessment of the *day*. It is a per-day count because these rows
- * are days; a day worked in three blocks, two of which the user closed themselves, reports 1.
+ * nothing, without grading it. The last four columns are not that column and must not become it:
+ * they count what ended each of the day's sessions, which is a fact about what happened to a
+ * *session*, not an assessment of the *day*. They are per-day counts because these rows are days; a
+ * day worked in three blocks, two of which the user closed themselves, reports 1 and 2.
  *
- * The three columns after it complete that fact rather than reinterpreting it: they say *which*
- * surface each of the user's own check-outs came from. `Auto Closed Sessions` keeps its name and its
- * meaning — it is the [ClosedBy.DAY_BOUNDARY][com.checkin.app.data.local.ClosedBy.DAY_BOUNDARY]
- * count — precisely so nothing already scripted against the file has to change; the generalisation
- * goes on the end, which is the only place it may go. The four sum to `Session Count`.
+ * There is one column per [ClosedBy][com.checkin.app.data.local.ClosedBy] value and each is named
+ * for the value it counts, so a fifth ending means a tenth column rather than a re-reading of these.
+ * The four sum to `Session Count`.
  */
 private const val CSV_HEADER = "Date,First Check In,Last Check Out,Total Hours,Session Count," +
-    "Auto Closed Sessions,In App Check Outs,Timer Notification Check Outs," +
+    "Day Boundary Check Outs,In App Check Outs,Timer Notification Check Outs," +
     "Reminder Notification Check Outs\n"
 
 /**
@@ -55,11 +53,11 @@ internal fun csvRow(key: String, summary: DailyAggregate?): String {
         ?.let { String.format(Locale.US, "%.2f", it.totalDurationMs / MILLIS_PER_HOUR) }
         ?: "0.00"
     val count = summary?.sessionCount?.toString() ?: "0"
-    val autoClosed = summary?.autoClosedSessions?.toString() ?: "0"
+    val dayBoundary = summary?.dayBoundaryCheckOuts?.toString() ?: "0"
     val inApp = summary?.inAppCheckOuts?.toString() ?: "0"
     val fromTimer = summary?.timerNotificationCheckOuts?.toString() ?: "0"
     val fromReminder = summary?.reminderNotificationCheckOuts?.toString() ?: "0"
-    return "$key,$firstIn,$lastOut,$totalHrs,$count,$autoClosed,$inApp,$fromTimer,$fromReminder\n"
+    return "$key,$firstIn,$lastOut,$totalHrs,$count,$dayBoundary,$inApp,$fromTimer,$fromReminder\n"
 }
 
 /**

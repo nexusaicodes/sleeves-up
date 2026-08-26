@@ -18,7 +18,7 @@ class CsvFormatTest {
     @Test
     fun `the header is the agreed column order`() {
         assertEquals(
-            "Date,First Check In,Last Check Out,Total Hours,Session Count,Auto Closed Sessions," +
+            "Date,First Check In,Last Check Out,Total Hours,Session Count,Day Boundary Check Outs," +
                 "In App Check Outs,Timer Notification Check Outs,Reminder Notification Check Outs\n",
             csvHeader(),
         )
@@ -32,7 +32,7 @@ class CsvFormatTest {
             sessionCount = 3,
             firstCheckIn = 0L,
             lastCheckOut = 0L,
-            autoClosedSessions = 1,
+            dayBoundaryCheckOuts = 1,
             inAppCheckOuts = 1,
             timerNotificationCheckOuts = 1,
             reminderNotificationCheckOuts = 0,

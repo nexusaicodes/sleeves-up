@@ -21,7 +21,7 @@ data class DailyAggregate(
      * closed from the screen and one by midnight, reports 2 and 1. They sum to [sessionCount], since
      * only completed sessions aggregate and every completed session carries an ending.
      */
-    val autoClosedSessions: Int,
+    val dayBoundaryCheckOuts: Int,
     val inAppCheckOuts: Int,
     val timerNotificationCheckOuts: Int,
     val reminderNotificationCheckOuts: Int,

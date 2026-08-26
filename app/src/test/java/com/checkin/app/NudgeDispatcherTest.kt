@@ -42,7 +42,7 @@ class NudgeDispatcherTest {
         strings = StringResolver { "copy-$it" },
         repository = CheckInRepository(dao, clock),
         notifier = notifier,
-        log = { log },
+        sendLog = { log },
         timeSource = clock,
     )
 

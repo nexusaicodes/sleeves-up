@@ -34,7 +34,7 @@ class NudgeDispatcher(
      * A provider, not the ledger: [retireAll] is a notification-only path called from both check-in
      * writers, and constructing this class must not build a database it will never read.
      */
-    private val log: () -> NudgeSendLog,
+    private val sendLog: () -> NudgeSendLog,
     private val timeSource: TimeSource,
 ) : PostedNudges {
 
@@ -90,7 +90,7 @@ class NudgeDispatcher(
         // tray would spend a slot in the daily cap on a nudge the user was never shown.
         if (!posted) return null
 
-        log().record(nudge, nowMillis)
+        sendLog().record(nudge, nowMillis)
         return nudge
     }
 
@@ -102,7 +102,7 @@ class NudgeDispatcher(
         val startOfDay = today.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         // One query answers all three frequency rules, so they cannot disagree about where the day
         // started. This is the ledger's only read, and the only reason it exists.
-        val sent = log().sentSince(startOfDay)
+        val sent = sendLog().sentSince(startOfDay)
 
         return NudgeSnapshot(
             nowMillis = now,
