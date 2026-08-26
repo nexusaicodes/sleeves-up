@@ -9,16 +9,11 @@ import androidx.room.TypeConverters
 /**
  * The sessions database, at **version 1 with no migrations, deliberately**.
  *
- * It reached version 7 across five migrations that added and then removed the presence-pause
- * columns, dropped two vestigial selfie columns, and generalised an auto-closed boolean into
- * [ClosedBy]. All of it is collapsed into the schema [CheckInSession] declares today. The reason is
- * that this app has no install base to carry: v1.1 and v2.0 both reached Play at effectively zero
- * installs, and no device holds session history anyone wants. A migration that has already run
- * everywhere it can reach, on a schema nobody else has, is history rather than code.
+ * Version 1 here means *collapsed*, not *new*: the schema [CheckInSession] declares is the settled
+ * end of a migration chain, flattened while the Play install base was still effectively zero.
  *
- * **This is a one-time exemption and it is now spent.** Every future schema change needs a real
- * migration, because from here the population is no longer zero — and two things are worth knowing
- * before writing the first one:
+ * **That was a one-time exemption and it is spent.** Every future schema change needs a real
+ * migration — and two things are worth knowing before writing the first one:
  *
  * - **`ALTER TABLE ... DROP COLUMN` is not available.** SQLite learned it in 3.35, which shipped in
  *   Android 14; `minSdk` is 33, and API 33 ships **3.32.2**, where it is a bare syntax error —
@@ -34,9 +29,9 @@ import androidx.room.TypeConverters
  * There is **no `androidTest` source set**, so no gate in this repo can catch a broken migration:
  * verify one by installing the previous build, seeding it, and installing over the top.
  *
- * [fallbackToDestructiveMigration] is what makes the collapse land rather than crash on a
- * development device still holding a version-7 file: it has nowhere to migrate from, so it starts
- * over. It stays afterwards as the same backstop it always was.
+ * [fallbackToDestructiveMigration] is the backstop, and it wipes rather than crashes when a file's
+ * version has no path to this one. That is what a development device carrying an older schema
+ * wants and what a user's device never does, so it is no substitute for the migration above it.
  */
 @Database(entities = [CheckInSession::class], version = 1, exportSchema = false)
 @TypeConverters(ClosedByConverter::class)
