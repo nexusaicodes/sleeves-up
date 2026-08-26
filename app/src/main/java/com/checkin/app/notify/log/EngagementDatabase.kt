@@ -9,9 +9,13 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Engagement analytics live in their own database, deliberately separate from the sessions DB
- * (`_app`). Nothing here is user data the app promises to keep: an experiment redesign can drop and
- * recreate this file without migrating, and no schema change here can put the user's session
- * records at risk or widen what the CSV export covers.
+ * (`_app`). No schema change here can put the user's session records at risk or widen what the CSV
+ * export covers, which is the whole reason for the split.
+ *
+ * It is **not** true that nothing here matters. Alongside the nudge rows this file holds
+ * [EngagementSource.SERVICE] rows — see [ServiceEventType], whose own doc calls them the only trace
+ * a session that silently loses its foreground service leaves behind. Dropping this database
+ * discards that record too, not just an experiment's data.
  */
 @Database(entities = [EngagementEvent::class], version = 2, exportSchema = false)
 abstract class EngagementDatabase : RoomDatabase() {
@@ -45,8 +49,10 @@ abstract class EngagementDatabase : RoomDatabase() {
                 "engagement.db",
             )
                 .addMigrations(MIGRATION_1_2)
-                // Backstop only. Safe here in a way it would not be for `_app`: losing analytics
-                // history costs an experiment's data, not a user's session record.
+                // Backstop only. Safe here in a way it would not be for `_app` — no session record
+                // is at risk — but not free: it also drops the SERVICE rows that are the only trace
+                // of a foreground service lost to a kill. Prefer a written migration, as
+                // MIGRATION_1_2 is.
                 .fallbackToDestructiveMigration()
                 .build()
             cached = instance

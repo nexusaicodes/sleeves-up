@@ -25,9 +25,12 @@ import androidx.compose.ui.unit.dp
  * and its colour are the only things carrying that, and neither reaches a screen reader. It goes on
  * the arc rather than the whole ring so [content] keeps announcing itself.
  *
- * A [progress] of zero draws the track alone, which callers also use deliberately as a **frame** — a
- * ring around a figure that measures nothing. Those state the figure instead, and pass a thinner
- * stroke and a neutral colour so it does not read as a gauge stuck at zero.
+ * **This ring measures nothing, and nothing in this app may make it.** Its one caller is
+ * `TimerGauge`, whose sweep is motion rather than measurement. The ring fills that once graded a
+ * figure against a baseline — the month's days-shown-up ratio, the longest day, the best run — are
+ * deleted, and a fill drawn against the user's own best ratchets: beat it once and every ordinary
+ * day behind it re-renders as a partial version of that one. Presence may be measured; hours may
+ * not. See the no-grading rule in CLAUDE.md before adding a second caller.
  */
 @Composable
 fun CircularProgressRing(

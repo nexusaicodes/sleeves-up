@@ -11,8 +11,11 @@ import com.checkin.app.notify.engagement.Nudge
 data class NudgeShowing(val key: String, val atMillis: Long)
 
 /**
- * Records what each notification did, so nudges can be judged on whether they actually produce
- * check-ins rather than on whether they were sent.
+ * The write side of the engagement database. Three kinds of row, kept apart by
+ * [EngagementSource] rather than by table: what each **nudge** did (so nudges can be judged on
+ * whether they actually produce check-ins rather than on whether they were sent), what the
+ * **session reminder** did, and **service and alarm lifecycle** — see [recordService], which is not
+ * a notification at all and must stay invisible to the cap and to attribution.
  *
  * Conversion is attributed in Kotlin rather than SQL because the sessions table lives in a different
  * database — the deliberate cost of keeping engagement data isolated from session data.

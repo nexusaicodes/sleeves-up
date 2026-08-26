@@ -62,7 +62,7 @@ export JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 Run a single test class:
 
 ```bash
-./gradlew :app:testDebugUnitTest --tests "com.checkin.app.DeficitCalculatorTest"
+./gradlew :app:testDebugUnitTest --tests "com.checkin.app.ConsistencyStatsTest"
 ```
 
 ## Static analysis

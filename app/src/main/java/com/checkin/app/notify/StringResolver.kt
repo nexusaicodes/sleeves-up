@@ -5,10 +5,12 @@ import android.content.Context
 /**
  * Resolves a string resource id to text.
  *
- * The engagement layer holds its copy as resource ids so it stays localizable; this seam is what
- * keeps reading them from dragging a `Context` into
- * [com.checkin.app.notify.engagement.NudgeDispatcher], which is the one class in that layer with a
- * silent failure mode and so the one that most needs JVM tests.
+ * Notification copy is held as resource ids so it stays localizable; this seam is what keeps
+ * reading them from dragging a `Context` into the classes that decide what to post, so those stay
+ * JVM-testable. Two consumers, in different packages:
+ * [com.checkin.app.notify.engagement.NudgeDispatcher] and
+ * [com.checkin.app.service.SessionReminderRunner]. It lives here rather than in `platform/` because
+ * both of them resolve notification copy and nothing else does.
  */
 fun interface StringResolver {
     fun get(resId: Int): String

@@ -60,10 +60,16 @@ data class OpenSourceLibrary(
  * encoders off the classpath with it, and those carried the only non-open-source terms the app ever
  * redistributed.
  *
- * Keeping this by hand means it can drift when a dependency is added. `OpenSourceLibrariesTest`
- * guards the shape of the list, but it cannot see the Gradle graph — regenerate the group list with
- * `./gradlew :app:dependencies --configuration releaseRuntimeClasspath` and re-check this file when
- * `app/build.gradle.kts` changes.
+ * Keeping this by hand means it can drift when a dependency is added, so drift detection is
+ * automated while the wording stays human. Two checks cover it: `OpenSourceLibrariesTest` guards the
+ * shape of the list but cannot see the Gradle graph, and **`./gradlew :app:verifyLicenseCoverage`**
+ * (defined in `app/build.gradle.kts`, hooked to `check`, run in CI) resolves the release runtime
+ * classpath and fails naming any group id no entry's `coordinates` covers. It checks `res/font/`
+ * the same way, since a typeface is redistributed like a dependency but has no Maven coordinate.
+ *
+ * So a new dependency does not need anyone to remember: the build says which group is unattributed.
+ * To write the entry, list the graph with
+ * `./gradlew :app:dependencies --configuration releaseRuntimeClasspath` and group by Maven group id.
  */
 val OPEN_SOURCE_LIBRARIES: List<OpenSourceLibrary> = listOf(
     OpenSourceLibrary(

@@ -3,8 +3,9 @@
 # detekt's own setting. Formatting is ktlint's job — no rule here duplicates a ktlint check.
 
 build:
-  # Any finding fails the build. Pre-existing violations live in config/detekt/baseline.xml, so
-  # this threshold only ever sees newly introduced ones.
+  # Any finding fails the build. There is deliberately no baseline file: a baseline converts a
+  # finding into permanent, invisible debt. A new finding gets a real fix, or a site-level
+  # @Suppress carrying the reason.
   maxIssues: 0
 
 complexity:
@@ -35,7 +36,8 @@ exceptions:
   TooGenericExceptionCaught:
     # Catching broad exceptions is load-bearing in a few seams — a failed engagement-log write
     # must never take the foreground service down, and an intent launcher must return false
-    # rather than throw. Those sites are in the baseline; new ones need justification.
+    # rather than throw. Those sites carry a site-level @Suppress naming the reason; a new one
+    # needs the same justification.
     active: true
   SwallowedException:
     active: true
