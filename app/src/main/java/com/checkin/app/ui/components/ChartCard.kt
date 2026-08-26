@@ -3,6 +3,7 @@ package com.checkin.app.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,14 +20,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-/*
- * The three small pieces a chart card is built out of: a legend entry, an axis label, and a
- * label-value line.
+/**
+ * A [SectionCard] holding a chart: the same card, with the wider gap under the heading that a plot
+ * needs and an optional [subtitle] for the span or unit the chart covers.
  *
- * They lived private inside ReportsScreen, which is where a second caller would never have found
- * them -- and StatsRow's sacrifice rule below is already the same rule SessionIntervalRow states,
- * so it existed twice with one copy unreachable.
+ * Its own name rather than a spacing argument at seven call sites, and a delegation rather than a
+ * second Card — the two were separate copies that had already drifted 4dp apart, which is how a card
+ * comes to look slightly different depending on which tab you meet it on.
+ *
+ * The three small pieces such a card is built out of — [LegendRow], [AxisLabel] and [StatsRow] —
+ * live below it, so the card and its parts are one file to open rather than a name to guess at.
  */
+@Composable
+fun ChartCard(title: String, subtitle: String? = null, content: @Composable ColumnScope.() -> Unit) {
+    SectionCard(title = title, subtitle = subtitle, contentSpacing = CHART_CONTENT_SPACING, content = content)
+}
+
+private val CHART_CONTENT_SPACING = 16.dp
 
 @Composable
 fun LegendRow(color: Color, label: String, count: Int) {

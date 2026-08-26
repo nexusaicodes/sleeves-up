@@ -59,21 +59,6 @@ fun SectionCard(
 }
 
 /**
- * A [SectionCard] holding a chart: the same card, with the wider gap under the heading that a plot
- * needs and an optional [subtitle] for the span or unit the chart covers.
- *
- * Its own name rather than a spacing argument at seven call sites, and a delegation rather than a
- * second Card — the two were separate copies that had already drifted 4dp apart, which is how a card
- * comes to look slightly different depending on which tab you meet it on.
- */
-@Composable
-fun ChartCard(title: String, subtitle: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    SectionCard(title = title, subtitle = subtitle, contentSpacing = CHART_CONTENT_SPACING, content = content)
-}
-
-private val CHART_CONTENT_SPACING = 16.dp
-
-/**
  * A rule between groups of rows inside a [SectionCard], with its own spacing.
  *
  * Never a bare `HorizontalDivider`: that defaults to `outlineVariant`, which in the Material 3
