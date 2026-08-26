@@ -24,6 +24,9 @@ object NudgeSchedule {
      * inside a band. The hours are deliberately not quoted in any user-facing string — delivery is
      * best-effort, so naming a time promises a punctuality the app cannot keep.
      */
+    // The same three names exist on `data/SessionRhythm`'s StartBucket, breaking at 12/17 rather
+    // than these hours. Deliberately separate: that one describes when a session began, this one
+    // decides when to send a message, and one set of hours cannot serve both.
     enum class Checkpoint(val hour: Int) {
         MORNING(10),
         AFTERNOON(14),

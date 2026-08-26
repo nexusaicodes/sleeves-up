@@ -4,7 +4,13 @@ import com.checkin.app.data.local.DailyAggregate
 import java.time.Instant
 import java.time.ZoneId
 
-/** When in the day a session began. Descriptive: no bucket is better than another. */
+/**
+ * When in the day a session began. Descriptive: no bucket is better than another.
+ *
+ * These names also exist on `NudgeSchedule.Checkpoint`, breaking at different hours (12/17 here,
+ * 10/14/19 there) and deliberately not unified: this describes when a session the user already
+ * started began, that decides when to send them a message.
+ */
 enum class StartBucket {
     MORNING,
     AFTERNOON,
