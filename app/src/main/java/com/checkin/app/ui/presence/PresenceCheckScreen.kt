@@ -82,7 +82,7 @@ private const val SUCCESS_CONFIRMATION_MS = 800L
  *
  * Device unlock is offered immediately when the camera cannot run a check at all — no face-detection
  * mode, a mode the HAL then declines to apply, an unavailable provider, or a bind that threw — and
- * otherwise once the camera has looked for [AuthGate.BIOMETRIC_FALLBACK_AFTER_MS] without finding
+ * otherwise once the camera has looked for [DEVICE_UNLOCK_OFFERED_AFTER_MS] without finding
  * anyone. With no tap there is no attempt to count, so time is what unlocks the fallback; without it
  * a camera that detects perfectly well but never resolves this particular user would leave the
  * screen with no exit but Dismiss. [onAuthSuccess] fires once either path passes.
@@ -209,7 +209,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     LaunchedEffect(Unit) {
         if (searchTimedOut) return@LaunchedEffect
         val spent = SystemClock.elapsedRealtime() - searchStartedAt
-        delay((AuthGate.BIOMETRIC_FALLBACK_AFTER_MS - spent).coerceIn(0L, AuthGate.BIOMETRIC_FALLBACK_AFTER_MS))
+        delay((DEVICE_UNLOCK_OFFERED_AFTER_MS - spent).coerceIn(0L, DEVICE_UNLOCK_OFFERED_AFTER_MS))
         searchTimedOut = true
     }
 

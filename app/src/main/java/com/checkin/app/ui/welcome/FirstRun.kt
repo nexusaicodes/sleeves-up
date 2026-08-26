@@ -8,7 +8,7 @@ package com.checkin.app.ui.welcome
  * Composable cannot be unit-tested on this suite. The welcome comes first so the introduction lands
  * before the permission dialog rather than behind it — the ordering is the reason the welcome
  * exists, and left to which branch is written first it would be a rule no test can see. Same shape
- * and same reason as `ui/presence/AuthGate`.
+ * and same reason as `DEVICE_UNLOCK_OFFERED_AFTER_MS` in `ui/presence/DeviceUnlock`.
  */
 object FirstRun {
 
