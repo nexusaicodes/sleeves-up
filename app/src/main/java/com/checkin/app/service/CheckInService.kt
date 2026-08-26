@@ -58,7 +58,7 @@ class CheckInService : Service() {
     private val repository by lazy { container.repository }
     private val notifier: Notifier by lazy { container.notifier }
     private val notificationFactory: NotificationFactory by lazy { container.notificationFactory }
-    private val sessionReminder: SessionLifecycleRunner by lazy { container.sessionLifecycleRunner }
+    private val sessionLifecycleRunner: SessionLifecycleRunner by lazy { container.sessionLifecycleRunner }
 
     /** The same injectable clock the rest of the app reads, rather than a direct platform call. */
     private val timeSource: TimeSource by lazy { container.timeSource }
@@ -212,7 +212,7 @@ class CheckInService : Service() {
         reconcileJob?.cancel()
         reconcileJob = null
         isRunning = false
-        sessionReminder.cancel()
+        sessionLifecycleRunner.cancel()
         logService(ServiceEventType.STOPPED, sessionId.toString())
         clearState()
         cancelReminderNotification()

@@ -40,7 +40,7 @@ class CheckInViewModel(
     private val repository: CheckInRepository,
     private val timeSource: TimeSource,
     private val serviceController: ServiceController,
-    private val sessionReminder: SessionLifecycleRunner,
+    private val sessionLifecycleRunner: SessionLifecycleRunner,
     private val engagementReporter: EngagementReporter,
 ) : ViewModel() {
 
@@ -131,7 +131,7 @@ class CheckInViewModel(
             // restricted standby bucket, an OEM that declines the foreground start — and a session
             // with no day-boundary close runs until the user notices, then writes a multi-day
             // duration onto a row the app gives no way to edit. Writing the row cannot be refused.
-            sessionReminder.arm(session.startedAt)
+            sessionLifecycleRunner.arm(session.startedAt)
             // Reported for every check-in, not just the one a notification tap opened — a nudge the
             // user acted on from inside the app is still a nudge that worked.
             engagementReporter.onCheckedIn(session.startedAt)
@@ -146,7 +146,7 @@ class CheckInViewModel(
             val closed = repository.checkOut(active.id)
             // Before `stop()`, and not left to it: that command is a no-op when the service has
             // already been killed, which would leave both alarms standing over a closed session.
-            sessionReminder.cancel()
+            sessionLifecycleRunner.cancel()
             serviceController.stop()
             // The other writer, MainActivity.onRootGatePassed, raises this too — a check-out from
             // the notification earned the same acknowledgement as one from the button.

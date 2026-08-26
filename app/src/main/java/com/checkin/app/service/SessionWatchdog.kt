@@ -31,7 +31,7 @@ import com.checkin.app.platform.ServiceController
 class SessionWatchdog(
     private val repository: CheckInRepository,
     private val serviceController: ServiceController,
-    private val sessionReminder: SessionLifecycleRunner,
+    private val sessionLifecycleRunner: SessionLifecycleRunner,
     private val log: EngagementLog,
     private val timeSource: TimeSource,
     /** Injected so the decision is testable without a live service. */
@@ -65,7 +65,7 @@ class SessionWatchdog(
         // open and the service perfectly able to restart itself, so gating this on the service
         // being down is exactly how a session loses its day-boundary close and keeps its timer.
         // Reports false when there is no open session, in which case it has dropped the alarms.
-        if (!sessionReminder.ensureArmed(timeSource.nowMillis())) return false
+        if (!sessionLifecycleRunner.ensureArmed(timeSource.nowMillis())) return false
 
         if (serviceRunning()) return false
         val active = repository.getActiveSession() ?: return false
