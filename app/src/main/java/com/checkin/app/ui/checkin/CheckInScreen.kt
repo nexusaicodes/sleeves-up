@@ -85,7 +85,10 @@ fun CheckInScreen(
     // The presence gate is rendered full-screen by AppNavScaffold, above the chrome — not here — so
     // the camera preview and the gate's own controls aren't covered by the bottom nav.
 
-    // Elapsed ticker is screen-driven, so it only runs while this screen is composed.
+    // Elapsed ticker is screen-driven, so it only runs while this screen is composed. The
+    // arithmetic itself is shared with the notification's chronometer and lives in
+    // service/SessionClock — that package rather than ui/ because the service is the other
+    // caller, and one copy is what keeps the two from disagreeing about the floor rule.
     val startTime = uiState.currentSessionStartTime
     var elapsed by remember(startTime) { mutableStateOf(0L) }
     LaunchedEffect(uiState.isRunning, startTime) {

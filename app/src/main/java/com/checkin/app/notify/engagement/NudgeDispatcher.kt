@@ -18,6 +18,9 @@ import java.time.format.DateTimeFormatter
 /**
  * Assembles a snapshot, asks [NudgeEligibility] what to send, and posts the result.
  *
+ * For why several `Engagement*` types sit outside this package, see the tree map in
+ * [com.checkin.app.notify.Notifier].
+ *
  * [runOnce] is the only way a nudge is ever posted — there is no bypass and no forced send, so the
  * copy a device shows is whatever eligibility and the install's own variant bucket produce.
  *

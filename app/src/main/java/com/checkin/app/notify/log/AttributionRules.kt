@@ -3,6 +3,9 @@ package com.checkin.app.notify.log
 /**
  * The credit decision, kept pure and separate from storage so the Room implementation and any test
  * double share one definition of "did this nudge cause this check-in" rather than each restating it.
+ *
+ * The window itself is a parameter rather than a constant here, and it has exactly one supplier in
+ * the app: `DefaultEngagementReporter.CONVERSION_WINDOW_MS`. Tuning it means editing that, not this.
  */
 object AttributionRules {
 

@@ -8,6 +8,10 @@ package com.checkin.app.notify.engagement
  *
  * Frequency is bounded three ways and the checkpoint hours are **not** one of them: this type holds
  * two of the bounds, and [NudgeSnapshot.alreadySentToday] is the third.
+ *
+ * **Cadence only.** The other nudge constant a reader may be hunting is the attribution window —
+ * how long after a nudge a check-in still counts as caused by it — and that is not cadence, so it
+ * lives with the reporter that applies it: `DefaultEngagementReporter.CONVERSION_WINDOW_MS`.
  */
 data class NudgeConfig(
     /**

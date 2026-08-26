@@ -8,6 +8,10 @@ import com.checkin.app.notify.log.RoomEngagementLog
 /**
  * Maps a notification tag's payload back to the notification it identifies.
  *
+ * It lives in `notify/` rather than `engagement/` because a tag is an intent payload and the
+ * session reminder rides the same machinery a nudge does — see the tree map in [Notifier] for how
+ * the three packages divide up.
+ *
  * Kept pure and separate from the Android-only classes that carry the payload — the dismiss receiver
  * and the Activity that handles a tap — which would otherwise be the one place a mis-route could
  * hide: a session reminder resolved as a nudge would be written through the nudge entry point, where

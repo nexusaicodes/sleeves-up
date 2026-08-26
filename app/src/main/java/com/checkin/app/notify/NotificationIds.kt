@@ -10,16 +10,16 @@ package com.checkin.app.notify
  * ### PendingIntent request codes — the whole allocation
  *
  * A separate namespace from the ids above, shared process-wide **and with previously installed
- * versions**, whose notifications and alarms survive an update. [PendingIntent] equality ignores
+ * versions**, whose notifications and alarms survive an update. `PendingIntent` equality ignores
  * extras, so two senders on one code means one silently rewrites the other's target. Four files
  * allocate out of it, so the bands are listed here — the ids file — rather than being discoverable
  * only by opening all four and hoping:
  *
  * | Band | Owner | Use |
  * |---|---|---|
- * | the id itself | [NotificationDismissReceiver] | that notification's delete intent |
- * | 1_000+ | [NotificationFactory.CONTENT_REQUEST_BASE] | a notification's tap target |
- * | 10_000+ | [NotificationFactory.ACTION_REQUEST_BASE] | its action buttons, [NotificationFactory.MAX_ACTIONS] apiece |
+ * | the id itself | `NotificationDismissReceiver` | that notification's delete intent |
+ * | 1_000+ | `NotificationFactory.CONTENT_REQUEST_BASE` | a notification's tap target |
+ * | 10_000+ | `NotificationFactory.ACTION_REQUEST_BASE` | its action buttons, `MAX_ACTIONS` apiece |
  * | 20_000, 20_001 | `service.SessionAlarms` | the session reminder and the day boundary |
  * | 20_010 | `notify.engagement.NudgeAlarms` | the nudge checkpoint |
  *
@@ -28,7 +28,10 @@ package com.checkin.app.notify
  * activity intent whatever the code. Reuse that exemption only for another broadcast.
  *
  * **The values are frozen**, for the same reason the ids are. A fifth sender takes a fresh band
- * and adds a row here.
+ * and adds a row here. The three bases live in `NotificationFactory`'s private companion, so the
+ * numbers are restated above rather than linked — this table is the readable copy.
+ *
+ * For how the three `notify` packages divide up, see the tree map in [Notifier].
  */
 object NotificationIds {
 
