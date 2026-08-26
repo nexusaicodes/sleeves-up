@@ -3,6 +3,7 @@ package com.checkin.app.notify.engagement
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.EngagementTag
+import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.notify.NotificationChannels
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
@@ -10,7 +11,6 @@ import com.checkin.app.notify.StringResolver
 import com.checkin.app.notify.log.EngagementEventType
 import com.checkin.app.notify.log.EngagementLog
 import com.checkin.app.notify.log.EngagementSource
-import com.checkin.app.service.CheckInService
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -63,7 +63,7 @@ class NudgeDispatcher(
                 channelId = NotificationChannels.ENGAGEMENT,
                 title = strings.get(copy.titleRes),
                 body = strings.get(copy.bodyRes),
-                launchExtra = CheckInService.EXTRA_CHECK_IN,
+                launchExtra = LaunchExtras.CHECK_IN,
                 // Swiping a nudge away is the clearest signal it isn't wanted, and the only one the
                 // log can't infer from the absence of a check-in.
                 tag = EngagementTag(EngagementSource.NUDGE, nudge.name, variant),

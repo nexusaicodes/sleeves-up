@@ -13,7 +13,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import com.checkin.app.notify.EngagementTag
-import com.checkin.app.service.CheckInService
+import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.ui.AppRoot
 import com.checkin.app.ui.checkin.CheckOutSignal
 import com.checkin.app.ui.checkin.raiseCheckOutCelebration
@@ -81,12 +81,12 @@ class MainActivity : FragmentActivity() {
         // One-shot: consume the extra so an Activity recreation (rotation, theme change) doesn't
         // replay the notification tap and re-open a gate the user already handled.
         when {
-            intent?.getBooleanExtra(CheckInService.EXTRA_CHECK_OUT, false) == true -> {
-                intent.removeExtra(CheckInService.EXTRA_CHECK_OUT)
+            intent?.getBooleanExtra(LaunchExtras.CHECK_OUT, false) == true -> {
+                intent.removeExtra(LaunchExtras.CHECK_OUT)
                 requestPresenceCheck(Reason.CHECK_OUT)
             }
-            intent?.getBooleanExtra(CheckInService.EXTRA_CHECK_IN, false) == true -> {
-                intent.removeExtra(CheckInService.EXTRA_CHECK_IN)
+            intent?.getBooleanExtra(LaunchExtras.CHECK_IN, false) == true -> {
+                intent.removeExtra(LaunchExtras.CHECK_IN)
                 // Carried by the notification itself, so the open is attributed to the one tapped
                 // rather than to whichever the log holds as most recently shown. Absent on a
                 // notification posted by a release that predates the tag; the reporter falls back.

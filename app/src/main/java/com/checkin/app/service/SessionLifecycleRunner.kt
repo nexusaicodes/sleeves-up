@@ -5,6 +5,7 @@ import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.EngagementTag
+import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.notify.NotificationAction
 import com.checkin.app.notify.NotificationChannels
 import com.checkin.app.notify.NotificationIds
@@ -236,7 +237,7 @@ class SessionLifecycleRunner(
             NotificationAction(
                 iconRes = R.drawable.ic_stat_check_out,
                 label = strings.get(R.string.notification_action_stop),
-                launchExtra = CheckInService.EXTRA_CHECK_OUT,
+                launchExtra = LaunchExtras.CHECK_OUT,
             ),
         ),
         silent = silent,

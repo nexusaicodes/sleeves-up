@@ -8,6 +8,7 @@ import androidx.core.content.edit
 import com.checkin.app.CheckInApplication
 import com.checkin.app.R
 import com.checkin.app.data.TimeSource
+import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.notify.NotificationAction
 import com.checkin.app.notify.NotificationChannels
 import com.checkin.app.notify.NotificationFactory
@@ -101,10 +102,6 @@ class CheckInService : Service() {
         const val ACTION_REFRESH = "REFRESH"
         const val EXTRA_SESSION_ID = "SESSION_ID"
         const val EXTRA_START_TIME = "START_TIME"
-        const val EXTRA_CHECK_OUT = "check_out"
-
-        /** Set by an engagement nudge tap; opens the gate and checks in on success. */
-        const val EXTRA_CHECK_IN = "check_in"
         const val PREFS_NAME = "checkin_timer_prefs"
         const val KEY_SESSION_ID = "session_id"
         const val KEY_START_TIME = "start_time"
@@ -261,7 +258,7 @@ class CheckInService : Service() {
             NotificationAction(
                 iconRes = R.drawable.ic_stat_check_out,
                 label = getString(R.string.notification_action_stop),
-                launchExtra = EXTRA_CHECK_OUT,
+                launchExtra = LaunchExtras.CHECK_OUT,
             ),
         ),
         ongoing = true,
