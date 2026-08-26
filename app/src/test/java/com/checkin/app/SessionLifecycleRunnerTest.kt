@@ -4,7 +4,7 @@ import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.StringResolver
 import com.checkin.app.notify.log.EngagementEventType
-import com.checkin.app.service.SessionReminderRunner
+import com.checkin.app.service.SessionLifecycleRunner
 import com.checkin.app.service.SessionSchedule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -24,7 +24,7 @@ import java.time.ZoneId
  * the behaviour is pinned here rather than left to be discovered as a wrong number.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class SessionReminderRunnerTest {
+class SessionLifecycleRunnerTest {
 
     private val zone = ZoneId.of("UTC")
     private val today = LocalDate.of(2026, 6, 15)
@@ -40,7 +40,7 @@ class SessionReminderRunnerTest {
     private val alarms = FakeSessionAlarms()
     private val log = FakeEngagementLog()
 
-    private fun runner() = SessionReminderRunner(
+    private fun runner() = SessionLifecycleRunner(
         repository = repository,
         notifier = notifier,
         strings = StringResolver { "copy-$it" },
@@ -175,7 +175,7 @@ class SessionReminderRunnerTest {
 
         val outcome = runner().onReminderFired()
 
-        assertTrue(outcome is SessionReminderRunner.Outcome.Reminded)
+        assertTrue(outcome is SessionLifecycleRunner.Outcome.Reminded)
         assertEquals(NotificationIds.SESSION_REMINDER, notifier.shown.single().id)
         assertEquals(SessionSchedule.nextReminderAt(now), alarms.lastReminder)
         assertTrue(log.events.value.any { it.event == EngagementEventType.SHOWN.name })
@@ -201,7 +201,7 @@ class SessionReminderRunnerTest {
     fun `a reminder with no open session cancels`() = runTest {
         val outcome = runner().onReminderFired()
 
-        assertEquals(SessionReminderRunner.Outcome.NoSession, outcome)
+        assertEquals(SessionLifecycleRunner.Outcome.NoSession, outcome)
         assertTrue(notifier.shown.isEmpty())
         assertTrue(alarms.cancelCount > 0)
     }
@@ -219,7 +219,7 @@ class SessionReminderRunnerTest {
 
         val outcome = runner.onReminderFired()
 
-        assertEquals(SessionReminderRunner.Outcome.Refused, outcome)
+        assertEquals(SessionLifecycleRunner.Outcome.Refused, outcome)
         assertEquals(0, alarms.remindersSent)
         assertNotNull("a refusal must still leave a reminder armed", alarms.lastReminder)
 
@@ -235,7 +235,7 @@ class SessionReminderRunnerTest {
         val session = repository.checkIn()
         // The alarm lands late — well into the following day.
         val late = FakeTimeSource(boundary + 3 * 60 * 60 * 1000L, today.plusDays(1))
-        val runner = SessionReminderRunner(
+        val runner = SessionLifecycleRunner(
             repository = CheckInRepository(dao, late),
             notifier = notifier,
             strings = StringResolver { "copy-$it" },
@@ -247,7 +247,7 @@ class SessionReminderRunnerTest {
 
         val outcome = runner.onDayBoundaryFired()
 
-        assertEquals(SessionReminderRunner.Outcome.Closed(boundary), outcome)
+        assertEquals(SessionLifecycleRunner.Outcome.Closed(boundary), outcome)
         val closed = dao.getSessionById(session.id)!!
         assertEquals(boundary, closed.stoppedAt)
         assertEquals(boundary - closed.startedAt, closed.duration)
@@ -277,7 +277,7 @@ class SessionReminderRunnerTest {
         alarms.seedArmed(reminderAt = 0L, boundaryAt = boundary)
         // The device has moved five hours east: recomputing here would land well before the armed
         // instant and silently delete hours the user worked.
-        val moved = SessionReminderRunner(
+        val moved = SessionLifecycleRunner(
             repository = repository,
             notifier = notifier,
             strings = StringResolver { "copy-$it" },
@@ -298,7 +298,7 @@ class SessionReminderRunnerTest {
         val session = repository.checkIn()
         val fireAt = boundary - 4 * 60 * 60 * 1000L
         alarms.seedArmed(reminderAt = 0L, boundaryAt = boundary)
-        val early = SessionReminderRunner(
+        val early = SessionLifecycleRunner(
             repository = repository,
             notifier = notifier,
             strings = StringResolver { "copy-$it" },
@@ -318,7 +318,7 @@ class SessionReminderRunnerTest {
     fun `a boundary with no open session closes nothing`() = runTest {
         val outcome = runner().onDayBoundaryFired()
 
-        assertEquals(SessionReminderRunner.Outcome.NoSession, outcome)
+        assertEquals(SessionLifecycleRunner.Outcome.NoSession, outcome)
         assertTrue(dao.sessions.isEmpty())
     }
 }

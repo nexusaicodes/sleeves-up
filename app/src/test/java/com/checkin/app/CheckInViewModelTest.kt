@@ -2,7 +2,7 @@ package com.checkin.app
 
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.StringResolver
-import com.checkin.app.service.SessionReminderRunner
+import com.checkin.app.service.SessionLifecycleRunner
 import com.checkin.app.ui.checkin.CheckInViewModel
 import com.checkin.app.ui.checkin.CheckOutSignal
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,7 +34,7 @@ class CheckInViewModelTest {
         val repo = CheckInRepository(dao, time)
         // The real runner over fakes rather than a stand-in: the ViewModel owns the session's alarm
         // lifetime, and a stub would let the two drift without a test noticing.
-        val reminder = SessionReminderRunner(
+        val reminder = SessionLifecycleRunner(
             repository = repo,
             notifier = FakeNotifier(),
             strings = StringResolver { "copy-$it" },

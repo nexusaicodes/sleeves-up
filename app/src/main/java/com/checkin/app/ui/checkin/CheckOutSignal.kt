@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * package over.
  *
  * **The day-boundary close deliberately does not raise this.** It runs through
- * `SessionReminderRunner.onDayBoundaryFired` and never reaches either writer, which is exactly
+ * `SessionLifecycleRunner.onDayBoundaryFired` and never reaches either writer, which is exactly
  * right: it closes a session the user forgot about, usually at midnight with the app dead.
  * Congratulating someone for a session the app ended on their behalf would be praise for the one
  * check-out they did not make.

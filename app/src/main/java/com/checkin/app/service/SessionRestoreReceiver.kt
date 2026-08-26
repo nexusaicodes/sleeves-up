@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
  *
  * Both events end the process and take the foreground service with it, and `START_STICKY` does not
  * survive either. Both also **clear the session's alarms**, which is the more serious loss — see
- * [SessionReminderRunner.ensureArmed].
+ * [SessionLifecycleRunner.ensureArmed].
  *
  * `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED` are two of the few contexts explicitly permitted to
  * start a foreground service from the background, which is why the restore is attempted here rather

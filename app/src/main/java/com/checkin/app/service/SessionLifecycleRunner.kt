@@ -19,8 +19,13 @@ import com.checkin.app.notify.log.ServiceEventType
 import java.time.ZoneId
 
 /**
- * Owns what happens to a session while it is open: reminding the user it is still running, and
- * closing it at the day boundary.
+ * Owns what happens to a session while it is open: arming both alarms, reminding the user it is
+ * still running, and closing it at the day boundary.
+ *
+ * Three jobs, and the closing one is the load-bearing one — [onDayBoundaryFired] is the app's only
+ * un-gated check-out and the only write to `sessions` anywhere in this package. It cannot be gated:
+ * the point is to close a session the user forgot, and a forgotten session is precisely the one
+ * nobody is present to authenticate.
  *
  * Nothing here verifies anything and nothing is deducted — the reminder only asks, and ignoring it
  * costs nothing at all. **Never make it stop the clock**: a question nobody saw would then silently
@@ -30,7 +35,7 @@ import java.time.ZoneId
  * Every decision reads the **database**, never the service's in-memory mirror, because the process
  * this runs in may have been created by the alarm broadcast moments earlier.
  */
-class SessionReminderRunner(
+class SessionLifecycleRunner(
     private val repository: CheckInRepository,
     private val notifier: Notifier,
     private val strings: StringResolver,

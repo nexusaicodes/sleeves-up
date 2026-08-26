@@ -27,7 +27,7 @@ import com.checkin.app.platform.ServiceController
 import com.checkin.app.platform.SharedPrefsPromptSettings
 import com.checkin.app.service.AndroidSessionAlarms
 import com.checkin.app.service.SessionAlarms
-import com.checkin.app.service.SessionReminderRunner
+import com.checkin.app.service.SessionLifecycleRunner
 import com.checkin.app.service.SessionWatchdog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -63,7 +63,7 @@ interface AppContainer {
     // work in a process where no service is running: an alarm can be delivered into a process the
     // broadcast just created, and the watchdog exists precisely for when the service is gone. The
     // alarm seam itself is not exposed — everything goes through the runner, which owns the ordering.
-    val sessionReminderRunner: SessionReminderRunner
+    val sessionLifecycleRunner: SessionLifecycleRunner
     val sessionWatchdog: SessionWatchdog
 }
 
@@ -121,8 +121,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     // demonstrably on one seam rather than on two that happen to agree.
     private val sessionAlarms: SessionAlarms = AndroidSessionAlarms(appContext)
 
-    override val sessionReminderRunner: SessionReminderRunner by lazy {
-        SessionReminderRunner(
+    override val sessionLifecycleRunner: SessionLifecycleRunner by lazy {
+        SessionLifecycleRunner(
             repository = repository,
             notifier = notifier,
             strings = AndroidStringResolver(appContext),
@@ -133,6 +133,6 @@ class DefaultAppContainer(context: Context) : AppContainer {
     }
 
     override val sessionWatchdog: SessionWatchdog by lazy {
-        SessionWatchdog(repository, serviceController, sessionReminderRunner, engagementLog, timeSource)
+        SessionWatchdog(repository, serviceController, sessionLifecycleRunner, engagementLog, timeSource)
     }
 }

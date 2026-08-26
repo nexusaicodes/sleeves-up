@@ -18,7 +18,7 @@ import com.checkin.app.platform.ServiceController
  * force stop and a package replace cancel a package's alarms; a plain process kill does not. So the
  * service running says nothing about whether the day-boundary close is still standing, and the
  * alarms are ensured on every pass, before the service is even looked at — see
- * [SessionReminderRunner.ensureArmed] for what that repair costs to skip.
+ * [SessionLifecycleRunner.ensureArmed] for what that repair costs to skip.
  *
  * The revive is best-effort by necessity. Starting a foreground service from the background is
  * restricted, so the call can be refused outright depending on where it is invoked from. There are
@@ -31,7 +31,7 @@ import com.checkin.app.platform.ServiceController
 class SessionWatchdog(
     private val repository: CheckInRepository,
     private val serviceController: ServiceController,
-    private val sessionReminder: SessionReminderRunner,
+    private val sessionReminder: SessionLifecycleRunner,
     private val log: EngagementLog,
     private val timeSource: TimeSource,
     /** Injected so the decision is testable without a live service. */

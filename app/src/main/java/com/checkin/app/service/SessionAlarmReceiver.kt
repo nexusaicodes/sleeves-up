@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Receives both session alarms — the periodic reminder and the day-boundary close — and hands each
- * to [SessionReminderRunner].
+ * to [SessionLifecycleRunner].
  *
  * Deliberately does its work here rather than delegating to [CheckInService]: the alarms' whole
  * purpose is to be reliable when the service is not, and a broadcast receiver can run in a process
@@ -40,7 +40,7 @@ class SessionAlarmReceiver : BroadcastReceiver() {
         val pending = goAsync()
         container.applicationScope.launch {
             try {
-                val runner = container.sessionReminderRunner
+                val runner = container.sessionLifecycleRunner
                 val outcome = if (action == ACTION_DAY_BOUNDARY) {
                     runner.onDayBoundaryFired()
                 } else {
@@ -54,7 +54,7 @@ class SessionAlarmReceiver : BroadcastReceiver() {
                 // Only a live service has a notification to take down, and only a live service can
                 // be sent a command from here without tripping the background-start restriction.
                 if (CheckInService.isRunning) {
-                    if (outcome is SessionReminderRunner.Outcome.Closed) {
+                    if (outcome is SessionLifecycleRunner.Outcome.Closed) {
                         container.serviceController.stop()
                     } else {
                         container.serviceController.refreshFromDb()

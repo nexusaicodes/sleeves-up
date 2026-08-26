@@ -12,7 +12,7 @@ import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.engagement.EngagementReporter
 import com.checkin.app.platform.ServiceController
-import com.checkin.app.service.SessionReminderRunner
+import com.checkin.app.service.SessionLifecycleRunner
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -40,7 +40,7 @@ class CheckInViewModel(
     private val repository: CheckInRepository,
     private val timeSource: TimeSource,
     private val serviceController: ServiceController,
-    private val sessionReminder: SessionReminderRunner,
+    private val sessionReminder: SessionLifecycleRunner,
     private val engagementReporter: EngagementReporter,
 ) : ViewModel() {
 
@@ -164,7 +164,7 @@ class CheckInViewModel(
                     container.repository,
                     container.timeSource,
                     container.serviceController,
-                    container.sessionReminderRunner,
+                    container.sessionLifecycleRunner,
                     container.engagementReporter,
                 )
             }

@@ -51,7 +51,7 @@ interface SessionAlarms {
      * The instant each alarm is currently set for, or 0 when nothing is armed.
      *
      * Recorded because these alarms can be cancelled out from under an open session (see
-     * [SessionReminderRunner.ensureArmed]) and `AlarmManager` offers no way to ask what is still
+     * [SessionLifecycleRunner.ensureArmed]) and `AlarmManager` offers no way to ask what is still
      * standing. Persisting the instants lets the repair put back what was armed rather than derive
      * fresh ones — re-deriving would push the reminder out by a full interval on every repair, and
      * would recompute the day boundary against whatever time zone the device is in now.

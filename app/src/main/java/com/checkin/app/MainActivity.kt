@@ -267,7 +267,7 @@ class MainActivity : FragmentActivity() {
                 val closed = container.repository.checkOutActiveSession()
                 // Before stop(), which is a no-op when the service has already been killed and
                 // would otherwise leave both alarms standing over a closed session.
-                container.sessionReminderRunner.cancel()
+                container.sessionLifecycleRunner.cancel()
                 container.serviceController.stop()
                 // The Check-In screen's button raises this too: a check-out from the notification
                 // earned the same acknowledgement as one made from inside the app.
@@ -283,7 +283,7 @@ class MainActivity : FragmentActivity() {
                     container.serviceController.startTimer(session.id, session.startedAt)
                     // Armed by the writer, not the service: a refused foreground start must not
                     // cost the session its day-boundary close.
-                    container.sessionReminderRunner.arm(session.startedAt)
+                    container.sessionLifecycleRunner.arm(session.startedAt)
                     container.engagementReporter.onCheckedIn(session.startedAt)
                 }
             }

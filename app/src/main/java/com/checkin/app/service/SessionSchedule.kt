@@ -23,7 +23,7 @@ import java.time.format.DateTimeFormatter
  *   anything; both are asked what an instant should be.
  * - **Platform seam**, an interface plus its Android implementation: [SessionAlarms], which is what
  *   actually reaches `AlarmManager`, and which persists the armed instants and the reminder count.
- * - **Orchestration**, where the decisions live: [SessionReminderRunner] (arms both alarms, handles
+ * - **Orchestration**, where the decisions live: [SessionLifecycleRunner] (arms both alarms, handles
  *   the reminder, **and closes the session at the day boundary** — the app's only un-gated
  *   check-out), [SessionWatchdog] (repairs a service or alarms lost to a kill),
  *   [ServiceReconciler] (whether a live service still has a row behind it).
