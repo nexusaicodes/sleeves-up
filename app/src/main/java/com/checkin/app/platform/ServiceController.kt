@@ -8,7 +8,9 @@ import com.checkin.app.service.CheckInService
 /** Seam over the [CheckInService] foreground-service intents so ViewModels don't hold a Context. */
 interface ServiceController {
     /**
-     * Starts (or revives) the timer service. Returns false when the platform refused the start —
+     * Starts the timer service for a session that has just begun. **Not the revive path** — see
+     * [revive] for one already running; the two take their timing from different places and are not
+     * interchangeable. Returns false when the platform refused the start —
      * background foreground-service starts are restricted, and the watchdog calls this from contexts
      * where that refusal is a normal outcome to be logged and retried, not a crash.
      */

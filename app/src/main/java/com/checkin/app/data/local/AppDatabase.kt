@@ -46,7 +46,8 @@ abstract class AppDatabase : RoomDatabase() {
          * silently ends a session the user may still be in, and folding the pause into `started_at`
          * rewrites the check-in time they see on screen. Over-counting one session beats editing a
          * row the app gives no way to edit. The blast radius is bounded by the day-boundary close,
-         * which `SessionWatchdog` arms on the first app open after the upgrade: a session left open
+         * which `SessionWatchdog.reviveIfNeeded` restores through `SessionLifecycleRunner.ensureArmed`
+         * on the first app open after the upgrade: a session left open
          * past its own midnight is closed *at* that midnight, so at most a same-day pause survives.
          */
         private val MIGRATION_4_5 = object : Migration(4, 5) {

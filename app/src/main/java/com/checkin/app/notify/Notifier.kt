@@ -29,8 +29,11 @@ import androidx.core.content.ContextCompat
  * - **`notify/log/`** — the separate analytics database and the pure rules read off it. Nothing
  *   here posts anything.
  *
- * The direction of dependency runs `log/` ← `engagement/` → `notify/`, and never back into the
- * app's session data: `notify` may read tracking state, and never writes to it.
+ * `notify/` is the shared base, but it is not a leaf: it decodes *into* the other two, so
+ * [EngagementRouting] and [EngagementTarget] import from both `engagement/` and `log/`, while
+ * [Nudge] imports [NotificationIds] back out of here. Do not read the layering as a one-way arrow.
+ * The invariant that actually holds is the outer one: **nothing under `notify/` writes to
+ * `sessions`.** It may read tracking state to decide what to say, and never writes it back.
  */
 interface Notifier {
     /**

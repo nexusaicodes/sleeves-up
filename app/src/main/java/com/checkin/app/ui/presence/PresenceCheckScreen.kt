@@ -317,7 +317,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                             cameraUsableFlow.value = true
                         } catch (e: Exception) {
                             // The user is now on a screen whose only control can never enable, so the
-                            // fallback has to be offered here rather than left to the failure ladder.
+                            // fallback has to be offered here rather than left to the wait before it.
                             Log.e(TAG, "Camera bind failed", e)
                             cameraUsableFlow.value = false
                         }

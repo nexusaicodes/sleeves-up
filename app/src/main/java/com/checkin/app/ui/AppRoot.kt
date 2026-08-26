@@ -38,7 +38,7 @@ import com.checkin.app.ui.welcome.WelcomeScreen
  * has already checked in — an introduction to an app they have just used. That case is the one
  * that ships: every existing install updates onto this build owing the welcome while its alarms
  * are armed and its notifications live, so a nudge tap can raise the gate with the tour still
- * owed. The request survives the read (its 10-minute fuse only retires in [onStart]), so the
+ * owed. The request survives the read (its 10-minute fuse only retires in [MainActivity.onStart][com.checkin.app.MainActivity.onStart]), so the
  * check-in follows immediately after.
  *
  * Two states go away with it. Nothing can preempt the welcome, so its pager position cannot be
@@ -46,7 +46,8 @@ import com.checkin.app.ui.welcome.WelcomeScreen
  * to prevent for the host. And a pending celebration can no longer be drawn over the tour, since
  * every check-out path now sits behind it.
  *
- * A `@Composable` rather than the body of [onCreate] so each branch is one call site.
+ * A `@Composable` rather than the body of [MainActivity.onCreate][com.checkin.app.MainActivity.onCreate]
+ * so each branch is one call site.
  * [AppNavScaffold] in two arms would carry two structural identities, and a step change would
  * discard the NavHost and reset the active tab.
  */

@@ -18,10 +18,12 @@ private const val MILLIS_PER_MINUTE = MILLIS_PER_SECOND * SECONDS_PER_MINUTE
  *
  * **`date_key` is deliberately not formatted here, and stays raw ISO wherever it is stored or
  * queried.** `CheckInSessionDao`'s range queries depend on its lexicographic ordering and the CSV
- * `Date` column is machine-read, so the private `ISO_LOCAL_DATE` formatters in `ConsistencyStats`,
- * `CheckInRepository` and `DefaultCsvExporter` are three separate machine-facing uses, not drift to
- * be consolidated into this object. Only the display side comes here — [dateKeyWithWeekday] is the
- * entry point that takes a `date_key` and returns something a user reads.
+ * `Date` column is machine-read. The rule that follows: **every file that produces or parses a
+ * `date_key` keeps its own private `ISO_LOCAL_DATE`, and none of them is drift to be consolidated
+ * here** — there are around ten, across `data/`, `service/`, `notify/` and each ViewModel, and
+ * they are machine-facing to a one. Only the display side comes here, so the test to apply is
+ * whether a user reads the result, not whether the code formats a date. [dateKeyWithWeekday] is
+ * the entry point that takes a `date_key` and returns something a user reads.
  */
 object TimeFormat {
 

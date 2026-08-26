@@ -51,7 +51,7 @@ object PresenceCheckSignal {
      * Drops a request the user walked away from, and reports whether one is still live.
      *
      * The gate can park indefinitely — on the disclosure, on the camera-recovery screen, or on the
-     * capture itself — and pressing Home leaves the reason set on a process-global flow that nothing
+     * check itself — and pressing Home leaves the reason set on a process-global flow that nothing
      * else clears. Without this a nudge tapped at 09:00 and abandoned would reopen its gate on the
      * next launch and, on success, write a check-in stamped at whatever time and day it had become —
      * onto a row the app deliberately gives no way to edit or delete.
