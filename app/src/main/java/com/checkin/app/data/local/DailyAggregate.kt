@@ -13,6 +13,16 @@ data class DailyAggregate(
     val sessionCount: Int,
     val firstCheckIn: Long,
     val lastCheckOut: Long?,
-    /** How many of the day's sessions the day-boundary alarm closed. Exported; never displayed. */
+    /**
+     * How many of the day's sessions each ending accounts for. Exported; **never displayed**, and
+     * never compared to each other in front of the user — see [ClosedBy].
+     *
+     * Counts rather than values because these rows are days: a day worked in three blocks, two
+     * closed from the screen and one by midnight, reports 2 and 1. They sum to [sessionCount], since
+     * only completed sessions aggregate and every completed session carries an ending.
+     */
     val autoClosedSessions: Int,
+    val inAppCheckOuts: Int,
+    val timerNotificationCheckOuts: Int,
+    val reminderNotificationCheckOuts: Int,
 )

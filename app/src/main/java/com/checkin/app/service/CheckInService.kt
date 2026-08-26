@@ -256,7 +256,7 @@ class CheckInService : Service() {
             NotificationAction(
                 iconRes = R.drawable.ic_stat_check_out,
                 label = getString(R.string.notification_action_stop),
-                launchExtra = LaunchExtras.CHECK_OUT,
+                launchExtra = LaunchExtras.CHECK_OUT_FROM_TIMER,
             ),
         ),
         ongoing = true,

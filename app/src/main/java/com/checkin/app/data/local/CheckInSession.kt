@@ -22,13 +22,19 @@ data class CheckInSession(
     val dateKey: String,
 
     /**
-     * True when the day-boundary alarm closed this session rather than the user checking out.
+     * What ended this session, or null while it is still open.
      *
-     * A record of what happened, not a judgement on it and not an edit: the row is immutable either
-     * way, the duration is unchanged, and nothing in the app reads this. It exists so the CSV can
-     * say which stop instants the user chose and which midnight chose for them — a distinction the
-     * export could not otherwise carry, since a forgotten session is stamped at a plausible time.
+     * A record of what happened, not a judgement on it and not an edit: the row is immutable
+     * whichever value it carries, the duration is unchanged, and nothing in the app *displays* it.
+     * It exists so the CSV can say which stop instants the user chose, from which surface, and
+     * which midnight chose for them — a distinction the export could not otherwise carry, since a
+     * forgotten session is stamped at a plausible time.
+     *
+     * Nullable rather than defaulted, because an open session has not been ended by anything and a
+     * value here would be a claim about a stop that has not happened. That is also why
+     * [com.checkin.app.data.repository.CheckInRepository.checkOutAt] takes it with no default: the
+     * boolean this replaced was inherited silently by every caller that never mentioned it.
      */
-    @ColumnInfo(name = "auto_closed", defaultValue = "0")
-    val autoClosed: Boolean = false,
+    @ColumnInfo(name = "closed_by", defaultValue = "NULL")
+    val closedBy: ClosedBy? = null,
 )

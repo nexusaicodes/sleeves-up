@@ -1,5 +1,6 @@
 package com.checkin.app
 
+import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.ui.checkin.CheckOutSignal
 import com.checkin.app.ui.checkin.raiseCheckOutCelebration
@@ -92,7 +93,7 @@ class CheckOutSignalTest {
         dao.seedCompleted(day.toString(), startedAt = 0L, durationMs = hour)
         val repo = CheckInRepository(dao, FakeTimeSource(5 * hour, day))
         val session = repo.checkIn()
-        val closed = repo.checkOutAt(session.id, 5 * hour + 2 * hour)
+        val closed = repo.checkOutAt(session.id, 5 * hour + 2 * hour, ClosedBy.IN_APP)
 
         raiseCheckOutCelebration(repo, closed!!, nowMillis = 0L)
 
@@ -117,7 +118,7 @@ class CheckOutSignalTest {
         val session = repo.checkIn()
         // Closed on the following day, while the row still carries 06-15 as its date_key.
         val closed = CheckInRepository(dao, FakeTimeSource(2 * hour, startDay.plusDays(1)))
-            .checkOut(session.id)
+            .checkOut(session.id, ClosedBy.IN_APP)
 
         raiseCheckOutCelebration(repo, closed!!, nowMillis = 0L)
 

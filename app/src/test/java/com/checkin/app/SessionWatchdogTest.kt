@@ -1,5 +1,6 @@
 package com.checkin.app
 
+import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.StringResolver
 import com.checkin.app.service.SessionLifecycleRunner
@@ -118,7 +119,7 @@ class SessionWatchdogTest {
     @Test
     fun `a session already checked out is not revived`() = runTest {
         val session = repository.checkIn()
-        repository.checkOut(session.id)
+        repository.checkOut(session.id, ClosedBy.IN_APP)
 
         val acted = watchdog(serviceRunning = false).reviveIfNeeded()
 

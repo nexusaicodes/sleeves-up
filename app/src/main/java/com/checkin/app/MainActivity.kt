@@ -80,9 +80,13 @@ class MainActivity : FragmentActivity() {
         // One-shot: consume the extra so an Activity recreation (rotation, theme change) doesn't
         // replay the notification tap and re-open a gate the user already handled.
         when {
-            intent?.getBooleanExtra(LaunchExtras.CHECK_OUT, false) == true -> {
-                intent.removeExtra(LaunchExtras.CHECK_OUT)
-                requestPresenceCheck(Reason.CHECK_OUT)
+            intent?.getBooleanExtra(LaunchExtras.CHECK_OUT_FROM_TIMER, false) == true -> {
+                intent.removeExtra(LaunchExtras.CHECK_OUT_FROM_TIMER)
+                requestPresenceCheck(Reason.CHECK_OUT_FROM_TIMER)
+            }
+            intent?.getBooleanExtra(LaunchExtras.CHECK_OUT_FROM_REMINDER, false) == true -> {
+                intent.removeExtra(LaunchExtras.CHECK_OUT_FROM_REMINDER)
+                requestPresenceCheck(Reason.CHECK_OUT_FROM_REMINDER)
             }
             intent?.getBooleanExtra(LaunchExtras.CHECK_IN, false) == true -> {
                 intent.removeExtra(LaunchExtras.CHECK_IN)
@@ -109,9 +113,12 @@ class MainActivity : FragmentActivity() {
     /** Resolves the root gate: a check-out request closes the session, and a nudge tap opens one. */
     private fun onRootGatePassed() {
         val container = (application as CheckInApplication).container
-        when (PresenceCheckSignal.request.value) {
-            Reason.CHECK_OUT -> container.applicationScope.launch {
-                val closed = container.repository.checkOutActiveSession()
+        val reason = PresenceCheckSignal.request.value
+        when (reason) {
+            // Both check-out reasons take the same path and differ only in the ending the row
+            // records, which the Reason itself carries.
+            Reason.CHECK_OUT_FROM_TIMER, Reason.CHECK_OUT_FROM_REMINDER -> container.applicationScope.launch {
+                val closed = container.repository.checkOutActiveSession(reason.closedBy!!)
                 // Before stop(), which is a no-op when the service has already been killed and
                 // would otherwise leave both alarms standing over a closed session.
                 container.sessionLifecycleRunner.cancel()

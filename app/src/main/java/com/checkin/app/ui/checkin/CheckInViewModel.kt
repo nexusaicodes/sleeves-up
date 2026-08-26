@@ -9,6 +9,7 @@ import com.checkin.app.CheckInApplication
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.dayTrigger
 import com.checkin.app.data.local.CheckInSession
+import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.nudge.PostedNudges
 import com.checkin.app.platform.ServiceController
@@ -155,7 +156,7 @@ class CheckInViewModel(
     private fun executeCheckOut() {
         viewModelScope.launch {
             val active = repository.getActiveSession() ?: return@launch
-            val closed = repository.checkOut(active.id)
+            val closed = repository.checkOut(active.id, ClosedBy.IN_APP)
             // Before `stop()`, and not left to it: that command is a no-op when the service has
             // already been killed, which would leave both alarms standing over a closed session.
             sessionLifecycleRunner.cancel()

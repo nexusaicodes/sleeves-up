@@ -14,7 +14,7 @@ class ConsistencyStatsTest {
 
     private fun days(vararg entries: Pair<LocalDate, Long>): Map<String, DailyAggregate> =
         entries.associate { (date, ms) ->
-            date.toString() to DailyAggregate(date.toString(), ms, 1, 0L, null, 0)
+            date.toString() to DailyAggregate(date.toString(), ms, 1, 0L, null, 0, 1, 0, 0)
         }
 
     private val minutes45 = 45 * 60_000L
@@ -41,8 +41,8 @@ class ConsistencyStatsTest {
     @Test
     fun `total sessions counts every session, not every day`() {
         val summaries = mapOf(
-            "2026-06-01" to DailyAggregate("2026-06-01", minutes45, 3, 0L, null, 0),
-            "2026-06-02" to DailyAggregate("2026-06-02", hours9, 1, 0L, null, 0),
+            "2026-06-01" to DailyAggregate("2026-06-01", minutes45, 3, 0L, null, 0, 3, 0, 0),
+            "2026-06-02" to DailyAggregate("2026-06-02", hours9, 1, 0L, null, 0, 1, 0, 0),
         )
 
         assertEquals(4, ConsistencyStats.totalSessions(summaries))

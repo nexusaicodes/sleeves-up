@@ -2,6 +2,7 @@ package com.checkin.app
 
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.CheckInSessionDao
+import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.local.DailyAggregate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,14 +25,14 @@ class FakeCheckInSessionDao : CheckInSessionDao {
         store.value = store.value + CheckInSession(id = nextId++, startedAt = startedAt, dateKey = dateKey)
     }
 
-    fun seedCompleted(dateKey: String, startedAt: Long, durationMs: Long, autoClosed: Boolean = false) {
+    fun seedCompleted(dateKey: String, startedAt: Long, durationMs: Long, closedBy: ClosedBy = ClosedBy.IN_APP) {
         store.value = store.value + CheckInSession(
             id = nextId++,
             startedAt = startedAt,
             stoppedAt = startedAt + durationMs,
             duration = durationMs,
             dateKey = dateKey,
-            autoClosed = autoClosed,
+            closedBy = closedBy,
         )
     }
 
@@ -88,7 +89,10 @@ class FakeCheckInSessionDao : CheckInSessionDao {
                 sessionCount = list.size,
                 firstCheckIn = list.minOf { it.startedAt },
                 lastCheckOut = list.maxOf { it.stoppedAt ?: 0L },
-                autoClosedSessions = list.count { it.autoClosed },
+                autoClosedSessions = list.count { it.closedBy == ClosedBy.DAY_BOUNDARY },
+                inAppCheckOuts = list.count { it.closedBy == ClosedBy.IN_APP },
+                timerNotificationCheckOuts = list.count { it.closedBy == ClosedBy.TIMER_NOTIFICATION },
+                reminderNotificationCheckOuts = list.count { it.closedBy == ClosedBy.REMINDER_NOTIFICATION },
             )
         }
         .sortedBy { it.dateKey }

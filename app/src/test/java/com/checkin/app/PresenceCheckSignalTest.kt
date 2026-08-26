@@ -31,11 +31,11 @@ class PresenceCheckSignalTest {
     @Test
     fun `a request survives the round trip out to system settings and back`() {
         // The camera-recovery screen's only escape hatch leaves the app; the user is expected back.
-        PresenceCheckSignal.raise(Reason.CHECK_OUT, raisedAt)
+        PresenceCheckSignal.raise(Reason.CHECK_OUT_FROM_TIMER, raisedAt)
 
         val thirtySecondsLater = raisedAt + 30_000L
         assertTrue(PresenceCheckSignal.expireIfStale(thirtySecondsLater))
-        assertEquals(Reason.CHECK_OUT, PresenceCheckSignal.request.value)
+        assertEquals(Reason.CHECK_OUT_FROM_TIMER, PresenceCheckSignal.request.value)
     }
 
     @Test
@@ -50,7 +50,7 @@ class PresenceCheckSignalTest {
 
     @Test
     fun `the boundary belongs to the live side`() {
-        PresenceCheckSignal.raise(Reason.CHECK_OUT, raisedAt)
+        PresenceCheckSignal.raise(Reason.CHECK_OUT_FROM_TIMER, raisedAt)
 
         assertTrue(PresenceCheckSignal.expireIfStale(raisedAt + PresenceCheckSignal.EXPIRY_MS))
         assertFalse(PresenceCheckSignal.expireIfStale(raisedAt + PresenceCheckSignal.EXPIRY_MS + 1))

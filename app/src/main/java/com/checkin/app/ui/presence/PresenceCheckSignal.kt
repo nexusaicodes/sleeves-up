@@ -1,5 +1,6 @@
 package com.checkin.app.ui.presence
 
+import com.checkin.app.data.local.ClosedBy
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
@@ -9,13 +10,23 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * intent, and the root composable shows the auth gate regardless of the active tab.
  */
 object PresenceCheckSignal {
-    /** Why the root gate is showing — decides what a successful auth does. */
-    enum class Reason {
+    /**
+     * Why the root gate is showing — decides what a successful auth does.
+     *
+     * The two check-out reasons differ only in the [ClosedBy] they carry: both close the active
+     * session, and the gate itself renders identically for either. They are separate values rather
+     * than one value plus a payload because the flow holds an enum, and a payload beside it is a
+     * second thing to keep in step with the first.
+     */
+    enum class Reason(val closedBy: ClosedBy? = null) {
         /** No gate requested. */
         NONE,
 
-        /** Notification "Check Out" action: success checks the active session out. */
-        CHECK_OUT,
+        /** Ongoing timer notification's "Check Out" action: success checks the active session out. */
+        CHECK_OUT_FROM_TIMER(ClosedBy.TIMER_NOTIFICATION),
+
+        /** Session reminder's "Check Out" action: success checks the active session out. */
+        CHECK_OUT_FROM_REMINDER(ClosedBy.REMINDER_NOTIFICATION),
 
         /** Nudge tap: success starts a session. */
         CHECK_IN,

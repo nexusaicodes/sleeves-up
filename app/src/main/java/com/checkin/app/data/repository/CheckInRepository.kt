@@ -4,6 +4,7 @@ import com.checkin.app.data.SystemTimeSource
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.CheckInSessionDao
+import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.local.DailyAggregate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -38,7 +39,8 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
         return session.copy(id = dao.insertSession(session))
     }
 
-    suspend fun checkOut(sessionId: Long): CheckInSession? = checkOutAt(sessionId, timeSource.nowMillis())
+    suspend fun checkOut(sessionId: Long, closedBy: ClosedBy): CheckInSession? =
+        checkOutAt(sessionId, timeSource.nowMillis(), closedBy)
 
     /**
      * Closes [sessionId] stamped at [atMillis] rather than now, returning the closed row, or null
@@ -49,20 +51,25 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * stop before the start means a changed system clock or a corrupt row, and a negative duration
      * would poison every total that sums it.
      *
-     * [autoClosed] records that the boundary closed the session rather than the user, and defaults
-     * to false so every gated path stays as it was. It changes nothing about the row's duration or
-     * its immutability; the CSV export is the only thing that ever reads it.
+     * [closedBy] records *what* ended the session — which surface the user checked out from, or the
+     * midnight alarm. It changes nothing about the row's duration or its immutability; the CSV
+     * export is the only thing that ever reads it, and nothing displays it.
+     *
+     * It has **no default**, deliberately. Its predecessor was a boolean defaulting to false, so a
+     * caller that never mentioned it silently asserted a value — which was harmless while there were
+     * two endings and one of them was the default, and is a wrong answer now that there are four.
+     * A new check-out path must state which one it is, or it does not compile.
      *
      * The closed row comes back so a caller that wants to report what was recorded reads the stored
      * figure rather than recomputing it: a second subtraction at the call site would be a second
      * copy of the flooring rule, free to disagree with the row it describes.
      */
-    suspend fun checkOutAt(sessionId: Long, atMillis: Long, autoClosed: Boolean = false): CheckInSession? {
+    suspend fun checkOutAt(sessionId: Long, atMillis: Long, closedBy: ClosedBy): CheckInSession? {
         val session = dao.getSessionById(sessionId) ?: return null
         val closed = session.copy(
             stoppedAt = atMillis,
             duration = (atMillis - session.startedAt).coerceAtLeast(0L),
-            autoClosed = autoClosed,
+            closedBy = closedBy,
         )
         dao.updateSession(closed)
         return closed
@@ -72,9 +79,9 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * Checks out whatever session is open, for callers that don't hold its id. Returns the closed
      * row, or null when nothing was open.
      */
-    suspend fun checkOutActiveSession(): CheckInSession? {
+    suspend fun checkOutActiveSession(closedBy: ClosedBy): CheckInSession? {
         val active = dao.getActiveSession() ?: return null
-        return checkOut(active.id)
+        return checkOut(active.id, closedBy)
     }
 
     suspend fun getActiveSession(): CheckInSession? = dao.getActiveSession()

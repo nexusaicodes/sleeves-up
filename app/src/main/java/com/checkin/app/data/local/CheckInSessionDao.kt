@@ -39,6 +39,12 @@ interface CheckInSessionDao {
      *
      * `stopped_at IS NOT NULL` is what makes only completed sessions aggregate: an open session
      * contributes nothing anywhere until check-out.
+     *
+     * The `closed_by` literals are [ClosedBy.storedValue] spellings, which an annotation cannot read
+     * — an enum property is not `const`. They are frozen, so this cannot drift on its own; a *new*
+     * ending means a new value there and a new sum here. `CASE WHEN` rather than the shorter
+     * `SUM(closed_by = '…')` because that yields NULL, not 0, for a group where every row is null,
+     * and these fields are non-null Ints.
      */
     @Query(
         """
@@ -47,7 +53,12 @@ interface CheckInSessionDao {
                COUNT(*) AS sessionCount,
                MIN(started_at) AS firstCheckIn,
                MAX(stopped_at) AS lastCheckOut,
-               COALESCE(SUM(auto_closed), 0) AS autoClosedSessions
+               COALESCE(SUM(CASE WHEN closed_by = 'day_boundary' THEN 1 ELSE 0 END), 0) AS autoClosedSessions,
+               COALESCE(SUM(CASE WHEN closed_by = 'in_app' THEN 1 ELSE 0 END), 0) AS inAppCheckOuts,
+               COALESCE(SUM(CASE WHEN closed_by = 'timer_notification' THEN 1 ELSE 0 END), 0)
+                   AS timerNotificationCheckOuts,
+               COALESCE(SUM(CASE WHEN closed_by = 'reminder_notification' THEN 1 ELSE 0 END), 0)
+                   AS reminderNotificationCheckOuts
         FROM sessions
         WHERE date_key BETWEEN :startDate AND :endDate
           AND stopped_at IS NOT NULL
@@ -64,7 +75,12 @@ interface CheckInSessionDao {
                COUNT(*) AS sessionCount,
                MIN(started_at) AS firstCheckIn,
                MAX(stopped_at) AS lastCheckOut,
-               COALESCE(SUM(auto_closed), 0) AS autoClosedSessions
+               COALESCE(SUM(CASE WHEN closed_by = 'day_boundary' THEN 1 ELSE 0 END), 0) AS autoClosedSessions,
+               COALESCE(SUM(CASE WHEN closed_by = 'in_app' THEN 1 ELSE 0 END), 0) AS inAppCheckOuts,
+               COALESCE(SUM(CASE WHEN closed_by = 'timer_notification' THEN 1 ELSE 0 END), 0)
+                   AS timerNotificationCheckOuts,
+               COALESCE(SUM(CASE WHEN closed_by = 'reminder_notification' THEN 1 ELSE 0 END), 0)
+                   AS reminderNotificationCheckOuts
         FROM sessions
         WHERE date_key BETWEEN :startDate AND :endDate
           AND stopped_at IS NOT NULL

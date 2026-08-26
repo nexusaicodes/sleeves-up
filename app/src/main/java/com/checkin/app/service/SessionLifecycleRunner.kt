@@ -3,6 +3,7 @@ package com.checkin.app.service
 import com.checkin.app.R
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.CheckInSession
+import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.notify.NotificationAction
@@ -175,7 +176,7 @@ class SessionLifecycleRunner(
 
         // The one un-gated check-out in the app, and the only writer that flags a session as
         // closed by the boundary rather than by the user.
-        repository.checkOutAt(active.id, closeAt, autoClosed = true)
+        repository.checkOutAt(active.id, closeAt, ClosedBy.DAY_BOUNDARY)
         alarms.cancelAll()
         notifier.cancel(NotificationIds.SESSION_REMINDER)
         return Outcome.Closed(closeAt)
@@ -218,7 +219,7 @@ class SessionLifecycleRunner(
             NotificationAction(
                 iconRes = R.drawable.ic_stat_check_out,
                 label = strings.get(R.string.notification_action_stop),
-                launchExtra = LaunchExtras.CHECK_OUT,
+                launchExtra = LaunchExtras.CHECK_OUT_FROM_REMINDER,
             ),
         ),
         silent = silent,

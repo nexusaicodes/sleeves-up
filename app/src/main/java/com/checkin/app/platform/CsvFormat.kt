@@ -31,8 +31,16 @@ private const val MILLIS_PER_HOUR = 3_600_000.0
  * counts sessions the midnight alarm closed because the user forgot to, which is a fact about what
  * happened to a *session*, not an assessment of the *day*. It is a per-day count because these rows
  * are days; a day worked in three blocks, two of which the user closed themselves, reports 1.
+ *
+ * The three columns after it complete that fact rather than reinterpreting it: they say *which*
+ * surface each of the user's own check-outs came from. `Auto Closed Sessions` keeps its name and its
+ * meaning — it is the [ClosedBy.DAY_BOUNDARY][com.checkin.app.data.local.ClosedBy.DAY_BOUNDARY]
+ * count — precisely so nothing already scripted against the file has to change; the generalisation
+ * goes on the end, which is the only place it may go. The four sum to `Session Count`.
  */
-private const val CSV_HEADER = "Date,First Check In,Last Check Out,Total Hours,Session Count,Auto Closed Sessions\n"
+private const val CSV_HEADER = "Date,First Check In,Last Check Out,Total Hours,Session Count," +
+    "Auto Closed Sessions,In App Check Outs,Timer Notification Check Outs," +
+    "Reminder Notification Check Outs\n"
 
 /**
  * One day's row, or a gap-filled day of zeros when [summary] is null.
@@ -48,7 +56,10 @@ internal fun csvRow(key: String, summary: DailyAggregate?): String {
         ?: "0.00"
     val count = summary?.sessionCount?.toString() ?: "0"
     val autoClosed = summary?.autoClosedSessions?.toString() ?: "0"
-    return "$key,$firstIn,$lastOut,$totalHrs,$count,$autoClosed\n"
+    val inApp = summary?.inAppCheckOuts?.toString() ?: "0"
+    val fromTimer = summary?.timerNotificationCheckOuts?.toString() ?: "0"
+    val fromReminder = summary?.reminderNotificationCheckOuts?.toString() ?: "0"
+    return "$key,$firstIn,$lastOut,$totalHrs,$count,$autoClosed,$inApp,$fromTimer,$fromReminder\n"
 }
 
 /**

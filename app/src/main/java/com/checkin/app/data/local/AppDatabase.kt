@@ -4,109 +4,48 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
-import com.checkin.app.service.SessionSchedule
-import java.time.ZoneId
+import androidx.room.TypeConverters
 
-@Database(entities = [CheckInSession::class], version = 6, exportSchema = false)
+/**
+ * The sessions database, at **version 1 with no migrations, deliberately**.
+ *
+ * It reached version 7 across five migrations that added and then removed the presence-pause
+ * columns, dropped two vestigial selfie columns, and generalised an auto-closed boolean into
+ * [ClosedBy]. All of it is collapsed into the schema [CheckInSession] declares today. The reason is
+ * that this app has no install base to carry: v1.1 and v2.0 both reached Play at effectively zero
+ * installs, and no device holds session history anyone wants. A migration that has already run
+ * everywhere it can reach, on a schema nobody else has, is history rather than code.
+ *
+ * **This is a one-time exemption and it is now spent.** Every future schema change needs a real
+ * migration, because from here the population is no longer zero — and two things are worth knowing
+ * before writing the first one:
+ *
+ * - **`ALTER TABLE ... DROP COLUMN` is not available.** SQLite learned it in 3.35, which shipped in
+ *   Android 14; `minSdk` is 33, and API 33 ships **3.32.2**, where it is a bare syntax error —
+ *   measured on an API 33 emulator, not recalled. Rebuild the table instead: create, `INSERT …
+ *   SELECT`, drop, rename, with the new table spelled to match what Room generates for the entity
+ *   exactly, since Room validates the schema on the next open and a stray `NOT NULL` or a missing
+ *   `AUTOINCREMENT` fails there rather than in the migration.
+ * - **A new column needs `@ColumnInfo(defaultValue = ...)` matching the migration's `DEFAULT`**, or
+ *   Room emits it without one on a fresh install while the migration adds it with one, and nothing
+ *   checks. An insert omitting that column then succeeds on an upgraded install and fails on a fresh
+ *   one — a difference that only ever shows up on somebody else's device.
+ *
+ * There is **no `androidTest` source set**, so no gate in this repo can catch a broken migration:
+ * verify one by installing the previous build, seeding it, and installing over the top.
+ *
+ * [fallbackToDestructiveMigration] is what makes the collapse land rather than crash on a
+ * development device still holding a version-7 file: it has nowhere to migrate from, so it starts
+ * over. It stays afterwards as the same backstop it always was.
+ */
+@Database(entities = [CheckInSession::class], version = 1, exportSchema = false)
+@TypeConverters(ClosedByConverter::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun checkInSessionDao(): CheckInSessionDao
 
     companion object {
         @Volatile
         private var cached: AppDatabase? = null
-
-        /** Adds the presence-pause columns without dropping existing sessions. */
-        private val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE sessions ADD COLUMN paused_ms INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE sessions ADD COLUMN pause_started_at INTEGER")
-            }
-        }
-
-        /** Drops the vestigial selfie columns; selfies are transient and never persisted. */
-        private val MIGRATION_3_4 = object : Migration(3, 4) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE sessions DROP COLUMN punch_in_selfie")
-                db.execSQL("ALTER TABLE sessions DROP COLUMN punch_out_selfie")
-            }
-        }
-
-        /**
-         * Drops the presence-pause columns along with the mechanism that wrote them.
-         *
-         * **Completed** rows are untouched: their `duration` was already stored net of paused time,
-         * so only the audit trail of *why* it was shorter than the wall-clock span is lost, and
-         * nothing reads that.
-         *
-         * A session still **open** at upgrade time loses whatever pause it had accumulated and is
-         * recorded at its full wall-clock span when it closes. Deliberate, not overlooked: nothing
-         * in this model subtracts from an interval, and the alternatives are worse — closing the row
-         * silently ends a session the user may still be in, and folding the pause into `started_at`
-         * rewrites the check-in time they see on screen. Over-counting one session beats editing a
-         * row the app gives no way to edit. The blast radius is bounded by the day-boundary close,
-         * which `SessionWatchdog.reviveIfNeeded` restores through `SessionLifecycleRunner.ensureArmed`
-         * on the first app open after the upgrade: a session left open
-         * past its own midnight is closed *at* that midnight, so at most a same-day pause survives.
-         */
-        private val MIGRATION_4_5 = object : Migration(4, 5) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE sessions DROP COLUMN paused_ms")
-                db.execSQL("ALTER TABLE sessions DROP COLUMN pause_started_at")
-            }
-        }
-
-        /**
-         * Records which sessions the day-boundary alarm closed, rather than the user.
-         *
-         * Additive and data-preserving: the column defaults to 0, and no existing value is rewritten.
-         * Nothing in the app reads it — it exists for the CSV export alone.
-         *
-         * **The backfill is best-effort, and deliberately so.** Going forward the flag is written by
-         * the one caller that closes a session at midnight, so it is exact. For rows already on
-         * disk there is nothing to read but the stop instant, so the migration re-derives it: a
-         * session stopped at exactly the midnight ending its own `date_key` was closed by the alarm,
-         * because the gate takes seconds to pass and a user cannot land on that millisecond. It
-         * misses two cases and cannot recover either — `onDayBoundaryFired` clamps its stop instant
-         * with `coerceAtMost(now)`, and the armed midnight was computed in the zone the session
-         * began in, so a session that crossed a zone change is stamped somewhere else entirely.
-         * Both under-report, which is the safe direction for a column that asserts something about
-         * the user's behaviour.
-         *
-         * The `DEFAULT 0` is matched by `@ColumnInfo(defaultValue = "0")` on the entity, so a fresh
-         * install and a migrated one end up with the *same* CREATE TABLE. Without the annotation Room
-         * emits the column with no default on a fresh install, and the two schemas differ in a way
-         * nothing checks — any insert that does not name the column then succeeds on one and fails
-         * on the other, which is a difference that only ever shows up on somebody else's device.
-         *
-         * `SessionSchedule.dayBoundaryOf` is reused rather than reimplemented in SQL: the midnight
-         * rule goes through the calendar (so a DST day still ends at midnight), and a second copy of
-         * it here is how the export would come to disagree with the alarm that wrote the rows.
-         */
-        private val MIGRATION_5_6 = object : Migration(5, 6) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE sessions ADD COLUMN auto_closed INTEGER NOT NULL DEFAULT 0")
-                val zone = ZoneId.systemDefault()
-                val closedAtBoundary = mutableListOf<Long>()
-                db.query("SELECT id, stopped_at, date_key FROM sessions WHERE stopped_at IS NOT NULL").use { cursor ->
-                    while (cursor.moveToNext()) {
-                        val boundary = SessionSchedule.dayBoundaryOf(cursor.getString(2), zone)
-                        if (boundary != null && boundary == cursor.getLong(1)) {
-                            closedAtBoundary += cursor.getLong(0)
-                        }
-                    }
-                }
-                // Chunked so a long history cannot build one enormous expression. The ids come from
-                // this table's own primary key, so they are inlined rather than bound.
-                closedAtBoundary.chunked(BACKFILL_CHUNK).forEach { ids ->
-                    db.execSQL("UPDATE sessions SET auto_closed = 1 WHERE id IN (${ids.joinToString(",")})")
-                }
-            }
-        }
-
-        /** Ids per backfill statement — see [MIGRATION_5_6]. */
-        private const val BACKFILL_CHUNK = 500
 
         /**
          * The re-check inside the lock is load-bearing, not boilerplate. Without it, two threads that
@@ -120,8 +59,7 @@ abstract class AppDatabase : RoomDatabase() {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "_app",
-            ).addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
-                .fallbackToDestructiveMigration()
+            ).fallbackToDestructiveMigration()
                 .build()
                 .also { cached = it }
         }

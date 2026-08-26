@@ -1,5 +1,6 @@
 package com.checkin.app
 
+import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.StringResolver
@@ -248,7 +249,7 @@ class SessionLifecycleRunnerTest {
         assertEquals(boundary - closed.startedAt, closed.duration)
         // The one writer that flags a close as the boundary's rather than the user's. The CSV is the
         // only thing that reads it; nothing about the row's duration or immutability changes.
-        assertTrue(closed.autoClosed)
+        assertEquals(ClosedBy.DAY_BOUNDARY, closed.closedBy)
     }
 
     @Test
