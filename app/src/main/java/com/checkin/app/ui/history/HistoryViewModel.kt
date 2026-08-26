@@ -13,6 +13,7 @@ import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.data.repository.CheckInRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -58,9 +59,17 @@ class HistoryViewModel(private val repository: CheckInRepository, private val ti
             ).map { month to repository.byDateKey(it) }
         }
 
-    private val selectedSessions = selectedDateKey.flatMapLatest { key ->
-        if (key == null) flowOf(emptyList<CheckInSession>()) else repository.sessionsForDateFlow(key)
-    }
+    // The key travels **with** its rows. Read as two combine sources, a tap on a new day emits the
+    // new key alongside the previous day's sessions until the query lands, so an empty day would
+    // briefly be headed by its own date over another day's ledger.
+    private val selectedSessions: Flow<Pair<String?, List<CheckInSession>>> =
+        selectedDateKey.flatMapLatest { key ->
+            if (key == null) {
+                flowOf(null to emptyList())
+            } else {
+                repository.sessionsForDateFlow(key).map { key to it }
+            }
+        }
 
     // One day subscription drives the whole screen: the counting boundary, the today marker, and the
     // tracked-day count all roll together on refresh and at midnight, with no divergent poll loops.
@@ -76,11 +85,11 @@ class HistoryViewModel(private val repository: CheckInRepository, private val ti
                 .map { ConsistencyStats.countedThrough(repository.byDateKey(it), today) }
             combine(
                 monthData,
-                selectedDateKey,
                 selectedSessions,
                 countedThroughFlow,
-            ) { monthPair, selectedKey, sessions, countedThrough ->
+            ) { monthPair, selection, countedThrough ->
                 val (month, summaries) = monthPair
+                val (selectedKey, sessions) = selection
                 HistoryUiState(
                     currentMonth = month,
                     trackingStartDate = start,

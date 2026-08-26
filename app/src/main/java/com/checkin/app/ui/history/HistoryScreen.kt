@@ -70,11 +70,18 @@ fun HistoryScreen(
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         // Cells are sized from what the grid can actually have: the real viewport (not the physical
         // screen, which counts the app bar and bottom nav as usable) less the chrome, the month
-        // selector, the weekday header and the summary card that has to stay on screen beside it.
+        // selector, the weekday header and — on a phone — the day slot below the grid.
         val available = maxHeight - topPad - bottomPad
-        val textGrowth = TEXT_CONTENT_HEIGHT * (LocalDensity.current.fontScale - 1f).coerceAtLeast(0f)
+        // On an expanded width the day slot sits in its own pane beside the calendar, so it costs
+        // the grid no height at all; only the single-column layout has to reserve room under it.
+        val slotBudget = if (widthSizeClass == WindowWidthSizeClass.Expanded) {
+            0.dp
+        } else {
+            val textGrowth = TEXT_CONTENT_HEIGHT * (LocalDensity.current.fontScale - 1f).coerceAtLeast(0f)
+            DETAIL_SLOT_HEIGHT + SECTION_SPACING + textGrowth
+        }
         val gridBudget = available - MONTH_SELECTOR_HEIGHT - WEEKDAY_HEADER_HEIGHT -
-            DETAIL_SLOT_HEIGHT - SECTION_SPACING * 2 - textGrowth
+            SECTION_SPACING - slotBudget
         // The floor wins over fitting: 48dp is the minimum tap target, so a 6-row month on a small
         // screen scrolls a little rather than shrinking its days below it.
         val cellHeight = (gridBudget / weeksIn(uiState.currentMonth))
@@ -173,7 +180,7 @@ private fun weeksIn(month: YearMonth): Int {
 private val MIN_CELL_HEIGHT = 48.dp
 
 // A cell is only ~53dp wide on a phone, so an unbounded height stretches it into a ribbon. This cap
-// keeps the proportions sane and leaves the summary card on screen alongside the grid.
+// keeps the proportions sane and leaves the day slot on screen alongside the grid.
 private val MAX_CELL_HEIGHT = 80.dp
 
 // What the grid has to share the viewport with, measured from the composables themselves.

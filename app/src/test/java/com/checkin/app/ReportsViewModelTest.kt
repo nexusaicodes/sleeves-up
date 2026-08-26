@@ -245,6 +245,30 @@ class ReportsViewModelTest {
         assertEquals(22, state.totalDays)
     }
 
+    /**
+     * Two taps of the all-time chip land back on a month, even when nothing has re-rendered between
+     * them.
+     *
+     * The toggle reads the scope the view-model holds rather than the one the screen is showing: the
+     * rendered scope only catches up once the window's queries have emitted, so a decision taken
+     * from it sees the scope it has already left and repeats the move instead of undoing it.
+     */
+    @Test
+    fun `toggling all time twice returns to a month scope`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-06-10", startedAt = 0L, durationMs = 3_600_000L)
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        // Back to back, with no emission in between — the state is still reporting the month scope.
+        viewModel.toggleAllTime()
+        viewModel.toggleAllTime()
+        advanceUntilIdle()
+
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+    }
+
     /** Stepping outside the record leaves an empty scope, not a set of zeros over invented days. */
     @Test
     fun `a month before the record resolves to an empty scope`() = runTest {

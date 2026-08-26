@@ -110,9 +110,7 @@ fun ReportsScreen(
                 scope = uiState.scope,
                 onPrevious = { viewModel.previousMonth() },
                 onNext = { viewModel.nextMonth() },
-                onToggleAllTime = {
-                    if (uiState.scope is ReportScope.AllTime) viewModel.selectMonth() else viewModel.selectAllTime()
-                },
+                onToggleAllTime = { viewModel.toggleAllTime() },
             )
         }
 
@@ -225,7 +223,13 @@ private fun EmptyScope(scope: ReportScope) {
     EmptyState(
         icon = Icons.Default.Insights,
         title = stringResource(R.string.empty_scope_title),
-        message = stringResource(R.string.empty_scope_message, scopeLabel(scope, inline = true)),
+        // The month copy sends the user to the arrows; under all time those arrows are disabled, so
+        // it says what would actually fill the scope instead of naming a control that cannot move.
+        message = when (scope) {
+            is ReportScope.Month ->
+                stringResource(R.string.empty_scope_message, scopeLabel(scope, inline = true))
+            ReportScope.AllTime -> stringResource(R.string.empty_scope_message_all_time)
+        },
     )
 }
 

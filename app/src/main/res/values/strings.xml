@@ -166,7 +166,7 @@
     <string name="empty_day_sessions_message">No sessions recorded on this day.</string>
 
     <!-- Reports Screen -->
-    <!-- The scope selector's end-stop. Title Case: it labels a scope, not an action. -->
+    <!-- The scope selector's end-stop, read as a standalone label. -->
     <string name="scope_all_time">All time</string>
     <!-- The same scope read inside a sentence ("Export all time"), where the Title Case form lands a
          capital mid-clause. A month name needs no such pair — it is a proper noun either way. -->
@@ -174,8 +174,11 @@
     <!-- A scope covering no counted day: a month outside the record, or a record whose only day is
          a today still in progress. States the absence without rendering it as a row of zeros, which
          would assert the user showed up on none of some number of days. -->
-    <string name="empty_scope_title">Nothing recorded yet</string>
+    <string name="empty_scope_title">Nothing recorded here</string>
     <string name="empty_scope_message">No completed day in %1$s. Use the arrows to look at another month.</string>
+    <!-- The all-time counterpart. The month arrows are disabled under this scope, so pointing at
+         them would name a control the user cannot press. -->
+    <string name="empty_scope_message_all_time">No day has been checked out of yet. Check out of a session and it appears here.</string>
     <string name="scope_stats_title">The Numbers</string>
     <string name="stat_showed_up">Showed up</string>
     <string name="stat_missed">Missed</string>

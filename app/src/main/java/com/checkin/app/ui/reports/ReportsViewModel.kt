@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -109,9 +110,13 @@ class ReportsViewModel(
             val countedThroughFlow = repository.dailyAggregatesFlow(todayKey, todayKey)
                 .map { ConsistencyStats.countedThrough(repository.byDateKey(it), today) }
 
+            // Room invalidates per *table*, so the one-day query re-emits on every write to
+            // `sessions` — including the ones that leave `countedThrough` exactly where it was.
+            // Without this the `flatMapLatest` below tears down and re-subscribes both window
+            // queries on each check-in and check-out, which under all time is the whole record.
             combine(scope, countedThroughFlow) { activeScope, countedThrough ->
                 activeScope to activeScope.resolve(start, countedThrough)
-            }.flatMapLatest { (activeScope, window) ->
+            }.distinctUntilChanged().flatMapLatest { (activeScope, window) ->
                 if (window == null) {
                     flowOf(ReportsUiState(loading = false, scope = activeScope, trackingStartDate = start))
                 } else {
@@ -247,6 +252,17 @@ class ReportsViewModel(
 
     fun selectAllTime() {
         scope.value = ReportScope.AllTime
+    }
+
+    /**
+     * Flips between all time and the current month.
+     *
+     * The decision reads [scope] rather than the rendered state, because the state only catches up
+     * once the window's queries have emitted: judged from the screen, a second tap inside that gap
+     * sees the scope it has already left and repeats the move instead of undoing it.
+     */
+    fun toggleAllTime() {
+        if (scope.value is ReportScope.AllTime) selectMonth() else selectAllTime()
     }
 
     private fun displayedMonth(): YearMonth =
