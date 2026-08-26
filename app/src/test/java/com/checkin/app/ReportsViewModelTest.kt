@@ -5,8 +5,8 @@ import com.checkin.app.data.StartBucket
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.platform.ExportResult
 import com.checkin.app.ui.reports.DayPoint
-import com.checkin.app.ui.reports.ExportRange
 import com.checkin.app.ui.reports.MonthPoint
+import com.checkin.app.ui.reports.ReportScope
 import com.checkin.app.ui.reports.ReportsViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -180,12 +180,17 @@ class ReportsViewModelTest {
         assertEquals(2 * hour, series.last().workedMs)
     }
 
+    /**
+     * All time cannot plot a point per day of a multi-year record, so it keeps a trailing window.
+     * A month scope has no such problem and plots the month, which the next test pins.
+     */
     @Test
-    fun `the daily series is capped to its trailing window`() = runTest {
+    fun `the all-time daily series is capped to its trailing window`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedOpen("2025-01-01")
         val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
+        viewModel.selectAllTime()
         advanceUntilIdle()
 
         val series = viewModel.uiState.value.dailySeries
@@ -193,6 +198,71 @@ class ReportsViewModelTest {
         assertEquals(LocalDate.of(2026, 6, 14), series.last().date)
     }
 
+    /**
+     * A month scope plots the month itself, uncapped — 30 days is not the rule, it is all time's rule.
+     *
+     * The February session is what puts the whole of March inside the record: seeded from March
+     * alone, the month would correctly clamp to its own tracking start and cover 22 days, which is
+     * the case the next test pins.
+     */
+    @Test
+    fun `a fully covered past month plots every day of that month`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-02-01", startedAt = 0L, durationMs = 3_600_000L)
+        dao.seedCompleted("2026-03-10", startedAt = 0L, durationMs = 3_600_000L)
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        repeat(3) { viewModel.previousMonth() }
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 3)), state.scope)
+        assertEquals(31, state.totalDays)
+        assertEquals(LocalDate.of(2026, 3, 1), state.dailySeries.first().date)
+        assertEquals(LocalDate.of(2026, 3, 31), state.dailySeries.last().date)
+        assertEquals(1, state.showedUpDays)
+        // A month spans one bar, which is not a chart — the series is empty and the card is absent.
+        assertEquals(emptyList<MonthPoint>(), state.monthlySeries)
+    }
+
+    /**
+     * A month the record only partly covers opens at the first session, not at the 1st — the same
+     * clamp the CSV export depends on, since gap-filling days before the user had ever opened the
+     * app would write them out as days they recorded nothing.
+     */
+    @Test
+    fun `a month holding the tracking start opens at it rather than at the first`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-03-10", startedAt = 0L, durationMs = 3_600_000L)
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        repeat(3) { viewModel.previousMonth() }
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(LocalDate.of(2026, 3, 10), state.dailySeries.first().date)
+        assertEquals(LocalDate.of(2026, 3, 31), state.dailySeries.last().date)
+        assertEquals(22, state.totalDays)
+    }
+
+    /** Stepping outside the record leaves an empty scope, not a set of zeros over invented days. */
+    @Test
+    fun `a month before the record resolves to an empty scope`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-06-10", startedAt = 0L, durationMs = 3_600_000L)
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        viewModel.previousMonth()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertNull(state.window)
+        assertEquals(0, state.totalDays)
+        // The record itself is still known — the scope is empty, not the app.
+        assertEquals(LocalDate.of(2026, 6, 10), state.trackingStartDate)
+    }
+
+    /** All time only, and every month between the first session and the last counted day. */
     @Test
     fun `the monthly series covers every month in the window including empty ones`() = runTest {
         val dao = FakeCheckInSessionDao()
@@ -201,6 +271,7 @@ class ReportsViewModelTest {
         dao.seedOpen("2026-04-01")
         val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
+        viewModel.selectAllTime()
         advanceUntilIdle()
 
         val series = viewModel.uiState.value.monthlySeries
@@ -231,6 +302,7 @@ class ReportsViewModelTest {
         val viewModel = buildViewModel(dao, FakeCsvExporter(), FixedTime(0L, LocalDate.of(2026, 6, 15)))
 
         backgroundScope.launch { viewModel.uiState.collect {} }
+        viewModel.selectAllTime()
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -321,7 +393,8 @@ class ReportsViewModelTest {
         val events = mutableListOf<ExportResult>()
         backgroundScope.launch { viewModel.exportEvents.collect { events += it } }
 
-        viewModel.exportCsv(ExportRange.ALL_TIME)
+        viewModel.selectAllTime()
+        viewModel.exportCsv()
         advanceUntilIdle()
 
         assertNotNull(exporter.lastRange)
@@ -339,7 +412,8 @@ class ReportsViewModelTest {
         // First collector receives the event, then goes away (e.g. the screen is recreated).
         val first = mutableListOf<ExportResult>()
         val job = launch { viewModel.exportEvents.collect { first += it } }
-        viewModel.exportCsv(ExportRange.ALL_TIME)
+        viewModel.selectAllTime()
+        viewModel.exportCsv()
         advanceUntilIdle()
         job.cancel()
 
@@ -367,7 +441,7 @@ class ReportsViewModelTest {
             FixedTime(0L, LocalDate.of(2026, 6, 15)),
         )
 
-        viewModel.exportCsv(ExportRange.THIS_MONTH)
+        viewModel.exportCsv()
         advanceUntilIdle()
 
         assertEquals("2026-06-01" to "2026-06-14", exporter.lastRange)
@@ -389,7 +463,7 @@ class ReportsViewModelTest {
             FixedTime(0L, LocalDate.of(2026, 6, 25)),
         )
 
-        viewModel.exportCsv(ExportRange.THIS_MONTH)
+        viewModel.exportCsv()
         advanceUntilIdle()
 
         assertEquals("2026-06-20" to "2026-06-24", exporter.lastRange)
@@ -407,7 +481,8 @@ class ReportsViewModelTest {
             FixedTime(0L, LocalDate.of(2026, 6, 15)),
         )
 
-        viewModel.exportCsv(ExportRange.ALL_TIME)
+        viewModel.selectAllTime()
+        viewModel.exportCsv()
         advanceUntilIdle()
 
         assertEquals("2026-04-20" to "2026-06-14", exporter.lastRange)
@@ -427,13 +502,56 @@ class ReportsViewModelTest {
         val exporter = FakeCsvExporter(ExportResult.Success)
         val viewModel = buildViewModel(dao, exporter, FixedTime(0L, today))
 
-        viewModel.exportCsv(ExportRange.THIS_MONTH)
+        viewModel.exportCsv()
         advanceUntilIdle()
         assertEquals("2026-06-05" to "2026-06-15", exporter.lastRange)
 
-        viewModel.exportCsv(ExportRange.ALL_TIME)
+        viewModel.selectAllTime()
+        viewModel.exportCsv()
         advanceUntilIdle()
         assertEquals("2026-06-05" to "2026-06-15", exporter.lastRange)
+    }
+
+    /**
+     * The export follows the scope, which is what makes an arbitrary past month exportable at all —
+     * the old This month / All time pair could not express one.
+     *
+     * It also means the file and the screen read the one `resolve`, so they cannot describe
+     * different days. They used to clamp separately, with their own arithmetic.
+     */
+    @Test
+    fun `an export under a past month scope writes that month's clamped window`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-02-01", startedAt = 0L, durationMs = 3_600_000L)
+        dao.seedCompleted("2026-03-10", startedAt = 0L, durationMs = 3_600_000L)
+        val exporter = FakeCsvExporter(ExportResult.Success)
+        val viewModel = buildViewModel(dao, exporter, FixedTime(0L, LocalDate.of(2026, 6, 15)))
+
+        repeat(3) { viewModel.previousMonth() }
+        viewModel.exportCsv()
+        advanceUntilIdle()
+
+        assertEquals("2026-03-01" to "2026-03-31", exporter.lastRange)
+    }
+
+    /** A scope holding no counted day writes no file, exactly as an empty range does. */
+    @Test
+    fun `an export under an empty scope reports nothing`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-06-10", startedAt = 0L, durationMs = 3_600_000L)
+        val exporter = FakeCsvExporter(ExportResult.Success)
+        val viewModel = buildViewModel(dao, exporter, FixedTime(0L, LocalDate.of(2026, 6, 15)))
+
+        val events = mutableListOf<ExportResult>()
+        backgroundScope.launch { viewModel.exportEvents.collect { events += it } }
+
+        // A month entirely before the record began.
+        viewModel.previousMonth()
+        viewModel.exportCsv()
+        advanceUntilIdle()
+
+        assertEquals(listOf(ExportResult.Nothing), events)
+        assertNull(exporter.lastRange)
     }
 
     /**
@@ -456,7 +574,8 @@ class ReportsViewModelTest {
         val events = mutableListOf<ExportResult>()
         backgroundScope.launch { viewModel.exportEvents.collect { events += it } }
 
-        viewModel.exportCsv(ExportRange.ALL_TIME)
+        viewModel.selectAllTime()
+        viewModel.exportCsv()
         advanceUntilIdle()
 
         assertEquals(listOf(ExportResult.Nothing), events)
@@ -478,8 +597,9 @@ class ReportsViewModelTest {
         val events = mutableListOf<ExportResult>()
         backgroundScope.launch { viewModel.exportEvents.collect { events += it } }
 
-        viewModel.exportCsv(ExportRange.THIS_MONTH)
-        viewModel.exportCsv(ExportRange.ALL_TIME)
+        viewModel.exportCsv()
+        viewModel.selectAllTime()
+        viewModel.exportCsv()
         advanceUntilIdle()
 
         assertEquals(listOf(ExportResult.Nothing, ExportResult.Nothing), events)

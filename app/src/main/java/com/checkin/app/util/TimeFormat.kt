@@ -2,6 +2,7 @@ package com.checkin.app.util
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -23,6 +24,11 @@ object TimeFormat {
     // parts that earn their space differ.
     private val dateWithYearFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)
     private val dateWithWeekdayFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.US)
+
+    /** Chart axes: short enough to sit under a point without crowding its neighbours. */
+    private val axisDayFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.US)
+    private val axisMonthFormatter = DateTimeFormatter.ofPattern("MMM", Locale.US)
+    private val axisMonthWithYearFormatter = DateTimeFormatter.ofPattern("MMM ''yy", Locale.US)
 
     /**
      * Live elapsed for a running clock: "0m 0s" through "59m 59s", then "1h 0m" onward. Seconds are
@@ -75,4 +81,18 @@ object TimeFormat {
     fun dateKeyWithWeekday(dateKey: String?): String? = dateKey
         ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         ?.let(::dateWithWeekday)
+
+    /** A day under a chart axis (e.g. "Jul 25"). The chart's own title supplies the year. */
+    fun axisDay(date: LocalDate): String = date.format(axisDayFormatter)
+
+    /**
+     * A month under a chart axis, carrying the year only when the series spans more than one.
+     *
+     * A bare "MMM" is what a month axis wants — three characters under a bar — and it is a lie the
+     * moment the record is long enough to hold two Augusts, which is exactly the series the all-time
+     * scope draws. [multiYear] is the series' own question, asked once by the caller rather than per
+     * label, so every bar in one chart is formatted the same way.
+     */
+    fun axisMonth(month: YearMonth, multiYear: Boolean): String =
+        month.format(if (multiYear) axisMonthWithYearFormatter else axisMonthFormatter)
 }

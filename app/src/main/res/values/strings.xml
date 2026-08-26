@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Casing: section and card titles are Title Case ("Overall Stats", "All-Time Split"), and so are
+    Casing: section and card titles are Title Case ("The Numbers", "Days Split"), and so are
     notification channel names ("Check-In Timer", "Session Reminders"), which Android renders as the
     titles of one list; everything a user reads as a line rather than a heading — row labels,
     buttons, help text, empty states — is sentence case ("Grant access", "Showed up").
@@ -144,7 +144,7 @@
     <string name="cd_day_worked">%1$d, %2$s worked</string>
     <string name="cd_expand_sessions">Show today\'s sessions</string>
     <string name="cd_collapse_sessions">Hide today\'s sessions</string>
-    <string name="cd_alltime_split">All-time split: %1$s showed up, %2$s missed</string>
+    <string name="cd_days_split">Days split: %1$s showed up, %2$s missed</string>
     <!-- Three counts, so none can be a plural's own quantity: each is worded through a plural first
          and arrives here as a phrase. -->
     <string name="cd_start_time_split">Start times: %1$s in the morning, %2$s in the afternoon, %3$s in the evening</string>
@@ -166,28 +166,45 @@
     <string name="empty_day_sessions_message">No sessions recorded on this day.</string>
 
     <!-- Reports Screen -->
+    <!-- The scope selector's end-stop. Title Case: it labels a scope, not an action. -->
+    <string name="scope_all_time">All time</string>
+    <!-- The same scope read inside a sentence ("Export all time"), where the Title Case form lands a
+         capital mid-clause. A month name needs no such pair — it is a proper noun either way. -->
+    <string name="scope_all_time_inline">all time</string>
+    <!-- A scope covering no counted day: a month outside the record, or a record whose only day is
+         a today still in progress. States the absence without rendering it as a row of zeros, which
+         would assert the user showed up on none of some number of days. -->
+    <string name="empty_scope_title">Nothing recorded yet</string>
+    <string name="empty_scope_message">No completed day in %1$s. Use the arrows to look at another month.</string>
+    <string name="scope_stats_title">The Numbers</string>
     <string name="stat_showed_up">Showed up</string>
     <string name="stat_missed">Missed</string>
-    <string name="stat_days_label">days tracked</string>
-    <string name="overall_stats_title">Overall Stats</string>
     <string name="stat_tracking_since">Tracking since</string>
-    <!-- Every day in the window, including days with no sessions — not "days I recorded". -->
-    <string name="stat_total_tracked_days">Days since tracking started</string>
-    <!-- A total, stated and left alone. Nothing is measured against it. -->
+    <!-- Every day in the scope, including days with no sessions — not "days I recorded". -->
+    <string name="stat_tracked_days">Days tracked</string>
+    <!-- Totals and averages, stated and left alone. Nothing is measured against any of them, and
+         none of them may grow a ring: the only denominator available is the user's own all-time
+         equivalent, which is a personal best under another name. -->
     <string name="stat_total_hours">Total hours</string>
+    <string name="stat_total_sessions">Total sessions</string>
+    <string name="stat_avg_per_day">Hours per tracked day</string>
+    <string name="stat_sessions_per_day">Sessions per day showed up</string>
     <string name="chart_daily_hours_title">Daily Hours</string>
     <!-- The dashed line is the window's own mean, not a target — nothing here is a bar to clear. -->
     <plurals name="chart_daily_hours_subtitle">
-        <item quantity="one">Last %1$d day · dashed line = average</item>
-        <item quantity="other">Last %1$d days · dashed line = average</item>
+        <item quantity="one">%1$d day · dashed line = average</item>
+        <item quantity="other">%1$d days · dashed line = average</item>
     </plurals>
-    <string name="chart_split_title">All-Time Split</string>
+    <!-- Scope-neutral on purpose: the card was "All-Time Split" and said so while rendering a
+         single month's figures the moment Reports gained a scope. No title here may name a span —
+         the selector above states which one is active. -->
+    <string name="chart_split_title">Days Split</string>
     <string name="chart_monthly_title">Hours by Month</string>
     <!-- States the window and nothing else. No superlative: naming the window's longest day ranks
          one of the user's days against the others, which nothing in the app does. -->
     <plurals name="cd_daily_hours_chart">
-        <item quantity="one">Daily hours over the last %1$d day.</item>
-        <item quantity="other">Daily hours over the last %1$d days.</item>
+        <item quantity="one">Daily hours over %1$d day.</item>
+        <item quantity="other">Daily hours over %1$d days.</item>
     </plurals>
     <string name="cd_monthly_chart">Hours by month: %1$s</string>
     <!-- The two descriptive splits. Neither ranks its slices: there is no better hour to start at
@@ -199,14 +216,14 @@
     <string name="bucket_afternoon">Afternoon</string>
     <string name="bucket_evening">Evening</string>
     <string name="band_three_plus">3 or more</string>
-    <string name="stat_avg_label">avg</string>
     <plurals name="days_count">
         <item quantity="one">%d day</item>
         <item quantity="other">%d days</item>
     </plurals>
     <string name="export_title">Export Data</string>
-    <string name="export_this_month">This month</string>
-    <string name="export_all_time">All time</string>
+    <!-- One button following the scope selector: a second way to choose a range is a control that
+         can disagree with the screen above it. -->
+    <string name="export_scope">Export %1$s</string>
     <string name="export_chooser_title">Export Sessions</string>
     <!-- Posted once the file exists and the share sheet is up; the user has not picked a target yet. -->
     <string name="export_success">CSV ready to share</string>
