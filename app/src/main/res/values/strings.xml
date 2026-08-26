@@ -135,8 +135,6 @@
 
     <!-- Empty / first-run states -->
     <string name="empty_checkin_title">Ready when you are</string>
-    <string name="empty_reports_title">No completed days yet</string>
-    <string name="empty_reports_message">Your charts and totals appear here once your first tracked day is over.</string>
     <string name="empty_day_detail_title">No day selected</string>
     <string name="empty_day_detail_message">Tap a day in the calendar to see its sessions.</string>
 
