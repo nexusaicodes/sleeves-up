@@ -18,15 +18,21 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 
 TZ = timezone(timedelta(hours=4))          # the device's zone; date_key must agree with it
-TODAY = date(2026, 8, 27)
-START = TODAY - timedelta(days=57)         # ~8 weeks, enough for two months of bars
+TODAY = date(2026, 8, 28)
+# The first of the *previous* month, rather than a fixed number of days back: the summary
+# screenshot's caption states a figure for a whole calendar month, so a window opening on the
+# 2nd would assert it over one day fewer than the month has. This tracks TODAY on its own; the
+# seed below does not, and has to be re-searched whenever TODAY moves.
+START = (TODAY.replace(day=1) - timedelta(days=1)).replace(day=1)
 MISS_CHANCE = {5: 0.55, 6: 0.65}           # Sat/Sun are the days most often skipped
 WEEKDAY_MISS = 0.10
 
 # Reproducible: same screenshots on a re-run. The value is *searched*, not arbitrary — it is
 # the seed for which July lands on exactly 24 days shown up of 31, which is what the summary
 # screenshot's caption states. Change TODAY and this number stops meaning anything; re-search
-# it rather than leaving a caption asserting a figure the data no longer produces.
+# it rather than leaving a caption asserting a figure the data no longer produces. The search
+# is a loop over candidate seeds counting July's days; it survived the 27th -> 28th move, which
+# is luck rather than a property — do not assume the next date shift is free.
 random.seed(20260006)
 
 

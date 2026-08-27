@@ -11,7 +11,8 @@ Graphics for the Google Play listing of **Sleeves Up**.
 | `LISTING.md` | — | The store listing copy, the two rules governing it, and the vocabulary it must never use |
 | `screenshots/raw/` | — | Device captures, uncaptioned. The input to `generate_screenshots.py` |
 | `generate_screenshots.py` | — | Composites `raw/` into `screenshots/phone/`; captions parsed from `LISTING.md` |
-| `screenshots/phone/` | 1080×1920 PNG ×7 | Phone screenshots (generated — see below, currently owed two captures) |
+| `screenshots/phone/` | 1080×1920 PNG ×7 | Phone screenshots (generated) |
+| `screenshots/tablet/` | 2560×1600 PNG ×3 | Tablet screenshots — captured, uncaptioned, no compositing step |
 | `seed_demo_data.py` | — | Writes the demo history the screenshots are taken against |
 
 **Every generator is deterministic, so re-running one is also the check**: identical output means
@@ -64,14 +65,24 @@ inspected rather than as a record that continues.
 
 ## Regenerating the screenshots
 
-**The phone set is owed two captures.** `LISTING.md` specifies seven; `screenshots/raw/` holds five
-— `02-face-check.png` and `04-running.png` have never been taken — and `generate_screenshots.py`
-exits naming them rather than writing a short set. So `screenshots/phone/` cannot be regenerated and
-is not committed. The 2.x set that used to sit there was deleted rather than left standing: it
-showed the old branding and the progress ring 3.0 removed, and a stale panel in the folder the
-upload is taken from is worse than an absent one. `screenshots/tablet/` went with it, since
-`LISTING.md` withdraws the tablet set for 3.0. **Do not upload the listing until both raws exist and
-the generator has run.**
+Both sets were shot for 3.0 against the **release** build (`assembleRelease`), not the debug one, so
+what the listing shows is what an installer gets. With no `keystore.properties` the release variant
+falls back to the debug signing config, which is what makes it installable on an emulator at all —
+and what lets the seeding below happen under the debug build and then be upgraded in place.
+
+**Seeding needs a debuggable build or a rootable image, and the release APK is neither.** `run-as`
+refuses a non-debuggable package and `adb root` is refused on a Play system image, so the sequence
+is: install debug, walk the welcome tour (the DB has no tables until a screen queries it), pull,
+seed, push, then `install -r` the release APK over the top. Same signature, so the data survives.
+**Pull the WAL and shm files too** — Room leaves the whole schema in the write-ahead log, so `_app`
+alone comes back as an empty file and the seed script fails with `no such table: sessions`.
+
+The **phone** set is captured on `CheckIn_API33`, deliberately, not on the newer Pixel_8 AVD. It is
+a `google_apis` image rather than a `google_apis_playstore` one, so `adb root` works and the clock
+can be set to a working hour — an open session seeded for the afternoon reads `0m 0s` against an
+emulator running at 1am. The API 33 shade also renders the foreground-service notification, which
+the API 37 emulator does not. The **tablet** image is Play-only and so cannot have its clock set;
+its seeded day is closed out instead, and the Check-In shot is the resting state.
 
 They are taken against **seeded demo data on an emulator, never a real device** — a real install
 has whatever history it happens to have, which is usually too thin to fill a calendar month or give
