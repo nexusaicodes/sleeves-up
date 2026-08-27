@@ -50,8 +50,11 @@ class HistoryViewModel(private val repository: CheckInRepository, private val ti
     private val selectedDateKey = MutableStateFlow<String?>(null)
     private val refresh = MutableStateFlow(0)
 
-    // Month summaries, re-queried when the visible month or a refresh trigger changes.
-    private val monthData = combine(currentMonth, refresh) { month, _ -> month }
+    // Month summaries, re-queried when the visible month changes and never on a resume. The Room
+    // flow re-emits on every write on its own, so a resume tick here only tore the subscription
+    // down and rebuilt it — the window in which an invalidation dispatched to the observer being
+    // replaced is lost, which is what `dayTrigger` dedupes for the rest of the screen.
+    private val monthData = currentMonth
         .flatMapLatest { month ->
             repository.dailyAggregatesFlow(
                 month.atDay(1).format(dateFormatter),

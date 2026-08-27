@@ -44,11 +44,18 @@ TAGLINE = "A day counts because you showed up."
 # --- the calendar fragment -------------------------------------------------------------
 
 COLS, ROWS = 7, 5
-CELL = 62
-GAP = 14
-GRID_X, GRID_Y = 646, 58
+CELL = 52
+GAP = 12
+GRID_X, GRID_Y = 620, 88
 
-# Five weeks with eleven gaps in them. Scattered rather than clustered, and never a whole
+# The pitch is what it is because three things have to hold at once on a 1024px canvas: seven
+# columns, because rows are weeks and a week that is not seven days stops reading as a calendar;
+# the last column straddling the right edge rather than ending inside it, which is the bleed the
+# docstring is about; and the whole grid clearing the tagline, which is the widest string here.
+# Both ends are asserted below -- a column that starts past the canvas draws nothing at all, and
+# the block then reads as a crop rather than as a record that continues.
+
+# Five weeks with ten gaps in them. Scattered rather than clustered, and never a whole
 # empty row: a blank week reads as a fortnight off, which is a story this graphic is not
 # telling. Rows are weeks, so the two-day gaps that fall together read as a weekend without
 # the graphic ever having to claim weekends are exempt -- they are not.
@@ -107,8 +114,15 @@ def main():
                 draw.textbbox((tx + 3, 300), TAGLINE, font=f_tag)[2])
     assert right < GRID_X - 24, f"text reaches {right}, grid starts at {GRID_X}"
 
+    # The last column must begin on the canvas and end off it. Without the second half the
+    # column is simply never drawn, taking its share of EMPTY with it, and the grid ends short
+    # of the edge as a finished object -- which is the one thing this composition may not be.
+    last_x0 = GRID_X + (COLS - 1) * (CELL + GAP)
+    assert last_x0 < W < last_x0 + CELL, f"last column {last_x0}..{last_x0 + CELL} does not straddle {W}"
+
     img.save(OUT, "PNG")
-    print(f"wrote {OUT} {img.size}  text right edge {right} of {GRID_X}")
+    print(f"wrote {OUT} {img.size}  text right edge {right} of {GRID_X}, "
+          f"last column {last_x0}..{last_x0 + CELL} across {W}")
 
 
 if __name__ == "__main__":

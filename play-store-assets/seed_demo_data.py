@@ -70,11 +70,12 @@ def main(db_path: str) -> None:
     # A few evenings, so the start-time split has a real third slice. The generator above starts
     # its blocks in the morning and early afternoon, so without these the evening slice is a
     # sliver and the chart reads as if the app could not see one.
-    # Offsets deliberately land on weekdays and are spread across *both* months: the generator
-    # starts its blocks in the morning and early afternoon, so without these the evening slice is a
-    # sliver. Each one replaces that day's rows, so it also forces a session there — which is why
-    # the seed search above counts them as days shown up rather than assuming they are free.
-    for offset in (4, 11, 18, 25, 35, 42, 49, 56):
+    # Every offset is a multiple of seven away from one of two weekdays, so none of them lands on a
+    # weekend: each one replaces that day's rows and therefore *forces* a session there, and forcing
+    # one onto every Sunday would contradict MISS_CHANCE and the missed days the calendar is here to
+    # show. They are spread across both months, and the seed search above counts them as days shown
+    # up rather than assuming they are free.
+    for offset in (2, 9, 16, 23, 35, 42, 49, 56):
         d = TODAY - timedelta(days=offset)
         rows = [r for r in rows if r[3] != d.isoformat()]
         for s, e in ((9 * 60 + 20, 12 * 60 + 40), (19 * 60 + 30, 22 * 60 + 15)):

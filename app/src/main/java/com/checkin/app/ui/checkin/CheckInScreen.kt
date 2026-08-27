@@ -172,7 +172,7 @@ fun CheckInScreen(
                 // Whether this is a first run is a DB read away, so the slot is held at the gauge's
                 // size until the answer arrives. Rendering the welcome meanwhile would flash "get
                 // started" at a user with months of history, every time they open the app.
-                uiState.loading -> Spacer(Modifier.size(markSize + MARK_TO_READOUT_GAP + READOUT_HEIGHT))
+                uiState.loading -> Spacer(Modifier.height(markSize + MARK_TO_READOUT_GAP + READOUT_HEIGHT))
 
                 uiState.hasEverTracked -> TimerGauge(
                     elapsedMs = sessionElapsed,

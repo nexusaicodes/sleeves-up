@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -44,6 +45,13 @@ internal val MARK_TO_READOUT_GAP = 12.dp
 internal val READOUT_HEIGHT = 56.dp
 
 /**
+ * The font scale past which the readout drops to the smaller style. It is the largest type in the
+ * app and so the first thing to outgrow a phone's width: at 2.0 a `displayMedium` "12h 34m" measures
+ * wider than a 360dp screen's content box, and the step down is what keeps it on one line.
+ */
+private const val READOUT_SHRINK_SCALE = 1.5f
+
+/**
  * The **current session's** elapsed time, under the brand mark breathing while the session runs.
  * Zero and still between sessions.
  *
@@ -59,11 +67,13 @@ internal val READOUT_HEIGHT = 56.dp
  * [BrandGridGauge], which is where that rule is enforced. The description states the elapsed time
  * and nothing about the mark.
  *
- * **The readout sits below the mark, and nothing bounds its width but the screen's own padding.**
- * That is what makes it safe at a raised font scale: it is `sp` and the mark is `dp`, so a readout
- * enclosed by the mark — in a ring's hole or a lattice's centre — outgrows its enclosure and is
- * clipped or wrapped with nothing reporting it. Stacking them costs a little height and removes the
- * bound entirely, which is the trade to keep.
+ * **The readout sits below the mark rather than inside it, and it gives up size before it gives up
+ * a line.** Enclosing it — in a ring's hole or a lattice's centre — bounds `sp` text by a `dp` box,
+ * so a raised font scale clips or wraps it with nothing reporting that. Stacking removes that bound
+ * but not the screen's: the clock is the app's largest type and at a large scale it is wider than a
+ * narrow phone. So it is `maxLines = 1` and steps down a style past [READOUT_SHRINK_SCALE] — the
+ * same sacrifice-the-size-first order `SessionIntervalRow`'s duration column makes, and for the same
+ * reason, since a wrapped clock is a wrong number on screen rather than a small one.
  */
 @Composable
 internal fun TimerGauge(elapsedMs: Long, running: Boolean, markSize: Dp = MARK_MAX) {
@@ -84,14 +94,16 @@ internal fun TimerGauge(elapsedMs: Long, running: Boolean, markSize: Dp = MARK_M
         )
         Text(
             text = TimeFormat.durationLive(elapsedMs),
-            // The compact branch is a short viewport, where the screen scrolls anyway — so this
-            // smaller style buys room rather than preventing an overflow.
-            style = if (markSize < MARK_MIN) {
+            // Two reasons to step down, and only the second is an overflow: a short viewport, where
+            // the screen scrolls anyway and the smaller style simply buys room; and a font scale at
+            // which the larger one no longer fits a narrow phone on one line.
+            style = if (markSize < MARK_MIN || LocalDensity.current.fontScale >= READOUT_SHRINK_SCALE) {
                 MaterialTheme.typography.headlineMedium
             } else {
                 MaterialTheme.typography.displayMedium
             }.tabularFigures(),
             fontWeight = FontWeight.Bold,
+            maxLines = 1,
         )
     }
 }

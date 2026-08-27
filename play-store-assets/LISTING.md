@@ -140,7 +140,7 @@ is what makes them easy to write back in.
 | streak · consecutive days · keep the chain going | A streak is a number the next day can take away. The calendar shows consecutive days visually and the app counts none of them. |
 | longest day · best day · personal best · your record | Nothing ranks one of the user's days against the others, and nothing is a baseline anything else is drawn against. |
 | roll up your sleeves · sleeves up! (as an instruction) · let's get to work | The name describes a state, not an order. Nobody has ever rolled their sleeves up for nine hours, so the metaphor carries no measurement — which is exactly what lets it sit on an app where hours grade nothing. Said *at* the user on a cadence it becomes a mascot, and a mascot is the gamification register this app has none of. Gloss it once in the listing; never in a notification, a celebration or an empty state. |
-| shaded by how long · intensity · ringed against your best | The calendar is binary, and no arc in the app fills to measure anything — the Check-In gauge's sweep is motion, not a score. |
+| shaded by how long · intensity · ringed against your best | The calendar is binary, and the app fills no arc at all — the Check-In gauge is the brand mark breathing, and it says only whether a session is open. |
 
 ## Categorisation & contact
 
