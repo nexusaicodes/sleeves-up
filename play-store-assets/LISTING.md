@@ -104,8 +104,8 @@ Play keeps these per version code, so the text below is 3.0's and is replaced wh
 release rather than appended to.
 
 **3.0 is the first release since 2.0, not since 2.1.** 2.1 was prepared — version bumped, copy
-written — and never tagged or uploaded; `git tag` is the record, and it lists v0.1, v1.1 and v2.0
-only. So everything 2.1 was going to say is still unsaid, and an existing user going 2.0 → 3.0 meets
+written — and never tagged or uploaded, so it is absent from `git tag`, which lists v0.1, v1.1, v2.0
+and v3.0. So everything 2.1 was going to say is still unsaid, and an existing user going 2.0 → 3.0 meets
 the rename *and* the end of hours-as-a-grade in the same update. Both belong here. Writing this note
 as "since 2.1" is the mistake the tag list exists to catch.
 
