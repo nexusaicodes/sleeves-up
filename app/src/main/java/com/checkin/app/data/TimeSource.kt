@@ -3,6 +3,7 @@ package com.checkin.app.data
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import java.time.LocalDate
 import java.time.ZoneId
@@ -27,11 +28,17 @@ interface TimeSource {
 }
 
 /**
- * The current local date, re-emitted on every [refresh] tick (a screen resume) and at each local
- * midnight. The single place the "recompute on resume or at day rollover" trigger lives,
- * shared by every ViewModel so the idiom can't drift between screens.
+ * The current local date: recomputed on every [refresh] tick (a screen resume), re-emitted at each
+ * local midnight, and **emitted only when the day actually changes**.
+ *
+ * Both halves are load-bearing. Every ViewModel feeds this into a `flatMapLatest` that rebuilds its
+ * whole graph of Room flows, so an emission per resume closes and reopens every DB subscription and
+ * a write landing in that window loses its invalidation. And [currentDay] can be a day stale on
+ * waking, so the tick reads [today] rather than passing its own value on. See the resume entry under
+ * Conventions in CLAUDE.md for the failure that produced both.
  */
-fun TimeSource.dayTrigger(refresh: Flow<Int>): Flow<LocalDate> = combine(refresh, currentDay()) { _, day -> day }
+fun TimeSource.dayTrigger(refresh: Flow<Int>): Flow<LocalDate> =
+    combine(refresh, currentDay()) { _, day -> maxOf(day, today()) }.distinctUntilChanged()
 
 object SystemTimeSource : TimeSource {
     override fun nowMillis(): Long = System.currentTimeMillis()
