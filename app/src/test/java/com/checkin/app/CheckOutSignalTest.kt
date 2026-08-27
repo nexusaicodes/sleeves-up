@@ -33,7 +33,13 @@ class CheckOutSignalTest {
 
     @Test
     fun `clearing retires the celebration`() {
-        CheckOutSignal.raise(sessionMs = 1000L, dayTotalMs = 1000L, daySessionCount = 1, nowMillis = 0L)
+        CheckOutSignal.raise(
+            sessionMs = 1000L,
+            dayTotalMs = 1000L,
+            daySessionCount = 1,
+            dateKey = DAY_KEY,
+            nowMillis = 0L,
+        )
         assertEquals(1000L, CheckOutSignal.completed.value?.sessionMs)
 
         CheckOutSignal.clear()
@@ -47,7 +53,13 @@ class CheckOutSignalTest {
      */
     @Test
     fun `a celebration nobody saw is dropped once it is stale`() {
-        CheckOutSignal.raise(sessionMs = 1000L, dayTotalMs = 1000L, daySessionCount = 1, nowMillis = 0L)
+        CheckOutSignal.raise(
+            sessionMs = 1000L,
+            dayTotalMs = 1000L,
+            daySessionCount = 1,
+            dateKey = DAY_KEY,
+            nowMillis = 0L,
+        )
 
         assertFalse(CheckOutSignal.expireIfStale(CheckOutSignal.EXPIRY_MS + 1))
 
@@ -57,7 +69,13 @@ class CheckOutSignalTest {
     /** The ordinary case: raised and shown in the same breath, so returning to it must not clear it. */
     @Test
     fun `a celebration inside the window survives`() {
-        CheckOutSignal.raise(sessionMs = 1000L, dayTotalMs = 1000L, daySessionCount = 1, nowMillis = 0L)
+        CheckOutSignal.raise(
+            sessionMs = 1000L,
+            dayTotalMs = 1000L,
+            daySessionCount = 1,
+            dateKey = DAY_KEY,
+            nowMillis = 0L,
+        )
 
         assertTrue(CheckOutSignal.expireIfStale(CheckOutSignal.EXPIRY_MS))
 
@@ -67,9 +85,21 @@ class CheckOutSignalTest {
     /** Expiry is measured from the raise, so a second check-out gets its own full window. */
     @Test
     fun `re-raising restarts the window`() {
-        CheckOutSignal.raise(sessionMs = 1000L, dayTotalMs = 1000L, daySessionCount = 1, nowMillis = 0L)
+        CheckOutSignal.raise(
+            sessionMs = 1000L,
+            dayTotalMs = 1000L,
+            daySessionCount = 1,
+            dateKey = DAY_KEY,
+            nowMillis = 0L,
+        )
         val late = CheckOutSignal.EXPIRY_MS * 10
-        CheckOutSignal.raise(sessionMs = 2000L, dayTotalMs = 3000L, daySessionCount = 2, nowMillis = late)
+        CheckOutSignal.raise(
+            sessionMs = 2000L,
+            dayTotalMs = 3000L,
+            daySessionCount = 2,
+            dateKey = DAY_KEY,
+            nowMillis = late,
+        )
 
         assertTrue(CheckOutSignal.expireIfStale(late + 1))
 
@@ -102,6 +132,7 @@ class CheckOutSignalTest {
         // Both sessions on that day, the just-closed one included.
         assertEquals(3 * hour, completed.dayTotalMs)
         assertEquals(2, completed.daySessionCount)
+        assertEquals(day.toString(), completed.dateKey)
     }
 
     /**
@@ -126,5 +157,11 @@ class CheckOutSignalTest {
         assertEquals(2 * hour, completed.sessionMs)
         assertEquals(2 * hour, completed.dayTotalMs)
         assertEquals(1, completed.daySessionCount)
+        // The celebration draws this day's number as its mark, so a key read off "today" would put
+        // the 16th on screen for work done on the 15th.
+        assertEquals(startDay.toString(), completed.dateKey)
     }
 }
+
+/** Any well-formed `date_key`: these cases turn on the expiry window, never on which day it was. */
+private const val DAY_KEY = "2026-06-01"
