@@ -30,12 +30,36 @@ private val OnStopDark = Color(0xFF3B0A0A)
  * ranking: one nine-hour day permanently re-rendered every ordinary day as a fainter version of it.
  * A day either has a session or it does not, and that is the whole of what a cell says.
  *
- * Callers that need this over a background at reduced weight apply their own alpha for legibility —
- * a fixed constant, never a figure derived from a duration.
+ * Callers drawing the day as a *mark* — a filled cell with its number on top — take
+ * [recordedDayShade] rather than applying an alpha of their own, so the calendar and the check-out
+ * celebration cannot drift apart. This bare form is for a caller using the hue at full strength,
+ * such as the Reports legend. Either way the strength is a fixed constant and never a figure derived
+ * from a duration.
  */
 @Composable
 @ReadOnlyComposable
 fun dayColor(): Color = if (isSystemInDarkTheme()) PresentDark else PresentLight
+
+/**
+ * The one weight a recorded day is drawn at, and the one place it is stated.
+ *
+ * A constant, not a figure derived from the day's hours: every day the user showed up is drawn
+ * identically, whatever it held. A full-strength fill would win against the day number sitting on
+ * it, so the hue stays a tint rather than a block.
+ */
+private const val RECORDED_DAY_ALPHA = 0.35f
+
+/**
+ * [dayColor] at the one strength a recorded day is filled with.
+ *
+ * Two callers draw this mark — the History calendar's cells and the check-out celebration's day
+ * mark — and they read it from here rather than each applying their own alpha, because two
+ * definitions of what a recorded day looks like is how the two come to disagree about the one thing
+ * the app's whole record is. See `ui/components/DayMark`.
+ */
+@Composable
+@ReadOnlyComposable
+fun recordedDayShade(): Color = dayColor().copy(alpha = RECORDED_DAY_ALPHA)
 
 /** A filled button's container and the label on top of it. */
 data class ActionColors(val container: Color, val content: Color)

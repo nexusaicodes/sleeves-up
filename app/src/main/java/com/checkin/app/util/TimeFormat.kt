@@ -94,6 +94,19 @@ object TimeFormat {
         ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         ?.let(::dateWithWeekday)
 
+    /**
+     * The day-of-month a stored `date_key` names, or null for anything unparseable.
+     *
+     * A number rather than a formatted string, because its one reader draws it inside the calendar's
+     * day mark rather than printing it in a sentence. It lives here for the same reason
+     * [dateKeyWithWeekday] does: a screen holds a `date_key` and never a `LocalDate`, so the parse
+     * belongs in this file and a malformed key degrades to no mark rather than crashing the surface
+     * carrying it.
+     */
+    fun dayOfMonth(dateKey: String?): Int? = dateKey
+        ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        ?.dayOfMonth
+
     /** A day under a chart axis (e.g. "Jul 25"). The chart's own title supplies the year. */
     fun axisDay(date: LocalDate): String = date.format(axisDayFormatter)
 

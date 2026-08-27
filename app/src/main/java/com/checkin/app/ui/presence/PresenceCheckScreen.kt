@@ -349,10 +349,15 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             successMessage?.let { msg ->
+                // The moment the check passes, and the opening half of a pair: this says "You're
+                // here" and the check-out celebration says "You showed up". They are the two ends of
+                // the one binary the app is named for, so they are worded in the same flat register
+                // — a state named, never an exclamation — and set at the same size, which is what
+                // stops the open reading as a status line while the close reads as an event.
                 Text(
                     text = msg,
                     color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                     // Announce the outcome to TalkBack as it changes.
                     modifier = Modifier
                         .padding(horizontal = 24.dp)

@@ -36,6 +36,15 @@ object CheckOutSignal {
         /** Every completed session on the closed session's own day, including this one. */
         val dayTotalMs: Long,
         val daySessionCount: Int,
+        /**
+         * The `date_key` of the day the closed session belongs to — the day the celebration draws
+         * its mark for.
+         *
+         * The session's own day rather than today, for the same reason the figures beside it are:
+         * one checked out after midnight marks the day that holds the work, not the empty one it
+         * ended in.
+         */
+        val dateKey: String,
     )
 
     /**
@@ -56,9 +65,9 @@ object CheckOutSignal {
     private var raisedAtMillis = 0L
 
     /** Raises the celebration, stamping when so [expireIfStale] can retire an unseen one. */
-    fun raise(sessionMs: Long, dayTotalMs: Long, daySessionCount: Int, nowMillis: Long) {
+    fun raise(sessionMs: Long, dayTotalMs: Long, daySessionCount: Int, dateKey: String, nowMillis: Long) {
         raisedAtMillis = nowMillis
-        completed.value = Completed(sessionMs, dayTotalMs, daySessionCount)
+        completed.value = Completed(sessionMs, dayTotalMs, daySessionCount, dateKey)
     }
 
     /** Retires the celebration once it has been dismissed. */
@@ -101,6 +110,7 @@ suspend fun raiseCheckOutCelebration(repository: CheckInRepository, closed: Chec
         sessionMs = closed.duration ?: 0L,
         dayTotalMs = day?.totalDurationMs ?: 0L,
         daySessionCount = day?.sessionCount ?: 0,
+        dateKey = closed.dateKey,
         nowMillis = nowMillis,
     )
 }

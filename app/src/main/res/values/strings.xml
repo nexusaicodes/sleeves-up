@@ -45,7 +45,13 @@
     <!-- Presence check. No image is captured, so nothing here may say "photo", "capture" or
          "selfie" — the camera reports whether a face is in frame and the app reads only that. -->
     <string name="presence_dismiss">Dismiss</string>
-    <string name="presence_face_detected">You\'re here!</string>
+    <!--
+      The opening half of a pair: this at check-in, checkout_celebration_title at check-out. They are
+      the two ends of the one binary the app is named for, so they stay in the same flat register — a
+      state named, not an exclamation. An exclamation mark here would be the only one in the app, and
+      it is the mascot voice this product has none of.
+    -->
+    <string name="presence_face_detected">You\'re here</string>
     <!-- The whole of what the screen says while it looks. There is nothing to confirm: the check
          passes itself on the frame the camera finds a face in, so this states what is happening
          rather than asking for anything. -->
@@ -110,8 +116,17 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
       by the same rules the nudge copy follows. "Twice a day" is NudgeConfig.maxPerDay, not a round
       number chosen to sound generous: if that value changes, this line is wrong.
     -->
-    <string name="welcome_showing_up_title">Showing up is the whole thing</string>
-    <string name="welcome_showing_up_body">Check in when you start, check out when you stop. There\'s no target to clear — a short day counts the same as a long one.</string>
+    <!--
+      The one place in the app the name is explained, and the second and last place anywhere — the
+      other is the Play listing's opening line. It is allowed here because the welcome tour has no
+      cadence: it runs once per install and is retired by a flag, so it is a stranger meeting the
+      name once, exactly as the listing is. The metaphor stays out of every surface that repeats —
+      no notification, no celebration, no empty state — and the title cashes it out as a mechanic in
+      the body immediately below rather than leaving it as a mood. See the vocabulary table in
+      play-store-assets/LISTING.md.
+    -->
+    <string name="welcome_showing_up_title">Sleeves up or sleeves down</string>
+    <string name="welcome_showing_up_body">There\'s no third state, and that\'s the whole app. Check in when you start, check out when you stop — no target to clear, and a short day counts exactly as much as a long one.</string>
     <!--
       The disclosure's own clauses rather than a paraphrase, so the two cannot drift apart about the
       same camera. "Confirms someone\'s there" is load-bearing: this is face detection, not

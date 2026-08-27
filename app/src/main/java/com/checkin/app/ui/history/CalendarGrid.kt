@@ -29,8 +29,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.data.local.DailyAggregate
+import com.checkin.app.ui.components.DAY_MARK_CORNER
 import com.checkin.app.ui.theme.CheckInAppTheme
-import com.checkin.app.ui.theme.dayColor
+import com.checkin.app.ui.theme.recordedDayShade
 import com.checkin.app.util.TimeFormat
 import java.time.LocalDate
 import java.time.YearMonth
@@ -139,15 +140,6 @@ fun CalendarGrid(
 }
 
 /**
- * The one weight a recorded day is drawn at. A full-strength fill would win against the day number
- * sitting on it, so the hue stays a tint rather than a block.
- *
- * A constant, not a figure derived from the day's hours: every day the user showed up is drawn
- * identically, whatever it held.
- */
-private const val RECORDED_DAY_ALPHA = 0.35f
-
-/**
  * How far a day outside the tracked window is faded back.
  *
  * **Only the future and the days before tracking began are faded — never a day the user missed.** The
@@ -170,8 +162,9 @@ private fun DayCell(
     cellHeight: Dp = 48.dp,
     onClick: () -> Unit,
 ) {
-    // A day with no sessions gets no shade at all: an empty cell, not a coloured failure.
-    val dayShade = dayColor().copy(alpha = RECORDED_DAY_ALPHA)
+    // A day with no sessions gets no shade at all: an empty cell, not a coloured failure. The shade
+    // itself comes from the theme, because the check-out celebration draws this same mark.
+    val dayShade = recordedDayShade()
 
     val bgColor = when {
         isSelected -> MaterialTheme.colorScheme.primaryContainer
@@ -196,7 +189,7 @@ private fun DayCell(
         modifier = modifier
             .heightIn(min = cellHeight)
             .padding(2.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(DAY_MARK_CORNER))
             .background(bgColor)
             .clickable(onClick = onClick)
             .semantics { contentDescription = cellDescription },

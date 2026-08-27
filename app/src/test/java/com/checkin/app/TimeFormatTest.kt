@@ -65,4 +65,24 @@ class TimeFormatTest {
         assertEquals(null, TimeFormat.dateKeyWithWeekday("2026-13-01"))
         assertEquals(null, TimeFormat.dateKeyWithWeekday("2026-02-30"))
     }
+
+    /** The figure the check-out celebration's day mark draws, off the key the closed row carries. */
+    @Test
+    fun `a date key yields its day of month`() {
+        assertEquals(25, TimeFormat.dayOfMonth("2026-07-25"))
+        assertEquals(1, TimeFormat.dayOfMonth("2026-07-01"))
+        assertEquals(31, TimeFormat.dayOfMonth("2026-12-31"))
+    }
+
+    /**
+     * The celebration falls back to its icon on a null, so a corrupt row costs the mark rather than
+     * the screen — which is only true while this degrades instead of throwing.
+     */
+    @Test
+    fun `an absent or unparseable date key yields no day of month`() {
+        assertEquals(null, TimeFormat.dayOfMonth(null))
+        assertEquals(null, TimeFormat.dayOfMonth(""))
+        assertEquals(null, TimeFormat.dayOfMonth("25-07-2026"))
+        assertEquals(null, TimeFormat.dayOfMonth("2026-02-30"))
+    }
 }
