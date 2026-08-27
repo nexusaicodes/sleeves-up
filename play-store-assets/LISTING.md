@@ -101,7 +101,9 @@ Sleeves Up is a self-discipline tool, not a substitute for any employer or legal
 ## What's new (500 max, per release)
 
 Play keeps these per version code, so the text below is 3.0's and is replaced wholesale at the next
-release rather than appended to.
+release rather than appended to. **500 is a hard limit and this section has been over it**, which
+Play rejects at submission rather than truncating — count the block before pasting it, em dash and
+blank lines included.
 
 **3.0 is the first release since 2.0, not since 2.1.** 2.1 was prepared — version bumped, copy
 written — and never tagged or uploaded, so it is absent from `git tag`, which lists v0.1, v1.1, v2.0
@@ -111,16 +113,19 @@ as "since 2.1" is the mistake the tag list exists to catch.
 
 It is subject to both rules at the top of this file, which rules out the obvious framing for a
 rename — "a fresh new look" grades nothing but says nothing either — and rules out advertising a
-removal as a loss: "no more streaks" reads as a feature cut to someone who never had the app.
+removal as a loss: "no more streaks" reads as a feature cut to someone who never had the app. The
+vocabulary table below applies here in full, and it binds a *denial* as much as a boast: "nothing is
+measured against your longest day" plants the yardstick in the reader's head while disclaiming it,
+so the phrase is "no day is the yardstick for the others".
 
 ```
-The app is now called Sleeves Up. Same app, same data, nothing to migrate — a day still counts because it has a session.
+The app is now called Sleeves Up. Same app, same data, nothing to migrate.
 
-Hours have stopped grading anything at all. Every day you showed up is one mark on the calendar, whether it held 45 minutes or nine hours: nothing is drawn fainter for being shorter, and nothing is measured against your longest day. Your hours are still all there, as a number.
+Hours have stopped grading anything. Every day you showed up is one mark, whether it held 45 minutes or nine hours — nothing is drawn fainter for being shorter, and no day is the yardstick for the others. Your hours are all still there, as a number.
 
-Two new charts instead: when in the day your sessions start, and how many you run a day. Both are there to recognise yourself in, not to score.
+Two new charts: when in the day your sessions start, and how many you run a day.
 
-New in Settings: a plain list of what this app cannot do, and where to check it yourself.
+New in Settings: a plain list of what this app cannot do, and how to check it.
 ```
 
 ---
