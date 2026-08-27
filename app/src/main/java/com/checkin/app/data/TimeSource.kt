@@ -28,25 +28,14 @@ interface TimeSource {
 }
 
 /**
- * The current local date, recomputed on every [refresh] tick (a screen resume) and re-emitted at
- * each local midnight. The single place the "recompute on resume or at day rollover" trigger lives,
- * shared by every ViewModel so the idiom can't drift between screens.
+ * The current local date: recomputed on every [refresh] tick (a screen resume), re-emitted at each
+ * local midnight, and **emitted only when the day actually changes**.
  *
- * **It emits only when the day actually changes, and that is load-bearing rather than tidiness.**
- * Every caller feeds it into a `flatMapLatest` that builds the screen's whole graph of Room flows,
- * so an emission tears every one of those subscriptions down and opens fresh ones. A tick per
- * resume therefore did that on every return to a screen — including the return from the device
- * credential prompt, which lands at the same instant the check-in it authorised is committing. An
- * invalidation dispatched while the observers are being swapped reaches the ones already detached,
- * and the replacements keep serving the pre-write query they opened with: the screen then shows no
- * session over a session that is open, until something resumes it again. Deduping keeps the
- * subscriptions alive across a resume, so there is no window to lose the notification in.
- *
- * The resume still recomputes rather than merely re-emitting: [currentDay] sleeps until the next
- * midnight and a `delay` does not advance while the device is in deep sleep, so its value can be a
- * day stale on waking. Taking the later of that and [today] is what makes the tick worth having —
- * re-emitting the flow's own stale value, which is what a plain `combine` passes on, would not have
- * moved the date window the tick exists to move.
+ * Both halves are load-bearing. Every ViewModel feeds this into a `flatMapLatest` that rebuilds its
+ * whole graph of Room flows, so an emission per resume closes and reopens every DB subscription and
+ * a write landing in that window loses its invalidation. And [currentDay] can be a day stale on
+ * waking, so the tick reads [today] rather than passing its own value on. See the resume entry under
+ * Conventions in CLAUDE.md for the failure that produced both.
  */
 fun TimeSource.dayTrigger(refresh: Flow<Int>): Flow<LocalDate> =
     combine(refresh, currentDay()) { _, day -> maxOf(day, today()) }.distinctUntilChanged()
