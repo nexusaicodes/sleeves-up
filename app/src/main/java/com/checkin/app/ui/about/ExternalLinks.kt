@@ -24,7 +24,8 @@ import androidx.core.net.toUri
  */
 object ExternalLinks {
 
-    const val PRIVACY_POLICY_URL = "https://nexusai.world/checkin/privacy"
+    /** Also set by hand in the Play Console, which is a separate copy that drifts silently. */
+    const val PRIVACY_POLICY_URL = "https://nexusai.world/sleeves-up/privacy"
 
     fun openUrl(context: Context, url: String): Boolean = launch(context, Intent(Intent.ACTION_VIEW, url.toUri()))
 

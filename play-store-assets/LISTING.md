@@ -146,7 +146,10 @@ is what makes them easy to write back in.
 
 - **Category:** Productivity
 - **Contact email:** `saksham@nexusai.world` · **Website:** `https://nexusai.world`
-- **Privacy policy:** `https://nexusai.world/checkin/privacy`
+- **Privacy policy:** `https://nexusai.world/sleeves-up/privacy`
+
+  A second copy of `ExternalLinks.PRIVACY_POLICY_URL`, edited by hand in the Console. `/checkin/privacy`
+  redirects here permanently, so a stale field still resolves and nothing reports the drift.
 
 ## Graphics
 
