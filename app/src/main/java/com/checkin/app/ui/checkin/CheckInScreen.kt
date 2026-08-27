@@ -123,9 +123,9 @@ fun CheckInScreen(
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val shortViewport = maxHeight < COMPACT_HEIGHT_THRESHOLD
-        // The mark's side. The readout below it is chrome and text rather than part of this
-        // figure — see COMPACT_MARK — so the fraction is smaller than the one the old ring used by
-        // roughly the readout's own share of the viewport.
+        // The mark's side alone. The readout below it is chrome and text rather than part of this
+        // figure — see COMPACT_MARK — so this fraction buys the mark only, and the gauge block on
+        // screen is taller than what it returns.
         val markSize = if (shortViewport) COMPACT_MARK else (maxHeight * 0.26f).coerceIn(MARK_MIN, MARK_MAX)
 
         // What an expanded list may claim: whatever is left once the chrome, the gauge and the
@@ -249,7 +249,7 @@ private val MIN_TOUCH_TARGET = 48.dp
 
 /**
  * The part of that which is text, and so scales with the user's font-size setting — the date row,
- * the pill's label, and now the gauge's readout, which is the largest type on the screen and so the
+ * the pill's label, and the gauge's readout, which is the largest type on the screen and so the
  * term that moves this figure most. It errs high for the reason every text estimate here does:
  * over-stating it costs grid room the 48dp floor absorbs by scrolling, while under-stating it
  * pushes the primary action off the bottom.

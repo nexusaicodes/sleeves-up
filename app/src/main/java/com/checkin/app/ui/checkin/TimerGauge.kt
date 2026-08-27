@@ -56,13 +56,14 @@ internal val READOUT_HEIGHT = 56.dp
  * **The lattice is motion, not measurement, and it says only whether a session is open.** A wave of
  * brightness travels the seven cells while one is; the grid sits at track alpha while none is. No
  * cell's brightness is a figure and no cell's place in the pass means anything — see
- * [BrandGridGauge], which is where that rule is enforced and why the wave replaced a single cell
- * advancing once an hour. The description states the elapsed time and nothing about the mark.
+ * [BrandGridGauge], which is where that rule is enforced. The description states the elapsed time
+ * and nothing about the mark.
  *
- * This replaced a sweeping arc, and the readout moving out of the ring's hole is the other half of
- * the change: at a raised font scale the clock is wider than the hole it used to sit in, so it had
- * the whole screen's width to spill into and no bound stopping it. Below the mark it simply has the
- * room.
+ * **The readout sits below the mark, and nothing bounds its width but the screen's own padding.**
+ * That is what makes it safe at a raised font scale: it is `sp` and the mark is `dp`, so a readout
+ * enclosed by the mark — in a ring's hole or a lattice's centre — outgrows its enclosure and is
+ * clipped or wrapped with nothing reporting it. Stacking them costs a little height and removes the
+ * bound entirely, which is the trade to keep.
  */
 @Composable
 internal fun TimerGauge(elapsedMs: Long, running: Boolean, markSize: Dp = MARK_MAX) {

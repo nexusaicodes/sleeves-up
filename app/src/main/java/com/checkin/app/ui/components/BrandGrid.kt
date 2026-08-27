@@ -98,14 +98,14 @@ fun BrandGrid(
  * The mark as the open session's state: a wave of brightness travelling the seven cells, or the
  * whole grid at [trackColor] when nothing is running.
  *
- * **No cell has a position that means anything, and that is the point of this shape.** Its
- * predecessor lit one cell at a time and advanced it once an hour, which encoded how far into the
- * hour the session was — a figure nothing was allowed to read, moving too slowly to see. A wave has
- * no such figure to leak: every cell is doing the same thing a beat apart, so there is no current
- * cell, nothing to be part of the way through, and nothing a later reader could be tempted to give
- * a meaning to. **Nothing may accumulate here either** — a lattice lighting cell after cell until
- * it is full is a completion bar, which is the deleted daily target as geometry, and it would turn
- * the mark's own two gaps into a shortfall rather than the honest part.
+ * **No cell has a position that means anything, and that is the point of this shape.** Every cell
+ * does the same thing a beat apart, so there is no current cell, nothing to be part of the way
+ * through, and nothing a later reader could be tempted to give a meaning to. Two shapes are
+ * therefore closed to this gauge. **A single cell lit and advanced on a schedule** encodes how far
+ * through that schedule the session is — a figure nothing here is permitted to read, and one slow
+ * enough to be invisible at any period long enough to be calm. **A lattice lighting cell after cell
+ * until it is full** is a completion bar, which is the deleted daily target as geometry, and it
+ * would turn the mark's own two gaps into a shortfall rather than the honest part.
  *
  * What is left is the binary, which is the whole of what this gauge says: the mark is alive while a
  * session is open and still while none is. It is the idiom [OngoingPulse] already uses for exactly
