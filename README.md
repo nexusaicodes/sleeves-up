@@ -5,6 +5,10 @@ authenticated **check-in / check-out** intervals and shows the record building u
 is no target and no grade: a day counts because you turned up for it, not because its hours cleared
 a bar.
 
+| | | | |
+| --- | --- | --- | --- |
+| ![Calendar](play-store-assets/screenshots/raw/01-calendar.png) | ![Face check](play-store-assets/screenshots/raw/02-face-check.png) | ![Session running](play-store-assets/screenshots/raw/04-running.png) | ![Reports](play-store-assets/screenshots/raw/03-summary.png) |
+
 ## What it does
 
 - **Check in / check out** from the first tab. Every check-in *and* check-out is gated by an
@@ -99,3 +103,10 @@ service for the live timer and session reminder · CameraX preview + Camera2 HAL
 fallback. MVVM with a single reactive `UiState` per screen and lightweight manual DI (`AppContainer`).
 
 See [`CLAUDE.md`](CLAUDE.md) for architecture details, conventions, and non-obvious behaviors.
+
+## License
+
+Apache License 2.0 — see [`LICENSE`](LICENSE). The third-party licences the app itself redistributes
+are listed in-app under **Settings → Open source licences**, and generated from the release runtime
+classpath rather than the dependency block (`./gradlew :app:verifyLicenseCoverage` fails the build if
+the two ever disagree).
