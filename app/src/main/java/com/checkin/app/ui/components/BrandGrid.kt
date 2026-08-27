@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -53,7 +53,10 @@ import kotlin.math.pow
 @Composable
 fun BrandGrid(color: Color, modifier: Modifier = Modifier, settle: Boolean = false) {
     val animated = animationsEnabled()
-    val cursor = remember(settle) { Animatable(if (settle) 0f else SETTLED) }
+    // Keyed on `animated` as well as `settle`: seeded at 0f with the system animation scale off,
+    // the first draw would find every cell at zero progress and paint nothing, and whether that
+    // was ever visible would turn on the effect landing before the traversal.
+    val cursor = remember(settle, animated) { Animatable(if (settle && animated) 0f else SETTLED) }
 
     LaunchedEffect(settle, animated) {
         if (settle && animated) {
@@ -63,10 +66,10 @@ fun BrandGrid(color: Color, modifier: Modifier = Modifier, settle: Boolean = fal
         }
     }
 
-    val elapsed = cursor.value
+    val elapsed = cursor.asState()
 
     GridCanvas(modifier) { index ->
-        val progress = cellProgress(index, elapsed)
+        val progress = cellProgress(index, elapsed.value)
         if (progress <= 0f) {
             null
         } else {
@@ -117,27 +120,32 @@ fun BrandGrid(
 @Composable
 fun BrandGridGauge(running: Boolean, color: Color, trackColor: Color, modifier: Modifier = Modifier) {
     val animated = animationsEnabled()
-    // The transition is composed only while it has something to drive. Started unconditionally it
-    // keeps ticking behind the rest state, recomposing this canvas every frame to redraw the same
-    // seven track-coloured cells — on the tab the app opens on, for as long as it is open.
-    val waving = running && animated
-    val phase = if (waving) wavePhase() else 0f
+    // Null rather than a settled value: the transition is composed only while it has something to
+    // drive, so nothing redraws the rest state's seven track-coloured cells sixty times a second on
+    // the tab the app opens on. Running, the phase is read in the draw lambda alone.
+    val phase = if (running && animated) wavePhase() else null
 
     GridCanvas(modifier) { index ->
         val cellColor = when {
             !running -> trackColor
-            !waving -> color
-            else -> lerp(trackColor, color, waveLevel(index, phase))
+            phase == null -> color
+            else -> lerp(trackColor, color, waveLevel(index, phase.value))
         }
         CellPaint(cellColor, scale = 1f)
     }
 }
 
-/** The pass's position, 0..1, restarting each lap. */
+/**
+ * The pass's position, 0..1, restarting each lap.
+ *
+ * Returned as the `State` rather than as its value, so that reading it inside the draw lambda
+ * invalidates the draw alone. Read here in composition it would recompose the whole gauge subtree
+ * sixty times a second for as long as a session is open, which is the cost this shape avoids.
+ */
 @Composable
-private fun wavePhase(): Float {
+private fun wavePhase(): State<Float> {
     val transition = rememberInfiniteTransition(label = "gauge")
-    val phase by transition.animateFloat(
+    return transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
@@ -146,7 +154,6 @@ private fun wavePhase(): Float {
         ),
         label = "gauge-wave",
     )
-    return phase
 }
 
 /** How one cell is painted this frame. A null from [paint] leaves the cell undrawn entirely. */
@@ -166,7 +173,7 @@ private fun GridCanvas(modifier: Modifier, paint: (Int) -> CellPaint?) {
         val originY = (size.height - pitch * CELLS_A_SIDE) / 2f
         val radius = CornerRadius(cell * CORNER_FRAC)
 
-        filledCells().forEachIndexed { index, (row, col) ->
+        FILLED_CELLS.forEachIndexed { index, (row, col) ->
             val cellPaint = paint(index) ?: return@forEachIndexed
             val scaled = cell * cellPaint.scale
             val slack = (cell - scaled) / 2f
@@ -194,13 +201,18 @@ private const val CORNER_FRAC = 0.22f
 
 /** Row/column of the two cells the mark leaves out. Off the diagonal and off centre on purpose. */
 private val EMPTY_CELLS = setOf(1 to 2, 2 to 0)
-private const val EMPTY_COUNT = 2
 
-private const val FILLED_COUNT = CELLS_A_SIDE * CELLS_A_SIDE - EMPTY_COUNT
-
-private fun filledCells(): List<Pair<Int, Int>> = (0 until CELLS_A_SIDE).flatMap { row ->
+/**
+ * The cells that are drawn, in reading order. Built once rather than in the draw lambda: the gauge
+ * animates for as long as a session is open, so a rebuild there is three lists and nine pairs a
+ * frame for hours.
+ */
+private val FILLED_CELLS: List<Pair<Int, Int>> = (0 until CELLS_A_SIDE).flatMap { row ->
     (0 until CELLS_A_SIDE).map { col -> row to col }
 }.filterNot { it in EMPTY_CELLS }
+
+/** Derived, never restated: a hand-kept count is free to disagree with the set it counts. */
+private val FILLED_COUNT = FILLED_CELLS.size
 
 // --- the settle ----------------------------------------------------------------------------
 

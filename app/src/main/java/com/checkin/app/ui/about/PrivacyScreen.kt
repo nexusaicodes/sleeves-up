@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -59,27 +58,29 @@ fun PrivacyScreen(innerPadding: PaddingValues) {
     ) {
         item {
             SectionCard(title = stringResource(R.string.privacy_cannot_title)) {
-                ClaimRow(
-                    icon = Icons.Default.CloudOff,
-                    title = stringResource(R.string.privacy_no_internet_title),
-                    body = stringResource(R.string.privacy_no_internet_body),
-                )
-                ClaimRow(
-                    icon = Icons.Default.NoAccounts,
-                    title = stringResource(R.string.privacy_no_account_title),
-                    body = stringResource(R.string.privacy_no_account_body),
-                )
-                ClaimRow(
-                    icon = Icons.Default.NoPhotography,
-                    title = stringResource(R.string.privacy_no_photo_title),
-                    body = stringResource(R.string.privacy_no_photo_body),
-                )
-                ClaimRow(
-                    icon = Icons.Default.Block,
-                    title = stringResource(R.string.privacy_no_analytics_title),
-                    body = stringResource(R.string.privacy_no_analytics_body),
-                    last = true,
-                )
+                // The container owns the spacing, so a fifth claim needs nothing said about it.
+                Column(verticalArrangement = Arrangement.spacedBy(CLAIM_SPACING)) {
+                    ClaimRow(
+                        icon = Icons.Default.CloudOff,
+                        title = stringResource(R.string.privacy_no_internet_title),
+                        body = stringResource(R.string.privacy_no_internet_body),
+                    )
+                    ClaimRow(
+                        icon = Icons.Default.NoAccounts,
+                        title = stringResource(R.string.privacy_no_account_title),
+                        body = stringResource(R.string.privacy_no_account_body),
+                    )
+                    ClaimRow(
+                        icon = Icons.Default.NoPhotography,
+                        title = stringResource(R.string.privacy_no_photo_title),
+                        body = stringResource(R.string.privacy_no_photo_body),
+                    )
+                    ClaimRow(
+                        icon = Icons.Default.Block,
+                        title = stringResource(R.string.privacy_no_analytics_title),
+                        body = stringResource(R.string.privacy_no_analytics_body),
+                    )
+                }
             }
         }
         item {
@@ -102,7 +103,7 @@ fun PrivacyScreen(innerPadding: PaddingValues) {
  * checkable, which is the half worth hearing.
  */
 @Composable
-private fun ClaimRow(icon: ImageVector, title: String, body: String, last: Boolean = false) {
+private fun ClaimRow(icon: ImageVector, title: String, body: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -128,5 +129,7 @@ private fun ClaimRow(icon: ImageVector, title: String, body: String, last: Boole
             )
         }
     }
-    if (!last) Spacer(modifier = Modifier.height(20.dp))
 }
+
+/** Between one claim and the next. Applied by the container, never counted at a call site. */
+private val CLAIM_SPACING = 20.dp
