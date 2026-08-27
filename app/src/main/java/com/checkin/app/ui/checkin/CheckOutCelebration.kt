@@ -8,15 +8,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -26,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.checkin.app.R
+import com.checkin.app.ui.components.BrandGrid
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.ui.theme.tabularFigures
 import com.checkin.app.util.TimeFormat
@@ -83,12 +81,11 @@ fun CheckOutCelebration(completed: CheckOutSignal.Completed, onDismiss: () -> Un
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.padding(32.dp),
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_stat_checkin),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(ICON_SIZE),
-            )
+            // The one place the app spends anything on motion. The mark settles a cell at a time
+            // and the last one lands with a slight overshoot, so what the user sees is the record
+            // gaining an entry rather than a congratulation appearing. It plays once and rests:
+            // nothing here loops, and nothing about it changes with how long the session was.
+            BrandGrid(size = MARK_SIZE, settle = true)
             Text(
                 text = titleText,
                 style = MaterialTheme.typography.headlineSmall,
@@ -121,7 +118,7 @@ fun CheckOutCelebration(completed: CheckOutSignal.Completed, onDismiss: () -> Un
     }
 }
 
-private val ICON_SIZE = 72.dp
+private val MARK_SIZE = 72.dp
 
 @Preview(showBackground = true)
 @Composable

@@ -123,7 +123,10 @@ fun CheckInScreen(
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val shortViewport = maxHeight < COMPACT_HEIGHT_THRESHOLD
-        val gaugeSize = if (shortViewport) COMPACT_GAUGE else (maxHeight * 0.34f).coerceIn(GAUGE_MIN, GAUGE_MAX)
+        // The mark's side. The readout below it is chrome and text rather than part of this
+        // figure — see COMPACT_MARK — so the fraction is smaller than the one the old ring used by
+        // roughly the readout's own share of the viewport.
+        val markSize = if (shortViewport) COMPACT_MARK else (maxHeight * 0.26f).coerceIn(MARK_MIN, MARK_MAX)
 
         // What an expanded list may claim: whatever is left once the chrome, the gauge and the
         // primary action are paid for. A Column measures non-weighted children in declaration order,
@@ -133,7 +136,7 @@ fun CheckInScreen(
         // The text rows in that estimate grow with the user's font scale while the button does not,
         // so the allowance has to shrink by the same amount or the guarantee only holds at 1.0.
         val textGrowth = TEXT_CONTENT_HEIGHT * (LocalDensity.current.fontScale - 1f).coerceAtLeast(0f)
-        val listMax = (maxHeight - chrome - gaugeSize - FIXED_CONTENT_HEIGHT - textGrowth)
+        val listMax = (maxHeight - chrome - markSize - FIXED_CONTENT_HEIGHT - textGrowth)
             .coerceIn(0.dp, SESSION_LIST_MAX)
 
         // A weighted Column clips rather than scrolls once content outgrows the viewport. Short
@@ -167,11 +170,12 @@ fun CheckInScreen(
                 // Whether this is a first run is a DB read away, so the slot is held at the gauge's
                 // size until the answer arrives. Rendering the welcome meanwhile would flash "get
                 // started" at a user with months of history, every time they open the app.
-                uiState.loading -> Spacer(Modifier.size(gaugeSize))
+                uiState.loading -> Spacer(Modifier.size(markSize + MARK_TO_READOUT_GAP + READOUT_HEIGHT))
 
                 uiState.hasEverTracked -> TimerGauge(
                     elapsedMs = sessionElapsed,
-                    size = gaugeSize,
+                    running = uiState.isRunning,
+                    markSize = markSize,
                 )
 
                 // The first-run empty state, shown instead of a gauge that would only ever read
@@ -229,21 +233,35 @@ private val ACTION_BOTTOM_GAP = 16.dp
  */
 private val ACTION_HEIGHT = 64.dp
 
-/** Date row + the collapsed sessions pill + its spacer + [ACTION_HEIGHT], plus breathing room. */
-private val FIXED_CONTENT_HEIGHT = 168.dp
+/**
+ * Date row + the collapsed sessions pill + its spacer + [ACTION_HEIGHT] + the gauge's readout row
+ * and the gap above it, plus breathing room.
+ *
+ * The readout is counted here rather than in the gauge's own size because it sits *below* the mark
+ * instead of inside it: one constant standing for both stops being true the moment the user raises
+ * their font size, since the mark does not grow and the readout does. The mark is subtracted from
+ * the budget separately, and the readout's growth is charged through [TEXT_CONTENT_HEIGHT].
+ */
+private val FIXED_CONTENT_HEIGHT = 236.dp
 
 /** The pill's floor: a tighter look must never shrink the tap target below what a thumb needs. */
 private val MIN_TOUCH_TARGET = 48.dp
 
-/** The part of that which is text, and so scales with the user's font-size setting. */
-private val TEXT_CONTENT_HEIGHT = 64.dp
+/**
+ * The part of that which is text, and so scales with the user's font-size setting — the date row,
+ * the pill's label, and now the gauge's readout, which is the largest type on the screen and so the
+ * term that moves this figure most. It errs high for the reason every text estimate here does:
+ * over-stating it costs grid room the 48dp floor absorbs by scrolling, while under-stating it
+ * pushes the primary action off the bottom.
+ */
+private val TEXT_CONTENT_HEIGHT = 116.dp
 private val SESSION_LIST_MAX = 180.dp
 
 /** Below this an expanded list shows barely a row, so the whole screen scrolls instead. */
 private val SESSION_LIST_MIN = 96.dp
 
-// The gauge's own three sizes are the remaining term in this budget and live in TimerGauge.kt,
-// beside the composable they size.
+// The mark's three sizes, the gap and the readout's height are the remaining terms in this budget
+// and live in TimerGauge.kt, beside the composable they size.
 
 @Composable
 private fun CheckInOutButton(isRunning: Boolean, onCheckIn: () -> Unit, onCheckOut: () -> Unit) {
