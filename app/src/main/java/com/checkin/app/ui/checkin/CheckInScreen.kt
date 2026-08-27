@@ -76,7 +76,9 @@ fun CheckInScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Refresh prefs-backed inputs and roll the date window forward when the screen resumes.
+    // Roll the date window forward when the screen resumes. A no-op unless the day has actually
+    // changed — see `dayTrigger`, where deduping the tick is what keeps this screen's Room
+    // subscriptions alive across a resume.
     LifecycleResumeEffect(Unit) {
         viewModel.onResumed()
         onPauseOrDispose { }

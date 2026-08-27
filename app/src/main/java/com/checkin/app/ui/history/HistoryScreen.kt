@@ -62,7 +62,8 @@ fun HistoryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Roll the date window / re-read tracking start when the screen resumes.
+    // Roll the date window forward when the screen resumes. Tracking start needs no re-read: it is
+    // a Room flow and stays subscribed, which is exactly what `dayTrigger`'s dedupe preserves.
     LifecycleResumeEffect(Unit) {
         viewModel.onResumed()
         onPauseOrDispose { }
