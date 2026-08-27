@@ -1,6 +1,7 @@
 package com.checkin.app.ui.checkin
 
 import android.content.res.Configuration
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -11,32 +12,40 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.checkin.app.R
-import com.checkin.app.ui.components.charts.CircularProgressRing
+import com.checkin.app.ui.components.BrandGridGauge
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.ui.theme.tabularFigures
 import com.checkin.app.util.TimeFormat
 
-/** The sweep's period: the ring completes one turn per hour of the open session. */
-private const val MILLIS_PER_HOUR = 60 * 60 * 1000f
-
 /**
- * The gauge's share of the fit budget. `CheckInScreen` picks between these — the compact size on a
- * short viewport, otherwise a fraction of the height clamped to the range — so they are part of the
- * same arithmetic as that file's own `FIXED_CONTENT_HEIGHT` block, and changing one means
- * re-checking the other.
+ * The mark's side, which is what these constants size — **not** the whole gauge. The readout sits
+ * below the mark rather than inside it, so the block is this plus [READOUT_HEIGHT] plus the gap
+ * between them, and `CheckInScreen` pays for those two separately in its own fit budget. Splitting
+ * the terms is the point: one number standing for a mark and a line of text is a number that stops
+ * being true the moment the user raises their font size, since only one of the two grows.
  */
-internal val COMPACT_GAUGE = 150.dp
-internal val GAUGE_MIN = 190.dp
-internal val GAUGE_MAX = 260.dp
+internal val COMPACT_MARK = 110.dp
+internal val MARK_MIN = 150.dp
+internal val MARK_MAX = 200.dp
 
 /**
- * The **current session's** elapsed time inside a ring that sweeps once an hour. Zero when no
- * session is open.
+ * The gap between the mark and the readout, and the readout's own height at a font scale of 1.
+ * Both are terms of `CheckInScreen`'s budget — see [COMPACT_MARK] — and the second is the one that
+ * grows with the font scale, so it is charged there as text rather than as fixed chrome.
+ */
+internal val MARK_TO_READOUT_GAP = 12.dp
+internal val READOUT_HEIGHT = 56.dp
+
+/**
+ * The **current session's** elapsed time, under the brand mark breathing while the session runs.
+ * Zero and still between sessions.
  *
  * It shows the session rather than the day's total, and that is the whole reason it needs no label.
  * A clock starting from zero and counting up is unambiguous by convention; one resuming from the
@@ -44,62 +53,71 @@ internal val GAUGE_MAX = 260.dp
  * deliberately does not have — and left a user mid-session doing arithmetic to answer "how long
  * have I been sitting here". The day's total is stated directly below, by `TodaySessions`.
  *
- * The sweep is motion, not measurement: there is no target, so the ring is a fraction of nothing and
- * simply marks the passing hour before starting again. It follows that **the description must state
- * the elapsed time, never a percentage** — the sweep position means nothing, and announcing it as
- * progress would invent a goal the app does not have.
+ * **The lattice is motion, not measurement, and it says only whether a session is open.** A wave of
+ * brightness travels the seven cells while one is; the grid sits at track alpha while none is. No
+ * cell's brightness is a figure and no cell's place in the pass means anything — see
+ * [BrandGridGauge], which is where that rule is enforced. The description states the elapsed time
+ * and nothing about the mark.
+ *
+ * **The readout sits below the mark, and nothing bounds its width but the screen's own padding.**
+ * That is what makes it safe at a raised font scale: it is `sp` and the mark is `dp`, so a readout
+ * enclosed by the mark — in a ring's hole or a lattice's centre — outgrows its enclosure and is
+ * clipped or wrapped with nothing reporting it. Stacking them costs a little height and removes the
+ * bound entirely, which is the trade to keep.
  */
 @Composable
-internal fun TimerGauge(elapsedMs: Long, size: Dp = GAUGE_MAX) {
-    // Modulo the hour, so the ring completes a turn every hour of the open session. Not animated
-    // across the wrap: springing back from full to empty would read as progress being lost.
-    val sweep = (elapsedMs % MILLIS_PER_HOUR).toFloat() / MILLIS_PER_HOUR
-    val ringColor = MaterialTheme.colorScheme.primary
+internal fun TimerGauge(elapsedMs: Long, running: Boolean, markSize: Dp = MARK_MAX) {
+    val description = stringResource(R.string.cd_timer_gauge, TimeFormat.durationShort(elapsedMs))
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        CircularProgressRing(
-            progress = sweep,
-            color = ringColor,
-            trackColor = ringColor.copy(alpha = 0.15f),
-            contentDescription = stringResource(
-                R.string.cd_timer_gauge,
-                TimeFormat.durationShort(elapsedMs),
-            ),
-            modifier = Modifier.size(size),
-        ) {
-            Text(
-                text = TimeFormat.durationLive(elapsedMs),
-                // The readout has to stay inside the ring, which shrinks on short viewports.
-                style = if (size < GAUGE_MIN) {
-                    MaterialTheme.typography.headlineMedium
-                } else {
-                    MaterialTheme.typography.displayMedium
-                }.tabularFigures(),
-                fontWeight = FontWeight.Bold,
-            )
-        }
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MARK_TO_READOUT_GAP),
+        // One announcement for the pair. Read as separate nodes the mark contributes nothing and
+        // the readout arrives without the phrase that says which clock it is.
+        modifier = Modifier.clearAndSetSemantics { contentDescription = description },
+    ) {
+        BrandGridGauge(
+            running = running,
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = TRACK_ALPHA),
+            modifier = Modifier.size(markSize),
+        )
+        Text(
+            text = TimeFormat.durationLive(elapsedMs),
+            // The compact branch is a short viewport, where the screen scrolls anyway — so this
+            // smaller style buys room rather than preventing an overflow.
+            style = if (markSize < MARK_MIN) {
+                MaterialTheme.typography.headlineMedium
+            } else {
+                MaterialTheme.typography.displayMedium
+            }.tabularFigures(),
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
+
+/** Faint enough that a still grid reads as at rest, dark enough that the mark is still the mark. */
+private const val TRACK_ALPHA = 0.15f
 
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun TimerGaugePartHourPreview() {
+private fun TimerGaugeRunningPreview() {
     CheckInAppTheme {
         Box(modifier = Modifier.padding(16.dp)) {
-            TimerGauge(elapsedMs = 5 * 3_600_000L + 45 * 60_000L)
+            TimerGauge(elapsedMs = 5 * 3_600_000L + 45 * 60_000L, running = true)
         }
     }
 }
 
-/** On the hour the sweep is back at the start — the ring turns over rather than staying full. */
+/** Between sessions the grid is still, which is the whole of what it says about state. */
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun TimerGaugeOnTheHourPreview() {
+private fun TimerGaugeAtRestPreview() {
     CheckInAppTheme {
         Box(modifier = Modifier.padding(16.dp)) {
-            TimerGauge(elapsedMs = 8 * 3_600_000L)
+            TimerGauge(elapsedMs = 0L, running = false)
         }
     }
 }
