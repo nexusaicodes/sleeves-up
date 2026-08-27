@@ -9,15 +9,14 @@ Graphics for the Google Play listing of **Sleeves Up**.
 | `feature-graphic.png` | 1024×500 PNG | Feature graphic (generated) |
 | `generate_feature_graphic.py` | — | Regenerates `feature-graphic.png` |
 | `LISTING.md` | — | The store listing copy, the two rules governing it, and the vocabulary it must never use |
-| `screenshots/phone/` | 1080×2400 PNG ×4 | Phone screenshots |
-| `screenshots/tablet/` | 2560×1600 PNG ×3 | Tablet screenshots (two-pane History) |
+| `screenshots/raw/` | — | Device captures, uncaptioned. The input to `generate_screenshots.py` |
+| `generate_screenshots.py` | — | Composites `raw/` into `screenshots/phone/`; captions parsed from `LISTING.md` |
+| `screenshots/phone/` | 1080×1920 PNG ×7 | Phone screenshots (generated — see below, currently owed two captures) |
 | `seed_demo_data.py` | — | Writes the demo history the screenshots are taken against |
 
-**The feature graphic composites the real 512px icon, so regenerating the mark alone leaves it
-stale** — that is how the graphic once kept a round-capped mark the app had already replaced with a
-butt-capped one. Run both generators together. **Both are deterministic, so re-running them is also
-the check**: identical output means the committed files are current. Comparing modification times
-instead gives a false alarm whenever the two were generated seconds apart from unchanged geometry.
+**Every generator is deterministic, so re-running one is also the check**: identical output means
+the committed file is current. Comparing modification times instead gives a false alarm whenever two
+were generated seconds apart from unchanged geometry.
 
 Both scripts need Pillow (`pip install Pillow`) and run from the repo root.
 
@@ -53,12 +52,26 @@ Two sizing rules are encoded there and are easy to get wrong by hand:
 python3 play-store-assets/generate_feature_graphic.py
 ```
 
-It composites the real 512px icon over a deep-indigo gradient with the wordmark and privacy
-tagline. The gradient sits **below** the launcher indigo (`#3F51B5`) in value on purpose — the
-icon tile is flat brand indigo, so a same-value field would swallow it. Fonts fall back across
-common macOS system faces.
+It draws the wordmark, the tagline and a fragment of the binary calendar over a deep-indigo
+gradient. It does **not** composite the icon any more — it shares only `CORNER_FRAC` with
+`generate_icons.py` — so regenerating the mark alone can no longer leave it carrying a shape the app
+has replaced. The gradient sits **below** the launcher indigo (`#3F51B5`) in value on purpose: the
+filled cells are near-white and the empty ones a whisper of it, so the field has to clear both
+states. Type is loaded from `app/src/main/res/font`, so there is no fallback chain and the output
+does not depend on the machine. The calendar runs off the right edge rather than ending inside the
+canvas, and the script asserts that — a month that ends on canvas reads as a complete object to be
+inspected rather than as a record that continues.
 
 ## Regenerating the screenshots
+
+**The phone set is owed two captures.** `LISTING.md` specifies seven; `screenshots/raw/` holds five
+— `02-face-check.png` and `04-running.png` have never been taken — and `generate_screenshots.py`
+exits naming them rather than writing a short set. So `screenshots/phone/` cannot be regenerated and
+is not committed. The 2.x set that used to sit there was deleted rather than left standing: it
+showed the old branding and the progress ring 3.0 removed, and a stale panel in the folder the
+upload is taken from is worse than an absent one. `screenshots/tablet/` went with it, since
+`LISTING.md` withdraws the tablet set for 3.0. **Do not upload the listing until both raws exist and
+the generator has run.**
 
 They are taken against **seeded demo data on an emulator, never a real device** — a real install
 has whatever history it happens to have, which is usually too thin to fill a calendar month or give
