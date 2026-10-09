@@ -40,6 +40,26 @@ object NudgeEligibility {
     }
 
     /**
+     * When the minimum gap is the only thing holding back a nudge — the cap has room and a
+     * checkpoint is due — the instant the gap clears; otherwise null.
+     *
+     * The gap defers rather than cancels, so something has to come back for the nudge it held. The
+     * hourly worker might, but cannot be relied on to: the device a missed follow-up costs most is
+     * the one whose worker has dropped to a single overnight pass. So the alarm is armed for this
+     * instant instead of the next checkpoint (see [NudgeSchedule.nextAlarmAt]).
+     */
+    fun deferredUntil(snapshot: NudgeSnapshot): Long? {
+        if (snapshot.shownToday >= snapshot.config.maxPerDay) return null
+        if (spacedFarEnough(snapshot)) return null
+        if (Nudge.entries.none { triggers(snapshot, it) }) return null
+        val last = snapshot.lastShownAtMs ?: return null
+        val clearsAt = last + snapshot.config.minGapMs
+        // A clock moved backwards leaves the gap "unmet" for longer than the gap itself; retrying at
+        // an instant hours away would only be overtaken by the next checkpoint anyway.
+        return clearsAt.takeIf { it > snapshot.nowMillis }
+    }
+
+    /**
      * Whether enough time has passed since the last nudge of the day.
      *
      * A clock moved backwards makes the difference negative, which reads as "not far enough" and
@@ -60,12 +80,11 @@ object NudgeEligibility {
      * more than one thing asks the question inside it.
      */
     private fun triggers(snapshot: NudgeSnapshot, nudge: Nudge): Boolean = when (nudge) {
-        Nudge.NOT_CHECKED_IN_MORNING,
-        Nudge.NOT_CHECKED_IN_AFTERNOON,
-        Nudge.NOT_CHECKED_IN_EVENING,
+        Nudge.NOT_CHECKED_IN_FIRST,
+        Nudge.NOT_CHECKED_IN_FOLLOW_UP,
         ->
             !snapshot.hasCheckedInToday &&
                 nudge !in snapshot.alreadySentToday &&
-                NudgeSchedule.checkpointAt(snapshot.hourOfDay) == nudge.checkpoint
+                NudgeSchedule.checkpointAt(snapshot.hourOfDay, snapshot.firstReminderHour) == nudge.checkpoint
     }
 }

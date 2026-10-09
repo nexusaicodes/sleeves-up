@@ -1,9 +1,11 @@
 package com.checkin.app
 
+import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.nudge.Nudge
 import com.checkin.app.notify.nudge.NudgeCatalog
 import com.checkin.app.notify.nudge.NudgeSchedule
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -47,5 +49,21 @@ class NudgeCatalogTest {
     fun `no two nudges share a notification id`() {
         val ids = Nudge.entries.map { it.notificationId }
         assertEquals(ids.size, ids.toSet().size)
+    }
+
+    /** A retired id reused would let a new nudge replace a stale one in an updated install's tray. */
+    @Test
+    fun `no nudge posts under a retired id`() {
+        val ids = Nudge.entries.map { it.notificationId }.toSet()
+        assertTrue(ids.none { it in NotificationIds.RETIRED_NUDGES })
+    }
+
+    /** A ledger key resolves whether it was written by this build or an earlier one. */
+    @Test
+    fun `stored keys resolve, legacy ones included`() {
+        Nudge.entries.forEach { assertEquals(it, Nudge.fromStoredKey(it.name)) }
+        assertEquals(Nudge.NOT_CHECKED_IN_FIRST, Nudge.fromStoredKey("NOT_CHECKED_IN_MORNING"))
+        assertEquals(Nudge.NOT_CHECKED_IN_FOLLOW_UP, Nudge.fromStoredKey("NOT_CHECKED_IN_AFTERNOON"))
+        assertNull(Nudge.fromStoredKey("NOT_CHECKED_IN_EVENING"))
     }
 }

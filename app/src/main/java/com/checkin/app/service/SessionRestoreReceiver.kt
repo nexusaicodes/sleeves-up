@@ -44,7 +44,7 @@ class SessionRestoreReceiver : BroadcastReceiver() {
                 // In the `finally`, exactly as in NudgeAlarmReceiver: both actions that reach here
                 // cancel the package's alarms, and on a device the user is not opening this is the
                 // checkpoint's only prompt repair. A throw upstream must not take it down with it.
-                runCatching { container.nudgeAlarms.armNext(container.timeSource.nowMillis()) }
+                container.nudgeDispatcher.rearm()
                 pending.finish()
             }
         }

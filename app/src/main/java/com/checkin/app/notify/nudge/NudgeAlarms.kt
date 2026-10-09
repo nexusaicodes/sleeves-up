@@ -22,25 +22,38 @@ import java.time.ZoneId
  *
  * **Deliberately stateless, unlike [com.checkin.app.service.SessionAlarms].** That seam persists its
  * armed instants because they are derived from a session and cannot be recomputed without it. A
- * checkpoint is pure clock maths, so the next one is always derivable from now — there is nothing to
- * store, nothing to reconcile against `AlarmManager` (which cannot be asked what is still set), no
- * new prefs namespace, and no new backup exclusion. [armNext] is idempotent: call it as often as
- * anything remembers to.
+ * checkpoint is pure clock maths over the user's chosen hour, so the next one is always derivable
+ * from now — there is no armed instant to store and nothing to reconcile against `AlarmManager`
+ * (which cannot be asked what is still set). The chosen hour is a setting, read fresh on every arm.
+ * [armNext] is idempotent: call it as often as anything remembers to, and after the hour changes.
  */
 interface NudgeAlarms {
-    /** Arms the next checkpoint strictly after [nowMs], replacing whatever was set. */
-    fun armNext(nowMs: Long)
+    /**
+     * Arms the next checkpoint strictly after [nowMs], or [retryAtMs] if that comes sooner, replacing
+     * whatever was set. See [NudgeSchedule.nextAlarmAt] for what the retry is for.
+     */
+    fun armNext(nowMs: Long, retryAtMs: Long? = null)
 }
 
-class AndroidNudgeAlarms(private val context: Context) : NudgeAlarms {
+class AndroidNudgeAlarms(private val context: Context, private val reminderSettings: ReminderSettings) : NudgeAlarms {
 
     private val alarmManager: AlarmManager?
         get() = context.getSystemService(AlarmManager::class.java)
 
     // RTC_WAKEUP, not ELAPSED_REALTIME: a checkpoint is a local wall-clock hour.
-    override fun armNext(nowMs: Long) {
+    //
+    // Synchronized across the hour read and the set: a chooser storing a new hour and the checkpoint
+    // receiver re-arming run on different threads, and unserialised the receiver could read the old
+    // hour, set after the chooser, and put back the alarm the user just moved away from.
+    @Synchronized
+    override fun armNext(nowMs: Long, retryAtMs: Long?) {
         val manager = alarmManager ?: return
-        val at = NudgeSchedule.nextCheckpointAfter(nowMs, ZoneId.systemDefault())
+        val at = NudgeSchedule.nextAlarmAt(
+            nowMs,
+            ZoneId.systemDefault(),
+            reminderSettings.firstReminderHour(),
+            retryAtMs,
+        )
         manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pendingIntent())
     }
 

@@ -2,11 +2,14 @@ package com.checkin.app
 
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.NotificationChannels
+import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.StringResolver
 import com.checkin.app.notify.nudge.Nudge
 import com.checkin.app.notify.nudge.NudgeCatalog
+import com.checkin.app.notify.nudge.NudgeConfig
 import com.checkin.app.notify.nudge.NudgeDispatcher
 import com.checkin.app.notify.nudge.NudgeSchedule
+import com.checkin.app.notify.nudge.NudgeSending
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -26,17 +29,19 @@ import java.time.LocalDate
 @OptIn(ExperimentalCoroutinesApi::class)
 class NudgeDispatcherTest {
 
-    // The morning checkpoint, local, on a day the user hasn't checked in. Derived from the schedule
-    // rather than written out, so retuning it doesn't silently stop these tests exercising the path
-    // they were written for.
+    // The user's chosen hour, local, on a day they haven't checked in. Deliberately not the default,
+    // so a dispatcher that ignored the stored hour would fail here rather than pass by coincidence.
+    private val chosenHour = 8
+    private val reminderSettings = FakeReminderSettings(chosenHour)
     private val today = LocalDate.of(2026, 6, 15)
-    private val triggerHour = today.atTime(NudgeSchedule.Checkpoint.MORNING.hour, 0)
+    private val triggerHour = today.atTime(chosenHour, 0)
         .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
     private val time = FakeTimeSource(triggerHour, today)
     private val notifier = FakeNotifier()
     private val log = FakeNudgeSendLog()
     private val dao = FakeCheckInSessionDao()
+    private val alarms = FakeNudgeAlarms()
 
     private fun dispatcher(clock: FakeTimeSource = time): NudgeDispatcher = NudgeDispatcher(
         strings = StringResolver { "copy-$it" },
@@ -44,6 +49,8 @@ class NudgeDispatcherTest {
         notifier = notifier,
         sendLog = { log },
         timeSource = clock,
+        reminderSettings = reminderSettings,
+        alarms = alarms,
     )
 
     private suspend fun shownCount() = log.sentSince(0L).size
@@ -52,7 +59,7 @@ class NudgeDispatcherTest {
     fun `an eligible nudge is posted and logged`() = runTest {
         val sent = dispatcher().runOnce()
 
-        assertEquals(Nudge.NOT_CHECKED_IN_MORNING, sent)
+        assertEquals(Nudge.NOT_CHECKED_IN_FIRST, sent)
         assertEquals(1, notifier.shown.size)
         // The log is the only record of a send, and the daily cap counts from it.
         assertEquals(1, shownCount())
@@ -82,7 +89,7 @@ class NudgeDispatcherTest {
      */
     @Test
     fun `nothing is posted when no nudge is eligible`() = runTest {
-        val beforeFirstCheckpoint = today.atTime(NudgeSchedule.Checkpoint.MORNING.hour - 1, 0)
+        val beforeFirstCheckpoint = today.atTime(chosenHour - 1, 0)
             .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
         val sent = dispatcher(FakeTimeSource(beforeFirstCheckpoint, today)).runOnce()
@@ -93,31 +100,33 @@ class NudgeDispatcherTest {
     }
 
     /**
-     * The checkpoints carry distinct ids, so without this an evening nudge would stack under a
-     * morning one still in the tray — two notifications saying the user hasn't checked in, which
-     * reads as a stuck loop rather than as one message that came back.
+     * The checkpoints carry distinct ids, so without this the follow-up would stack under the first
+     * one still in the tray — two notifications saying the user hasn't checked in, which reads as a
+     * stuck loop rather than as one message that came back. Ids an earlier build posted under are
+     * retired too, or a stale evening nudge would sit beside today's.
      */
     @Test
     fun `a dispatched nudge retires the day's other checkpoints`() = runTest {
         val sent = dispatcher().runOnce()
 
-        assertEquals(Nudge.NOT_CHECKED_IN_MORNING, sent)
-        val expected = Nudge.entries.filter { it != Nudge.NOT_CHECKED_IN_MORNING }.map { it.notificationId }
+        assertEquals(Nudge.NOT_CHECKED_IN_FIRST, sent)
+        val expected = Nudge.entries.filter { it != Nudge.NOT_CHECKED_IN_FIRST }.map { it.notificationId } +
+            NotificationIds.RETIRED_NUDGES
         assertEquals(expected.toSet(), notifier.cancelled.toSet())
-        assertTrue(Nudge.NOT_CHECKED_IN_MORNING.notificationId !in notifier.cancelled)
+        assertTrue(Nudge.NOT_CHECKED_IN_FIRST.notificationId !in notifier.cancelled)
     }
 
     /**
      * The regression this whole rule exists for. A checkpoint band is hours wide and the hourly
-     * worker asks inside it, so an 11:00 pass would repost the 10:00 nudge under the same id with the
-     * same copy — re-alerting on a high-importance channel — and spend the second of the day's two
-     * slots, leaving the afternoon and evening copy unreachable.
+     * worker asks inside it, so a pass an hour later would repost the first nudge under the same id
+     * with the same copy — re-alerting on a high-importance channel — and spend the second of the
+     * day's two slots, leaving the follow-up unreachable.
      */
     @Test
     fun `a second pass inside the same band sends nothing`() = runTest {
-        assertEquals(Nudge.NOT_CHECKED_IN_MORNING, dispatcher().runOnce())
+        assertEquals(Nudge.NOT_CHECKED_IN_FIRST, dispatcher().runOnce())
 
-        val laterInTheBand = today.atTime(NudgeSchedule.Checkpoint.AFTERNOON.hour - 1, 0)
+        val laterInTheBand = today.atTime(NudgeSchedule.followUpHour(chosenHour) - 1, 0)
             .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
         assertNull(dispatcher(FakeTimeSource(laterInTheBand, today)).runOnce())
@@ -135,7 +144,7 @@ class NudgeDispatcherTest {
     fun `an open session from an earlier day does not suppress`() = runTest {
         dao.seedOpen(dateKey = today.minusDays(1).toString(), startedAt = triggerHour - 24 * 60 * 60 * 1000L)
 
-        assertEquals(Nudge.NOT_CHECKED_IN_MORNING, dispatcher().runOnce())
+        assertEquals(Nudge.NOT_CHECKED_IN_FIRST, dispatcher().runOnce())
     }
 
     /** The mirror image: a session opened today is a check-in, and the day's nudges are done. */
@@ -153,7 +162,7 @@ class NudgeDispatcherTest {
         dispatcher().runOnce()
 
         val spec = notifier.shown.single()
-        assertEquals(Nudge.NOT_CHECKED_IN_MORNING.notificationId, spec.id)
+        assertEquals(Nudge.NOT_CHECKED_IN_FIRST.notificationId, spec.id)
         assertEquals(NotificationChannels.NUDGE, spec.channelId)
     }
 
@@ -163,7 +172,7 @@ class NudgeDispatcherTest {
      */
     @Test
     fun `the posted copy is the nudge's registered copy`() = runTest {
-        val copy = NudgeCatalog.copyFor(Nudge.NOT_CHECKED_IN_MORNING)
+        val copy = NudgeCatalog.copyFor(Nudge.NOT_CHECKED_IN_FIRST)
 
         dispatcher().runOnce()
 
@@ -172,11 +181,57 @@ class NudgeDispatcherTest {
         assertEquals("copy-${copy.bodyRes}", spec.body)
     }
 
-    /** Retiring is what stops a stale nudge sending the user through the gate to an open session. */
+    /**
+     * Retiring is what stops a stale nudge sending the user through the gate to an open session —
+     * including one posted by an earlier build under an id nothing posts under now.
+     */
     @Test
-    fun `retireAll cancels every nudge id`() = runTest {
+    fun `retireAll cancels every nudge id, retired ones included`() = runTest {
         dispatcher().retireAll()
 
-        assertEquals(Nudge.entries.map { it.notificationId }.toSet(), notifier.cancelled.toSet())
+        assertEquals(
+            (Nudge.entries.map { it.notificationId } + NotificationIds.RETIRED_NUDGES).toSet(),
+            notifier.cancelled.toSet(),
+        )
+    }
+
+    /** The hour is read at every pass, so a change takes effect without rebuilding anything. */
+    @Test
+    fun `the snapshot follows the stored hour`() = runTest {
+        reminderSettings.setFirstReminderHour(chosenHour + 1)
+
+        assertNull(dispatcher().runOnce())
+    }
+
+    /**
+     * On the day of an update, a send recorded under a name an earlier build used must still mark
+     * its successor as sent — otherwise the reminder goes out twice and the cap then refuses the
+     * follow-up.
+     */
+    @Test
+    fun `a send recorded under a legacy name still counts as that checkpoint`() = runTest {
+        log.sends += NudgeSending("NOT_CHECKED_IN_MORNING", triggerHour - 2 * 60 * 60 * 1000L)
+
+        assertNull(dispatcher().runOnce())
+    }
+
+    /** The alarm is armed for the moment the gap clears, not left for tomorrow's first checkpoint. */
+    @Test
+    fun `rearm retries a follow-up the gap is holding back`() = runTest {
+        val followUpAt = today.atTime(NudgeSchedule.followUpHour(chosenHour), 0)
+            .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val firstLandedLate = followUpAt - 30 * 60 * 1000L
+        log.record(Nudge.NOT_CHECKED_IN_FIRST, firstLandedLate)
+
+        dispatcher(FakeTimeSource(followUpAt, today)).rearm()
+
+        assertEquals(listOf<Long?>(firstLandedLate + NudgeConfig().minGapMs), alarms.retries)
+    }
+
+    @Test
+    fun `rearm carries no retry when nothing is being held back`() = runTest {
+        dispatcher().rearm()
+
+        assertEquals(listOf<Long?>(null), alarms.retries)
     }
 }

@@ -16,17 +16,13 @@ data class NudgeCopy(val titleRes: Int, val bodyRes: Int)
 object NudgeCatalog {
 
     private val copy: Map<Nudge, NudgeCopy> = mapOf(
-        Nudge.NOT_CHECKED_IN_MORNING to NudgeCopy(
-            R.string.nudge_not_checked_in_morning_title,
-            R.string.nudge_not_checked_in_morning_body,
+        Nudge.NOT_CHECKED_IN_FIRST to NudgeCopy(
+            R.string.nudge_not_checked_in_first_title,
+            R.string.nudge_not_checked_in_first_body,
         ),
-        Nudge.NOT_CHECKED_IN_AFTERNOON to NudgeCopy(
-            R.string.nudge_not_checked_in_afternoon_title,
-            R.string.nudge_not_checked_in_afternoon_body,
-        ),
-        Nudge.NOT_CHECKED_IN_EVENING to NudgeCopy(
-            R.string.nudge_not_checked_in_evening_title,
-            R.string.nudge_not_checked_in_evening_body,
+        Nudge.NOT_CHECKED_IN_FOLLOW_UP to NudgeCopy(
+            R.string.nudge_not_checked_in_follow_up_title,
+            R.string.nudge_not_checked_in_follow_up_body,
         ),
     )
 

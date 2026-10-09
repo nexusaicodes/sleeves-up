@@ -45,7 +45,7 @@ class NudgeAlarmReceiver : BroadcastReceiver() {
                 // and nothing after it. There is nowhere to report it to and nothing that would read
                 // such a report.
             } finally {
-                runCatching { container.nudgeAlarms.armNext(container.timeSource.nowMillis()) }
+                container.nudgeDispatcher.rearm()
                 pending.finish()
             }
         }

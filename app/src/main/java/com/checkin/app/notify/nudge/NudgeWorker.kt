@@ -35,10 +35,10 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             // Re-arm before dispatching: a checkpoint alarm lost to a force stop is repaired here
             // even on a pass that then finds nothing eligible to send.
             //
-            // Guarded on its own, like every other arming site: `setAndAllowWhileIdle` throws past
-            // the platform's 500-alarm cap, and sharing the outer catch would let that one throw skip
-            // the dispatch and the prune — the two jobs this pass exists for.
-            runCatching { container.nudgeAlarms.armNext(container.timeSource.nowMillis()) }
+            // `rearm` absorbs its own failures, like every other arming site: `setAndAllowWhileIdle`
+            // throws past the platform's 500-alarm cap, and sharing the outer catch would let that
+            // one throw skip the dispatch and the prune — the two jobs this pass exists for.
+            container.nudgeDispatcher.rearm()
             container.nudgeDispatcher.runOnce()
             container.nudgeSendLog.prune(
                 container.timeSource.nowMillis() - RETENTION_MS,

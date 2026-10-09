@@ -4,6 +4,7 @@ import com.checkin.app.data.TimeSource
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.notify.NotificationChannels
+import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.StringResolver
@@ -36,6 +37,8 @@ class NudgeDispatcher(
      */
     private val sendLog: () -> NudgeSendLog,
     private val timeSource: TimeSource,
+    private val reminderSettings: ReminderSettings,
+    private val alarms: NudgeAlarms,
 ) : PostedNudges {
 
     companion object {
@@ -56,13 +59,31 @@ class NudgeDispatcher(
         val nudge = NudgeEligibility.select(snapshot) ?: return@withLock null
         val sent = send(nudge, snapshot.nowMillis) ?: return@withLock null
 
-        // Retire the day's earlier checkpoints, but only now that this one is actually up. They carry
-        // distinct ids by design, so otherwise an evening nudge stacks under a morning one still in
+        // Retire the day's earlier checkpoint, but only now that this one is actually up. They carry
+        // distinct ids by design, so otherwise the follow-up stacks under the first one still in
         // the tray — two notifications saying the user hasn't checked in, which reads as a stuck loop
         // rather than as one message that came back. Clearing *before* the post would instead take a
         // still-actionable notification away on the pass where the post is refused.
         Nudge.entries.filter { it != sent }.forEach { notifier.cancel(it.notificationId) }
+        NotificationIds.RETIRED_NUDGES.forEach { notifier.cancel(it) }
         sent
+    }
+
+    /**
+     * Arms the checkpoint alarm: the next checkpoint, or sooner when the minimum gap is holding back
+     * a nudge that is otherwise due (see [NudgeEligibility.deferredUntil]).
+     *
+     * Every background arming site goes through this rather than [NudgeAlarms.armNext] alone,
+     * because the alarm is a single `PendingIntent`: a site arming the plain next checkpoint would
+     * replace a pending retry, and the follow-up it was holding would wait for tomorrow. Never
+     * throws — a failed ledger read arms without the retry, and a refused arm is absorbed, since
+     * every caller is a fire-and-forget path with nothing above it to catch.
+     */
+    suspend fun rearm() {
+        val retryAt = runCatching {
+            passLock.withLock { NudgeEligibility.deferredUntil(buildSnapshot()) }
+        }.getOrNull()
+        runCatching { alarms.armNext(timeSource.nowMillis(), retryAt) }
     }
 
     /**
@@ -72,6 +93,7 @@ class NudgeDispatcher(
      */
     override fun retireAll() {
         Nudge.entries.forEach { notifier.cancel(it.notificationId) }
+        NotificationIds.RETIRED_NUDGES.forEach { notifier.cancel(it) }
     }
 
     private suspend fun send(nudge: Nudge, nowMillis: Long): Nudge? {
@@ -107,12 +129,11 @@ class NudgeDispatcher(
         return NudgeSnapshot(
             nowMillis = now,
             hourOfDay = hour,
+            firstReminderHour = reminderSettings.firstReminderHour(),
             // Deliberately the day's rows and not `getActiveSession()`: a session still open from an
             // earlier day is a lost day-boundary close, not a user who is present. See the field.
             hasCheckedInToday = todaySessions.isNotEmpty(),
-            alreadySentToday = sent.mapNotNullTo(mutableSetOf()) { sending ->
-                Nudge.entries.firstOrNull { it.name == sending.key }
-            },
+            alreadySentToday = sent.mapNotNullTo(mutableSetOf()) { Nudge.fromStoredKey(it.key) },
             shownToday = sent.size,
             lastShownAtMs = sent.maxOfOrNull { it.atMillis },
         )

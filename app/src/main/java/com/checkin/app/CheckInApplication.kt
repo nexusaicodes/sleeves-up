@@ -21,17 +21,18 @@ class CheckInApplication : Application() {
         NotificationChannels.ensureAll(this)
         NudgeWorker.schedule(this)
         // Alarms do not survive a force stop or a package replace, and every process start is a free
-        // chance to put this one back. Idempotent — it always resolves to the same next checkpoint.
+        // chance to put this one back. Idempotent — it always resolves to the same next instant.
         //
-        // Wrapped because this runs on the main thread of every cold start with nothing above it to
-        // catch: `setAndAllowWhileIdle` throws past the platform's 500-alarm cap, and a missing nudge
-        // must not be a crash on launch. Nothing reads back whether a checkpoint is armed, so what
-        // bounds the cost is the other arming sites — the receiver's own re-arm, the worker's repair
-        // and the boot/package-replace receiver — any of which puts it back.
-        runCatching { container.nudgeAlarms.armNext(container.timeSource.nowMillis()) }
-        // Off the main thread: it is filesystem work, and every path that reaches the ledger reaches
-        // it during the first frame. Guarded for the same reason as the arming above — a file that
-        // will not delete must not be a crash on launch.
+        // Off the main thread: it reads the reminder hour from prefs and the day's sends from the
+        // ledger, both disk work nothing on the first frame waits for. `rearm` absorbs its own
+        // failures, so a refused arm is not a crash on launch; nothing reads back whether a
+        // checkpoint is armed, so what bounds the cost is the other arming sites — the receiver's own
+        // re-arm, the worker's repair and the boot/package-replace receiver — any of which puts it
+        // back.
+        container.applicationScope.launch { container.nudgeDispatcher.rearm() }
+        // Off the main thread for the same reason: it is filesystem work, and every path that reaches
+        // the ledger reaches it during the first frame. Guarded so a file that will not delete is not
+        // a crash on launch.
         container.applicationScope.launch {
             runCatching { NudgeSendDatabase.deleteRetiredFile(this@CheckInApplication) }
         }

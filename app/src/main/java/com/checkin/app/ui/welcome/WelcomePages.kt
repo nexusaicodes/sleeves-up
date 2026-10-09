@@ -9,8 +9,16 @@ import com.checkin.app.R
  */
 enum class WelcomeIcon { CHECK_IN_MARK, FACE, REMINDER }
 
-/** One page of the welcome tour: what it says and which mark it carries, not how it looks. */
-data class WelcomePage(val titleRes: Int, val bodyRes: Int, val icon: WelcomeIcon)
+/**
+ * One page of the welcome tour: what it says and which mark it carries, not how it looks.
+ * [choosesReminderHour] puts the reminder-hour control under the message.
+ */
+data class WelcomePage(
+    val titleRes: Int,
+    val bodyRes: Int,
+    val icon: WelcomeIcon,
+    val choosesReminderHour: Boolean = false,
+)
 
 /**
  * The tour, in order — resource ids and a named icon, which is what makes it the one part of this
@@ -34,11 +42,13 @@ object WelcomePages {
         ),
         // Last, because the notification permission dialog opens the moment this page is read
         // through. The icon rides on the page rather than being picked by index, so reordering these
-        // moves the mark with the words.
+        // moves the mark with the words. The reminder hour is chosen here, beside the sentence that
+        // says reminders exist, rather than on a page of its own.
         WelcomePage(
             titleRes = R.string.welcome_reminders_title,
             bodyRes = R.string.welcome_reminders_body,
             icon = WelcomeIcon.REMINDER,
+            choosesReminderHour = true,
         ),
     )
 }

@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.checkin.app.CheckInApplication
 import com.checkin.app.platform.PromptSettings
@@ -25,6 +26,7 @@ import com.checkin.app.ui.navigation.AppNavScaffold
 import com.checkin.app.ui.presence.PresenceCheckSignal
 import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import com.checkin.app.ui.presence.PresenceGate
+import com.checkin.app.ui.settings.SettingsViewModel
 import com.checkin.app.ui.welcome.FirstRun
 import com.checkin.app.ui.welcome.WelcomeScreen
 
@@ -84,7 +86,13 @@ fun AppRoot(onGatePassed: () -> Unit) {
             // No BackHandler by design: the branches around it map back to dismiss, which
             // returns the user to what they were doing, and there is nothing here to return to.
             // Back leaves the app and the welcome is owed again — only ending it writes it.
+            // The reminder page sets the same hour Settings does, through the same ViewModel, so the
+            // store-then-re-arm has one tested path wherever the hour is chosen.
+            val reminders: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
+            val reminderState by reminders.uiState.collectAsStateWithLifecycle()
             WelcomeScreen(
+                reminderHour = reminderState.reminderHour,
+                onReminderHourChosen = reminders::setReminderHour,
                 onFinished = { endWelcome(FirstRun.Exit.FINISHED) },
                 onSkipped = { endWelcome(FirstRun.Exit.SKIPPED) },
             )

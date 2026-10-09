@@ -89,26 +89,26 @@
     <string name="nudge_channel_description">Occasional reminders when you haven\'t checked in. At most two a day.</string>
 
     <!-- One pair per checkpoint, because a second send in a day arriving as the same string reads as
-         a stuck loop rather than as a message that came back. Each checkpoint has exactly one wording — no variants: nothing in the app can tell two arms apart, so a second one is
-only a second string to keep in step. Copy never warms or grows more urgent across the day — escalating would invent a
-         deadline this app does not have, and would grade a day that is not over. No copy names the
-         hour: delivery is best-effort, so a stated time is a punctuality promise the app cannot
-         keep. -->
-    <string name="nudge_not_checked_in_morning_title">Ready when you are</string>
-    <string name="nudge_not_checked_in_morning_body">You haven\'t checked in yet today. Tap to start your session.</string>
-    <string name="nudge_not_checked_in_afternoon_title">No session yet today</string>
-    <string name="nudge_not_checked_in_afternoon_body">Whenever you start, it counts — a short day is still a day shown up for.</string>
-    <string name="nudge_not_checked_in_evening_title">Still time today</string>
-    <string name="nudge_not_checked_in_evening_body">Today\'s record closes at midnight. Tap to check in.</string>
+         a stuck loop rather than as a message that came back. Each checkpoint has exactly one
+         wording — no variants: nothing in the app can tell two arms apart, so a second one is only a
+         second string to keep in step. Copy never warms or grows more urgent across the day —
+         escalating would invent a deadline this app does not have, and would grade a day that is not
+         over. Both are time-neutral because the user picks the hour, which can be any time of day.
+         No notification names the hour: delivery is best-effort, so a stated time is a punctuality
+         promise the app cannot keep. -->
+    <string name="nudge_not_checked_in_first_title">Ready when you are</string>
+    <string name="nudge_not_checked_in_first_body">You haven\'t checked in yet today. Tap to start your session.</string>
+    <string name="nudge_not_checked_in_follow_up_title">No session yet today</string>
+    <string name="nudge_not_checked_in_follow_up_body">Whenever you start, it counts — a short day is still a day shown up for.</string>
 
     <!--
       The first-run welcome tour, shown once before anything is asked for. The order is the point:
       the notification permission dialog opens the moment the last page is finished, so the
       reminders are described immediately before they are requested.
 
-      Sentence case — these read as lines, not card titles. Nothing grades a day or names an hour,
-      by the same rules the nudge copy follows. "Twice a day" is NudgeConfig.maxPerDay, not a round
-      number chosen to sound generous: if that value changes, this line is wrong.
+      Sentence case — these read as lines, not card titles. Nothing grades a day, by the same rules
+      the nudge copy follows. "Two hours later" is NudgeSchedule.FOLLOW_UP_OFFSET_HOURS: if that
+      value changes, this line is wrong.
     -->
     <string name="welcome_showing_up_title">Showing up is the whole thing</string>
     <string name="welcome_showing_up_body">Check in when you start, check out when you stop. There\'s no target to clear — a short day counts the same as a long one.</string>
@@ -120,7 +120,7 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
     <string name="welcome_presence_title">Presence, checked on this device</string>
     <string name="welcome_presence_body">The front camera confirms someone\'s there at check-in and check-out. No photo is taken and no image ever leaves the camera.</string>
     <string name="welcome_reminders_title">A reminder if the day gets away</string>
-    <string name="welcome_reminders_body">If you haven\'t checked in, Sleeves Up says so — at most twice a day. Turn them off with a long press on any reminder.</string>
+    <string name="welcome_reminders_body">If you haven\'t checked in, Sleeves Up reminds you around the hour you pick, and once more about two hours later. Turn them off with a long press on any reminder.</string>
     <!-- Spoken by the dot row. HorizontalPager publishes a scroll range and no page count, so
          without this a screen reader is never told where in the tour it is. -->
     <string name="welcome_page_position">Page %1$d of %2$d</string>
@@ -226,7 +226,22 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
     <string name="export_nothing">No completed days to export yet</string>
     <string name="export_failed">Export failed: %1$s</string>
 
-    <!-- About. Settings holds nothing else — see SettingsScreen for why. -->
+    <!--
+      The reminder hour, chosen on the tour's last page and changeable in Settings. "Around" is
+      load-bearing on every time stated: the alarm is inexact, so the hour is when a reminder becomes
+      due, not when it lands. The summary states the follow-up too, so the second reminder is never a
+      surprise. The tour's button and the Settings row share the one summary string.
+    -->
+    <string name="reminders_section">Reminders</string>
+    <string name="reminder_time_label">Reminder time</string>
+    <string name="reminder_time_value">Around %1$s, then around %2$s</string>
+    <!-- The tour button's click action, spoken by TalkBack after the summary it shows. -->
+    <string name="reminder_time_change">Change reminder time</string>
+    <string name="reminder_time_dialog_title">Reminder Time</string>
+    <string name="reminder_time_then">then around %1$s</string>
+    <string name="reminder_time_cancel">Cancel</string>
+
+    <!-- About. Settings holds this and the reminder hour — see SettingsScreen for why nothing else. -->
     <string name="about_section">About</string>
     <string name="about_version">Version %1$s (build %2$d)</string>
     <string name="about_developer">Nexus AI Technology Labs</string>

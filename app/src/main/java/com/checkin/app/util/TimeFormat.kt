@@ -2,6 +2,7 @@ package com.checkin.app.util
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -70,6 +71,9 @@ object TimeFormat {
         .atZone(ZoneId.systemDefault())
         .toLocalTime()
         .format(clockFormatter)
+
+    /** A whole local hour of day, 0-23, in the same form as [clock] (e.g. "10:00 AM"). */
+    fun hourOfDay(hour: Int): String = LocalTime.of(hour, 0).format(clockFormatter)
 
     /** A date the user reads in isolation, so it carries the year (e.g. "Jul 25, 2026"). */
     fun dateWithYear(date: LocalDate): String = date.format(dateWithYearFormatter)

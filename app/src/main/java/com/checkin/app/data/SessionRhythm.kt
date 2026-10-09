@@ -7,9 +7,9 @@ import java.time.ZoneId
 /**
  * When in the day a session began. Descriptive: no bucket is better than another.
  *
- * These names also exist on `NudgeSchedule.Checkpoint`, breaking at different hours (12/17 here,
- * 10/14/19 there) and deliberately not unified: this describes when a session the user already
- * started began, that decides when to send them a message.
+ * Not to be unified with `NudgeSchedule.Checkpoint`, which also divides the day: this describes when
+ * a session the user already started began, that decides when to send them a message, from an hour
+ * the user chose.
  */
 enum class StartBucket {
     MORNING,
