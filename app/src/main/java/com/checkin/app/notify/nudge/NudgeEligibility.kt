@@ -31,9 +31,10 @@ import java.time.ZoneId
  * on the notification itself.
  *
  * Two questions are asked of the same rules: [select] — what to send now — and [nextEligibleAt] —
- * when the alarm should next come back. Both go through [stillSendable] for everything that is not
+ * when it would next send something. Both go through [stillSendable] for everything that is not
  * a matter of time, so a gate added there binds both; `NudgeEligibilityTest` sweeps a day to pin
- * that the two agree on the time-dependent half too.
+ * that the two agree on the time-dependent half too. [nextAlarmAt], what the alarm is armed for, is
+ * [nextEligibleAt] with one difference, and only for a nudge already due.
  */
 object NudgeEligibility {
 
@@ -49,25 +50,38 @@ object NudgeEligibility {
 
     /**
      * The earliest instant, at or after now, at which [select] would return a nudge if nothing else
-     * changed in between — or tomorrow's first checkpoint when nothing is left to send today. This
-     * is what the alarm is armed for.
+     * changed in between — or tomorrow's first checkpoint when nothing is left to send today.
      *
-     * For each checkpoint still sendable it is the latest of three moments: its band opening, the
-     * minimum gap clearing, and now — kept only if that is still inside the band. That covers the
-     * two cases a plain "next checkpoint" arm loses: a band that is open but unsent (a re-arm after
-     * an update, a reboot or a new hour, landing after the follow-up hour has already passed), which
-     * comes back as now; and a follow-up the gap is holding back, which comes back as the instant the
-     * gap clears. A clock moved backwards puts the last send in the future, so the gap clears later —
-     * exactly when [spacedFarEnough] would next allow it, never earlier.
+     * For each checkpoint still sendable it is the later of its band opening and the minimum gap
+     * clearing, or now when both have passed — kept only if that is still inside the band. That
+     * covers the two cases a plain "next checkpoint" arm loses: a band that is open but unsent (a
+     * re-arm after an update, a reboot or a new hour, landing after the follow-up hour has already
+     * passed), which comes back as now; and a follow-up the gap is holding back, which comes back as
+     * the instant the gap clears. A clock moved backwards puts the last send in the future, so the
+     * gap clears later — exactly when [spacedFarEnough] would next allow it, never earlier.
      */
-    fun nextEligibleAt(snapshot: NudgeSnapshot, zone: ZoneId): Long {
+    fun nextEligibleAt(snapshot: NudgeSnapshot, zone: ZoneId): Long =
+        earliest(snapshot, zone, dueAt = snapshot.nowMillis)
+
+    /**
+     * What the checkpoint alarm is armed for: [nextEligibleAt], except that a nudge already due is
+     * put off by [NudgeConfig.dueNowDelayMs] — still inside its band, or the next candidate if the
+     * delay runs past it. An instant still ahead is left exactly where it is, so an on-time
+     * checkpoint and a gap-deferred follow-up both arrive when the rules allow them.
+     */
+    fun nextAlarmAt(snapshot: NudgeSnapshot, zone: ZoneId): Long =
+        earliest(snapshot, zone, dueAt = snapshot.nowMillis + snapshot.config.dueNowDelayMs)
+
+    /** The shared body of [nextEligibleAt] and [nextAlarmAt]: [dueAt] stands in for any instant already reached. */
+    private fun earliest(snapshot: NudgeSnapshot, zone: ZoneId, dueAt: Long): Long {
         val today = Instant.ofEpochMilli(snapshot.nowMillis).atZone(zone).toLocalDate()
         val gapClearsAt = snapshot.lastShownAtMs?.let { it + snapshot.config.minGapMs } ?: Long.MIN_VALUE
         val todays = Nudge.entries
             .filter { stillSendable(snapshot, it) }
             .mapNotNull { nudge ->
                 val band = NudgeSchedule.bandOn(nudge.checkpoint, today, zone, snapshot.firstReminderHour)
-                maxOf(band.first, gapClearsAt, snapshot.nowMillis).takeIf { it in band }
+                val opensAt = maxOf(band.first, gapClearsAt)
+                (if (opensAt > snapshot.nowMillis) opensAt else dueAt).takeIf { it in band }
             }
             .minOrNull()
         return todays ?: NudgeSchedule.bandOn(
@@ -93,10 +107,10 @@ object NudgeEligibility {
     /**
      * Everything about whether [nudge] may still go out today that does not depend on the time:
      * the user has not checked in, the cap has room, and neither it nor a later checkpoint has been
-     * sent. Exhaustive over [Nudge], so a new one is a compile error here rather than a nudge that is
+     * attempted. Exhaustive over [Nudge], so a new one is a compile error here rather than a nudge that is
      * declared, given copy and an id, and then never selected by anything.
      *
-     * **A later checkpoint's send spends the earlier ones too.** Dedup is per nudge and the bands
+     * **A later checkpoint's attempt spends the earlier ones too.** Dedup is per nudge and the bands
      * move with the chosen hour, so moving the hour later after the follow-up has gone would
      * otherwise reopen the first band and send "ready when you are" after "no session yet today" —
      * the two reminders in reverse order.
@@ -107,6 +121,6 @@ object NudgeEligibility {
         ->
             !snapshot.hasCheckedInToday &&
                 snapshot.shownToday < snapshot.config.maxPerDay &&
-                snapshot.alreadySentToday.none { it.checkpoint >= nudge.checkpoint }
+                snapshot.spentToday.none { it.checkpoint >= nudge.checkpoint }
     }
 }

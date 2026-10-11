@@ -7,11 +7,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.checkin.app.CheckInApplication
 import com.checkin.app.notify.nudge.ReminderSettings
 import com.checkin.app.notify.nudge.chooseFirstReminderHour
-import com.checkin.app.notify.nudge.rearmNudges
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 
 data class SettingsUiState(val reminderHour: Int)
 
@@ -42,9 +40,7 @@ class SettingsViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val container = (this[APPLICATION_KEY] as CheckInApplication).container
-                SettingsViewModel(container.reminderSettings) {
-                    container.applicationScope.launch { container.rearmNudges() }
-                }
+                SettingsViewModel(container.reminderSettings, container::launchNudgeRearm)
             }
         }
     }

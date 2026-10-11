@@ -1,11 +1,12 @@
 package com.checkin.app.notify.nudge
 
 /**
- * One nudge send, reduced to what the frequency rules read: which nudge, and when.
+ * One nudge attempt, reduced to what the frequency rules read: which nudge, when, and whether the
+ * post reached the tray.
  *
  * [key] is the stored name rather than a [Nudge] for the reason [NudgeSend.nudge] gives.
  */
-data class NudgeSending(val key: String, val atMillis: Long)
+data class NudgeSending(val key: String, val atMillis: Long, val posted: Boolean)
 
 /**
  * The app's whole interface to the send ledger, and the ledger's whole purpose: remembering what was
@@ -19,24 +20,28 @@ data class NudgeSending(val key: String, val atMillis: Long)
  */
 interface NudgeSendLog {
 
-    /** Records that [nudge] was posted at [atMillis]. Called only after a post actually succeeded. */
-    suspend fun record(nudge: Nudge, atMillis: Long)
+    /**
+     * Records an attempt to post [nudge] at [atMillis], and whether [posted] it reached the tray.
+     * Undefaulted: a caller that forgot to say would either spend a cap slot on a notification nobody
+     * saw or leave a refused checkpoint to be retried on every re-arm.
+     */
+    suspend fun record(nudge: Nudge, atMillis: Long, posted: Boolean)
 
-    /** Every send since [since], oldest first — the whole input to the frequency rules. */
-    suspend fun sentSince(since: Long): List<NudgeSending>
+    /** Every attempt since [since], oldest first — the whole input to the frequency rules. */
+    suspend fun attemptsSince(since: Long): List<NudgeSending>
 
-    /** Drops sends older than [before]. Nothing reads past the start of today; this is just tidying. */
+    /** Drops rows older than [before]. Nothing reads past the start of today; this is just tidying. */
     suspend fun prune(before: Long)
 }
 
 class RoomNudgeSendLog(private val dao: NudgeSendDao) : NudgeSendLog {
 
-    override suspend fun record(nudge: Nudge, atMillis: Long) {
-        dao.insert(NudgeSend(nudge = nudge.name, at = atMillis))
+    override suspend fun record(nudge: Nudge, atMillis: Long, posted: Boolean) {
+        dao.insert(NudgeSend(nudge = nudge.name, at = atMillis, posted = posted))
     }
 
-    override suspend fun sentSince(since: Long): List<NudgeSending> =
-        dao.sentSince(since).map { NudgeSending(it.nudge, it.at) }
+    override suspend fun attemptsSince(since: Long): List<NudgeSending> =
+        dao.attemptsSince(since).map { NudgeSending(it.nudge, it.at, it.posted) }
 
     override suspend fun prune(before: Long) = dao.deleteOlderThan(before)
 }

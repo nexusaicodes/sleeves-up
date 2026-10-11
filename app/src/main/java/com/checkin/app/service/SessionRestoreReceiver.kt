@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.checkin.app.CheckInApplication
-import com.checkin.app.notify.nudge.rearmNudges
 import kotlinx.coroutines.launch
 
 /**
@@ -22,14 +21,15 @@ import kotlinx.coroutines.launch
  * replace — but it is deferrable, and an update landing at 23:00 could miss midnight entirely.
  *
  * The repair is [SessionWatchdog.reviveIfNeeded], the same call the other two callers make; this
- * receiver deliberately arms nothing itself. That call re-arms from the instants the alarms were
+ * receiver deliberately arms nothing itself. The nudge checkpoint, which both events also cancel, is
+ * re-armed by `CheckInApplication.onCreate`, which runs in the process this broadcast starts. That call re-arms from the instants the alarms were
  * *already* set for rather than deriving fresh ones, which is what stops a reboot resetting the
  * "only the first reminder of a session alerts" ladder — resetting it alerts at full volume in the
  * small hours over a session the user left running on purpose.
  */
 class SessionRestoreReceiver : BroadcastReceiver() {
 
-    /** [SessionWatchdog.reviveIfNeeded] never throws; the `finally` below is for the re-arm. */
+    /** [SessionWatchdog.reviveIfNeeded] never throws; the `finally` releases the broadcast regardless. */
     override fun onReceive(context: Context, intent: Intent?) {
         // Both actions get the identical repair; the receiver only needs to know it was one of them.
         val action = intent?.action
@@ -42,11 +42,6 @@ class SessionRestoreReceiver : BroadcastReceiver() {
             try {
                 container.sessionWatchdog.reviveIfNeeded()
             } finally {
-                // In the `finally`: both actions that reach here cancel the package's alarms, and on a
-                // device the user is not opening this is the checkpoint's only prompt repair. A throw
-                // upstream must not take it down with it, and `rearmNudges` never throws, so `finish`
-                // always runs.
-                container.rearmNudges()
                 pending.finish()
             }
         }

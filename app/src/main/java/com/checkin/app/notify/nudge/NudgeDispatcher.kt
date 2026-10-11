@@ -57,11 +57,12 @@ class NudgeDispatcher(
      * Runs one pass and arms the alarm for the next one. Returns the nudge sent, or null when nothing
      * was eligible or posting was refused.
      *
-     * Arms from the snapshot the pass already read, in a `finally`, so a pass that throws still
-     * schedules the next one — without that, one bad pass would end the chain for good. Whatever the
-     * pass selected counts as spent for the arm even when the post was refused: it was due now, so
-     * arming for it again would fire at once, be refused again, and spin. A refused nudge therefore
-     * waits for the next band, as it always has.
+     * Arms in a `finally`, so a pass that throws still schedules the next one — without that, one
+     * bad pass would end the chain for good. The arm re-reads the ledger rather than adjusting the
+     * snapshot by hand, so what it arms for is exactly what the next pass will see: a refused post is
+     * recorded as an attempt and so waits for the next band, and a pass that threw before recording
+     * anything leaves its nudge due, which [NudgeEligibility.nextAlarmAt] puts off rather than
+     * re-firing at once.
      *
      * Never throws except to cancel: every caller is a background path with nothing above it to
      * report to, and the arm below has already run.
@@ -72,11 +73,9 @@ class NudgeDispatcher(
             armNextCheckpoint()
             return@withLock null
         }
-        var attempted: Nudge? = null
         var sent: Nudge? = null
         try {
-            attempted = NudgeEligibility.select(snapshot)
-            sent = attempted?.let { send(it, snapshot.nowMillis) }
+            sent = NudgeEligibility.select(snapshot)?.let { send(it, snapshot.nowMillis) }
             if (sent != null) {
                 // Retire the day's earlier checkpoint, but only now that this one is actually up.
                 // They carry distinct ids by design, so otherwise the follow-up stacks under the first
@@ -93,28 +92,25 @@ class NudgeDispatcher(
             // Absorbed: the arm below runs regardless, so a thrown pass costs this nudge and nothing
             // after it. There is nowhere to report it to and nothing that would read such a report.
         } finally {
-            armAfterPass(snapshot, attempted, sent)
+            armFromLedger()
         }
         sent
     }
 
     /**
-     * Arms the alarm for [NudgeEligibility.nextEligibleAt] without running a pass — for every site
-     * that has just lost or moved the alarm: process start, boot and package replace, and a new hour.
-     * Serialised with [runOnce] on the same lock, so the hour read, the decision and the arm are one
-     * step: a choice stored before this is called cannot be overwritten by an arm derived from the
-     * hour it replaced.
+     * Arms the alarm for [NudgeEligibility.nextAlarmAt] without running a pass — for every site that
+     * has just lost or moved the alarm: process start (which every boot and package replace goes
+     * through) and a new hour. Serialised with [runOnce] on the same lock, so the hour read, the
+     * decision and the arm are one step: a choice stored before this is called cannot be overwritten
+     * by an arm derived from the hour it replaced.
      *
-     * An instant already reached is armed as is and fires at once, which is the point: a band open
-     * but unsent when the alarm was lost gets its nudge now rather than tomorrow, and the pass that
-     * fire runs arms past it. Never throws except to cancel — a failed read arms the plain next
-     * checkpoint, and a cancelled one arms nothing, leaving the alarm already set in place rather
-     * than replacing it with one that knows less.
+     * A band open but unsent when the alarm was lost gets its nudge later today rather than tomorrow,
+     * but not at once: these sites are usually the user opening the app or changing the hour, and a
+     * "you haven't checked in" posted seconds later over that screen is noise. Never throws except to
+     * cancel — a failed read arms the plain next checkpoint, and a cancelled one arms nothing,
+     * leaving the alarm already set in place rather than replacing it with one that knows less.
      */
-    suspend fun rearm() = passLock.withLock {
-        val snapshot = readSnapshot()
-        if (snapshot == null) armNextCheckpoint() else arm(NudgeEligibility.nextEligibleAt(snapshot, timeSource.zone()))
-    }
+    suspend fun rearm() = passLock.withLock { armFromLedger() }
 
     /**
      * Cancels every nudge id. Clears the whole set rather than one, because this is called from paths
@@ -138,45 +134,26 @@ class NudgeDispatcher(
                 launchExtra = LaunchExtras.CHECK_IN,
             ),
         )
-        // Notifications can be refused (permission revoked). Recording a send that never reached the
-        // tray would spend a slot in the daily cap on a nudge the user was never shown.
-        if (!posted) return null
-
-        sendLog().record(nudge, nowMillis)
-        return nudge
+        // Notifications can be refused (permission revoked, notifications off, the channel blocked).
+        // The attempt is recorded either way, flagged, so the checkpoint is spent for the day without
+        // spending a slot in the daily cap on a nudge the user was never shown.
+        sendLog().record(nudge, nowMillis, posted)
+        return nudge.takeIf { posted }
     }
 
-    /**
-     * After a pass, nothing is due now — whatever was has just been tried — so an instant not ahead
-     * of now could only mean [NudgeEligibility.select] and [NudgeEligibility.nextEligibleAt]
-     * disagree. Arming it would fire at once into the same pass, so the plain next checkpoint is
-     * armed instead.
-     */
-    private fun armAfterPass(snapshot: NudgeSnapshot, attempted: Nudge?, sent: Nudge?) {
-        val after = when {
-            sent != null -> snapshot.copy(
-                alreadySentToday = snapshot.alreadySentToday + sent,
-                shownToday = snapshot.shownToday + 1,
-                lastShownAtMs = snapshot.nowMillis,
-            )
-            attempted != null -> snapshot.copy(alreadySentToday = snapshot.alreadySentToday + attempted)
-            else -> snapshot
+    /** Must be called holding [passLock]. Reads afresh, so it sees whatever the pass just recorded. */
+    private suspend fun armFromLedger() {
+        val snapshot = readSnapshot()
+        if (snapshot == null) {
+            armNextCheckpoint()
+        } else {
+            runCatching { alarms.arm(NudgeEligibility.nextAlarmAt(snapshot, timeSource.zone())) }
         }
-        val at = NudgeEligibility.nextEligibleAt(after, timeSource.zone())
-        if (at > snapshot.nowMillis) arm(at) else armNextCheckpoint(snapshot.firstReminderHour)
     }
 
-    private fun arm(atMs: Long) {
-        runCatching { alarms.arm(atMs) }
-    }
-
-    private fun armNextCheckpoint(firstHour: Int? = null) {
+    private fun armNextCheckpoint() {
         runCatching {
-            alarms.armNextCheckpoint(
-                timeSource.nowMillis(),
-                timeSource.zone(),
-                firstHour ?: reminderSettings.firstReminderHour(),
-            )
+            alarms.armNextCheckpoint(timeSource.nowMillis(), timeSource.zone(), reminderSettings.firstReminderHour())
         }
     }
 
@@ -192,25 +169,28 @@ class NudgeDispatcher(
 
     private suspend fun buildSnapshot(): NudgeSnapshot {
         val now = timeSource.nowMillis()
-        val today = timeSource.today()
         val zone = timeSource.zone()
-        val hour = Instant.ofEpochMilli(now).atZone(zone).hour
+        // The day and the hour from the one clock read: a second read for the date can land past
+        // midnight while `now` did not, opening tomorrow's empty ledger with today's follow-up band.
+        val local = Instant.ofEpochMilli(now).atZone(zone)
+        val today = local.toLocalDate()
         val todaySessions = repository.getSessionsByDate(today.format(dateFormatter))
         val startOfDay = today.atStartOfDay(zone).toInstant().toEpochMilli()
         // One query answers all three frequency rules, so they cannot disagree about where the day
         // started. This is the ledger's only read, and the only reason it exists.
-        val sent = sendLog().sentSince(startOfDay)
+        val attempts = sendLog().attemptsSince(startOfDay)
+        val shown = attempts.filter { it.posted }
 
         return NudgeSnapshot(
             nowMillis = now,
-            hourOfDay = hour,
+            hourOfDay = local.hour,
             firstReminderHour = reminderSettings.firstReminderHour(),
             // Deliberately the day's rows and not `getActiveSession()`: a session still open from an
             // earlier day is a lost day-boundary close, not a user who is present. See the field.
             hasCheckedInToday = todaySessions.isNotEmpty(),
-            alreadySentToday = sent.mapNotNullTo(mutableSetOf()) { Nudge.fromStoredKey(it.key) },
-            shownToday = sent.size,
-            lastShownAtMs = sent.maxOfOrNull { it.atMillis },
+            spentToday = attempts.mapNotNullTo(mutableSetOf()) { Nudge.fromStoredKey(it.key) },
+            shownToday = shown.size,
+            lastShownAtMs = shown.maxOfOrNull { it.atMillis },
         )
     }
 }

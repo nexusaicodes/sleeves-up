@@ -87,7 +87,7 @@ PRIVATE BY DESIGN
 • Your history lives in a local database on your phone. Export it to CSV whenever you like — that copy is yours.
 
 REMINDERS
-• If you have not checked in, Sleeves Up says so — at most twice a day, hours apart.
+• If you have not checked in, Sleeves Up says so — at most twice a day.
 • You choose the hour they come.
 • Turn them off with a long press on any reminder; that opens the channel and switches it off in one tap.
 

@@ -20,7 +20,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.checkin.app.CheckInApplication
 import com.checkin.app.notify.nudge.chooseFirstReminderHour
-import com.checkin.app.notify.nudge.rearmNudges
 import com.checkin.app.platform.PromptSettings
 import com.checkin.app.ui.checkin.CheckOutCelebration
 import com.checkin.app.ui.checkin.CheckOutSignal
@@ -30,7 +29,6 @@ import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import com.checkin.app.ui.presence.PresenceGate
 import com.checkin.app.ui.welcome.FirstRun
 import com.checkin.app.ui.welcome.WelcomeScreen
-import kotlinx.coroutines.launch
 
 /**
  * The three surfaces that can occupy the whole window, in the order they outrank each other:
@@ -97,9 +95,8 @@ fun AppRoot(onGatePassed: () -> Unit) {
             WelcomeScreen(
                 reminderHour = tourReminderHour,
                 onReminderHourChosen = { hour ->
-                    tourReminderHour = container.reminderSettings.chooseFirstReminderHour(hour) {
-                        container.applicationScope.launch { container.rearmNudges() }
-                    }
+                    tourReminderHour =
+                        container.reminderSettings.chooseFirstReminderHour(hour, container::launchNudgeRearm)
                 },
                 onFinished = { endWelcome(FirstRun.Exit.FINISHED) },
                 onSkipped = { endWelcome(FirstRun.Exit.SKIPPED) },

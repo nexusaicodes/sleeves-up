@@ -53,7 +53,7 @@ class NudgeDispatcherTest {
         alarms = alarms,
     )
 
-    private suspend fun shownCount() = log.sentSince(0L).size
+    private suspend fun shownCount() = log.attemptsSince(0L).count { it.posted }
 
     @Test
     fun `an eligible nudge is posted and logged`() = runTest {
@@ -67,17 +67,19 @@ class NudgeDispatcherTest {
 
     /**
      * POST_NOTIFICATIONS is revocable at any time, and the daily cap counts from the log — so a
-     * refused post that still recorded would burn one of the day's slots on a notification nobody
-     * saw, and the later checkpoint that slot belonged to would never fire.
+     * refused post recorded as shown would burn one of the day's slots on a notification nobody
+     * saw, and the later checkpoint that slot belonged to would never fire. It is still recorded,
+     * flagged, so the checkpoint is spent: see the rearm test below for why.
      */
     @Test
-    fun `a refused post records nothing`() = runTest {
+    fun `a refused post is recorded as unposted`() = runTest {
         notifier.refuse = true
 
         val sent = dispatcher().runOnce()
 
         assertNull(sent)
         assertEquals(0, shownCount())
+        assertEquals(NudgeSending(Nudge.NOT_CHECKED_IN_FIRST.name, triggerHour, posted = false), log.sends.single())
     }
 
     /**
@@ -210,7 +212,7 @@ class NudgeDispatcherTest {
      */
     @Test
     fun `a send recorded under a legacy name still counts as that checkpoint`() = runTest {
-        log.sends += NudgeSending("NOT_CHECKED_IN_MORNING", triggerHour - 2 * 60 * 60 * 1000L)
+        log.sends += NudgeSending("NOT_CHECKED_IN_MORNING", triggerHour - 2 * 60 * 60 * 1000L, posted = true)
 
         assertNull(dispatcher().runOnce())
     }
@@ -220,7 +222,7 @@ class NudgeDispatcherTest {
 
     private val followUpAt get() = at(NudgeSchedule.followUpHour(chosenHour))
 
-    /** A pass arms from the snapshot it read, with its own send counted: the next band, not now. */
+    /** A pass arms from the ledger as it stands after the pass, its own send counted: the next band. */
     @Test
     fun `a pass arms the next band`() = runTest {
         dispatcher().runOnce()
@@ -229,8 +231,8 @@ class NudgeDispatcherTest {
     }
 
     /**
-     * A refused nudge was due now, so arming for it again would fire at once, be refused, and spin.
-     * It counts as spent for the arm and waits for the next band, as a refusal always has.
+     * A refused nudge was due now, so arming for it again would fire, be refused again, and repeat.
+     * It is in the ledger as spent and waits for the next band.
      */
     @Test
     fun `a refused post arms the next band rather than now`() = runTest {
@@ -244,23 +246,82 @@ class NudgeDispatcherTest {
     /**
      * The update-day case: the first reminder went out, the package was replaced after the
      * follow-up hour, and the alarm went with it. The next checkpoint after now is tomorrow's first,
-     * so a plain arm would drop today's follow-up; it is due, so it is armed for now.
+     * so a plain arm would drop today's follow-up. It is due, but a rearm is usually the user opening
+     * the app, so it is put off rather than posted over the screen they opened.
      */
     @Test
-    fun `rearm arms an open band that is unsent for now`() = runTest {
-        log.record(Nudge.NOT_CHECKED_IN_FIRST, triggerHour)
+    fun `rearm puts off an open band that is unsent`() = runTest {
+        log.record(Nudge.NOT_CHECKED_IN_FIRST, triggerHour, posted = true)
         val now = followUpAt + 30 * 60 * 1000L
 
         dispatcher(FakeTimeSource(now, today)).rearm()
 
-        assertEquals(listOf(now), alarms.armed)
+        assertEquals(listOf(now + NudgeConfig().dueNowDelayMs), alarms.armed)
+    }
+
+    /**
+     * A refusal recorded by an earlier process is still a refusal: with only posts recorded, every
+     * process start read the band as unsent and woke the device for a pass into a blocked channel.
+     */
+    @Test
+    fun `rearm does not retry a checkpoint whose post was refused`() = runTest {
+        log.record(Nudge.NOT_CHECKED_IN_FIRST, triggerHour, posted = false)
+
+        dispatcher(FakeTimeSource(triggerHour + 10 * 60 * 1000L, today)).rearm()
+
+        assertEquals(listOf(followUpAt), alarms.armed)
+    }
+
+    /** A refusal spends its checkpoint but not the gap, so the follow-up arrives on time. */
+    @Test
+    fun `a refused attempt does not hold back the next checkpoint`() = runTest {
+        log.record(Nudge.NOT_CHECKED_IN_FIRST, followUpAt - 10 * 60 * 1000L, posted = false)
+
+        assertEquals(Nudge.NOT_CHECKED_IN_FOLLOW_UP, dispatcher(FakeTimeSource(followUpAt, today)).runOnce())
+    }
+
+    /**
+     * A pass that throws before recording leaves its nudge due. Arming for now would refire into the
+     * same failure at the alarm's minimum futurity for the rest of the band; it is put off instead.
+     */
+    @Test
+    fun `a pass that throws arms later rather than now`() = runTest {
+        val throwing = object : com.checkin.app.notify.nudge.NudgeSendLog by log {
+            override suspend fun record(nudge: Nudge, atMillis: Long, posted: Boolean) = error("disk full")
+        }
+        val dispatcher = NudgeDispatcher(
+            strings = StringResolver { "copy-$it" },
+            repository = CheckInRepository(dao, time),
+            notifier = notifier,
+            sendLog = { throwing },
+            timeSource = time,
+            reminderSettings = reminderSettings,
+            alarms = alarms,
+        )
+
+        assertNull(dispatcher.runOnce())
+        assertEquals(listOf(triggerHour + NudgeConfig().dueNowDelayMs), alarms.armed)
+    }
+
+    /**
+     * The day comes from the same clock read as the hour. Read separately, a pass in the last
+     * millisecond of the day could take the date from after midnight: tomorrow's empty ledger, with
+     * today's follow-up band — and the follow-up already sent would be sent again.
+     */
+    @Test
+    fun `a pass straddling midnight reads one day`() = runTest {
+        log.record(Nudge.NOT_CHECKED_IN_FOLLOW_UP, followUpAt, posted = true)
+        val lastMillisecond = at(0, date = today.plusDays(1)) - 1
+        val straddling = FakeTimeSource(lastMillisecond, today.plusDays(1))
+
+        assertNull(dispatcher(straddling).runOnce())
     }
 
     /** The alarm is armed for the moment the gap clears, not left for tomorrow's first checkpoint. */
     @Test
     fun `rearm retries a follow-up the gap is holding back`() = runTest {
         val firstLandedLate = followUpAt - 30 * 60 * 1000L
-        log.record(Nudge.NOT_CHECKED_IN_FIRST, firstLandedLate)
+        log.record(Nudge.NOT_CHECKED_IN_FIRST, firstLandedLate, posted = true)
 
         dispatcher(FakeTimeSource(followUpAt, today)).rearm()
 

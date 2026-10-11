@@ -80,14 +80,13 @@ object NudgeSchedule {
      *
      * This is the fallback arm, used only when the state [NudgeEligibility.nextEligibleAt] needs
      * cannot be read: it knows nothing of what was sent, so it skips a band that is open but unsent.
-     * Strictly after, so it can never re-arm the instant that just fired and spin. It goes through
-     * the calendar (`atTime(...).atZone(zone)`) rather than adding hours to an epoch, so a DST day
-     * still puts each checkpoint at its stated local hour.
+     * Strictly after, so it can never re-arm the instant that just fired and spin. It reads the
+     * instants off [bandOn], so the fallback and the rules cannot disagree about where a band opens.
      */
     fun nextCheckpointAfter(fromMs: Long, zone: ZoneId, firstHour: Int): Long {
         val today = Instant.ofEpochMilli(fromMs).atZone(zone).toLocalDate()
-        return listOf(firstHour, followUpHour(firstHour))
-            .map { today.atTime(it, 0).atZone(zone).toInstant().toEpochMilli() }
+        return Checkpoint.entries
+            .map { bandOn(it, today, zone, firstHour).first }
             .firstOrNull { it > fromMs }
             ?: bandOn(Checkpoint.FIRST, today.plusDays(1), zone, firstHour).first
     }
@@ -95,7 +94,9 @@ object NudgeSchedule {
     /**
      * The instants [checkpoint]'s band covers on [date]: from its hour up to the next checkpoint's,
      * the last running to midnight. The same bands [checkpointAt] reads by hour, as instants, for
-     * asking *when* a band opens rather than *whether* one is open now.
+     * asking *when* a band opens rather than *whether* one is open now. It goes through the
+     * calendar (`atTime(...).atZone(zone)`) rather than adding hours to an epoch, so a DST day still
+     * puts each checkpoint at its stated local hour.
      */
     fun bandOn(checkpoint: Checkpoint, date: LocalDate, zone: ZoneId, firstHour: Int): LongRange {
         fun at(hour: Int) = date.atTime(hour, 0).atZone(zone).toInstant().toEpochMilli()

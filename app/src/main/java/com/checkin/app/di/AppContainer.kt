@@ -18,6 +18,7 @@ import com.checkin.app.notify.nudge.PostedNudges
 import com.checkin.app.notify.nudge.ReminderSettings
 import com.checkin.app.notify.nudge.RoomNudgeSendLog
 import com.checkin.app.notify.nudge.SharedPrefsReminderSettings
+import com.checkin.app.notify.nudge.armNextCheckpoint
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.DefaultCsvExporter
 import com.checkin.app.platform.DefaultServiceController
@@ -28,9 +29,11 @@ import com.checkin.app.service.AndroidSessionAlarms
 import com.checkin.app.service.SessionAlarms
 import com.checkin.app.service.SessionLifecycleRunner
 import com.checkin.app.service.SessionWatchdog
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Minimal manual DI: the single place that builds the repository, the side-effect seams
@@ -58,6 +61,58 @@ interface AppContainer {
     val nudgeDispatcher: NudgeDispatcher
     val postedNudges: PostedNudges
     val nudgeAlarms: NudgeAlarms
+
+    /**
+     * [NudgeDispatcher.runOnce] for a fire-and-forget caller — the checkpoint receiver and the hourly
+     * worker. Never throws except to cancel; see [armNudgeFallback] for what a failure arms.
+     */
+    suspend fun runNudgePass() {
+        guardNudgeArm { nudgeDispatcher.runOnce() }
+    }
+
+    /**
+     * [NudgeDispatcher.rearm] for a fire-and-forget caller: process start. Never throws except to
+     * cancel, because it runs on [applicationScope], which has no exception handler — a throw there
+     * kills the process.
+     */
+    suspend fun rearmNudges() {
+        guardNudgeArm { nudgeDispatcher.rearm() }
+    }
+
+    /**
+     * Launches [rearmNudges] on [applicationScope]: the one re-arm both reminder-hour choosers hand
+     * to `chooseFirstReminderHour`, so the tour and Settings cannot launch it differently.
+     */
+    fun launchNudgeRearm() {
+        applicationScope.launch { rearmNudges() }
+    }
+
+    /**
+     * Both dispatcher calls already absorb their own failures, so what this guards is reaching them:
+     * the dispatcher is built lazily over both databases, and a failure there falls back to the plain
+     * next checkpoint from the members it is built without. Losing the retry costs at most a nudge;
+     * losing the arm ends the chain the checkpoint alarm exists to keep alive.
+     */
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    private suspend fun guardNudgeArm(call: suspend () -> Unit) {
+        try {
+            call()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            armNudgeFallback()
+        }
+    }
+
+    private fun armNudgeFallback() {
+        runCatching {
+            nudgeAlarms.armNextCheckpoint(
+                timeSource.nowMillis(),
+                timeSource.zone(),
+                reminderSettings.firstReminderHour(),
+            )
+        }
+    }
 
     // Session mechanics that deliberately do not live inside CheckInService, because both have to
     // work in a process where no service is running: an alarm can be delivered into a process the

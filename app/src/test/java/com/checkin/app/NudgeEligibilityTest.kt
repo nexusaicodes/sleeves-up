@@ -28,7 +28,7 @@ class NudgeEligibilityTest {
         hourOfDay: Int = first,
         firstReminderHour: Int = first,
         hasCheckedInToday: Boolean = false,
-        alreadySentToday: Set<Nudge> = emptySet(),
+        spentToday: Set<Nudge> = emptySet(),
         shownToday: Int = 0,
         lastShownAtMs: Long? = null,
         config: NudgeConfig = NudgeConfig(),
@@ -38,7 +38,7 @@ class NudgeEligibilityTest {
         hourOfDay = hourOfDay,
         firstReminderHour = firstReminderHour,
         hasCheckedInToday = hasCheckedInToday,
-        alreadySentToday = alreadySentToday,
+        spentToday = spentToday,
         shownToday = shownToday,
         lastShownAtMs = lastShownAtMs,
         config = config,
@@ -96,7 +96,7 @@ class NudgeEligibilityTest {
                 eligible(
                     hourOfDay = 15,
                     firstReminderHour = 15,
-                    alreadySentToday = setOf(Nudge.NOT_CHECKED_IN_FIRST),
+                    spentToday = setOf(Nudge.NOT_CHECKED_IN_FIRST),
                     shownToday = 1,
                 ),
             ),
@@ -148,7 +148,7 @@ class NudgeEligibilityTest {
             NudgeEligibility.select(
                 eligible(
                     hourOfDay = laterInTheBand,
-                    alreadySentToday = setOf(Nudge.NOT_CHECKED_IN_FIRST),
+                    spentToday = setOf(Nudge.NOT_CHECKED_IN_FIRST),
                     shownToday = 1,
                     lastShownAtMs = null,
                 ),
@@ -164,7 +164,7 @@ class NudgeEligibilityTest {
             NudgeEligibility.select(
                 eligible(
                     hourOfDay = followUp,
-                    alreadySentToday = setOf(Nudge.NOT_CHECKED_IN_FIRST),
+                    spentToday = setOf(Nudge.NOT_CHECKED_IN_FIRST),
                     shownToday = 1,
                 ),
             ),
@@ -256,7 +256,7 @@ class NudgeEligibilityTest {
         assertNull(
             NudgeEligibility.select(
                 eligible(
-                    alreadySentToday = setOf(Nudge.NOT_CHECKED_IN_FOLLOW_UP),
+                    spentToday = setOf(Nudge.NOT_CHECKED_IN_FOLLOW_UP),
                     shownToday = 1,
                     lastShownAtMs = 0L,
                 ),
@@ -275,14 +275,14 @@ class NudgeEligibilityTest {
     /** A snapshot whose hour is derived from its instant, as the dispatcher builds one. */
     private fun live(
         nowMs: Long,
-        alreadySentToday: Set<Nudge> = emptySet(),
+        spentToday: Set<Nudge> = emptySet(),
         lastShownAtMs: Long? = null,
         hasCheckedInToday: Boolean = false,
-        shownToday: Int = alreadySentToday.size,
+        shownToday: Int = spentToday.size,
     ) = eligible(
         hourOfDay = Instant.ofEpochMilli(nowMs).atZone(utc).hour,
         hasCheckedInToday = hasCheckedInToday,
-        alreadySentToday = alreadySentToday,
+        spentToday = spentToday,
         shownToday = shownToday,
         lastShownAtMs = lastShownAtMs,
         nowMillis = nowMs,
@@ -369,6 +369,118 @@ class NudgeEligibilityTest {
                     NudgeEligibility.select(snapshot) != null,
                     next == now,
                 )
+            }
+        }
+    }
+
+    /**
+     * The same agreement at the ends of the hour range and across DST transitions, where [select]
+     * reads a local hour and [NudgeEligibility.nextEligibleAt] reads instants. 20 leaves the
+     * follow-up band two hours before midnight; Santiago moves its clocks *at* midnight, so the day's
+     * end is the instant in question; London moves them inside the night. Swept over each local
+     * day's real instants, so a skipped or repeated hour is swept exactly as the device lives it.
+     */
+    @Test
+    fun `nextEligibleAt agrees with select at the range ends and across DST`() {
+        val days = listOf(
+            ZoneId.of("UTC") to LocalDate.of(2026, 6, 15),
+            ZoneId.of("America/Santiago") to LocalDate.of(2026, 9, 5),
+            ZoneId.of("America/Santiago") to LocalDate.of(2026, 4, 4),
+            ZoneId.of("Europe/London") to LocalDate.of(2026, 3, 29),
+            ZoneId.of("Europe/London") to LocalDate.of(2026, 10, 25),
+        )
+        val hours = listOf(NudgeSchedule.firstHourRange.first, first, NudgeSchedule.firstHourRange.last)
+        for ((zone, date) in days) {
+            hours.forEach { assertAgreementOver(zone, date, it) }
+        }
+    }
+
+    private fun assertAgreementOver(zone: ZoneId, date: LocalDate, firstHour: Int) {
+        fun local(hour: Int, minute: Int = 0) = date.atTime(hour, minute).atZone(zone).toInstant().toEpochMilli()
+        val followUpHour = NudgeSchedule.followUpHour(firstHour)
+        val states: List<Pair<Set<Nudge>, Long?>> = listOf(
+            emptySet<Nudge>() to null,
+            setOf(Nudge.NOT_CHECKED_IN_FIRST) to local(firstHour, 10),
+            setOf(Nudge.NOT_CHECKED_IN_FIRST) to local(followUpHour - 1, 40),
+            setOf(Nudge.NOT_CHECKED_IN_FOLLOW_UP) to local(followUpHour),
+        )
+        val dayStart = date.atStartOfDay(zone).toInstant().toEpochMilli()
+        val dayEnd = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        for ((spent, lastShown) in states) {
+            for (now in dayStart until dayEnd step 10 * 60_000L) {
+                val snapshot = NudgeSnapshot(
+                    nowMillis = now,
+                    hourOfDay = Instant.ofEpochMilli(now).atZone(zone).hour,
+                    firstReminderHour = firstHour,
+                    hasCheckedInToday = false,
+                    spentToday = spent,
+                    shownToday = spent.size,
+                    lastShownAtMs = lastShown,
+                )
+                val next = NudgeEligibility.nextEligibleAt(snapshot, zone)
+                val label = "$zone $date first=$firstHour spent=$spent at ${Instant.ofEpochMilli(now)}"
+
+                assertTrue("next before now: $label", next >= now)
+                assertEquals(label, NudgeEligibility.select(snapshot) != null, next == now)
+            }
+        }
+    }
+
+    // --- nextAlarmAt ---
+
+    private val delay = NudgeConfig().dueNowDelayMs
+
+    /**
+     * The alarm never fires straight away. A due nudge is armed off the back of a process start or a
+     * new hour — usually the user opening the app — and posting then lands over the screen they
+     * opened to check in from.
+     */
+    @Test
+    fun `a nudge already due is put off`() {
+        val now = at(followUp, minute = 30)
+        val snapshot = live(now, setOf(Nudge.NOT_CHECKED_IN_FIRST), lastShownAtMs = at(first))
+
+        assertEquals(now, NudgeEligibility.nextEligibleAt(snapshot, utc))
+        assertEquals(now + delay, NudgeEligibility.nextAlarmAt(snapshot, utc))
+    }
+
+    /** Put off past the end of its band, a due nudge gives way to the next band's opening. */
+    @Test
+    fun `a due nudge near its band's end gives way to the next band`() {
+        val now = at(followUp) - delay / 2
+
+        assertEquals(at(followUp), NudgeEligibility.nextAlarmAt(live(now), utc))
+    }
+
+    /** Put off past midnight, the day's last band gives way to tomorrow's first checkpoint. */
+    @Test
+    fun `a due follow-up near midnight gives way to tomorrow`() {
+        val now = at(23, minute = 50)
+        val snapshot = live(now, setOf(Nudge.NOT_CHECKED_IN_FIRST), lastShownAtMs = at(first))
+
+        assertEquals(at(first, date = day.plusDays(1)), NudgeEligibility.nextAlarmAt(snapshot, utc))
+    }
+
+    /**
+     * Only a due nudge moves: an on-time checkpoint and a gap-deferred follow-up are armed exactly
+     * where the rules allow them, and nothing is ever armed for now.
+     */
+    @Test
+    fun `nextAlarmAt differs from nextEligibleAt only for a nudge already due`() {
+        val states: List<(Long) -> NudgeSnapshot> = listOf(
+            { now -> live(now) },
+            { now -> live(now, setOf(Nudge.NOT_CHECKED_IN_FIRST), lastShownAtMs = at(followUp - 1, 40)) },
+            { now -> live(now, setOf(Nudge.NOT_CHECKED_IN_FOLLOW_UP), lastShownAtMs = at(followUp)) },
+        )
+        for (state in states) {
+            for (minute in 0 until 24 * 60 step 10) {
+                val now = at(0) + minute * 60_000L
+                val snapshot = state(now)
+                val eligible = NudgeEligibility.nextEligibleAt(snapshot, utc)
+                val alarm = NudgeEligibility.nextAlarmAt(snapshot, utc)
+
+                assertTrue("alarm not ahead of now at minute $minute", alarm > now)
+                if (eligible > now) assertEquals("minute $minute", eligible, alarm)
             }
         }
     }

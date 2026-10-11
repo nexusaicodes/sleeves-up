@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
  * documented there. The pass survives because it is the only place `reviveIfNeeded` and `prune` can
  * hang, and because a second chance at the day's nudge costs nothing.
  *
- * "Costs nothing" is [NudgeSnapshot.alreadySentToday] doing that work, not the daily cap. A cap of
+ * "Costs nothing" is [NudgeSnapshot.spentToday] doing that work, not the daily cap. A cap of
  * two lets a pass landing inside a band the alarm has already fired in send the *same* nudge again —
  * identical copy, same id, re-alerting on a high-importance channel, and the day's remaining slot
  * gone. The per-checkpoint rule is what makes a redundant pass genuinely free.
@@ -32,10 +32,11 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             // worker is not among the exemptions — which is why this is the last of the three revive
             // points rather than the only one. It reports a refusal as `false` and never throws.
             container.sessionWatchdog.reviveIfNeeded()
-            // The pass also re-arms the checkpoint alarm, from the snapshot it has just read, so an
-            // alarm lost to a force stop is repaired here even on a pass that finds nothing to send.
-            // It absorbs its own failures, so a refused arm cannot skip the prune below.
-            container.nudgeDispatcher.runOnce()
+            // The pass also re-arms the checkpoint alarm, so an alarm lost to a force stop is repaired
+            // here even on a pass that finds nothing to send — and through the container, so a
+            // dispatcher that cannot be built still arms the plain checkpoint. It never throws, so a
+            // refused arm cannot skip the prune below.
+            container.runNudgePass()
             container.nudgeSendLog.prune(
                 container.timeSource.nowMillis() - RETENTION_MS,
             )
@@ -91,10 +92,13 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             // both calls, so the ordering is visibly on the thing it has to be ordered on.
             workManager.cancelUniqueWork(RETIRED_WORK_NAME)
 
+            // A first pass at enqueue time would run on a fresh install while the welcome tour is up:
+            // a nudge over it, or — with notifications not yet asked for — a refused attempt that
+            // spends the day's first reminder. The backstop can wait an interval like any other pass.
             val request = PeriodicWorkRequestBuilder<NudgeWorker>(
                 INTERVAL_MINUTES,
                 TimeUnit.MINUTES,
-            ).build()
+            ).setInitialDelay(INTERVAL_MINUTES, TimeUnit.MINUTES).build()
 
             workManager.enqueueUniquePeriodicWork(
                 WORK_NAME,

@@ -84,7 +84,9 @@
          both. A channel's name and description are updatable after creation; its id and importance
          are not. The name is near-synonymous with "Session Reminders" one row away, so the two
          descriptions carry the difference: muting the wrong one costs the prompt that catches a
-         forgotten open session. -->
+         forgotten open session. "At most two a day" is NudgeConfig.maxPerDay, not a round number
+         chosen to sound sparing: if that value changes, this line is wrong. It deliberately says
+         nothing about spacing — the minimum gap is ninety minutes, which is not "hours apart". -->
     <string name="nudge_channel_name">Check-In Reminders</string>
     <string name="nudge_channel_description">Occasional reminders when you haven\'t checked in. At most two a day.</string>
 

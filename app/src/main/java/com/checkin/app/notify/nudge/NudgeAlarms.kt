@@ -4,8 +4,6 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import com.checkin.app.di.AppContainer
-import kotlinx.coroutines.CancellationException
 import java.time.ZoneId
 
 /**
@@ -30,8 +28,8 @@ import java.time.ZoneId
  * **This seam only sets an instant; [NudgeDispatcher] decides it.** The alarm is one `PendingIntent`,
  * so whatever arms last wins, and a caller arming a plain checkpoint would replace a retry the gap
  * was holding or skip a band that is open but unsent. Arming sites therefore go through
- * [NudgeDispatcher.rearm] (or [rearmNudges], which falls back here when the dispatcher cannot be
- * built), never through [arm] directly.
+ * [NudgeDispatcher] — via `AppContainer.runNudgePass` and `AppContainer.rearmNudges`, which fall back
+ * to [armNextCheckpoint] when the dispatcher cannot be built — never through [arm] directly.
  */
 interface NudgeAlarms {
     /** Arms the checkpoint alarm for [atMs], replacing whatever was set. A past instant fires at once. */
@@ -41,33 +39,6 @@ interface NudgeAlarms {
 /** The plain next checkpoint: what to arm when the day's sends cannot be read. */
 fun NudgeAlarms.armNextCheckpoint(nowMs: Long, zone: ZoneId, firstHour: Int) =
     arm(NudgeSchedule.nextCheckpointAfter(nowMs, zone, firstHour))
-
-/**
- * [NudgeDispatcher.rearm] for a fire-and-forget caller: the receivers and process start. Never
- * throws, because each of those runs on [AppContainer.applicationScope], which has no exception
- * handler — a throw there kills the process.
- *
- * `rearm` already absorbs its own failures, so what this guards is reaching it: the dispatcher is
- * built lazily over both databases, and a failure there falls back to the plain checkpoint from the
- * two members it is built without. Losing the retry costs at most a nudge; losing the arm ends the
- * chain the checkpoint alarm exists to keep alive.
- */
-@Suppress("TooGenericExceptionCaught", "SwallowedException")
-suspend fun AppContainer.rearmNudges() {
-    try {
-        nudgeDispatcher.rearm()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (_: Exception) {
-        runCatching {
-            nudgeAlarms.armNextCheckpoint(
-                timeSource.nowMillis(),
-                timeSource.zone(),
-                reminderSettings.firstReminderHour(),
-            )
-        }
-    }
-}
 
 class AndroidNudgeAlarms(private val context: Context) : NudgeAlarms {
 

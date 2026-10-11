@@ -30,16 +30,24 @@ data class NudgeSnapshot(
      */
     val hasCheckedInToday: Boolean,
     /**
-     * The nudges already shown today, so a checkpoint cannot be sent twice.
+     * The nudges already attempted today, posted or refused, so a checkpoint cannot be tried twice.
      *
      * Counting sends alone is not enough: the checkpoint bands are hours wide and [NudgeWorker] runs
      * hourly, so a repeat pass inside the same band re-selects the same nudge, reposts identical copy
      * under the same id, and spends a slot the later checkpoints needed.
+     *
+     * A refused attempt counts here, and that is what makes "a refused nudge waits for the next band"
+     * true across processes: with only posts recorded, every re-arm read a refused band as open and
+     * unsent, and a user who had turned the channel off was woken for a pass into it on every process
+     * start that day.
      */
-    val alreadySentToday: Set<Nudge> = emptySet(),
-    /** Nudges already shown in the current day, including any whose name no longer maps to a [Nudge]. */
+    val spentToday: Set<Nudge> = emptySet(),
+    /**
+     * Nudges actually shown in the current day, including any whose name no longer maps to a
+     * [Nudge]. Refusals are excluded: the cap bounds what the user was shown.
+     */
     val shownToday: Int = 0,
-    /** When the most recent nudge was shown, or null if none has been today. */
+    /** When the most recent nudge was shown, or null if none has been today. Refusals excluded. */
     val lastShownAtMs: Long? = null,
     val config: NudgeConfig = NudgeConfig(),
 )

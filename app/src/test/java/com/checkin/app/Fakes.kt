@@ -126,11 +126,11 @@ class FakePostedNudges : PostedNudges {
 class FakeNudgeSendLog : NudgeSendLog {
     val sends = mutableListOf<NudgeSending>()
 
-    override suspend fun record(nudge: Nudge, atMillis: Long) {
-        sends += NudgeSending(nudge.name, atMillis)
+    override suspend fun record(nudge: Nudge, atMillis: Long, posted: Boolean) {
+        sends += NudgeSending(nudge.name, atMillis, posted)
     }
 
-    override suspend fun sentSince(since: Long): List<NudgeSending> =
+    override suspend fun attemptsSince(since: Long): List<NudgeSending> =
         sends.filter { it.atMillis >= since }.sortedBy { it.atMillis }
 
     override suspend fun prune(before: Long) {

@@ -7,7 +7,7 @@ package com.checkin.app.notify.nudge
  * [NudgeCatalog], which owns the copy — are all dead ends.
  *
  * Frequency is bounded three ways and the checkpoint hours are **not** one of them: this type holds
- * two of the bounds, and [NudgeSnapshot.alreadySentToday] is the third.
+ * two of the bounds, and [NudgeSnapshot.spentToday] is the third.
  *
  * **Cadence only, and there is no longer any other kind of nudge constant.** A reader may come here
  * hunting an attribution window — how long after a nudge a check-in still counted as caused by it.
@@ -20,7 +20,7 @@ data class NudgeConfig(
      *
      * Two, matching the two checkpoints: a cap of one means the first reminder consumes the day and
      * the follow-up — the one that exists because the day got away — never sends. With one send per
-     * checkpoint already enforced by [NudgeSnapshot.alreadySentToday], this is a backstop rather
+     * checkpoint already enforced by [NudgeSnapshot.spentToday], this is a backstop rather
      * than the binding rule; it must never fall below the checkpoint count.
      */
     val maxPerDay: Int = 2,
@@ -42,9 +42,22 @@ data class NudgeConfig(
      * message.
      */
     val minGapMs: Long = DEFAULT_MIN_GAP_MS,
+    /**
+     * How long the alarm waits when the nudge it is armed for is already due — see
+     * [NudgeEligibility.nextAlarmAt].
+     *
+     * Only an arm made off the back of something else lands on a due nudge: a process start, a new
+     * hour, a pass that threw. The commonest of those is the user opening the app, and firing then
+     * posts "you haven't checked in" seconds later over the screen they opened to check in from.
+     * Half an hour gives them the chance to, and the pass that fires then asks again. It is also
+     * what keeps a pass that throws every time from re-arming itself at the alarm's minimum
+     * futurity, a wake every few seconds for the rest of the band.
+     */
+    val dueNowDelayMs: Long = DEFAULT_DUE_NOW_DELAY_MS,
 ) {
     companion object {
         private const val MINUTE_MS = 60L * 1_000L
         const val DEFAULT_MIN_GAP_MS = 90L * MINUTE_MS
+        const val DEFAULT_DUE_NOW_DELAY_MS = 30L * MINUTE_MS
     }
 }

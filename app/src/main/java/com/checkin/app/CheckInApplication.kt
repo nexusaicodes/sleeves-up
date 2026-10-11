@@ -6,7 +6,6 @@ import com.checkin.app.di.DefaultAppContainer
 import com.checkin.app.notify.NotificationChannels
 import com.checkin.app.notify.nudge.NudgeSendDatabase
 import com.checkin.app.notify.nudge.NudgeWorker
-import com.checkin.app.notify.nudge.rearmNudges
 import kotlinx.coroutines.launch
 
 /** Owns the app-wide [AppContainer] (manual DI — no framework). */
@@ -21,14 +20,16 @@ class CheckInApplication : Application() {
         // post to it — the hourly pass can run without the service ever having started.
         NotificationChannels.ensureAll(this)
         NudgeWorker.schedule(this)
-        // Alarms do not survive a force stop or a package replace, and every process start is a free
-        // chance to put this one back. Idempotent — it always resolves to the same next instant.
+        // Alarms do not survive a force stop, a package replace or a reboot, and every one of those is
+        // followed by a process start — the receivers for boot and replace run in one — so this is
+        // the single site that puts the alarm back. A nudge it finds already due is put off rather
+        // than fired, since the start is usually the user opening the app to check in.
         //
         // Off the main thread: it reads the reminder hour from prefs, and today's sessions and sends
-        // from both databases — the price of arming a band that is open but unsent rather than
-        // skipping to tomorrow, and nothing on the first frame waits for it. `rearmNudges` never
-        // throws, so a refused arm or a database that will not open is not a crash on launch.
-        container.applicationScope.launch { container.rearmNudges() }
+        // from both databases, on every cold start including the background ones — the price of
+        // arming a band that is open but unsent rather than skipping to tomorrow, and nothing on the
+        // first frame waits for it. It never throws, so a database that will not open is not a crash.
+        container.launchNudgeRearm()
         // Off the main thread for the same reason: it is filesystem work, and every path that reaches
         // the ledger reaches it during the first frame. Guarded so a file that will not delete is not
         // a crash on launch.
