@@ -52,7 +52,14 @@ object NotificationIds {
      * an earlier one, [com.checkin.app.notify.nudge.NudgeDispatcher] cancels its siblings
      * explicitly, which is a decision in code rather than a side effect of an id collision.
      */
-    const val NUDGE_NOT_CHECKED_IN_MORNING = 10
-    const val NUDGE_NOT_CHECKED_IN_AFTERNOON = 11
-    const val NUDGE_NOT_CHECKED_IN_EVENING = 12
+    const val NUDGE_NOT_CHECKED_IN_FIRST = 10
+    const val NUDGE_NOT_CHECKED_IN_FOLLOW_UP = 11
+
+    /**
+     * Ids an earlier build posted nudges under and nothing posts under now. Never reused, since a
+     * new nudge on one would replace a stale notification still in an updated install's tray rather
+     * than sit beside it; still cancelled by `PostedNudges.retireAll`, so that stale one clears at the
+     * next check-in like any other. Append, never replace.
+     */
+    val RETIRED_NUDGES: List<Int> = listOf(12)
 }

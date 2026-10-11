@@ -24,6 +24,11 @@
           reminder and every nudge silently dead.
         -->
         <exclude domain="sharedpref" path="prompt_prefs.xml" />
+        <!--
+          `reminder_prefs` is deliberately not excluded: it holds the reminder hour the user chose,
+          which is a preference rather than a record of something done on this device, so restoring
+          it lands their own choice on the new one.
+        -->
     </cloud-backup>
     <device-transfer>
         <!--

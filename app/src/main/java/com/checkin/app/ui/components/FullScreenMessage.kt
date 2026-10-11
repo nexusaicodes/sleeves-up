@@ -90,6 +90,12 @@ fun MessageIcon(painter: Painter) {
 /** Wide enough to keep a centred paragraph off the screen edges at any font scale. */
 val MESSAGE_PADDING = 32.dp
 
+/**
+ * The space between the paragraph and whatever a caller puts in `actions`. The slot adds none of its
+ * own, so each caller spaces from this one value rather than choosing a gap of its own.
+ */
+val MESSAGE_BODY_TO_ACTION_GAP = 24.dp
+
 private val MESSAGE_ICON_SIZE = 56.dp
 private val ICON_TO_TITLE_GAP = 24.dp
 private val TITLE_TO_BODY_GAP = 16.dp

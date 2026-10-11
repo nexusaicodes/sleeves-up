@@ -13,6 +13,12 @@ data class NudgeSnapshot(
     /** Local hour of day, 0-23. */
     val hourOfDay: Int,
     /**
+     * The hour the user chose for the first reminder; the follow-up is derived from it. Deliberately
+     * undefaulted: a builder that forgot it would evaluate the bands for the default hour while the
+     * alarm was armed from the stored one — an alarm firing at an instant the rules decline.
+     */
+    val firstReminderHour: Int,
+    /**
      * A session exists for today, open or closed.
      *
      * This is the only presence question the rules ask, and it is deliberately about *today's record*

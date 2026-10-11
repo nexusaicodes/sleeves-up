@@ -9,9 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.ui.components.FullScreenMessage
+import com.checkin.app.ui.components.MESSAGE_BODY_TO_ACTION_GAP
 import com.checkin.app.ui.components.MessageIcon
 
 /**
@@ -35,7 +35,7 @@ fun GateMessageScreen(
         title = title,
         message = message,
     ) {
-        Spacer(modifier = Modifier.height(BODY_TO_ACTION_GAP))
+        Spacer(modifier = Modifier.height(MESSAGE_BODY_TO_ACTION_GAP))
         Button(onClick = onAction) {
             Text(actionLabel)
         }
@@ -44,5 +44,3 @@ fun GateMessageScreen(
         }
     }
 }
-
-private val BODY_TO_ACTION_GAP = 24.dp

@@ -9,4 +9,5 @@
     <exclude domain="database" path="_app-wal" />
     <exclude domain="sharedpref" path="checkin_timer_prefs.xml" />
     <exclude domain="sharedpref" path="prompt_prefs.xml" />
+    <!-- `reminder_prefs` (the chosen reminder hour) is deliberately backed up: it is a preference. -->
 </full-backup-content>

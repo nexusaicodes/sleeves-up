@@ -40,4 +40,15 @@ class WelcomePagesTest {
 
         assertEquals(icons.size, icons.toSet().size)
     }
+
+    /**
+     * The hour is chosen on the reminders page and nowhere else, and that page is last: the
+     * notification dialog follows it, so the reminders are described, timed and then requested.
+     */
+    @Test
+    fun `only the last page chooses the reminder hour`() {
+        val choosing = WelcomePages.all.filter { it.choosesReminderHour }
+
+        assertEquals(listOf(WelcomePages.all.last()), choosing)
+    }
 }

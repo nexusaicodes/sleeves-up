@@ -26,25 +26,35 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.FullScreenMessage
+import com.checkin.app.ui.components.MESSAGE_BODY_TO_ACTION_GAP
 import com.checkin.app.ui.components.MESSAGE_PADDING
 import com.checkin.app.ui.components.MessageIcon
+import com.checkin.app.ui.components.ReminderHourPicker
 import com.checkin.app.ui.components.animationsEnabled
+import com.checkin.app.ui.components.reminderTimeSummary
 import com.checkin.app.ui.theme.CheckInAppTheme
 import kotlinx.coroutines.launch
 
@@ -57,9 +67,17 @@ import kotlinx.coroutines.launch
  * respect — both retire the tour for good — but a skip means nothing has explained the app, so
  * firing the dialog behind it would reproduce in one tap the defect the tour was built to close.
  * Notifications are not lost: the presence gate asks at the first check-in, beside the camera.
+ *
+ * [reminderHour] is the caller's: [onReminderHourChosen] is expected to store it immediately, so a
+ * choice survives the tour being left by Back before it is finished.
  */
 @Composable
-fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit) {
+fun WelcomeScreen(
+    reminderHour: Int,
+    onReminderHourChosen: (Int) -> Unit,
+    onFinished: () -> Unit,
+    onSkipped: () -> Unit,
+) {
     val pages = WelcomePages.all
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
@@ -118,7 +136,7 @@ fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit) {
             ) { page ->
                 // No horizontal padding above this: each page brings MESSAGE_PADDING of its own, so
                 // the shared message layout owns its insets exactly as it does behind the gate.
-                WelcomePageContent(pages[page])
+                WelcomePageContent(pages[page], reminderHour, onReminderHourChosen)
             }
 
             PageDots(pageCount = pages.size, current = pagerState.currentPage)
@@ -152,12 +170,36 @@ fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit) {
 
 /** Drawn through the shared full-screen message, so the tour and the gate cannot drift apart. */
 @Composable
-private fun WelcomePageContent(page: WelcomePage) {
+private fun WelcomePageContent(page: WelcomePage, reminderHour: Int, onReminderHourChosen: (Int) -> Unit) {
+    var picking by rememberSaveable { mutableStateOf(false) }
     FullScreenMessage(
         icon = { PageIcon(page.icon) },
         title = stringResource(page.titleRes),
         message = stringResource(page.bodyRes),
+        actions = {
+            if (page.choosesReminderHour) {
+                Spacer(modifier = Modifier.height(MESSAGE_BODY_TO_ACTION_GAP))
+                // The label is only the time it shows, so the action names what a tap does.
+                val changeLabel = stringResource(R.string.reminder_time_change)
+                FilledTonalButton(
+                    onClick = { picking = true },
+                    modifier = Modifier.semantics { onClick(label = changeLabel, action = null) },
+                ) {
+                    Text(reminderTimeSummary(reminderHour))
+                }
+            }
+        },
     )
+    if (picking) {
+        ReminderHourPicker(
+            selectedHour = reminderHour,
+            onPicked = { hour ->
+                picking = false
+                onReminderHourChosen(hour)
+            },
+            onDismiss = { picking = false },
+        )
+    }
 }
 
 /** An expression, so adding a [WelcomeIcon] fails to compile rather than falling through to a bell. */
@@ -230,6 +272,6 @@ private val ACTION_BOTTOM_GAP = 16.dp
 @Composable
 private fun WelcomeScreenPreview() {
     CheckInAppTheme {
-        WelcomeScreen(onFinished = {}, onSkipped = {})
+        WelcomeScreen(reminderHour = 10, onReminderHourChosen = {}, onFinished = {}, onSkipped = {})
     }
 }

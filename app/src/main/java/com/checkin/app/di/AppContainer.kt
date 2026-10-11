@@ -15,7 +15,9 @@ import com.checkin.app.notify.nudge.NudgeDispatcher
 import com.checkin.app.notify.nudge.NudgeSendDatabase
 import com.checkin.app.notify.nudge.NudgeSendLog
 import com.checkin.app.notify.nudge.PostedNudges
+import com.checkin.app.notify.nudge.ReminderSettings
 import com.checkin.app.notify.nudge.RoomNudgeSendLog
+import com.checkin.app.notify.nudge.SharedPrefsReminderSettings
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.DefaultCsvExporter
 import com.checkin.app.platform.DefaultServiceController
@@ -38,6 +40,7 @@ import kotlinx.coroutines.SupervisorJob
 interface AppContainer {
     val repository: CheckInRepository
     val settings: PromptSettings
+    val reminderSettings: ReminderSettings
     val serviceController: ServiceController
     val csvExporter: CsvExporter
     val timeSource: TimeSource
@@ -75,6 +78,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val settings: PromptSettings = SharedPrefsPromptSettings.create(appContext)
 
+    override val reminderSettings: ReminderSettings = SharedPrefsReminderSettings.create(appContext)
+
     override val repository: CheckInRepository by lazy {
         CheckInRepository(AppDatabase.getDatabase(appContext).checkInSessionDao(), timeSource)
     }
@@ -98,6 +103,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
             notifier = notifier,
             sendLog = { nudgeSendLog },
             timeSource = timeSource,
+            reminderSettings = reminderSettings,
+            alarms = nudgeAlarms,
         )
     }
 
@@ -105,9 +112,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     // implementation would be free to disagree with it about which ids exist.
     override val postedNudges: PostedNudges get() = nudgeDispatcher
 
-    // Stateless — a checkpoint is derivable from now — so this is just the one arming seam its callers
-    // share: the receiver re-arming from the alarm it just handled, which is what makes the chain
-    // self-sustaining, plus every process start, the deferrable worker repair, and boot/package replace.
+    // Stateless — the next instant is derivable from now — and eager, unlike the dispatcher that
+    // decides the instant: it is the fallback arm when the dispatcher cannot be built.
     override val nudgeAlarms: NudgeAlarms = AndroidNudgeAlarms(appContext)
 
     // One instance, shared by the runner and the watchdog below. The armed instants live in

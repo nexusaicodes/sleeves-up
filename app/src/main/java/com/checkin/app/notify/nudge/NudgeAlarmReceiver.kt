@@ -7,10 +7,9 @@ import com.checkin.app.CheckInApplication
 import kotlinx.coroutines.launch
 
 /**
- * Receives the checkpoint alarm, runs one nudge pass, and arms the next checkpoint.
+ * Receives the checkpoint alarm and runs one nudge pass, which arms the next one.
  *
- * **Re-arming here is what makes the chain self-sustaining.** Every other caller of
- * [NudgeAlarms.armNext] depends on something else happening — the app being opened, the device
+ * **Re-arming here is what makes the chain self-sustaining.** Every other arming site depends on something else happening — the app being opened, the device
  * rebooting, a deferrable worker getting a slot. This one runs off the alarm that just fired, so once
  * the first is armed the sequence continues on its own for as long as the process is allowed to exist.
  *
@@ -25,9 +24,11 @@ class NudgeAlarmReceiver : BroadcastReceiver() {
      * and note that a throw here would take down any running session's notification, which has
      * nothing to do with nudges.
      *
-     * The re-arm sits in the `finally`, so a pass that throws still schedules the next checkpoint.
-     * Without that, one bad pass would end the chain permanently and reproduce the silence this whole
-     * mechanism exists to fix.
+     * [NudgeDispatcher.runOnce] arms on every path it reaches, a throwing pass included, so what
+     * can still throw here is building the dispatcher itself. That is caught and handed to
+     * [rearmNudges], which arms the plain checkpoint without it: the chain must not end because one pass could not start, or this
+     * reproduces the silence the whole mechanism exists to fix. `finish` sits in the `finally`, so
+     * the broadcast is released whatever happened above it.
      */
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
     override fun onReceive(context: Context, intent: Intent?) {
@@ -41,11 +42,8 @@ class NudgeAlarmReceiver : BroadcastReceiver() {
             try {
                 container.nudgeDispatcher.runOnce()
             } catch (_: Exception) {
-                // Absorbed: the re-arm below runs regardless, so a thrown pass costs this checkpoint
-                // and nothing after it. There is nowhere to report it to and nothing that would read
-                // such a report.
+                container.rearmNudges()
             } finally {
-                runCatching { container.nudgeAlarms.armNext(container.timeSource.nowMillis()) }
                 pending.finish()
             }
         }

@@ -32,13 +32,9 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             // worker is not among the exemptions — which is why this is the last of the three revive
             // points rather than the only one. It reports a refusal as `false` and never throws.
             container.sessionWatchdog.reviveIfNeeded()
-            // Re-arm before dispatching: a checkpoint alarm lost to a force stop is repaired here
-            // even on a pass that then finds nothing eligible to send.
-            //
-            // Guarded on its own, like every other arming site: `setAndAllowWhileIdle` throws past
-            // the platform's 500-alarm cap, and sharing the outer catch would let that one throw skip
-            // the dispatch and the prune — the two jobs this pass exists for.
-            runCatching { container.nudgeAlarms.armNext(container.timeSource.nowMillis()) }
+            // The pass also re-arms the checkpoint alarm, from the snapshot it has just read, so an
+            // alarm lost to a force stop is repaired here even on a pass that finds nothing to send.
+            // It absorbs its own failures, so a refused arm cannot skip the prune below.
             container.nudgeDispatcher.runOnce()
             container.nudgeSendLog.prune(
                 container.timeSource.nowMillis() - RETENTION_MS,

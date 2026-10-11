@@ -19,9 +19,12 @@ import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.nudge.Nudge
+import com.checkin.app.notify.nudge.NudgeAlarms
+import com.checkin.app.notify.nudge.NudgeSchedule
 import com.checkin.app.notify.nudge.NudgeSendLog
 import com.checkin.app.notify.nudge.NudgeSending
 import com.checkin.app.notify.nudge.PostedNudges
+import com.checkin.app.notify.nudge.ReminderSettings
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.ExportResult
 import com.checkin.app.platform.ServiceController
@@ -175,5 +178,26 @@ class FakeSessionAlarms(override var remindersSent: Int = 0) : SessionAlarms {
     fun seedArmed(reminderAt: Long, boundaryAt: Long) {
         nextReminderAt = reminderAt
         dayBoundaryAt = boundaryAt
+    }
+}
+
+/** In-memory reminder hour, clamping exactly as the prefs-backed one does. */
+class FakeReminderSettings(hour: Int = NudgeSchedule.DEFAULT_FIRST_HOUR) : ReminderSettings {
+    private var stored = NudgeSchedule.clampFirstHour(hour)
+
+    override fun firstReminderHour(): Int = stored
+
+    override fun setFirstReminderHour(hour: Int) {
+        stored = NudgeSchedule.clampFirstHour(hour)
+    }
+}
+
+/** Records each instant armed, so a caller can be shown to have armed the right one. */
+class FakeNudgeAlarms(var throwOnArm: Boolean = false) : NudgeAlarms {
+    val armed = mutableListOf<Long>()
+
+    override fun arm(atMs: Long) {
+        armed += atMs
+        if (throwOnArm) error("alarm cap")
     }
 }
