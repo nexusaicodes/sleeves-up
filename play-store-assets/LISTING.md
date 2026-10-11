@@ -101,32 +101,23 @@ Sleeves Up is a self-discipline tool, not a substitute for any employer or legal
 
 ## What's new (500 max, per release)
 
-Play keeps these per version code, so the text below is 3.0's and is replaced wholesale at the next
+Play keeps these per version code, so the text below is 3.1's and is replaced wholesale at the next
 release rather than appended to. **500 is a hard limit and this section has been over it**, which
 Play rejects at submission rather than truncating — count the block before pasting it, em dash and
 blank lines included.
 
-**3.0 is the first release since 2.0, not since 2.1.** 2.1 was prepared — version bumped, copy
-written — and never tagged or uploaded, so it is absent from `git tag`, which lists v0.1, v1.1, v2.0
-and v3.0. So everything 2.1 was going to say is still unsaid, and an existing user going 2.0 → 3.0 meets
-the rename *and* the end of hours-as-a-grade in the same update. Both belong here. Writing this note
-as "since 2.1" is the mistake the tag list exists to catch.
+**3.1 is the first release since 3.0**, which is what Play serves. Write each note against the
+version actually live, not the last tag: a tag can precede its upload, and a release prepared but
+never uploaded leaves everything it meant to say still unsaid.
 
-It is subject to both rules at the top of this file, which rules out the obvious framing for a
-rename — "a fresh new look" grades nothing but says nothing either — and rules out advertising a
-removal as a loss: "no more streaks" reads as a feature cut to someone who never had the app. The
-vocabulary table below applies here in full, and it binds a *denial* as much as a boast: "nothing is
-measured against your longest day" plants the yardstick in the reader's head while disclaiming it,
-so the phrase is "no day is the yardstick for the others".
+It is subject to both rules at the top of this file, and the vocabulary table below applies in full —
+it binds a *denial* as much as a boast. It is written for someone updating, who has already been
+through the welcome tour, so it points at Settings rather than at the tour's last page.
 
 ```
-The app is now called Sleeves Up. Same app, same data, nothing to migrate.
+Choose when your reminder comes. Pick the hour in Settings, and on a day you haven't checked in yet, it arrives around then.
 
-Hours have stopped grading anything. Every day you showed up is one mark, whether it held 45 minutes or nine hours — nothing is drawn fainter for being shorter, and no day is the yardstick for the others. Your hours are all still there, as a number.
-
-Two new charts: when in the day your sessions start, and how many you run a day.
-
-New in Settings: a plain list of what this app cannot do, and how to check it.
+Reminders are steadier too: a phone restart or an app update no longer costs you that day's reminder.
 ```
 
 ---
