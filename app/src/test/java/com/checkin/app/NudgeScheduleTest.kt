@@ -156,36 +156,18 @@ class NudgeScheduleTest {
         )
     }
 
-    // --- nextAlarmAt ---
+    // --- bandOn ---
 
+    /** The instant bands are the hour bands, so the alarm and the rule mean the same span. */
     @Test
-    fun `with no retry the alarm is the next checkpoint`() {
-        val from = at(utc, day, first, minute = 30)
-        assertEquals(at(utc, day, followUp), NudgeSchedule.nextAlarmAt(from, utc, first, retryAtMs = null))
-    }
-
-    /** A gap-deferred follow-up is retried when the gap clears rather than left for tomorrow. */
-    @Test
-    fun `a retry before the next checkpoint wins`() {
-        val from = at(utc, day, followUp)
-        val retry = at(utc, day, followUp, minute = 20)
-        assertEquals(retry, NudgeSchedule.nextAlarmAt(from, utc, first, retry))
-    }
-
-    @Test
-    fun `a retry after the next checkpoint is ignored`() {
-        val from = at(utc, day, first, minute = 30)
-        val retry = at(utc, day, followUp, minute = 5)
-        assertEquals(at(utc, day, followUp), NudgeSchedule.nextAlarmAt(from, utc, first, retry))
-    }
-
-    /** A retry not strictly ahead could re-arm the instant that just fired and spin on it. */
-    @Test
-    fun `a retry at or before now is ignored`() {
-        val from = at(utc, day, followUp, minute = 10)
+    fun `bands run from each checkpoint to the next, the last to midnight`() {
         assertEquals(
-            at(utc, day.plusDays(1), first),
-            NudgeSchedule.nextAlarmAt(from, utc, first, retryAtMs = from),
+            at(utc, day, first) until at(utc, day, followUp),
+            NudgeSchedule.bandOn(Checkpoint.FIRST, day, utc, first),
+        )
+        assertEquals(
+            at(utc, day, followUp) until at(utc, day.plusDays(1), 0),
+            NudgeSchedule.bandOn(Checkpoint.FOLLOW_UP, day, utc, first),
         )
     }
 

@@ -4,11 +4,13 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import com.checkin.app.di.AppContainer
+import kotlinx.coroutines.CancellationException
 import java.time.ZoneId
 
 /**
- * The single wake-up that carries the check-in nudge: one alarm, always set for the next
- * [NudgeSchedule.Checkpoint].
+ * The single wake-up that carries the check-in nudge: one alarm, set for the instant
+ * [NudgeEligibility.nextEligibleAt] names.
  *
  * **This exists because a periodic worker could not do the job.** [NudgeWorker] asks its question at
  * whatever moment it happens to run, and an app the user is not opening drops through Android's
@@ -21,40 +23,60 @@ import java.time.ZoneId
  * to spare here, since encouragement has no deadline at all.
  *
  * **Deliberately stateless, unlike [com.checkin.app.service.SessionAlarms].** That seam persists its
- * armed instants because they are derived from a session and cannot be recomputed without it. A
- * checkpoint is pure clock maths over the user's chosen hour, so the next one is always derivable
- * from now — there is no armed instant to store and nothing to reconcile against `AlarmManager`
- * (which cannot be asked what is still set). The chosen hour is a setting, read fresh on every arm.
- * [armNext] is idempotent: call it as often as anything remembers to, and after the hour changes.
+ * armed instants because they are derived from a session and cannot be recomputed without it. The
+ * next nudge instant is derivable from now, the chosen hour and the day's sends, so there is nothing
+ * to store and nothing to reconcile against `AlarmManager` (which cannot be asked what is still set).
+ *
+ * **This seam only sets an instant; [NudgeDispatcher] decides it.** The alarm is one `PendingIntent`,
+ * so whatever arms last wins, and a caller arming a plain checkpoint would replace a retry the gap
+ * was holding or skip a band that is open but unsent. Arming sites therefore go through
+ * [NudgeDispatcher.rearm] (or [rearmNudges], which falls back here when the dispatcher cannot be
+ * built), never through [arm] directly.
  */
 interface NudgeAlarms {
-    /**
-     * Arms the next checkpoint strictly after [nowMs], or [retryAtMs] if that comes sooner, replacing
-     * whatever was set. See [NudgeSchedule.nextAlarmAt] for what the retry is for.
-     */
-    fun armNext(nowMs: Long, retryAtMs: Long? = null)
+    /** Arms the checkpoint alarm for [atMs], replacing whatever was set. A past instant fires at once. */
+    fun arm(atMs: Long)
 }
 
-class AndroidNudgeAlarms(private val context: Context, private val reminderSettings: ReminderSettings) : NudgeAlarms {
+/** The plain next checkpoint: what to arm when the day's sends cannot be read. */
+fun NudgeAlarms.armNextCheckpoint(nowMs: Long, zone: ZoneId, firstHour: Int) =
+    arm(NudgeSchedule.nextCheckpointAfter(nowMs, zone, firstHour))
+
+/**
+ * [NudgeDispatcher.rearm] for a fire-and-forget caller: the receivers and process start. Never
+ * throws, because each of those runs on [AppContainer.applicationScope], which has no exception
+ * handler — a throw there kills the process.
+ *
+ * `rearm` already absorbs its own failures, so what this guards is reaching it: the dispatcher is
+ * built lazily over both databases, and a failure there falls back to the plain checkpoint from the
+ * two members it is built without. Losing the retry costs at most a nudge; losing the arm ends the
+ * chain the checkpoint alarm exists to keep alive.
+ */
+@Suppress("TooGenericExceptionCaught", "SwallowedException")
+suspend fun AppContainer.rearmNudges() {
+    try {
+        nudgeDispatcher.rearm()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        runCatching {
+            nudgeAlarms.armNextCheckpoint(
+                timeSource.nowMillis(),
+                timeSource.zone(),
+                reminderSettings.firstReminderHour(),
+            )
+        }
+    }
+}
+
+class AndroidNudgeAlarms(private val context: Context) : NudgeAlarms {
 
     private val alarmManager: AlarmManager?
         get() = context.getSystemService(AlarmManager::class.java)
 
     // RTC_WAKEUP, not ELAPSED_REALTIME: a checkpoint is a local wall-clock hour.
-    //
-    // Synchronized across the hour read and the set: a chooser storing a new hour and the checkpoint
-    // receiver re-arming run on different threads, and unserialised the receiver could read the old
-    // hour, set after the chooser, and put back the alarm the user just moved away from.
-    @Synchronized
-    override fun armNext(nowMs: Long, retryAtMs: Long?) {
-        val manager = alarmManager ?: return
-        val at = NudgeSchedule.nextAlarmAt(
-            nowMs,
-            ZoneId.systemDefault(),
-            reminderSettings.firstReminderHour(),
-            retryAtMs,
-        )
-        manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pendingIntent())
+    override fun arm(atMs: Long) {
+        alarmManager?.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pendingIntent())
     }
 
     /**

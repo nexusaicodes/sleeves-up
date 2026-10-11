@@ -9,6 +9,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 class NudgeEligibilityTest {
 
@@ -243,62 +246,130 @@ class NudgeEligibilityTest {
         assertNull(NudgeEligibility.select(eligible(nowMillis = 0L, shownToday = capped)))
     }
 
-    // --- deferredUntil ---
-
     /**
-     * A first reminder that landed late leaves the punctual follow-up inside the gap. The gap defers
-     * it, and this is the instant the alarm must come back for it — the one case the next checkpoint
-     * alone would lose until tomorrow.
+     * Dedup is per nudge and the bands move with the chosen hour, so without this a user who moved
+     * the hour later after the follow-up had gone would reopen the first band and be sent "ready
+     * when you are" after "no session yet today".
      */
     @Test
-    fun `a follow-up held back by the gap is retried when the gap clears`() {
-        val now = 100 * hour
-        val lastShown = now - 30 * 60 * 1000L
-        val snapshot = eligible(
-            hourOfDay = followUp,
-            alreadySentToday = setOf(Nudge.NOT_CHECKED_IN_FIRST),
-            shownToday = 1,
-            lastShownAtMs = lastShown,
-            nowMillis = now,
+    fun `a sent follow-up spends the first checkpoint too`() {
+        assertNull(
+            NudgeEligibility.select(
+                eligible(
+                    alreadySentToday = setOf(Nudge.NOT_CHECKED_IN_FOLLOW_UP),
+                    shownToday = 1,
+                    lastShownAtMs = 0L,
+                ),
+            ),
         )
+    }
+
+    // --- nextEligibleAt ---
+
+    private val utc: ZoneId = ZoneId.of("UTC")
+    private val day: LocalDate = LocalDate.of(2026, 6, 15)
+
+    private fun at(hour: Int, minute: Int = 0, date: LocalDate = day): Long =
+        date.atTime(hour, minute).atZone(utc).toInstant().toEpochMilli()
+
+    /** A snapshot whose hour is derived from its instant, as the dispatcher builds one. */
+    private fun live(
+        nowMs: Long,
+        alreadySentToday: Set<Nudge> = emptySet(),
+        lastShownAtMs: Long? = null,
+        hasCheckedInToday: Boolean = false,
+        shownToday: Int = alreadySentToday.size,
+    ) = eligible(
+        hourOfDay = Instant.ofEpochMilli(nowMs).atZone(utc).hour,
+        hasCheckedInToday = hasCheckedInToday,
+        alreadySentToday = alreadySentToday,
+        shownToday = shownToday,
+        lastShownAtMs = lastShownAtMs,
+        nowMillis = nowMs,
+    )
+
+    @Test
+    fun `before the first band the alarm is its opening`() {
+        assertEquals(at(first), NudgeEligibility.nextEligibleAt(live(at(first - 3)), utc))
+    }
+
+    /**
+     * The case a plain "next checkpoint" arm loses: a re-arm landing after the follow-up hour with
+     * the follow-up unsent. The next checkpoint after now is tomorrow's; the follow-up is due now.
+     */
+    @Test
+    fun `an open band that is unsent is due now`() {
+        val now = at(followUp, minute = 30)
+        val snapshot = live(now, setOf(Nudge.NOT_CHECKED_IN_FIRST), lastShownAtMs = at(first))
+
+        assertEquals(now, NudgeEligibility.nextEligibleAt(snapshot, utc))
+    }
+
+    /** A first reminder that landed late holds the follow-up until the gap clears, not until tomorrow. */
+    @Test
+    fun `a follow-up held back by the gap is due when the gap clears`() {
+        val lastShown = at(followUp) - 30 * 60 * 1000L
+        val snapshot = live(at(followUp), setOf(Nudge.NOT_CHECKED_IN_FIRST), lastShownAtMs = lastShown)
 
         assertNull(NudgeEligibility.select(snapshot))
-        assertEquals(lastShown + NudgeConfig().minGapMs, NudgeEligibility.deferredUntil(snapshot))
+        assertEquals(lastShown + NudgeConfig().minGapMs, NudgeEligibility.nextEligibleAt(snapshot, utc))
     }
 
     @Test
-    fun `nothing is deferred when nothing is due`() {
-        val now = 100 * hour
-        assertNull(
-            NudgeEligibility.deferredUntil(
-                eligible(
-                    hourOfDay = followUp,
-                    alreadySentToday = Nudge.entries.toSet(),
-                    shownToday = 1,
-                    lastShownAtMs = now - 1,
-                    nowMillis = now,
-                ),
-            ),
+    fun `nothing left today arms tomorrow's first checkpoint`() {
+        val tomorrow = at(first, date = day.plusDays(1))
+        val bothSent = live(at(followUp, 5), Nudge.entries.toSet(), lastShownAtMs = at(followUp))
+        val checkedIn = live(at(first), hasCheckedInToday = true)
+        val capped = live(at(first), shownToday = NudgeConfig().maxPerDay, lastShownAtMs = 0L)
+
+        assertEquals(tomorrow, NudgeEligibility.nextEligibleAt(bothSent, utc))
+        assertEquals(tomorrow, NudgeEligibility.nextEligibleAt(checkedIn, utc))
+        assertEquals(tomorrow, NudgeEligibility.nextEligibleAt(capped, utc))
+    }
+
+    /**
+     * A clock moved backwards puts the last send in the future. The gap then clears later than it
+     * would have, and the alarm must wait for exactly that — the moment [NudgeEligibility.select]
+     * next allows a send — rather than fire early into a pass that declines.
+     */
+    @Test
+    fun `a clock moved backwards waits for the gap the rule will apply`() {
+        val now = at(followUp)
+        val lastShown = now + 3 * hour
+        val snapshot = live(now, setOf(Nudge.NOT_CHECKED_IN_FIRST), lastShownAtMs = lastShown)
+
+        assertEquals(lastShown + NudgeConfig().minGapMs, NudgeEligibility.nextEligibleAt(snapshot, utc))
+    }
+
+    /**
+     * The two questions must agree, or the alarm fires at an instant the rule then declines — silence
+     * with nothing to point at — or the rule would send at an instant the alarm never wakes for. Swept
+     * every ten minutes across a day in each state the day passes through, `nextEligibleAt` must be
+     * now exactly when `select` returns a nudge, and never earlier than now otherwise.
+     */
+    @Test
+    fun `nextEligibleAt is now exactly when select sends`() {
+        val states: List<(Long) -> NudgeSnapshot> = listOf(
+            { now -> live(now) },
+            { now -> live(now, setOf(Nudge.NOT_CHECKED_IN_FIRST), lastShownAtMs = at(first, 10)) },
+            { now -> live(now, setOf(Nudge.NOT_CHECKED_IN_FIRST), lastShownAtMs = at(followUp - 1, 40)) },
+            { now -> live(now, setOf(Nudge.NOT_CHECKED_IN_FOLLOW_UP), lastShownAtMs = at(followUp)) },
+            { now -> live(now, hasCheckedInToday = true) },
+            { now -> live(now, setOf(Nudge.NOT_CHECKED_IN_FIRST), lastShownAtMs = at(23)) },
         )
-    }
+        for (state in states) {
+            for (minute in 0 until 24 * 60 step 10) {
+                val now = at(0) + minute * 60_000L
+                val snapshot = state(now)
+                val next = NudgeEligibility.nextEligibleAt(snapshot, utc)
 
-    @Test
-    fun `nothing is deferred once the cap is spent`() {
-        val now = 100 * hour
-        assertNull(
-            NudgeEligibility.deferredUntil(
-                eligible(
-                    hourOfDay = followUp,
-                    shownToday = NudgeConfig().maxPerDay,
-                    lastShownAtMs = now - 1,
-                    nowMillis = now,
-                ),
-            ),
-        )
-    }
-
-    @Test
-    fun `nothing is deferred when the gap has already cleared`() {
-        assertNull(NudgeEligibility.deferredUntil(eligible()))
+                assertTrue("next before now at minute $minute", next >= now)
+                assertEquals(
+                    "minute $minute",
+                    NudgeEligibility.select(snapshot) != null,
+                    next == now,
+                )
+            }
+        }
     }
 }

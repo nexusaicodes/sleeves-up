@@ -112,10 +112,9 @@ class DefaultAppContainer(context: Context) : AppContainer {
     // implementation would be free to disagree with it about which ids exist.
     override val postedNudges: PostedNudges get() = nudgeDispatcher
 
-    // Stateless — a checkpoint is derivable from now — so this is just the one arming seam its callers
-    // share: the receiver re-arming from the alarm it just handled, which is what makes the chain
-    // self-sustaining, plus every process start, the deferrable worker repair, and boot/package replace.
-    override val nudgeAlarms: NudgeAlarms = AndroidNudgeAlarms(appContext, reminderSettings)
+    // Stateless — the next instant is derivable from now — and eager, unlike the dispatcher that
+    // decides the instant: it is the fallback arm when the dispatcher cannot be built.
+    override val nudgeAlarms: NudgeAlarms = AndroidNudgeAlarms(appContext)
 
     // One instance, shared by the runner and the watchdog below. The armed instants live in
     // SharedPreferences, so a second would read the same values; hoisting it keeps both callers

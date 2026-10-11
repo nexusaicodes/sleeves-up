@@ -5,7 +5,6 @@ import com.checkin.app.notify.nudge.chooseFirstReminderHour
 import com.checkin.app.ui.settings.SettingsViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.time.LocalDate
 
 /**
  * Choosing the reminder hour is two writes — the stored hour and the armed alarm — and a chooser
@@ -15,12 +14,12 @@ import java.time.LocalDate
  */
 class SettingsViewModelTest {
 
-    private val now = 1_000L
-    private val time = FakeTimeSource(now, LocalDate.of(2026, 6, 15))
+    private var rearms = 0
+    private val rearm: () -> Unit = { rearms++ }
 
     @Test
     fun `opens on the stored hour`() {
-        val vm = SettingsViewModel(FakeReminderSettings(7), FakeNudgeAlarms(), time)
+        val vm = SettingsViewModel(FakeReminderSettings(7), rearm)
 
         assertEquals(7, vm.uiState.value.reminderHour)
     }
@@ -28,34 +27,36 @@ class SettingsViewModelTest {
     @Test
     fun `a new hour is stored, re-armed and shown`() {
         val settings = FakeReminderSettings()
-        val alarms = FakeNudgeAlarms()
-        val vm = SettingsViewModel(settings, alarms, time)
+        val vm = SettingsViewModel(settings, rearm)
 
         vm.setReminderHour(15)
 
         assertEquals(15, settings.firstReminderHour())
-        assertEquals(listOf(now), alarms.armedFrom)
+        assertEquals(1, rearms)
         assertEquals(15, vm.uiState.value.reminderHour)
     }
 
     /** The screen shows what was stored, not what was asked for, so the two cannot disagree. */
     @Test
     fun `an out-of-range hour shows as the clamped one`() {
-        val vm = SettingsViewModel(FakeReminderSettings(), FakeNudgeAlarms(), time)
+        val vm = SettingsViewModel(FakeReminderSettings(), rearm)
 
         vm.setReminderHour(23)
 
         assertEquals(NudgeSchedule.firstHourRange.last, vm.uiState.value.reminderHour)
     }
 
-    /** A refused arm must not lose the choice: the next process start re-arms against it. */
+    /**
+     * Re-choosing the stored hour — tapping the row already selected — must not re-arm: nothing
+     * changed, and the re-arm is a database read and a binder call for no new answer.
+     */
     @Test
-    fun `a throwing arm still stores the hour`() {
-        val settings = FakeReminderSettings()
+    fun `choosing the stored hour again re-arms nothing`() {
+        val settings = FakeReminderSettings(12)
 
-        val stored = settings.chooseFirstReminderHour(12, FakeNudgeAlarms(throwOnArm = true), now)
-
-        assertEquals(12, stored)
-        assertEquals(12, settings.firstReminderHour())
+        assertEquals(12, settings.chooseFirstReminderHour(12, rearm))
+        // Clamps to the stored hour too, so it is the same choice.
+        FakeReminderSettings(NudgeSchedule.firstHourRange.last).chooseFirstReminderHour(23, rearm)
+        assertEquals(0, rearms)
     }
 }

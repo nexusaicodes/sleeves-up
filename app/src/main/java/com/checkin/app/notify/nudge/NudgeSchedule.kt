@@ -1,13 +1,14 @@
 package com.checkin.app.notify.nudge
 
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 
 /**
  * The times of day a check-in nudge may be sent, and the pure maths for finding the next one.
  *
- * This is the single source of truth for "when is a checkpoint", read by both [NudgeAlarms] (which
- * arms the next one) and [NudgeEligibility] (which decides whether the current hour is inside one).
+ * This is the single source of truth for "when is a checkpoint", read by [NudgeEligibility] both to
+ * decide whether the current hour is inside one and to work out when the alarm should next fire.
  * Two copies of these hours is how the alarm and the rule would come to disagree — the alarm firing
  * at an instant the rule then declines to act on, which is silence with nothing to point at.
  *
@@ -77,29 +78,31 @@ object NudgeSchedule {
      * The next checkpoint instant strictly after [fromMs], rolling to tomorrow's first once the day's
      * follow-up has passed.
      *
-     * Strictly after, so re-arming from inside the receiver that just fired cannot schedule the same
-     * instant again and spin. It goes through the calendar (`atTime(...).atZone(zone)`) rather than
-     * adding hours to an epoch, so a DST day still puts each checkpoint at its stated local hour.
+     * This is the fallback arm, used only when the state [NudgeEligibility.nextEligibleAt] needs
+     * cannot be read: it knows nothing of what was sent, so it skips a band that is open but unsent.
+     * Strictly after, so it can never re-arm the instant that just fired and spin. It goes through
+     * the calendar (`atTime(...).atZone(zone)`) rather than adding hours to an epoch, so a DST day
+     * still puts each checkpoint at its stated local hour.
      */
     fun nextCheckpointAfter(fromMs: Long, zone: ZoneId, firstHour: Int): Long {
         val today = Instant.ofEpochMilli(fromMs).atZone(zone).toLocalDate()
         return listOf(firstHour, followUpHour(firstHour))
             .map { today.atTime(it, 0).atZone(zone).toInstant().toEpochMilli() }
             .firstOrNull { it > fromMs }
-            ?: today.plusDays(1).atTime(firstHour, 0).atZone(zone).toInstant().toEpochMilli()
+            ?: bandOn(Checkpoint.FIRST, today.plusDays(1), zone, firstHour).first
     }
 
     /**
-     * The instant the alarm should be armed for: the next checkpoint, or [retryAtMs] when that comes
-     * sooner — the moment [NudgeConfig.minGapMs] stops holding back a nudge that is otherwise due.
-     *
-     * Without the retry, a gap-blocked follow-up waits for tomorrow's first checkpoint and is sent only
-     * if the hourly worker happens to run in between — which, on the device this matters for, it
-     * does not. A retry at or before [fromMs] is ignored, so it can never re-arm an instant already
-     * passed and spin.
+     * The instants [checkpoint]'s band covers on [date]: from its hour up to the next checkpoint's,
+     * the last running to midnight. The same bands [checkpointAt] reads by hour, as instants, for
+     * asking *when* a band opens rather than *whether* one is open now.
      */
-    fun nextAlarmAt(fromMs: Long, zone: ZoneId, firstHour: Int, retryAtMs: Long?): Long {
-        val next = nextCheckpointAfter(fromMs, zone, firstHour)
-        return if (retryAtMs != null && retryAtMs in (fromMs + 1) until next) retryAtMs else next
+    fun bandOn(checkpoint: Checkpoint, date: LocalDate, zone: ZoneId, firstHour: Int): LongRange {
+        fun at(hour: Int) = date.atTime(hour, 0).atZone(zone).toInstant().toEpochMilli()
+        return when (checkpoint) {
+            Checkpoint.FIRST -> at(firstHour) until at(followUpHour(firstHour))
+            Checkpoint.FOLLOW_UP ->
+                at(followUpHour(firstHour)) until date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        }
     }
 }

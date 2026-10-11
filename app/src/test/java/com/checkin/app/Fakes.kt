@@ -192,14 +192,12 @@ class FakeReminderSettings(hour: Int = NudgeSchedule.DEFAULT_FIRST_HOUR) : Remin
     }
 }
 
-/** Records each arm, so a caller can be shown to re-arm after changing the hour. */
+/** Records each instant armed, so a caller can be shown to have armed the right one. */
 class FakeNudgeAlarms(var throwOnArm: Boolean = false) : NudgeAlarms {
-    val armedFrom = mutableListOf<Long>()
-    val retries = mutableListOf<Long?>()
+    val armed = mutableListOf<Long>()
 
-    override fun armNext(nowMs: Long, retryAtMs: Long?) {
-        armedFrom += nowMs
-        retries += retryAtMs
+    override fun arm(atMs: Long) {
+        armed += atMs
         if (throwOnArm) error("alarm cap")
     }
 }

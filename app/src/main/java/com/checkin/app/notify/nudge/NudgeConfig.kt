@@ -36,9 +36,10 @@ data class NudgeConfig(
      * ([NudgeSchedule.FOLLOW_UP_OFFSET_HOURS]), so it never blocks a delivery that arrived on time,
      * and well over the window in which a repeat reads as a malfunction.
      *
-     * Note this defers a checkpoint rather than cancelling it: the nudge is not marked sent, so the
-     * next hourly [NudgeWorker] pass still inside the band picks it up once the gap has elapsed.
-     * That is what keeps the rule from silently costing a user the day's second message.
+     * Note this defers a checkpoint rather than cancelling it: the nudge is not marked sent, and
+     * [NudgeEligibility.nextEligibleAt] arms the alarm for the instant the gap clears while the band
+     * is still open. That is what keeps the rule from silently costing a user the day's second
+     * message.
      */
     val minGapMs: Long = DEFAULT_MIN_GAP_MS,
 ) {

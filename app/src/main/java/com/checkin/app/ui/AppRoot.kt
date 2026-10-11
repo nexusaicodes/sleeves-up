@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -16,9 +17,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.checkin.app.CheckInApplication
+import com.checkin.app.notify.nudge.chooseFirstReminderHour
+import com.checkin.app.notify.nudge.rearmNudges
 import com.checkin.app.platform.PromptSettings
 import com.checkin.app.ui.checkin.CheckOutCelebration
 import com.checkin.app.ui.checkin.CheckOutSignal
@@ -26,9 +28,9 @@ import com.checkin.app.ui.navigation.AppNavScaffold
 import com.checkin.app.ui.presence.PresenceCheckSignal
 import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import com.checkin.app.ui.presence.PresenceGate
-import com.checkin.app.ui.settings.SettingsViewModel
 import com.checkin.app.ui.welcome.FirstRun
 import com.checkin.app.ui.welcome.WelcomeScreen
+import kotlinx.coroutines.launch
 
 /**
  * The three surfaces that can occupy the whole window, in the order they outrank each other:
@@ -56,7 +58,8 @@ import com.checkin.app.ui.welcome.WelcomeScreen
 @Composable
 fun AppRoot(onGatePassed: () -> Unit) {
     val context = LocalContext.current
-    val settings = remember(context) { (context.applicationContext as CheckInApplication).container.settings }
+    val container = remember(context) { (context.applicationContext as CheckInApplication).container }
+    val settings = container.settings
     val gateReason by PresenceCheckSignal.request.collectAsStateWithLifecycle()
     val completed by CheckOutSignal.completed.collectAsStateWithLifecycle()
 
@@ -65,6 +68,7 @@ fun AppRoot(onGatePassed: () -> Unit) {
     // resolves the notification ask too, which the step below has to see on the same frame.
     var seenWelcome by rememberSaveable { mutableStateOf(settings.hasSeenWelcome()) }
     var askedNotifications by rememberSaveable { mutableStateOf(settings.hasAskedNotifications()) }
+    var tourReminderHour by rememberSaveable { mutableIntStateOf(container.reminderSettings.firstReminderHour()) }
     val step = FirstRun.step(seenWelcome, askedNotifications)
 
     val endWelcome = { exit: FirstRun.Exit ->
@@ -86,13 +90,17 @@ fun AppRoot(onGatePassed: () -> Unit) {
             // No BackHandler by design: the branches around it map back to dismiss, which
             // returns the user to what they were doing, and there is nothing here to return to.
             // Back leaves the app and the welcome is owed again — only ending it writes it.
-            // The reminder page sets the same hour Settings does, through the same ViewModel, so the
-            // store-then-re-arm has one tested path wherever the hour is chosen.
-            val reminders: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
-            val reminderState by reminders.uiState.collectAsStateWithLifecycle()
+            // The reminder page sets the same hour Settings does, through the same
+            // chooseFirstReminderHour, so the store-then-re-arm has one tested path wherever the
+            // hour is chosen. Held here rather than in a ViewModel: the tour is shown once, and a
+            // ViewModel at this scope would outlive it for the rest of the activity.
             WelcomeScreen(
-                reminderHour = reminderState.reminderHour,
-                onReminderHourChosen = reminders::setReminderHour,
+                reminderHour = tourReminderHour,
+                onReminderHourChosen = { hour ->
+                    tourReminderHour = container.reminderSettings.chooseFirstReminderHour(hour) {
+                        container.applicationScope.launch { container.rearmNudges() }
+                    }
+                },
                 onFinished = { endWelcome(FirstRun.Exit.FINISHED) },
                 onSkipped = { endWelcome(FirstRun.Exit.SKIPPED) },
             )

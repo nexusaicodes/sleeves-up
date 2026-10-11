@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.checkin.app.CheckInApplication
+import com.checkin.app.notify.nudge.rearmNudges
 import kotlinx.coroutines.launch
 
 /**
@@ -41,10 +42,11 @@ class SessionRestoreReceiver : BroadcastReceiver() {
             try {
                 container.sessionWatchdog.reviveIfNeeded()
             } finally {
-                // In the `finally`, exactly as in NudgeAlarmReceiver: both actions that reach here
-                // cancel the package's alarms, and on a device the user is not opening this is the
-                // checkpoint's only prompt repair. A throw upstream must not take it down with it.
-                container.nudgeDispatcher.rearm()
+                // In the `finally`: both actions that reach here cancel the package's alarms, and on a
+                // device the user is not opening this is the checkpoint's only prompt repair. A throw
+                // upstream must not take it down with it, and `rearmNudges` never throws, so `finish`
+                // always runs.
+                container.rearmNudges()
                 pending.finish()
             }
         }

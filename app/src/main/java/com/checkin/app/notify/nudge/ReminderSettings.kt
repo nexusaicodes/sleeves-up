@@ -54,19 +54,20 @@ class SharedPrefsReminderSettings(private val prefs: SharedPreferences) : Remind
 }
 
 /**
- * Stores [hour] and re-arms the checkpoint alarm against it, returning the hour actually stored.
+ * Stores [hour] and asks for the checkpoint alarm to be re-armed against it, returning the hour
+ * actually stored. Choosing the hour already stored changes nothing and re-arms nothing.
  *
  * The one path both choosers take — the tour and Settings — so neither can store a new hour and
  * leave the alarm armed for the old one, which would deliver the next reminder at an hour the user
- * just moved away from. The arm is guarded like every other arming site: a throw past the
- * platform's alarm cap must not take the screen down, and the next process start re-arms anyway.
- *
- * It arms the plain next checkpoint, without [NudgeDispatcher.rearm]'s gap retry: the choosers run on
- * the main thread, the retry needs a ledger read, and a gap-deferred nudge was computed against the
- * hour the user has just replaced.
+ * just moved away from. [rearm] is expected to launch [NudgeDispatcher.rearm] off the main thread:
+ * that call reads the day's sends, so the re-arm keeps a follow-up the gap is holding and arms a band
+ * the new hour has just opened, and it re-reads the hour under the dispatcher's lock, so it arms for
+ * the value stored here even when a checkpoint pass is running alongside.
  */
-fun ReminderSettings.chooseFirstReminderHour(hour: Int, alarms: NudgeAlarms, nowMs: Long): Int {
-    setFirstReminderHour(hour)
-    runCatching { alarms.armNext(nowMs) }
+fun ReminderSettings.chooseFirstReminderHour(hour: Int, rearm: () -> Unit): Int {
+    val chosen = NudgeSchedule.clampFirstHour(hour)
+    if (chosen == firstReminderHour()) return chosen
+    setFirstReminderHour(chosen)
+    rearm()
     return firstReminderHour()
 }
