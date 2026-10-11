@@ -1,6 +1,5 @@
 package com.checkin.app.ui.components
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -26,16 +25,12 @@ import com.checkin.app.notify.nudge.NudgeSchedule
 import com.checkin.app.util.TimeFormat
 
 /**
- * The reminder hour as the user reads it: "Around 10:00 AM, then around 12:00 PM". One function for
- * the tour's button and the Settings row, so the two cannot come to describe the same setting
- * differently.
+ * The reminder hour as the user reads it: "Around 10:00 AM". One function for the tour's button and
+ * the Settings row, so the two cannot come to describe the same setting differently.
  */
 @Composable
-fun reminderTimeSummary(firstHour: Int): String = stringResource(
-    R.string.reminder_time_value,
-    TimeFormat.hourOfDay(firstHour),
-    TimeFormat.hourOfDay(NudgeSchedule.followUpHour(firstHour)),
-)
+fun reminderTimeSummary(firstHour: Int): String =
+    stringResource(R.string.reminder_time_value, TimeFormat.hourOfDay(firstHour))
 
 /**
  * Picks the first reminder's hour from [NudgeSchedule.firstHourRange]. Whole hours only: delivery is
@@ -89,16 +84,6 @@ private fun HourRow(hour: Int, selected: Boolean, onClick: () -> Unit) {
         // The row carries the click and the role; a second clickable on the button would be a second
         // focus stop announcing the same choice.
         RadioButton(selected = selected, onClick = null, modifier = Modifier.padding(12.dp))
-        Column {
-            Text(text = TimeFormat.hourOfDay(hour), style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = stringResource(
-                    R.string.reminder_time_then,
-                    TimeFormat.hourOfDay(NudgeSchedule.followUpHour(hour)),
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Text(text = TimeFormat.hourOfDay(hour), style = MaterialTheme.typography.bodyLarge)
     }
 }

@@ -107,8 +107,7 @@
       reminders are described immediately before they are requested.
 
       Sentence case — these read as lines, not card titles. Nothing grades a day, by the same rules
-      the nudge copy follows. "Two hours later" is NudgeSchedule.FOLLOW_UP_OFFSET_HOURS: if that
-      value changes, this line is wrong.
+      the nudge copy follows.
     -->
     <string name="welcome_showing_up_title">Showing up is the whole thing</string>
     <string name="welcome_showing_up_body">Check in when you start, check out when you stop. There\'s no target to clear — a short day counts the same as a long one.</string>
@@ -120,7 +119,7 @@
     <string name="welcome_presence_title">Presence, checked on this device</string>
     <string name="welcome_presence_body">The front camera confirms someone\'s there at check-in and check-out. No photo is taken and no image ever leaves the camera.</string>
     <string name="welcome_reminders_title">A reminder if the day gets away</string>
-    <string name="welcome_reminders_body">If you haven\'t checked in, Sleeves Up reminds you around the hour you pick, and once more about two hours later. Turn them off with a long press on any reminder.</string>
+    <string name="welcome_reminders_body">If you haven\'t checked in, Sleeves Up reminds you around the hour you pick. Turn reminders off with a long press on one.</string>
     <!-- Spoken by the dot row. HorizontalPager publishes a scroll range and no page count, so
          without this a screen reader is never told where in the tour it is. -->
     <string name="welcome_page_position">Page %1$d of %2$d</string>
@@ -229,16 +228,14 @@
     <!--
       The reminder hour, chosen on the tour's last page and changeable in Settings. "Around" is
       load-bearing on every time stated: the alarm is inexact, so the hour is when a reminder becomes
-      due, not when it lands. The summary states the follow-up too, so the second reminder is never a
-      surprise. The tour's button and the Settings row share the one summary string.
+      due, not when it lands. The tour's button and the Settings row share the one summary string.
     -->
     <string name="reminders_section">Reminders</string>
     <string name="reminder_time_label">Reminder time</string>
-    <string name="reminder_time_value">Around %1$s, then around %2$s</string>
+    <string name="reminder_time_value">Around %1$s</string>
     <!-- The tour button's click action, spoken by TalkBack after the summary it shows. -->
     <string name="reminder_time_change">Change reminder time</string>
     <string name="reminder_time_dialog_title">Reminder Time</string>
-    <string name="reminder_time_then">then around %1$s</string>
     <string name="reminder_time_cancel">Cancel</string>
 
     <!-- About. Settings holds this and the reminder hour — see SettingsScreen for why nothing else. -->

@@ -88,7 +88,7 @@ PRIVATE BY DESIGN
 
 REMINDERS
 • If you have not checked in, Sleeves Up says so — at most twice a day, hours apart.
-• You choose the hour the first one comes; the second follows about two hours later, only if you still haven't checked in.
+• You choose the hour they come.
 • Turn them off with a long press on any reminder; that opens the channel and switches it off in one tap.
 
 WHO IT'S FOR
