@@ -110,8 +110,16 @@ class HabitsViewModel(
         }
     }
 
-    fun select(habitId: Long) {
-        viewModelScope.launch { habits.select(habitId) }
+    /**
+     * Shows [habitId] on every tab, then calls [onSelected]. After the write rather than beside it,
+     * because the usual [onSelected] leaves the Habits screen — clearing a ViewModel scoped to it,
+     * and with it this scope — and a select cancelled before it lands is a tap that did nothing.
+     */
+    fun select(habitId: Long, onSelected: () -> Unit = {}) {
+        viewModelScope.launch {
+            habits.select(habitId)
+            onSelected()
+        }
     }
 
     fun archive(habit: Habit) {

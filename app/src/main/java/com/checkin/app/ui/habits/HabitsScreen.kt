@@ -2,16 +2,23 @@ package com.checkin.app.ui.habits
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,7 +49,9 @@ import com.checkin.app.ui.components.reminderTimeSummary
 
 /**
  * The habits: each one's name and reminder time, a way to add one, and the archived ones with a way
- * back. It lists habits and **compares none of them** — no figure sits beside a name, because a
+ * back. **It is also where switching happens**: tapping a habit shows it on every tab and calls
+ * [onSelected], which returns to wherever the user came from; Edit and Archive are in its overflow menu. The
+ * selected habit carries a check, the one mark that distinguishes a row. It lists habits and **compares none of them** — no figure sits beside a name, because a
  * count or a total next to each row is a ranking of the user's habits, which this app never makes.
  * Their records are on the other tabs, one habit at a time.
  *
@@ -54,6 +63,7 @@ import com.checkin.app.ui.components.reminderTimeSummary
 @Composable
 fun HabitsScreen(
     innerPadding: PaddingValues,
+    onSelected: () -> Unit,
     viewModel: HabitsViewModel = viewModel(factory = HabitsViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -100,6 +110,8 @@ fun HabitsScreen(
                     HabitRow(
                         habit = entry.habit,
                         detail = reminderTimeSummary(entry.reminderMinute),
+                        selected = entry.habit.id == uiState.selected?.id,
+                        onSelect = { viewModel.select(entry.habit.id, onSelected) },
                         onEdit = { editing = entry.habit.id },
                         onArchive = { viewModel.archive(entry.habit) },
                     )
@@ -153,32 +165,80 @@ fun HabitsScreen(
 /** A row id no habit can have — Room's ids start at 1 — standing for the "New habit" dialog. */
 private const val NEW_HABIT = -1L
 
+private val CHECK_SLOT = 36.dp
+
 @Composable
-private fun HabitRow(habit: Habit, detail: String, onEdit: () -> Unit, onArchive: () -> Unit) {
+private fun HabitRow(
+    habit: Habit,
+    detail: String,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    onEdit: () -> Unit,
+    onArchive: () -> Unit,
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        // The whole text block is the edit target, with the 48dp floor reached through padding.
-        Column(
+        // The check and the text are the select target, with the 48dp floor reached through padding.
+        Row(
             modifier = Modifier
                 .weight(1f)
-                .clickable(onClickLabel = stringResource(R.string.habit_edit), onClick = onEdit)
+                .clickable(onClickLabel = stringResource(R.string.habit_select), onClick = onSelect)
                 .padding(vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = habit.name ?: stringResource(R.string.habit_unnamed),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                text = detail,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            // Every row reserves the check's width, so the names line up.
+            Box(modifier = Modifier.size(CHECK_SLOT), contentAlignment = Alignment.CenterStart) {
+                if (selected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = stringResource(R.string.habit_selected),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+            Column {
+                Text(
+                    text = habit.name ?: stringResource(R.string.habit_unnamed),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    text = detail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
-        IconButton(onClick = onArchive) {
-            Icon(
-                imageVector = Icons.Default.Archive,
-                contentDescription = stringResource(R.string.habit_archive),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        // Edit and Archive behind one overflow, so the row keeps a single trailing control and the
+        // tap target beside it stays the habit itself.
+        Box {
+            var menuOpen by rememberSaveable { mutableStateOf(false) }
+            IconButton(onClick = { menuOpen = true }) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = stringResource(
+                        R.string.habit_more_actions,
+                        habit.name ?: stringResource(R.string.habit_unnamed),
+                    ),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.habit_edit)) },
+                    leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
+                    onClick = {
+                        menuOpen = false
+                        onEdit()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.habit_archive)) },
+                    leadingIcon = { Icon(Icons.Default.Archive, contentDescription = null) },
+                    onClick = {
+                        menuOpen = false
+                        onArchive()
+                    },
+                )
+            }
         }
     }
 }

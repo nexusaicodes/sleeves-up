@@ -14,12 +14,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
 /**
  * A tappable row inside a [SectionCard]: a label, an optional [value] beneath it stating the current
- * setting, and a trailing icon for where it leads.
+ * setting, and a trailing icon for where it leads. A row that is not [enabled] dims and ignores taps.
  *
  * Shared rather than private to the About card, because the 48dp tap target below is the kind of
  * rule the next screen needing a row like this would otherwise reinvent without.
@@ -30,12 +31,15 @@ fun ActionRow(
     icon: ImageVector,
     contentDescription: String?,
     value: String? = null,
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
+            // Disabled reads as dimmed, the way Material draws a disabled control's content.
+            .alpha(if (enabled) 1f else DISABLED_ALPHA)
             // 48dp of height is the minimum tap target; the vertical padding gets it there without
             // pinning the row, so it still grows with a large font scale.
             .padding(vertical = 14.dp),
@@ -60,3 +64,5 @@ fun ActionRow(
         )
     }
 }
+
+private const val DISABLED_ALPHA = 0.38f

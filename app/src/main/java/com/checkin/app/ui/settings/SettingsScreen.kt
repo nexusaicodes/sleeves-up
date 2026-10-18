@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -28,14 +29,15 @@ import kotlinx.coroutines.launch
  * There is no daily target to configure, sessions are immutable, and a notification's opt-out is its
  * channel — an in-app switch beside one could only ever agree with it or lie about it, and Android
  * has no API to migrate a stored opt-out back into the system. The one thing a user does set, each
- * habit's reminder hour, is *timing*, not consent — no channel setting can say when a reminder is
+ * habit's reminder time, is *timing*, not consent — no channel setting can say when a reminder is
  * due — and it lives on the Habits screen beside the habit it belongs to, so this screen holds no
- * state at all. The language is the platform's per-app setting, so the row here opens that screen
+ * state of its own; [runningHabitName] is passed in only to lock the Habits link while a session runs. The language is the platform's per-app setting, so the row here opens that screen
  * rather than offering a picker of its own that could disagree with it.
  */
 @Composable
 fun SettingsScreen(
     innerPadding: PaddingValues,
+    runningHabitName: String?,
     onOpenHabits: () -> Unit,
     onOpenPrivacy: () -> Unit,
     onOpenLicenses: () -> Unit,
@@ -62,10 +64,20 @@ fun SettingsScreen(
     ) {
         item {
             SectionCard(title = stringResource(R.string.habits_section)) {
+                // Locked while a session runs, as the switcher is: the app is about the running habit
+                // until it is checked out of.
                 ActionRow(
                     label = stringResource(R.string.habits_manage),
-                    icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    icon = if (runningHabitName ==
+                        null
+                    ) {
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight
+                    } else {
+                        Icons.Default.Lock
+                    },
                     contentDescription = null,
+                    value = runningHabitName?.let { stringResource(R.string.habits_manage_locked, it) },
+                    enabled = runningHabitName == null,
                     onClick = onOpenHabits,
                 )
             }

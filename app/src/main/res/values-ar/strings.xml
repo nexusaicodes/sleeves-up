@@ -176,10 +176,14 @@
     <string name="nav_habits">العادات</string>
     <string name="habits_section">العادات</string>
     <string name="habits_manage">إدارة العادات</string>
+    <string name="habits_manage_locked">سجّل انصرافك من %1$s أولًا</string>
     <string name="habits_archived_section">المؤرشفة</string>
     <string name="habits_archived_note">تحتفظ العادات المؤرشفة بسجلّاتها ولا ترسل أي تذكيرات.</string>
     <string name="habit_new">عادة جديدة</string>
     <string name="habit_edit">تعديل</string>
+    <string name="habit_more_actions">خيارات إضافية لـ%1$s</string>
+    <string name="habit_select">عرض هذه العادة</string>
+    <string name="habit_selected">معروضة</string>
     <string name="habit_archive">أرشفة</string>
     <string name="habit_restore">استعادة</string>
     <string name="habit_unnamed">عادة بلا اسم</string>
@@ -188,7 +192,7 @@
     <string name="habit_archive_last">أبقِ عادة واحدة على الأقل</string>
     <string name="habit_restore_duplicate">توجد عادة أخرى باسم %1$s</string>
     <string name="habit_switcher_cd">العادة: %1$s. تبديل العادة</string>
-    <string name="habit_switch_locked">سجّل انصرافك من %1$s للتبديل</string>
+    <string name="habit_switch_locked">سجّل انصرافك من %1$s للتبديل أو لإدارة العادات</string>
     <string name="habit_running_check_out_first">%1$s جارية. سجّل انصرافك منها أولًا.</string>
     <string name="habit_running_check_out_first_unnamed">هناك جلسة جارية. سجّل انصرافك منها أولًا.</string>
     <string name="habit_editor_new_title">عادة جديدة</string>

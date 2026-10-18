@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -12,11 +11,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -26,6 +28,7 @@ import com.checkin.app.ui.checkin.CheckInViewModel
 import com.checkin.app.ui.components.LocalSnackbarHostState
 import com.checkin.app.ui.habits.HabitsViewModel
 import com.checkin.app.ui.presence.PresenceGate
+import kotlinx.coroutines.launch
 
 /**
  * Top-level chrome: a centered title bar and the bottom nav around the nav host. The title names the
@@ -54,6 +57,9 @@ fun AppNavScaffold(navController: NavHostController) {
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val runningName = habitsState.running?.let { it.name ?: stringResource(R.string.habit_unnamed) }
+    val lockedMessage = runningName?.let { stringResource(R.string.habit_switch_locked, it) }.orEmpty()
 
     // One back-stack subscription drives both bars: the title and the selected nav item can never
     // disagree about which section is showing.
@@ -81,8 +87,8 @@ fun AppNavScaffold(navController: NavHostController) {
                 if (currentScreen is Screen.Tab) {
                     HabitSwitcher(
                         state = habitsState,
-                        viewModel = habitsViewModel,
-                        onManage = { navController.navigate(Screen.Habits.route) { launchSingleTop = true } },
+                        onOpen = { navController.navigate(Screen.Habits.route) { launchSingleTop = true } },
+                        onLocked = { scope.launch { snackbarHostState.showSnackbar(lockedMessage) } },
                     )
                 }
             }
@@ -91,7 +97,7 @@ fun AppNavScaffold(navController: NavHostController) {
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
-            NavigationGraph(navController, innerPadding, checkInViewModel)
+            NavigationGraph(navController, innerPadding, checkInViewModel, runningName)
         }
     }
 }
@@ -99,8 +105,10 @@ fun AppNavScaffold(navController: NavHostController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AppTopBar(currentScreen: Screen, onBack: (() -> Unit)?, actions: @Composable RowScope.() -> Unit) {
-    CenterAlignedTopAppBar(
-        title = { Text(stringResource(currentScreen.titleRes)) },
+    // Start-aligned, so the title and the habit switcher at the end each keep their own side rather
+    // than the title being centred in whatever width the switcher leaves.
+    TopAppBar(
+        title = { Text(stringResource(currentScreen.titleRes), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         actions = actions,
         navigationIcon = {
             if (onBack != null) {

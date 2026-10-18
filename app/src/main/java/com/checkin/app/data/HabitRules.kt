@@ -16,7 +16,7 @@ object HabitRules {
      * Long enough for any name a person gives a habit, short enough that "Check in to …" stays a
      * button label and "… Reminders" stays a channel name rather than wrapping into a paragraph.
      */
-    const val MAX_NAME_LENGTH = 40
+    const val MAX_NAME_LENGTH = 25
 
     /** The stored form of a name: trimmed, and with runs of whitespace collapsed to one space. */
     fun normalise(name: String): String = name.trim().replace(WHITESPACE, " ")

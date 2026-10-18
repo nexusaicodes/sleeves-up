@@ -263,10 +263,18 @@
     <string name="nav_habits">Habits</string>
     <string name="habits_section">Habits</string>
     <string name="habits_manage">Manage habits</string>
+    <!-- Under Settings' Manage habits row while a session runs, which locks it. -->
+    <string name="habits_manage_locked">Check out of %1$s first</string>
     <string name="habits_archived_section">Archived</string>
     <string name="habits_archived_note">Archived habits keep their records and send no reminders.</string>
     <string name="habit_new">New habit</string>
     <string name="habit_edit">Edit</string>
+    <!-- A habit row's overflow button, spoken by TalkBack with the habit it belongs to. -->
+    <string name="habit_more_actions">More options for %1$s</string>
+    <!-- A habit row's tap action, spoken by TalkBack: it shows that habit on every tab. -->
+    <string name="habit_select">Show this habit</string>
+    <!-- Spoken on the check beside the habit every tab is showing. -->
+    <string name="habit_selected">Showing</string>
     <string name="habit_archive">Archive</string>
     <string name="habit_restore">Restore</string>
     <string name="habit_unnamed">Unnamed habit</string>
@@ -276,7 +284,7 @@
     <string name="habit_restore_duplicate">Another habit is already called %1$s</string>
     <!-- The switcher in the top bar. While a session runs it is locked to that habit on every tab. -->
     <string name="habit_switcher_cd">Habit: %1$s. Switch habit</string>
-    <string name="habit_switch_locked">Check out of %1$s to switch</string>
+    <string name="habit_switch_locked">Check out of %1$s to switch or manage habits</string>
     <!-- A nudge for one habit tapped while another habit's session is running. No gate opens. -->
     <string name="habit_running_check_out_first">%1$s is running. Check out of it first.</string>
     <string name="habit_running_check_out_first_unnamed">A session is running. Check out of it first.</string>
