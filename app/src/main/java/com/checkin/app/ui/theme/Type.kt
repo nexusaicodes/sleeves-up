@@ -6,6 +6,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import com.checkin.app.R
+import java.util.Locale
 
 /**
  * Two families, split by the size they are read at.
@@ -41,28 +42,48 @@ private val Text = FontFamily(
     Font(R.font.manrope_bold, FontWeight.Bold),
 )
 
+/**
+ * Arabic, at every size. Neither Latin family has an Arabic glyph, and a Compose `FontFamily` picks
+ * one file per weight rather than falling back glyph by glyph, so Arabic cannot be added *to* the
+ * families above — it replaces both. Plex Arabic carries its own Latin and digits (tabular by
+ * default, all ten at 600 units), so a habit named in English and the Latin-digit clock still render
+ * in one face beside the Arabic copy rather than in a system fallback.
+ */
+private val Arabic = FontFamily(
+    Font(R.font.plex_arabic_regular, FontWeight.Normal),
+    Font(R.font.plex_arabic_medium, FontWeight.Medium),
+    Font(R.font.plex_arabic_semibold, FontWeight.SemiBold),
+    Font(R.font.plex_arabic_bold, FontWeight.Bold),
+)
+
 // Only the family is swapped: every size, line height and letter spacing stays as Material 3 tuned
 // it. Styles the app doesn't use yet are mapped too, so a future call site inherits the right family
 // rather than silently falling back to the system font.
 private val Default = Typography()
 
-val Typography = Typography(
-    displayLarge = Default.displayLarge.copy(fontFamily = Display),
-    displayMedium = Default.displayMedium.copy(fontFamily = Display),
-    displaySmall = Default.displaySmall.copy(fontFamily = Display),
-    headlineLarge = Default.headlineLarge.copy(fontFamily = Display),
-    headlineMedium = Default.headlineMedium.copy(fontFamily = Display),
-    headlineSmall = Default.headlineSmall.copy(fontFamily = Display),
-    titleLarge = Default.titleLarge.copy(fontFamily = Display),
-    titleMedium = Default.titleMedium.copy(fontFamily = Display),
-    titleSmall = Default.titleSmall.copy(fontFamily = Display),
-    bodyLarge = Default.bodyLarge.copy(fontFamily = Text),
-    bodyMedium = Default.bodyMedium.copy(fontFamily = Text),
-    bodySmall = Default.bodySmall.copy(fontFamily = Text),
-    labelLarge = Default.labelLarge.copy(fontFamily = Text),
-    labelMedium = Default.labelMedium.copy(fontFamily = Text),
-    labelSmall = Default.labelSmall.copy(fontFamily = Text),
-)
+/** The app's type for [locale]: the Outfit/Manrope split, or Plex Arabic throughout for Arabic. */
+fun typographyFor(locale: Locale): Typography {
+    val arabic = locale.language == "ar"
+    val display = if (arabic) Arabic else Display
+    val text = if (arabic) Arabic else Text
+    return Typography(
+        displayLarge = Default.displayLarge.copy(fontFamily = display),
+        displayMedium = Default.displayMedium.copy(fontFamily = display),
+        displaySmall = Default.displaySmall.copy(fontFamily = display),
+        headlineLarge = Default.headlineLarge.copy(fontFamily = display),
+        headlineMedium = Default.headlineMedium.copy(fontFamily = display),
+        headlineSmall = Default.headlineSmall.copy(fontFamily = display),
+        titleLarge = Default.titleLarge.copy(fontFamily = display),
+        titleMedium = Default.titleMedium.copy(fontFamily = display),
+        titleSmall = Default.titleSmall.copy(fontFamily = display),
+        bodyLarge = Default.bodyLarge.copy(fontFamily = text),
+        bodyMedium = Default.bodyMedium.copy(fontFamily = text),
+        bodySmall = Default.bodySmall.copy(fontFamily = text),
+        labelLarge = Default.labelLarge.copy(fontFamily = text),
+        labelMedium = Default.labelMedium.copy(fontFamily = text),
+        labelSmall = Default.labelSmall.copy(fontFamily = text),
+    )
+}
 
 /**
  * The same style with tabular figures — every digit set to one width.

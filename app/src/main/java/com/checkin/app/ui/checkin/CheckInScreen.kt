@@ -57,6 +57,7 @@ import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.service.SessionClock
 import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.SessionIntervalRow
+import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.startActionColors
 import com.checkin.app.ui.theme.stopActionColors
 import com.checkin.app.util.TimeFormat
@@ -160,7 +161,7 @@ fun CheckInScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = formatDateHeader(uiState.todayDateKey),
+                text = TimeFormat.dateKeyWithWeekday(uiState.todayDateKey, LocalTimePatterns.current).orEmpty(),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -335,6 +336,7 @@ private fun TodaySessions(
     onToggle: () -> Unit,
     listMaxHeight: Dp?,
 ) {
+    val patterns = LocalTimePatterns.current
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -360,7 +362,7 @@ private fun TodaySessions(
                     text = stringResource(
                         R.string.todays_sessions_summary,
                         pluralStringResource(R.plurals.sessions_count, sessions.size, sessions.size),
-                        TimeFormat.durationShort(total),
+                        TimeFormat.durationShort(total, patterns),
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -393,5 +395,3 @@ private fun TodaySessions(
         }
     }
 }
-
-private fun formatDateHeader(dateKey: String): String = TimeFormat.dateKeyWithWeekday(dateKey).orEmpty()

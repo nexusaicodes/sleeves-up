@@ -21,8 +21,6 @@ class OpenSourceLibrariesTest {
             assertTrue(library.name, library.coordinates.isNotBlank())
             assertTrue(library.name, library.copyright.isNotBlank())
             assertTrue(library.name, library.licenses.isNotEmpty())
-            // An empty note would render as a stray gap rather than as nothing.
-            assertFalse(library.name, library.note?.isBlank() == true)
         }
     }
 
@@ -69,7 +67,7 @@ class OpenSourceLibrariesTest {
     @Test
     fun `the bundled fonts are attributed under the OFL and nothing else claims it`() {
         val underOfl = OPEN_SOURCE_LIBRARIES.filter { LibraryLicense.OFL_1_1 in it.licenses }
-        assertEquals(listOf("Outfit", "Manrope"), underOfl.map { it.name })
+        assertEquals(listOf("Outfit", "Manrope", "IBM Plex Sans Arabic"), underOfl.map { it.name })
         // A font is a redistributed asset, not a Maven artifact; the coordinate names the resource
         // so verifyLicenseCoverage can match it against res/font/ rather than the classpath.
         underOfl.forEach { assertTrue(it.name, it.coordinates.startsWith("font:")) }

@@ -1,5 +1,6 @@
 package com.checkin.app
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -23,11 +24,23 @@ import com.checkin.app.ui.presence.PresenceCheckSignal
 import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import com.checkin.app.ui.presence.PresenceGate
 import com.checkin.app.ui.theme.CheckInAppTheme
+import com.checkin.app.util.latinDigitsOverride
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : FragmentActivity() {
+
+    /**
+     * Every string this activity formats numbers in Latin digits, whatever the language — see
+     * `util/LatinDigits` for why. An override configuration rather than a wrapped context, so the
+     * activity's own resources carry it and Compose's `stringResource` and plurals pick it up with
+     * no call site involved. A language change recreates the activity, which re-applies it.
+     */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(newBase)
+        applyOverrideConfiguration(latinDigitsOverride(newBase.resources.configuration))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()

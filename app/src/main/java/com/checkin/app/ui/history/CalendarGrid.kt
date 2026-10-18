@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.ui.theme.CheckInAppTheme
+import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.dayColor
 import com.checkin.app.util.TimeFormat
 import java.time.LocalDate
@@ -170,6 +171,7 @@ private fun DayCell(
     cellHeight: Dp = 48.dp,
     onClick: () -> Unit,
 ) {
+    val patterns = LocalTimePatterns.current
     // A day with no sessions gets no shade at all: an empty cell, not a coloured failure.
     val dayShade = dayColor().copy(alpha = RECORDED_DAY_ALPHA)
 
@@ -189,7 +191,7 @@ private fun DayCell(
     // The shade says only that the day has a session, so the hours are stated here rather than left
     // to a mark that does not carry them.
     val cellDescription = summary?.let {
-        stringResource(R.string.cd_day_worked, day, TimeFormat.durationShort(it.totalDurationMs))
+        stringResource(R.string.cd_day_worked, day, TimeFormat.durationShort(it.totalDurationMs, patterns))
     } ?: day.toString()
 
     Box(

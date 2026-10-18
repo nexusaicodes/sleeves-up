@@ -6,10 +6,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowCompat
+import com.checkin.app.R
+import com.checkin.app.util.TimePatterns
 
 // CheckIn brand scheme, seeded from the launcher indigo (#3F51B5). Dynamic color is intentionally
 // not used, so the app presents one consistent brand identity on every device.
@@ -93,9 +100,44 @@ fun CheckInAppTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Compos
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content,
-    )
+    val locale = LocalConfiguration.current.locales[0]
+    val hoursMinutes = stringResource(R.string.time_hours_minutes)
+    val minutesSeconds = stringResource(R.string.time_minutes_seconds)
+    val clock = stringResource(R.string.time_clock_pattern)
+    val dateWithYear = stringResource(R.string.date_with_year_pattern)
+    val dateWithWeekday = stringResource(R.string.date_with_weekday_pattern)
+    val axisDay = stringResource(R.string.date_axis_day_pattern)
+    val axisMonthWithYear = stringResource(R.string.date_axis_month_year_pattern)
+    // Keyed on the locale alone: the patterns are resources of that same configuration, so a
+    // language change recreates the activity and rebuilds both together.
+    val patterns = remember(locale) {
+        TimePatterns(
+            locale = locale,
+            hoursMinutes = hoursMinutes,
+            minutesSeconds = minutesSeconds,
+            clock = clock,
+            dateWithYear = dateWithYear,
+            dateWithWeekday = dateWithWeekday,
+            axisDay = axisDay,
+            axisMonthWithYear = axisMonthWithYear,
+        )
+    }
+    val typography = remember(locale) { typographyFor(locale) }
+
+    CompositionLocalProvider(LocalTimePatterns provides patterns) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = typography,
+            content = content,
+        )
+    }
+}
+
+/**
+ * The reader's [TimePatterns], for every `TimeFormat` call on screen. There is no default: a
+ * composable reached outside [CheckInAppTheme] would otherwise format in English under any language
+ * with nothing failing, which is exactly the drift resource-held patterns exist to prevent.
+ */
+val LocalTimePatterns = staticCompositionLocalOf<TimePatterns> {
+    error("LocalTimePatterns is provided by CheckInAppTheme")
 }

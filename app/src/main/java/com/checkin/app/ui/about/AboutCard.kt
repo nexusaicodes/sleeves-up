@@ -55,6 +55,11 @@ fun AboutCard(
     val noBrowser = stringResource(R.string.about_no_browser)
     val noEmailApp = stringResource(R.string.about_no_email_app, Feedback.ADDRESS)
     val noHandler = stringResource(R.string.about_no_handler)
+    // Each row's own label doubles as its clipboard label, so the clip names itself in the reader's
+    // language.
+    val privacyPolicyLabel = stringResource(R.string.about_privacy_policy)
+    val feedbackLabel = stringResource(R.string.about_feedback)
+    val rateLabel = stringResource(R.string.about_rate)
 
     SectionCard(title = stringResource(R.string.about_section), modifier = modifier) {
         ActionRow(
@@ -64,32 +69,32 @@ fun AboutCard(
             onClick = onOpenPrivacy,
         )
         ActionRow(
-            label = stringResource(R.string.about_privacy_policy),
+            label = privacyPolicyLabel,
             icon = Icons.AutoMirrored.Filled.OpenInNew,
             contentDescription = stringResource(R.string.about_open_link),
         ) {
             if (!ExternalLinks.openUrl(context, ExternalLinks.PRIVACY_POLICY_URL)) {
                 val copied = ExternalLinks.copyToClipboard(
                     context,
-                    label = "Privacy policy",
+                    label = privacyPolicyLabel,
                     text = ExternalLinks.PRIVACY_POLICY_URL,
                 )
                 showMessage(if (copied) noBrowser else noHandler)
             }
         }
         ActionRow(
-            label = stringResource(R.string.about_feedback),
+            label = feedbackLabel,
             icon = Icons.AutoMirrored.Filled.OpenInNew,
             contentDescription = stringResource(R.string.about_open_link),
         ) {
             if (!ExternalLinks.sendFeedback(context, draft)) {
                 val copied =
-                    ExternalLinks.copyToClipboard(context, label = "Email", text = Feedback.ADDRESS)
+                    ExternalLinks.copyToClipboard(context, label = feedbackLabel, text = Feedback.ADDRESS)
                 showMessage(if (copied) noEmailApp else noHandler)
             }
         }
         ActionRow(
-            label = stringResource(R.string.about_rate),
+            label = rateLabel,
             icon = Icons.AutoMirrored.Filled.OpenInNew,
             contentDescription = stringResource(R.string.about_open_link),
         ) {
@@ -98,7 +103,7 @@ fun AboutCard(
             if (!ExternalLinks.openPlayListing(context)) {
                 val copied = ExternalLinks.copyToClipboard(
                     context,
-                    label = "Play listing",
+                    label = rateLabel,
                     text = ExternalLinks.playListingUrl(context),
                 )
                 showMessage(if (copied) noBrowser else noHandler)

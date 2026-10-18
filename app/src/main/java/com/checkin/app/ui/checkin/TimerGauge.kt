@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.ui.components.BrandGridGauge
 import com.checkin.app.ui.theme.CheckInAppTheme
+import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.tabularFigures
 import com.checkin.app.util.TimeFormat
 
@@ -77,7 +78,8 @@ private const val READOUT_SHRINK_SCALE = 1.5f
  */
 @Composable
 internal fun TimerGauge(elapsedMs: Long, running: Boolean, markSize: Dp = MARK_MAX) {
-    val description = stringResource(R.string.cd_timer_gauge, TimeFormat.durationShort(elapsedMs))
+    val patterns = LocalTimePatterns.current
+    val description = stringResource(R.string.cd_timer_gauge, TimeFormat.durationShort(elapsedMs, patterns))
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -93,7 +95,7 @@ internal fun TimerGauge(elapsedMs: Long, running: Boolean, markSize: Dp = MARK_M
             modifier = Modifier.size(markSize),
         )
         Text(
-            text = TimeFormat.durationLive(elapsedMs),
+            text = TimeFormat.durationLive(elapsedMs, patterns),
             // Two reasons to step down, and only the second is an overflow: a short viewport, where
             // the screen scrolls anyway and the smaller style simply buys room; and a font scale at
             // which the larger one no longer fits a narrow phone on one line.

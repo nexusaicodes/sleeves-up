@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 
@@ -38,6 +39,17 @@ object ExternalLinks {
         return launch(context, Intent(Intent.ACTION_VIEW, "market://details?id=$id".toUri())) ||
             openUrl(context, playListingUrl(context))
     }
+
+    /**
+     * Android's own per-app language screen for this app. Not a link out of the device, but it is
+     * a launch that can fail the same two ways, so it shares [launch]'s guard. The screen lists the
+     * languages the build's generated `localeConfig` declares, and the choice it stores is the
+     * platform's — the app keeps none.
+     */
+    fun openAppLanguageSettings(context: Context): Boolean = launch(
+        context,
+        Intent(Settings.ACTION_APP_LOCALE_SETTINGS, "package:${context.packageName}".toUri()),
+    )
 
     /** The web listing, for the clipboard fallback when neither Play nor a browser is present. */
     fun playListingUrl(context: Context): String =

@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.notify.nudge.NudgeSchedule
+import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.util.TimeFormat
 
 /**
@@ -29,7 +30,8 @@ import com.checkin.app.util.TimeFormat
  * hour is shown, so none can come to describe the same setting differently.
  */
 @Composable
-fun reminderTimeSummary(hour: Int): String = stringResource(R.string.reminder_time_value, TimeFormat.hourOfDay(hour))
+fun reminderTimeSummary(hour: Int): String =
+    stringResource(R.string.reminder_time_value, TimeFormat.hourOfDay(hour, LocalTimePatterns.current))
 
 /**
  * Picks a habit's reminder hour from [NudgeSchedule.hourRange]. Whole hours only: delivery is
@@ -73,6 +75,7 @@ fun ReminderHourPicker(selectedHour: Int, onPicked: (Int) -> Unit, onDismiss: ()
 
 @Composable
 private fun HourRow(hour: Int, selected: Boolean, onClick: () -> Unit) {
+    val patterns = LocalTimePatterns.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -84,6 +87,6 @@ private fun HourRow(hour: Int, selected: Boolean, onClick: () -> Unit) {
         // The row carries the click and the role; a second clickable on the button would be a second
         // focus stop announcing the same choice.
         RadioButton(selected = selected, onClick = null, modifier = Modifier.padding(12.dp))
-        Text(text = TimeFormat.hourOfDay(hour), style = MaterialTheme.typography.bodyLarge)
+        Text(text = TimeFormat.hourOfDay(hour, patterns), style = MaterialTheme.typography.bodyLarge)
     }
 }
