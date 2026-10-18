@@ -42,6 +42,7 @@ import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.SessionIntervalRow
+import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.util.TimeFormat
 import java.time.YearMonth
 
@@ -90,7 +91,7 @@ fun HistoryScreen(
             SECTION_SPACING - slotBudget
         // The floor wins over fitting: 48dp is the minimum tap target, so a 6-row month on a small
         // screen scrolls a little rather than shrinking its days below it.
-        val cellHeight = (gridBudget / weekRowsIn(uiState.currentMonth))
+        val cellHeight = (gridBudget / weekRowsIn(uiState.currentMonth, LocalTimePatterns.current.locale))
             .coerceIn(MIN_CELL_HEIGHT, MAX_CELL_HEIGHT)
 
         HistoryContent(
@@ -233,7 +234,7 @@ private fun LazyListScope.daySlotItems(uiState: HistoryUiState) {
             EmptyState(
                 icon = Icons.Default.Event,
                 // Names the day rather than restating "no day selected" — the tap did land.
-                title = TimeFormat.dateKeyWithWeekday(dateKey).orEmpty(),
+                title = TimeFormat.dateKeyWithWeekday(dateKey, LocalTimePatterns.current).orEmpty(),
                 message = stringResource(R.string.empty_day_sessions_message),
             )
         }
@@ -260,8 +261,9 @@ private fun LazyListScope.daySlotItems(uiState: HistoryUiState) {
  */
 @Composable
 private fun DayHeader(dateKey: String, sessions: List<CheckInSession>) {
+    val patterns = LocalTimePatterns.current
     Column(modifier = Modifier.padding(bottom = 4.dp)) {
-        TimeFormat.dateKeyWithWeekday(dateKey)?.let { date ->
+        TimeFormat.dateKeyWithWeekday(dateKey, patterns)?.let { date ->
             Text(
                 text = date,
                 style = MaterialTheme.typography.titleMedium,
@@ -272,7 +274,7 @@ private fun DayHeader(dateKey: String, sessions: List<CheckInSession>) {
             text = stringResource(
                 R.string.day_sessions_summary,
                 pluralStringResource(R.plurals.sessions_count, sessions.size, sessions.size),
-                TimeFormat.durationShort(sessions.sumOf { it.duration ?: 0L }),
+                TimeFormat.durationShort(sessions.sumOf { it.duration ?: 0L }, patterns),
             ),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -282,6 +284,7 @@ private fun DayHeader(dateKey: String, sessions: List<CheckInSession>) {
 
 @Composable
 private fun MonthSelector(currentMonth: YearMonth, onPrevious: () -> Unit, onNext: () -> Unit) {
+    val patterns = LocalTimePatterns.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -294,7 +297,7 @@ private fun MonthSelector(currentMonth: YearMonth, onPrevious: () -> Unit, onNex
             )
         }
         Text(
-            text = TimeFormat.monthYear(currentMonth),
+            text = TimeFormat.monthYear(currentMonth, patterns),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
         )

@@ -1,6 +1,8 @@
 package com.checkin.app
 
 import android.app.Application
+import android.content.res.Configuration
+import android.os.LocaleList
 import com.checkin.app.di.AppContainer
 import com.checkin.app.di.DefaultAppContainer
 import com.checkin.app.notify.NotificationChannels
@@ -39,5 +41,18 @@ class CheckInApplication : Application() {
         container.applicationScope.launch {
             runCatching { NudgeSendDatabase.deleteRetiredFile(this@CheckInApplication) }
         }
+        languages = resources.configuration.locales
+    }
+
+    // The languages every notification string was last written in. Channel names live in the system,
+    // not in this process, so a language change has to rewrite them rather than just re-read them.
+    private var languages: LocaleList = LocaleList.getEmptyLocaleList()
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (newConfig.locales == languages) return
+        languages = newConfig.locales
+        NotificationChannels.ensureAll(this)
+        container.launchLanguageRefresh()
     }
 }

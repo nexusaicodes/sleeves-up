@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Modern Standard Arabic. DRAFT: written alongside the English and not yet reviewed by a native
+    speaker; have it reviewed before a release ships it.
+
+    Every rule in values/strings.xml's header applies here too. Nothing grades a day: no target, no
+    half day, no absence, and no word for a streak. "Habit" is عادة, never هدف (a goal is a target).
+    "Check In" / "Check Out" are a fixed pair everywhere: تسجيل الحضور / تسجيل الانصراف. The product
+    name Sleeves Up stays in Latin script and is not translated (app_name is translatable="false").
+
+    Numbers are Latin digits in every language (see util/LatinDigits), so the %d slots below print
+    0-9. Plurals carry all six Arabic quantities.
+-->
+<resources>
+    <!-- Navigation -->
+    <string name="nav_check_in">تسجيل الحضور</string>
+    <string name="nav_history">السجل</string>
+    <string name="nav_reports">التقارير</string>
+    <string name="nav_settings">الإعدادات</string>
+    <string name="nav_licenses">المصادر المفتوحة</string>
+    <string name="nav_privacy">الخصوصية</string>
+
+    <!-- Check-In Screen -->
+    <string name="check_in">تسجيل الحضور</string>
+    <string name="check_out">تسجيل الانصراف</string>
+    <string name="check_in_to">تسجيل الحضور في %1$s</string>
+    <string name="check_out_of">تسجيل الانصراف من %1$s</string>
+    <string name="todays_sessions_summary">%1$s · %2$s اليوم</string>
+    <string name="session_in_progress">جارية</string>
+    <string name="cd_session_row">%1$s، %2$s</string>
+    <string name="session_range">%1$s – %2$s</string>
+    <plurals name="sessions_count">
+        <item quantity="zero">%d جلسة</item>
+        <item quantity="one">جلسة واحدة</item>
+        <item quantity="two">جلستان</item>
+        <item quantity="few">%d جلسات</item>
+        <item quantity="many">%d جلسة</item>
+        <item quantity="other">%d جلسة</item>
+    </plurals>
+    <string name="checkout_celebration_title">لقد حضرت</string>
+    <string name="checkout_celebration_dismiss">انقر للإغلاق</string>
+
+    <!-- Presence check. No image is captured: nothing here may say photo, capture or selfie. -->
+    <string name="presence_dismiss">إغلاق</string>
+    <string name="presence_face_detected">أنت هنا!</string>
+    <string name="presence_looking">جارٍ البحث عن وجه…</string>
+    <string name="presence_looking_slow">ما زلنا نبحث. يمكنك استخدام قفل الجهاز بدلًا من ذلك.</string>
+    <string name="presence_unsupported">لا تستطيع هذه الكاميرا التحقق من وجود وجه. استخدم قفل الجهاز بدلًا من ذلك.</string>
+    <string name="presence_unsupported_no_unlock">لا تستطيع هذه الكاميرا التحقق من وجود وجه. اضبط قفلًا للشاشة لتتمكن من استخدام قفل الجهاز بدلًا من ذلك.</string>
+    <string name="presence_set_up_screen_lock">إعداد قفل الشاشة</string>
+
+    <!-- Biometric fallback -->
+    <string name="biometric_title">تحقّق من هويتك</string>
+    <string name="biometric_subtitle">استخدم قفل جهازك للتحقق من حضورك</string>
+    <string name="biometric_use_device_unlock">استخدام قفل الجهاز</string>
+    <string name="biometric_unavailable">قفل الجهاز غير متاح</string>
+
+    <!-- Open-session reminder. It only asks; ignoring it costs nothing. -->
+    <string name="reminder_channel_name">تذكيرات الجلسة</string>
+    <string name="reminder_channel_description">يذكّرك بأن جلسة ما زالت جارية</string>
+    <string name="reminder_title">هل ما زلت مسجّل الحضور؟</string>
+    <string name="reminder_text">جلستك ما زالت جارية، وستُغلق تلقائيًا عند منتصف الليل.</string>
+
+    <!-- Check-in reminders, one channel per habit. Channel names are the words a user hunting for
+         the switch would look for. -->
+    <string name="habit_channel_group_name">تذكيرات العادات</string>
+    <string name="habit_channel_name">تذكيرات %1$s</string>
+    <string name="habit_channel_description">يذكّرك بتسجيل الحضور في %1$s في الأيام التي لم تسجّل فيها بعد. مرة واحدة في اليوم على الأكثر.</string>
+    <string name="nudge_channel_name">تذكيرات تسجيل الحضور</string>
+    <string name="nudge_channel_description">يذكّرك بتسجيل الحضور في الأيام التي لم تسجّل فيها بعد. مرة واحدة في اليوم على الأكثر.</string>
+
+    <!-- One wording; never warms or grows urgent, and never names the hour. -->
+    <string name="nudge_not_checked_in_title">%1$s: لا جلسة بعد اليوم</string>
+    <string name="nudge_not_checked_in_unnamed_title">لا جلسة بعد اليوم</string>
+    <string name="nudge_not_checked_in_body">متى بدأت فهو يُحتسب، فاليوم القصير يومٌ حضرتَ فيه أيضًا.</string>
+
+    <!-- The first-run welcome tour -->
+    <string name="welcome_showing_up_title">الحضور هو كل شيء</string>
+    <string name="welcome_showing_up_body">سجّل حضورك حين تبدأ، وانصرافك حين تتوقف. لا هدف عليك بلوغه، فاليوم القصير يُحتسب كاليوم الطويل تمامًا.</string>
+    <string name="welcome_presence_title">التحقق من الحضور على هذا الجهاز</string>
+    <string name="welcome_presence_body">تتأكد الكاميرا الأمامية من وجود شخص عند تسجيل الحضور والانصراف. لا تُلتقط أي صورة، ولا تغادر أي صورة الكاميرا أبدًا.</string>
+    <string name="welcome_habits_title">سجلّ مستقل لكل عادة</string>
+    <string name="welcome_habits_body">سمِّ ما تحرص على الحضور من أجله. لكل عادة سجلّها الخاص، وفي الأيام التي لم تسجّل فيها حضورك يذكّرك Sleeves Up مرة واحدة، قرابة الساعة التي تختارها. أوقف أي تذكير بالضغط عليه مطولًا.</string>
+    <string name="welcome_name_first_habit">سمِّ عادتك الأولى</string>
+    <string name="welcome_add_habit">إضافة عادة أخرى</string>
+    <string name="welcome_habit_summary">%1$s · %2$s</string>
+    <string name="welcome_page_position">الصفحة %1$d من %2$d</string>
+    <string name="welcome_skip">تخطٍّ</string>
+    <string name="welcome_next">التالي</string>
+    <string name="welcome_start">لنبدأ</string>
+
+    <!-- Empty / first-run states -->
+    <string name="empty_checkin_title">جاهز متى كنت جاهزًا</string>
+    <string name="empty_day_detail_title">لم يُحدَّد أي يوم</string>
+    <string name="empty_day_detail_message">انقر على يوم في التقويم لعرض جلساته.</string>
+
+    <!-- Accessibility -->
+    <string name="cd_day_worked">%1$d، %2$s من العمل</string>
+    <string name="cd_expand_sessions">إظهار جلسات اليوم</string>
+    <string name="cd_collapse_sessions">إخفاء جلسات اليوم</string>
+    <string name="cd_days_split">توزيع الأيام: حضرت %1$s، وفاتك %2$s</string>
+    <string name="cd_start_time_split">أوقات البدء: %1$s صباحًا، و%2$s ظهرًا، و%3$s مساءً</string>
+    <string name="cd_sessions_per_day_split">الجلسات في اليوم: %1$s بجلسة واحدة، و%2$s بجلستين، و%3$s بثلاث جلسات أو أكثر. المتوسط %4$s.</string>
+    <string name="cd_timer_gauge">%1$s في هذه الجلسة</string>
+
+    <!-- History Screen -->
+    <string name="previous_month">الشهر السابق</string>
+    <string name="next_month">الشهر التالي</string>
+    <string name="day_sessions_summary">%1$s · %2$s</string>
+    <string name="empty_day_sessions_message">لا جلسات مسجّلة في هذا اليوم.</string>
+
+    <!-- Reports Screen -->
+    <string name="scope_all_time">كل الأوقات</string>
+    <string name="scope_all_time_inline">كل الأوقات</string>
+    <string name="empty_scope_title">لا شيء مسجّل هنا</string>
+    <string name="empty_scope_message">لا يوم مكتمل في %1$s. استخدم الأسهم للانتقال إلى شهر آخر.</string>
+    <string name="empty_scope_message_all_time">لم تسجّل انصرافك من أي يوم بعد. سجّل انصرافك من جلسة وسيظهر هنا.</string>
+    <string name="scope_stats_title">الأرقام</string>
+    <string name="stat_showed_up">أيام الحضور</string>
+    <string name="stat_missed">أيام دون حضور</string>
+    <string name="stat_tracking_since">التتبّع منذ</string>
+    <string name="stat_tracked_days">الأيام المتتبَّعة</string>
+    <string name="stat_total_hours">إجمالي الساعات</string>
+    <string name="stat_total_sessions">إجمالي الجلسات</string>
+    <string name="stat_avg_per_day">الساعات لكل يوم متتبَّع</string>
+    <string name="stat_sessions_per_day">الجلسات لكل يوم حضور</string>
+    <string name="chart_daily_hours_title">الساعات اليومية</string>
+    <plurals name="chart_daily_hours_subtitle">
+        <item quantity="zero">%1$d يوم · الخط المتقطع = المتوسط</item>
+        <item quantity="one">يوم واحد · الخط المتقطع = المتوسط</item>
+        <item quantity="two">يومان · الخط المتقطع = المتوسط</item>
+        <item quantity="few">%1$d أيام · الخط المتقطع = المتوسط</item>
+        <item quantity="many">%1$d يومًا · الخط المتقطع = المتوسط</item>
+        <item quantity="other">%1$d يوم · الخط المتقطع = المتوسط</item>
+    </plurals>
+    <string name="chart_split_title">توزيع الأيام</string>
+    <string name="chart_monthly_title">الساعات حسب الشهر</string>
+    <plurals name="cd_daily_hours_chart">
+        <item quantity="zero">الساعات اليومية على مدى %1$d يوم.</item>
+        <item quantity="one">الساعات اليومية على مدى يوم واحد.</item>
+        <item quantity="two">الساعات اليومية على مدى يومين.</item>
+        <item quantity="few">الساعات اليومية على مدى %1$d أيام.</item>
+        <item quantity="many">الساعات اليومية على مدى %1$d يومًا.</item>
+        <item quantity="other">الساعات اليومية على مدى %1$d يوم.</item>
+    </plurals>
+    <string name="cd_monthly_chart">الساعات حسب الشهر: %1$s</string>
+    <string name="cd_monthly_chart_entry">%1$s %2$s</string>
+    <string name="list_separator">"، "</string>
+    <string name="chart_start_times_title">أوقات البدء</string>
+    <string name="chart_sessions_per_day_title">الجلسات في اليوم</string>
+    <string name="bucket_morning">الصباح</string>
+    <string name="bucket_afternoon">الظهيرة</string>
+    <string name="bucket_evening">المساء</string>
+    <string name="band_three_plus">3 أو أكثر</string>
+    <plurals name="days_count">
+        <item quantity="zero">%d يوم</item>
+        <item quantity="one">يوم واحد</item>
+        <item quantity="two">يومان</item>
+        <item quantity="few">%d أيام</item>
+        <item quantity="many">%d يومًا</item>
+        <item quantity="other">%d يوم</item>
+    </plurals>
+    <string name="export_title">تصدير البيانات</string>
+    <string name="export_scope">تصدير %1$s</string>
+    <string name="export_chooser_title">تصدير الجلسات</string>
+    <string name="export_success">ملف CSV جاهز للمشاركة</string>
+    <string name="export_nothing">لا أيام مكتملة للتصدير بعد</string>
+    <string name="export_failed">تعذّر التصدير: %1$s</string>
+
+    <!-- A habit's reminder hour. "Around" (قرابة) is load-bearing: the alarm is inexact. -->
+    <string name="reminder_time_value">قرابة %1$s</string>
+    <string name="reminder_time_change">تغيير وقت التذكير</string>
+    <string name="reminder_time_dialog_title">وقت التذكير</string>
+    <string name="reminder_time_cancel">إلغاء</string>
+
+    <!-- Habits. Nothing here compares, ranks or totals two habits. -->
+    <string name="nav_habits">العادات</string>
+    <string name="habits_section">العادات</string>
+    <string name="habits_manage">إدارة العادات</string>
+    <string name="habits_archived_section">المؤرشفة</string>
+    <string name="habits_archived_note">تحتفظ العادات المؤرشفة بسجلّاتها ولا ترسل أي تذكيرات.</string>
+    <string name="habit_new">عادة جديدة</string>
+    <string name="habit_edit">تعديل</string>
+    <string name="habit_archive">أرشفة</string>
+    <string name="habit_restore">استعادة</string>
+    <string name="habit_unnamed">عادة بلا اسم</string>
+    <string name="habit_archived">أُرشفت %1$s، وسجلّها محفوظ.</string>
+    <string name="habit_archive_running">سجّل انصرافك من %1$s قبل أرشفتها</string>
+    <string name="habit_archive_last">أبقِ عادة واحدة على الأقل</string>
+    <string name="habit_restore_duplicate">توجد عادة أخرى باسم %1$s</string>
+    <string name="habit_switcher_cd">العادة: %1$s. تبديل العادة</string>
+    <string name="habit_switch_locked">سجّل انصرافك من %1$s للتبديل</string>
+    <string name="habit_running_check_out_first">%1$s جارية. سجّل انصرافك منها أولًا.</string>
+    <string name="habit_running_check_out_first_unnamed">هناك جلسة جارية. سجّل انصرافك منها أولًا.</string>
+    <string name="habit_editor_new_title">عادة جديدة</string>
+    <string name="habit_editor_edit_title">تعديل العادة</string>
+    <string name="habit_name_label">الاسم</string>
+    <string name="habit_name_blank">أعطها اسمًا</string>
+    <plurals name="habit_name_too_long">
+        <item quantity="zero">اجعله في حدود %d حرف</item>
+        <item quantity="one">اجعله في حدود حرف واحد</item>
+        <item quantity="two">اجعله في حدود حرفين</item>
+        <item quantity="few">اجعله في حدود %d أحرف</item>
+        <item quantity="many">اجعله في حدود %d حرفًا</item>
+        <item quantity="other">اجعله في حدود %d حرف</item>
+    </plurals>
+    <string name="habit_name_duplicate">لديك عادة بهذا الاسم بالفعل</string>
+    <string name="habit_save">حفظ</string>
+    <string name="habit_cancel">إلغاء</string>
+    <string name="name_habit_title">سمِّ عادتك</string>
+    <string name="name_habit_body">يحتفظ Sleeves Up بسجلّ مستقل لكل عادة. سمِّ هذه العادة، وسيبقى كل ما سجّلته معها، ثم اختر متى تريد أن نذكّرك تقريبًا.</string>
+    <string name="name_habit_continue">متابعة</string>
+
+    <!-- Language -->
+    <string name="language_section">اللغة</string>
+    <string name="language_app">لغة التطبيق</string>
+    <string name="language_opens_settings">يفتح إعدادات Android</string>
+
+    <!-- About -->
+    <string name="about_section">حول التطبيق</string>
+    <string name="about_version">الإصدار %1$s (البنية %2$d)</string>
+    <string name="about_developer">Nexus AI Technology Labs</string>
+    <string name="about_privacy_on_device">ما الذي يجمعه هذا التطبيق</string>
+    <string name="about_privacy_policy">سياسة الخصوصية</string>
+    <string name="about_feedback">إرسال ملاحظات</string>
+    <string name="about_rate">التقييم على Google Play</string>
+    <string name="about_licenses">تراخيص المصادر المفتوحة</string>
+    <string name="about_open_link">يُفتح خارج التطبيق</string>
+    <string name="about_no_email_app">لم يُعثر على تطبيق بريد. نُسخ العنوان: %1$s</string>
+    <string name="about_no_browser">لم يُعثر على متصفح. نُسخ الرابط إلى الحافظة.</string>
+    <string name="about_no_handler">لا يوجد على هذا الجهاز ما يمكنه فتح ذلك.</string>
+
+    <!-- Privacy. Every line is a claim about a mechanism, not a promise about conduct. -->
+    <string name="privacy_cannot_title">ما لا يفعله هذا التطبيق</string>
+    <string name="privacy_no_internet_title">لا إذن بالوصول إلى الإنترنت</string>
+    <string name="privacy_no_internet_body">لا يمكنه رفع أي شيء، لأنه لا يستطيع الوصول إلى الشبكة أصلًا.</string>
+    <string name="privacy_no_account_title">لا حساب، ولا خادم</string>
+    <string name="privacy_no_account_body">لا يوجد ما تسجّل الدخول إليه. جلساتك محفوظة في قاعدة بيانات على هذا الهاتف.</string>
+    <string name="privacy_no_photo_title">لا تُلتقط أي صورة</string>
+    <string name="privacy_no_photo_body">تُبلغ الكاميرا فقط بوجود وجه في الإطار أو عدمه، ولا يقرأ التطبيق سوى ذلك العدد.</string>
+    <string name="privacy_no_analytics_title">لا تحليلات، ولا إعلانات</string>
+    <string name="privacy_no_analytics_body">لا شيء هنا يقيس طريقة استخدامك للتطبيق، ولا توجد شيفرة من طرف ثالث تجمع أي شيء.</string>
+    <string name="privacy_check_title">كيف تتحقق</string>
+    <string name="privacy_check_body">لست مضطرًا إلى أخذ هذا على الثقة. يعرض Android كل إذن يصرّح به التطبيق ضمن «معلومات التطبيق»، ويعرضها Google Play في صفحة المتجر. ليس لهذا التطبيق أي إذن شبكة ليُعرض.</string>
+
+    <!-- Open source licences. Library names, copyrights and licence names stay as written. -->
+    <string name="licenses_note_androidx">Core وCompose وMaterial 3 وLifecycle وNavigation وRoom وWorkManager وBiometric والمكتبات التي تعتمد عليها.</string>
+    <string name="licenses_note_camerax">تتضمّن camera-core مكتبة libyuv، ولها ترخيص BSD خاص بها.</string>
+    <string name="licenses_note_outfit">أحجام العرض والعناوين.</string>
+    <string name="licenses_note_manrope">أحجام النصوص والتسميات.</string>
+    <string name="licenses_note_plex_arabic">جميع النصوص حين يكون التطبيق بالعربية.</string>
+    <string name="licenses_intro">بُني Sleeves Up على هذه المشاريع، مجمّعةً حسب المشروع الأصلي لا حسب الحزمة.</string>
+    <string name="licenses_show_full_text">إظهار نص %1$s</string>
+    <string name="licenses_hide_full_text">إخفاء نص %1$s</string>
+    <string name="nav_back">رجوع</string>
+
+    <!-- Notification (Foreground Service). The body must not print the elapsed time. -->
+    <string name="notification_channel_name">مؤقّت الحضور</string>
+    <string name="notification_channel_description">يعرض مؤقّت الحضور الجاري</string>
+    <string name="notification_title">تم تسجيل الحضور</string>
+    <string name="notification_title_habit">تم تسجيل الحضور: %1$s</string>
+    <string name="notification_running">نحتسب وقت جلستك</string>
+    <string name="notification_action_stop">تسجيل الانصراف</string>
+
+    <!-- Camera prominent disclosure. Face detection, never recognition. -->
+    <string name="camera_disclosure_title">التحقق من الحضور</string>
+    <string name="camera_disclosure_message">تتحقق الكاميرا الأمامية من وجود شخص عند تسجيل الحضور والانصراف. لا تُلتقط أي صورة، ولا تغادر أي صورة الكاميرا أبدًا.</string>
+    <string name="camera_disclosure_button">متابعة</string>
+
+    <!-- Recovery screen, shown only after the camera permission is refused -->
+    <string name="camera_permission_title">مطلوب الوصول إلى الكاميرا</string>
+    <string name="camera_permission_message">يتحقق تسجيل الحضور والانصراف من وجودك باستخدام الكاميرا الأمامية، لذا لا يمكن إجراء أيٍّ منهما من دونها.</string>
+    <string name="camera_permission_button">منح الإذن</string>
+    <string name="presence_gate_cancel">ليس الآن</string>
+
+    <!-- Time and date formats: java.time patterns and two-number duration templates. Latin digits. -->
+    <string name="time_hours_minutes">%1$d س %2$d د</string>
+    <string name="time_minutes_seconds">%1$d د %2$d ث</string>
+    <string name="time_clock_pattern">h:mm a</string>
+    <string name="date_with_year_pattern">d MMMM yyyy</string>
+    <string name="date_with_weekday_pattern">EEEE، d MMMM</string>
+    <string name="date_axis_day_pattern">d MMM</string>
+    <string name="date_axis_month_year_pattern">MMM yy</string>
+    <string name="date_axis_month_pattern">MMM</string>
+    <string name="date_month_year_pattern">MMMM yyyy</string>
+    <string name="language_code">ar</string>
+</resources>

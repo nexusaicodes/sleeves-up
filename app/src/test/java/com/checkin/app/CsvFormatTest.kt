@@ -4,8 +4,11 @@ import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.platform.csvHeader
 import com.checkin.app.platform.csvRow
 import com.checkin.app.platform.exportFileName
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Locale
 
 /**
  * The CSV's column order, pinned.
@@ -15,6 +18,11 @@ import org.junit.Test
  * which is exactly how a reorder could otherwise land with nothing failing.
  */
 class CsvFormatTest {
+
+    private val defaultLocale = Locale.getDefault()
+
+    @After
+    fun restoreLocale() = Locale.setDefault(defaultLocale)
 
     @Test
     fun `the header is the agreed column order`() {
@@ -82,5 +90,42 @@ class CsvFormatTest {
     fun `a habit with no usable name still gets a file`() {
         assertEquals("checkin_habit_2026-06-01_2026-06-30.csv", exportFileName(null, "2026-06-01", "2026-06-30"))
         assertEquals("checkin_habit_2026-06-01_2026-06-30.csv", exportFileName("!!!", "2026-06-01", "2026-06-30"))
+    }
+
+    /**
+     * The file is machine-read, so the app's language must not reach it: the clock columns stay
+     * "hh:mm AM" in ASCII digits, and the header stays English, whatever the reader's language.
+     */
+    @Test
+    fun `the file is byte-identical whatever the app's language`() {
+        val summary = DailyAggregate(
+            dateKey = "2026-06-15",
+            totalDurationMs = 3_600_000L,
+            sessionCount = 1,
+            firstCheckIn = 1_781_500_000_000L,
+            lastCheckOut = 1_781_503_600_000L,
+            dayBoundaryCheckOuts = 0,
+            inAppCheckOuts = 1,
+            timerNotificationCheckOuts = 0,
+            reminderNotificationCheckOuts = 0,
+        )
+        Locale.setDefault(Locale.US)
+        val english = csvHeader() + csvRow("2026-06-15", summary)
+
+        Locale.setDefault(Locale.forLanguageTag("ar"))
+        val arabic = csvHeader() + csvRow("2026-06-15", summary)
+
+        assertEquals(english, arabic)
+        val clock = arabic.lines()[1].split(",")[1]
+        assertTrue(clock, Regex("[0-9]{2}:[0-9]{2} (AM|PM)").matches(clock))
+    }
+
+    /** Harakat are marks, not letters; they stay with the word rather than splitting it. */
+    @Test
+    fun `an arabic name keeps its diacritics`() {
+        assertEquals(
+            "checkin_قِراءة_2026-06-01_2026-06-30.csv",
+            exportFileName("قِراءة", "2026-06-01", "2026-06-30"),
+        )
     }
 }

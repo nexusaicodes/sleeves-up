@@ -6,7 +6,6 @@ import java.time.LocalTime
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
 import java.util.Locale
 
 private const val MILLIS_PER_SECOND = 1_000L
@@ -26,66 +25,57 @@ private const val MILLIS_PER_MINUTE = MILLIS_PER_SECOND * SECONDS_PER_MINUTE
  * they are machine-facing to a one. Only the display side comes here, so the test to apply is
  * whether a user reads the result, not whether the code formats a date. [dateKeyWithWeekday] is
  * the entry point that takes a `date_key` and returns something a user reads.
+ *
+ * **Every function takes a [TimePatterns], and none defaults it.** The unit letters and each date's
+ * field order belong to the reader's language, so they are string resources, handed in by
+ * `LocalTimePatterns` on screen; a default would let a call site compile in English and render it
+ * under Arabic with nothing failing. Digits are Latin in every language — `java.time` prints ASCII
+ * digits whatever the locale, and the duration templates are filled under [Locale.ROOT].
  */
 object TimeFormat {
-
-    private val clockFormatter = DateTimeFormatter.ofPattern("hh:mm a", Locale.US)
-
-    // Dates the user reads are formatted here and nowhere else — building one at a call site is how
-    // a raw ISO `LocalDate.toString()` or a raw `date_key` reaches the screen. Both patterns are the
-    // same abbreviated-month family, so a date is recognisably a date wherever it appears; only the
-    // parts that earn their space differ.
-    private val dateWithYearFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)
-    private val dateWithWeekdayFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.US)
-
-    /** Chart axes: short enough to sit under a point without crowding its neighbours. */
-    private val axisDayFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.US)
-    private val axisMonthFormatter = DateTimeFormatter.ofPattern("MMM", Locale.US)
-    private val axisMonthWithYearFormatter = DateTimeFormatter.ofPattern("MMM ''yy", Locale.US)
 
     /**
      * Live elapsed for a running clock: "0m 0s" through "59m 59s", then "1h 0m" onward. Seconds are
      * what make a just-started session visibly move; past the hour they are noise, and the minute is
      * the unit everything else in the app reports in.
      */
-    fun durationLive(millis: Long): String {
+    fun durationLive(millis: Long, patterns: TimePatterns): String {
         val totalSeconds = millis.coerceAtLeast(0L) / MILLIS_PER_SECOND
         val hours = totalSeconds / SECONDS_PER_HOUR
         return if (hours > 0) {
-            "${hours}h ${(totalSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE}m"
+            fill(patterns.hoursMinutes, hours, (totalSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE)
         } else {
-            "${totalSeconds / SECONDS_PER_MINUTE}m ${totalSeconds % SECONDS_PER_MINUTE}s"
+            fill(patterns.minutesSeconds, totalSeconds / SECONDS_PER_MINUTE, totalSeconds % SECONDS_PER_MINUTE)
         }
     }
 
     /** Compact duration as "Hh Mm" (e.g. a daily total). */
-    fun durationShort(millis: Long): String {
+    fun durationShort(millis: Long, patterns: TimePatterns): String {
         val totalMinutes = millis / MILLIS_PER_MINUTE
-        val hours = totalMinutes / MINUTES_PER_HOUR
-        val minutes = totalMinutes % MINUTES_PER_HOUR
-        return "${hours}h ${minutes}m"
+        return fill(patterns.hoursMinutes, totalMinutes / MINUTES_PER_HOUR, totalMinutes % MINUTES_PER_HOUR)
     }
 
-    /** Wall-clock time of an epoch-millis instant in the device zone (e.g. "09:05 AM"). */
-    fun clock(epochMillis: Long): String = Instant.ofEpochMilli(epochMillis)
+    /** Wall-clock time of an epoch-millis instant in the device zone (e.g. "09:05 am"). */
+    fun clock(epochMillis: Long, patterns: TimePatterns): String = Instant.ofEpochMilli(epochMillis)
         .atZone(ZoneId.systemDefault())
         .toLocalTime()
-        .format(clockFormatter)
+        .format(patterns.clockFormatter)
 
-    /** A whole local hour of day, 0-23, in the same form as [clock] (e.g. "10:00 AM"). */
-    fun hourOfDay(hour: Int): String = LocalTime.of(hour, 0).format(clockFormatter)
+    /** A whole local hour of day, 0-23, in the same form as [clock] (e.g. "10:00 am"). */
+    fun hourOfDay(hour: Int, patterns: TimePatterns): String = LocalTime.of(hour, 0).format(patterns.clockFormatter)
 
-    /** A date the user reads in isolation, so it carries the year (e.g. "Jul 25, 2026"). */
-    fun dateWithYear(date: LocalDate): String = date.format(dateWithYearFormatter)
+    /** A date the user reads in isolation, so it carries the year (e.g. "25 Jul 2026"). */
+    fun dateWithYear(date: LocalDate, patterns: TimePatterns): String = date.format(patterns.dateWithYearFormatter)
 
     /**
-     * A date already framed by its surroundings — a heading over that day's sessions — so the year
-     * is dropped and the weekday earns the space instead (e.g. "Saturday, Jul 25").
+     * [date] already framed by its surroundings — a heading over that day's sessions — so the year
+     * is dropped and the weekday earns the space instead (e.g. "Saturday 25 Jul").
      *
      * Private because the screens hold a `date_key`, never a `LocalDate`: [dateKeyWithWeekday] is the
      * way in, and it is the parse this keeps out of the composables that makes it worth having.
      */
-    private fun dateWithWeekday(date: LocalDate): String = date.format(dateWithWeekdayFormatter)
+    private fun dateWithWeekday(date: LocalDate, patterns: TimePatterns): String =
+        date.format(patterns.dateWithWeekdayFormatter)
 
     /**
      * [dateWithWeekday] over a stored `date_key`, returning null for anything unparseable.
@@ -94,12 +84,12 @@ object TimeFormat {
      * selection. Parsing here keeps `LocalDate.parse` out of the composables and means a malformed
      * key degrades to no heading rather than crashing the screen it heads.
      */
-    fun dateKeyWithWeekday(dateKey: String?): String? = dateKey
+    fun dateKeyWithWeekday(dateKey: String?, patterns: TimePatterns): String? = dateKey
         ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        ?.let(::dateWithWeekday)
+        ?.let { dateWithWeekday(it, patterns) }
 
-    /** A day under a chart axis (e.g. "Jul 25"). The chart's own title supplies the year. */
-    fun axisDay(date: LocalDate): String = date.format(axisDayFormatter)
+    /** A day under a chart axis (e.g. "25 Jul"). The chart's own title supplies the year. */
+    fun axisDay(date: LocalDate, patterns: TimePatterns): String = date.format(patterns.axisDayFormatter)
 
     /**
      * A month under a chart axis, carrying the year only when the series spans more than one.
@@ -109,8 +99,8 @@ object TimeFormat {
      * scope draws. [multiYear] is the series' own question, asked once by the caller rather than per
      * label, so every bar in one chart is formatted the same way.
      */
-    fun axisMonth(month: YearMonth, multiYear: Boolean): String =
-        month.format(if (multiYear) axisMonthWithYearFormatter else axisMonthFormatter)
+    fun axisMonth(month: YearMonth, multiYear: Boolean, patterns: TimePatterns): String =
+        month.format(if (multiYear) patterns.axisMonthWithYearFormatter else patterns.axisMonthFormatter)
 
     /**
      * A month heading a user reads in full (e.g. "August 2026").
@@ -120,6 +110,42 @@ object TimeFormat {
      * History month selector and the Reports scope label — and they are the same heading, so they
      * come from here: built inline they were free to disagree, and a change would land on one.
      */
-    fun monthYear(month: YearMonth): String =
-        "${month.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${month.year}"
+    fun monthYear(month: YearMonth, patterns: TimePatterns): String = month.format(patterns.monthYearFormatter)
+
+    private fun fill(template: String, first: Long, second: Long): String =
+        String.format(Locale.ROOT, template, first, second)
+}
+
+/**
+ * The language-owned half of [TimeFormat]: unit templates and date patterns, read from string
+ * resources so each language sets its own field order and unit letters, plus the [locale] month and
+ * weekday names are spelled in.
+ *
+ * The formatters are built once per instance rather than per call, since a screen formats dozens of
+ * dates per frame and an instance lives as long as the configuration it was read from.
+ */
+// One parameter per string resource: each is a separate translation, and grouping them would only
+// rename the same nine values.
+@Suppress("LongParameterList")
+class TimePatterns(
+    val locale: Locale,
+    /** Two `%d` slots, hours then minutes (e.g. "%1$dh %2$dm"). */
+    val hoursMinutes: String,
+    /** Two `%d` slots, minutes then seconds. */
+    val minutesSeconds: String,
+    clock: String,
+    dateWithYear: String,
+    dateWithWeekday: String,
+    axisDay: String,
+    axisMonth: String,
+    axisMonthWithYear: String,
+    monthYear: String,
+) {
+    internal val clockFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(clock, locale)
+    internal val dateWithYearFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(dateWithYear, locale)
+    internal val dateWithWeekdayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(dateWithWeekday, locale)
+    internal val axisDayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(axisDay, locale)
+    internal val axisMonthFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(axisMonth, locale)
+    internal val axisMonthWithYearFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(axisMonthWithYear, locale)
+    internal val monthYearFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(monthYear, locale)
 }

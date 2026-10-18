@@ -29,6 +29,7 @@ import com.checkin.app.platform.PromptSettings
 import com.checkin.app.platform.ServiceController
 import com.checkin.app.platform.SharedPrefsPromptSettings
 import com.checkin.app.service.AndroidSessionAlarms
+import com.checkin.app.service.CheckInService
 import com.checkin.app.service.SessionAlarms
 import com.checkin.app.service.SessionLifecycleRunner
 import com.checkin.app.service.SessionWatchdog
@@ -37,6 +38,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -132,6 +134,19 @@ interface AppContainer {
                     runCatching { habitChannels.sync(habits) }
                     rearmNudges()
                 }
+        }
+    }
+
+    /**
+     * Re-names every habit's channel and re-posts a running timer in the app's current language.
+     * A per-app language change recreates the activity but not the process, so nothing else that
+     * writes those strings runs again: the habits collector only emits on a table change, and the
+     * timer is posted on state changes alone. Never throws, for the same reason as [launchHabitSync].
+     */
+    fun launchLanguageRefresh() {
+        applicationScope.launch {
+            runCatching { habitChannels.sync(habitRepository.allHabitsFlow().first()) }
+            if (CheckInService.isRunning) runCatching { serviceController.refreshFromDb() }
         }
     }
 

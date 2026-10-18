@@ -115,7 +115,7 @@ fun LicensesScreen(innerPadding: PaddingValues) {
                 )
                 library.note?.let {
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = it, style = MaterialTheme.typography.bodySmall)
+                    Text(text = stringResource(it), style = MaterialTheme.typography.bodySmall)
                 }
                 // Kept wide: the two CameraX licences sit side by side, and adjacent tap targets
                 // this small are easy to confuse for one another.

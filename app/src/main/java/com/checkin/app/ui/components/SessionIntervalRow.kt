@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
+import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.tabularFigures
 import com.checkin.app.util.TimeFormat
 
@@ -53,17 +54,18 @@ import com.checkin.app.util.TimeFormat
  */
 @Composable
 internal fun SessionIntervalRow(session: CheckInSession) {
+    val patterns = LocalTimePatterns.current
     val running = session.stoppedAt == null
     val color = if (running) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-    val range = "${TimeFormat.clock(session.startedAt)} - " +
-        if (running) {
-            stringResource(R.string.session_in_progress)
-        } else {
-            session.stoppedAt?.let { TimeFormat.clock(it) }.orEmpty()
-        }
+    val end = if (running) {
+        stringResource(R.string.session_in_progress)
+    } else {
+        session.stoppedAt?.let { TimeFormat.clock(it, patterns) }.orEmpty()
+    }
+    val range = stringResource(R.string.session_range, TimeFormat.clock(session.startedAt, patterns), end)
     // Spoken form of the row. An open one needs no join: the pulse carries no text, and `range`
     // already ends in "ongoing".
-    val duration = session.duration?.takeUnless { running }?.let { TimeFormat.durationShort(it) }
+    val duration = session.duration?.takeUnless { running }?.let { TimeFormat.durationShort(it, patterns) }
     val rowDescription = duration?.let { stringResource(R.string.cd_session_row, range, it) } ?: range
 
     Row(

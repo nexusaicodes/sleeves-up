@@ -54,8 +54,10 @@ import com.checkin.app.ui.components.charts.BarChart
 import com.checkin.app.ui.components.charts.DonutChart
 import com.checkin.app.ui.components.charts.DonutChartDefaults
 import com.checkin.app.ui.components.charts.LineChart
+import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.dayColor
 import com.checkin.app.util.TimeFormat
+import com.checkin.app.util.withLatinDigits
 import java.util.Locale
 
 private const val MILLIS_PER_HOUR = 3_600_000f
@@ -208,7 +210,7 @@ private fun ScopeSelector(
  */
 @Composable
 private fun scopeLabel(scope: ReportScope, inline: Boolean = false): String = when (scope) {
-    is ReportScope.Month -> TimeFormat.monthYear(scope.month)
+    is ReportScope.Month -> TimeFormat.monthYear(scope.month, LocalTimePatterns.current)
     ReportScope.AllTime ->
         stringResource(if (inline) R.string.scope_all_time_inline else R.string.scope_all_time)
 }
@@ -249,12 +251,13 @@ private fun EmptyScope(scope: ReportScope) {
  */
 @Composable
 private fun ScopeStatsCard(uiState: ReportsUiState) {
+    val patterns = LocalTimePatterns.current
     ChartCard(title = stringResource(R.string.scope_stats_title)) {
         // Only meaningful under all time; a month scope's own start is the month, which the selector
         // states directly above.
         if (uiState.scope is ReportScope.AllTime) {
             uiState.trackingStartDate?.let { start ->
-                StatsRow(stringResource(R.string.stat_tracking_since), TimeFormat.dateWithYear(start))
+                StatsRow(stringResource(R.string.stat_tracking_since), TimeFormat.dateWithYear(start, patterns))
             }
         }
         StatsRow(stringResource(R.string.stat_tracked_days), "${uiState.totalDays}")
@@ -268,18 +271,19 @@ private fun ScopeStatsCard(uiState: ReportsUiState) {
         )
         SectionDivider()
         // A total, and nothing measures it.
-        StatsRow(stringResource(R.string.stat_total_hours), TimeFormat.durationShort(uiState.totalWorkedMs))
+        StatsRow(stringResource(R.string.stat_total_hours), TimeFormat.durationShort(uiState.totalWorkedMs, patterns))
         StatsRow(
             stringResource(R.string.stat_total_sessions),
             pluralStringResource(R.plurals.sessions_count, uiState.totalSessions, uiState.totalSessions),
         )
-        StatsRow(stringResource(R.string.stat_avg_per_day), TimeFormat.durationShort(uiState.avgDailyMs))
+        StatsRow(stringResource(R.string.stat_avg_per_day), TimeFormat.durationShort(uiState.avgDailyMs, patterns))
         StatsRow(stringResource(R.string.stat_sessions_per_day), formatAverage(uiState.avgSessionsPerDay))
     }
 }
 
 @Composable
 private fun DailyHoursCard(uiState: ReportsUiState) {
+    val patterns = LocalTimePatterns.current
     val hours = uiState.dailySeries.map { it.workedMs / MILLIS_PER_HOUR }
     // The chart's own mean, not a configured bar: it shows where the window sits relative to itself
     // rather than against a target a day could fall short of.
@@ -313,8 +317,8 @@ private fun DailyHoursCard(uiState: ReportsUiState) {
         )
         Spacer(Modifier.height(8.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            AxisLabel(uiState.dailySeries.firstOrNull()?.date?.let(TimeFormat::axisDay).orEmpty())
-            AxisLabel(uiState.dailySeries.lastOrNull()?.date?.let(TimeFormat::axisDay).orEmpty())
+            AxisLabel(uiState.dailySeries.firstOrNull()?.date?.let { TimeFormat.axisDay(it, patterns) }.orEmpty())
+            AxisLabel(uiState.dailySeries.lastOrNull()?.date?.let { TimeFormat.axisDay(it, patterns) }.orEmpty())
         }
     }
 }
@@ -365,22 +369,23 @@ private fun SplitCard(uiState: ReportsUiState) {
  */
 @Composable
 private fun MonthlyHoursCard(uiState: ReportsUiState) {
+    val patterns = LocalTimePatterns.current
     val hours = uiState.monthlySeries.map { it.workedMs / MILLIS_PER_HOUR }
     // Asked once for the series rather than per label, so every bar in one chart is formatted alike.
     val multiYear = uiState.monthlySeries.map { it.month.year }.distinct().size > 1
-    val label = { point: MonthPoint -> TimeFormat.axisMonth(point.month, multiYear) }
+    val label = { point: MonthPoint -> TimeFormat.axisMonth(point.month, multiYear, patterns) }
+    val entry = stringResource(R.string.cd_monthly_chart_entry)
+    val spoken = uiState.monthlySeries.joinToString(stringResource(R.string.list_separator)) {
+        val duration = TimeFormat.durationShort(it.workedMs, patterns)
+        String.format(Locale.getDefault().withLatinDigits(), entry, label(it), duration)
+    }
 
     ChartCard(title = stringResource(R.string.chart_monthly_title)) {
         BarChart(
             values = hours,
             barColor = MaterialTheme.colorScheme.primary,
             baselineColor = MaterialTheme.colorScheme.outline,
-            contentDescription = stringResource(
-                R.string.cd_monthly_chart,
-                uiState.monthlySeries.joinToString(", ") {
-                    "${label(it)} ${TimeFormat.durationShort(it.workedMs)}"
-                },
-            ),
+            contentDescription = stringResource(R.string.cd_monthly_chart, spoken),
             modifier = Modifier.fillMaxWidth().height(120.dp),
         )
         Spacer(Modifier.height(8.dp))
@@ -394,7 +399,7 @@ private fun MonthlyHoursCard(uiState: ReportsUiState) {
                     ) {
                         AxisLabel(label(point))
                         Text(
-                            text = TimeFormat.durationShort(point.workedMs),
+                            text = TimeFormat.durationShort(point.workedMs, patterns),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -515,7 +520,7 @@ private fun descriptiveHues(): List<Color> = listOf(
 )
 
 /** One decimal place: the figure is a rhythm, and a second digit implies a precision it lacks. */
-private fun formatAverage(value: Float): String = String.format(Locale.getDefault(), "%.1f", value)
+private fun formatAverage(value: Float): String = String.format(Locale.getDefault().withLatinDigits(), "%.1f", value)
 
 @Composable
 private fun sessionsPhrase(count: Int): String = pluralStringResource(R.plurals.sessions_count, count, count)

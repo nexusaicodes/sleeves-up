@@ -94,6 +94,23 @@ android {
         kotlinCompilerExtensionVersion = "1.5.4"
     }
 
+    // Generates the manifest's localeConfig from the values-* folders, with res/resources.properties
+    // naming the unqualified folder's language (en-GB). That list is what Android's per-app language
+    // screen offers, so a new language appears there by adding its folder and nothing else.
+    androidResources {
+        generateLocaleConfig = true
+    }
+
+    // Every language ships in the base APK. Play otherwise installs only the device language's
+    // resource split, so a user on an English phone who picks Arabic on the per-app language screen
+    // could be left on the English fallback. The strings are a few KB; the Arabic typeface is in
+    // res/font, which is not split by language either way.
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"

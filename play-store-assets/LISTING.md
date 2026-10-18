@@ -3,6 +3,10 @@
 The text of the en-GB store listing, kept in the repo so a change to the app and a change to the
 words describing it land in the same commit.
 
+The app itself also ships in Modern Standard Arabic; this listing does not yet. An Arabic listing is
+its own piece of work — the same rules below apply to it, and the vocabulary table needs an Arabic
+column before it is written.
+
 **Two rules govern every line below.**
 
 1. **Nothing grades a day, and hours rank nothing.** There is no target, no half-day tier and no

@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.ui.components.BrandGrid
 import com.checkin.app.ui.theme.CheckInAppTheme
+import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.tabularFigures
 import com.checkin.app.util.TimeFormat
 
@@ -46,8 +47,9 @@ import com.checkin.app.util.TimeFormat
  */
 @Composable
 fun CheckOutCelebration(completed: CheckOutSignal.Completed, onDismiss: () -> Unit) {
+    val patterns = LocalTimePatterns.current
     val titleText = stringResource(R.string.checkout_celebration_title)
-    val sessionText = TimeFormat.durationShort(completed.sessionMs)
+    val sessionText = TimeFormat.durationShort(completed.sessionMs, patterns)
     val dayText = stringResource(
         R.string.todays_sessions_summary,
         pluralStringResource(
@@ -55,7 +57,7 @@ fun CheckOutCelebration(completed: CheckOutSignal.Completed, onDismiss: () -> Un
             completed.daySessionCount,
             completed.daySessionCount,
         ),
-        TimeFormat.durationShort(completed.dayTotalMs),
+        TimeFormat.durationShort(completed.dayTotalMs, patterns),
     )
 
     Box(

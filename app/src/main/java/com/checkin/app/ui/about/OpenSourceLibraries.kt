@@ -1,5 +1,8 @@
 package com.checkin.app.ui.about
 
+import androidx.annotation.StringRes
+import com.checkin.app.R
+
 /**
  * A license one of the bundled libraries is distributed under.
  *
@@ -20,7 +23,7 @@ enum class LibraryLicense(val displayName: String, val url: String, val bundled:
     ),
 
     /**
-     * The two bundled typefaces. Bundled text rather than a link for the same reason as Apache-2.0:
+     * The bundled typefaces. Bundled text rather than a link for the same reason as Apache-2.0:
      * the OFL requires its notice to travel with the font files, and those ship inside the APK.
      */
     OFL_1_1(
@@ -33,13 +36,16 @@ enum class LibraryLicense(val displayName: String, val url: String, val bundled:
 /**
  * One entry on the Licenses screen. [coordinates] is a concrete Maven coordinate where the entry is
  * a single artifact and a `group.*` wildcard where it stands for a whole family.
+ *
+ * Names, copyrights and licence names are proper nouns and legal text, so they stay as written in
+ * every language; only [note] is prose a reader is meant to understand, and it is a string resource.
  */
 data class OpenSourceLibrary(
     val name: String,
     val coordinates: String,
     val copyright: String,
     val licenses: List<LibraryLicense>,
-    val note: String? = null,
+    @StringRes val note: Int? = null,
 )
 
 /**
@@ -77,15 +83,14 @@ val OPEN_SOURCE_LIBRARIES: List<OpenSourceLibrary> = listOf(
         coordinates = "androidx.*",
         copyright = "Copyright © The Android Open Source Project",
         licenses = listOf(LibraryLicense.APACHE_2_0),
-        note = "Core, Compose, Material 3, Lifecycle, Navigation, Room, WorkManager, Biometric " +
-            "and their dependencies.",
+        note = R.string.licenses_note_androidx,
     ),
     OpenSourceLibrary(
         name = "CameraX",
         coordinates = "androidx.camera:*",
         copyright = "Copyright © The Android Open Source Project",
         licenses = listOf(LibraryLicense.APACHE_2_0, LibraryLicense.BSD),
-        note = "camera-core embeds libyuv, which carries its own BSD license.",
+        note = R.string.licenses_note_camerax,
     ),
     OpenSourceLibrary(
         name = "Kotlin Standard Library",
@@ -123,7 +128,7 @@ val OPEN_SOURCE_LIBRARIES: List<OpenSourceLibrary> = listOf(
         copyright = "Copyright © The JSpecify Authors",
         licenses = listOf(LibraryLicense.APACHE_2_0),
     ),
-    // The two bundled typefaces. Not Maven artifacts, so their `coordinates` names the resource
+    // The bundled typefaces. Not Maven artifacts, so their `coordinates` names the resource
     // instead — `verifyLicenseCoverage` matches these against res/font/ rather than the classpath.
     // Each copyright is the string embedded in the shipped .ttf's own name table, not a guess.
     OpenSourceLibrary(
@@ -131,13 +136,20 @@ val OPEN_SOURCE_LIBRARIES: List<OpenSourceLibrary> = listOf(
         coordinates = "font:outfit_*",
         copyright = "Copyright © 2021 The Outfit Project Authors",
         licenses = listOf(LibraryLicense.OFL_1_1),
-        note = "Display, headline and title sizes.",
+        note = R.string.licenses_note_outfit,
     ),
     OpenSourceLibrary(
         name = "Manrope",
         coordinates = "font:manrope_*",
         copyright = "Copyright © 2019 The Manrope Project Authors",
         licenses = listOf(LibraryLicense.OFL_1_1),
-        note = "Body and label sizes.",
+        note = R.string.licenses_note_manrope,
+    ),
+    OpenSourceLibrary(
+        name = "IBM Plex Sans Arabic",
+        coordinates = "font:plex_arabic_*",
+        copyright = "Copyright © 2019 IBM Corp.",
+        licenses = listOf(LibraryLicense.OFL_1_1),
+        note = R.string.licenses_note_plex_arabic,
     ),
 )

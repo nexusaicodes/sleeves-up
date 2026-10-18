@@ -13,7 +13,7 @@
 <resources>
     <!-- App Name. "Sleeves Up" is the product (matching the Play listing); "Check In" is the
          action, and the two are not interchangeable — see nav_check_in and check_in below. -->
-    <string name="app_name">Sleeves Up</string>
+    <string name="app_name" translatable="false">Sleeves Up</string>
 
     <!-- Navigation -->
     <string name="nav_check_in">Check In</string>
@@ -33,6 +33,8 @@
     <string name="session_in_progress">ongoing</string>
     <!-- A settled session row, spoken as one phrase: its clock range, then its duration. -->
     <string name="cd_session_row">%1$s, %2$s</string>
+    <!-- A session's start and end, each a clock time or "ongoing". -->
+    <string name="session_range">%1$s - %2$s</string>
     <plurals name="sessions_count">
         <item quantity="one">%d session</item>
         <item quantity="other">%d sessions</item>
@@ -216,6 +218,10 @@
         <item quantity="other">Daily hours over %1$d days.</item>
     </plurals>
     <string name="cd_monthly_chart">Hours by month: %1$s</string>
+    <!-- One month in the monthly chart's spoken list: the month, then its hours. -->
+    <string name="cd_monthly_chart_entry">%1$s %2$s</string>
+    <!-- Joins the entries of a spoken list. Quoted to keep its trailing space. -->
+    <string name="list_separator">", "</string>
     <!-- The two descriptive splits. Neither ranks its slices: there is no better hour to start at
          and no right number of blocks to break a day into, and any copy implying one would be the
          deleted daily target applied to the shape of a day instead of its length. -->
@@ -294,6 +300,11 @@
     <string name="name_habit_body">Sleeves Up keeps a separate record for each habit. Name this one — anything you\'ve already recorded stays with it — and pick roughly when to be reminded.</string>
     <string name="name_habit_continue">Continue</string>
 
+    <!-- Language. The choice is Android's own per-app setting; this row only opens it. -->
+    <string name="language_section">Language</string>
+    <string name="language_app">App language</string>
+    <string name="language_opens_settings">Opens Android settings</string>
+
     <!-- About. Settings holds this and the link to Habits — see SettingsScreen for why nothing else. -->
     <string name="about_section">About</string>
     <string name="about_version">Version %1$s (build %2$d)</string>
@@ -302,7 +313,7 @@
     <string name="about_privacy_policy">Privacy policy</string>
     <string name="about_feedback">Send feedback</string>
     <string name="about_rate">Rate on Google Play</string>
-    <string name="about_licenses">Open source licenses</string>
+    <string name="about_licenses">Open source licences</string>
     <string name="about_open_link">Opens outside the app</string>
     <string name="about_no_email_app">No email app found. Address copied: %1$s</string>
     <string name="about_no_browser">No browser found. Link copied to the clipboard.</string>
@@ -324,7 +335,13 @@
     <string name="privacy_check_title">How to Check</string>
     <string name="privacy_check_body">You don\'t have to take this on trust. Android lists every permission an app declares under App info, and Google Play lists them on the store page. This app has no network permission to list.</string>
 
-    <!-- Open source licenses -->
+    <!-- Open source licences. The library names, copyrights and licence names on that screen are
+         proper nouns and legal text and stay as written; only these notes are prose. -->
+    <string name="licenses_note_androidx">Core, Compose, Material 3, Lifecycle, Navigation, Room, WorkManager, Biometric and their dependencies.</string>
+    <string name="licenses_note_camerax">camera-core embeds libyuv, which carries its own BSD licence.</string>
+    <string name="licenses_note_outfit">Display, headline and title sizes.</string>
+    <string name="licenses_note_manrope">Body and label sizes.</string>
+    <string name="licenses_note_plex_arabic">All text when the app is in Arabic.</string>
     <string name="licenses_intro">Sleeves Up is built on these projects. Grouped by upstream project rather than by artifact.</string>
     <!-- Named after the licence it opens: these buttons sit below every library card, far from any
          context. The text is bundled rather than linked because Apache-2.0 section 4(a) and the OFL
@@ -358,4 +375,25 @@
     <string name="camera_permission_message">Check-in and check-out verify your presence with the front camera, so neither can run without it.</string>
     <string name="camera_permission_button">Grant access</string>
     <string name="presence_gate_cancel">Not now</string>
+
+    <!--
+      Time and date formats. These are patterns, not prose: each language sets its own unit letters
+      and field order. The duration templates take two whole numbers (%1$d then %2$d); the date
+      patterns are java.time DateTimeFormatter patterns (d day, EEEE weekday, MMM/MMMM month, yy/yyyy
+      year, hh/h hour, mm minute, a am/pm; text in single quotes is literal, and \'\' is one
+      apostrophe). Digits are always Latin. Translate the order and the punctuation, never the letters
+      of a pattern.
+    -->
+    <string name="time_hours_minutes">%1$dh %2$dm</string>
+    <string name="time_minutes_seconds">%1$dm %2$ds</string>
+    <string name="time_clock_pattern">hh:mm a</string>
+    <string name="date_with_year_pattern">d MMM yyyy</string>
+    <string name="date_with_weekday_pattern">EEEE d MMM</string>
+    <string name="date_axis_day_pattern">d MMM</string>
+    <string name="date_axis_month_year_pattern">MMM \'\'yy</string>
+    <string name="date_axis_month_pattern">MMM</string>
+    <string name="date_month_year_pattern">MMMM yyyy</string>
+    <!-- The language this file is written in, as an ISO 639 code. The app reads it to know which
+         language Android resolved, so it must name this file's language and nothing else. -->
+    <string name="language_code">en</string>
 </resources>
