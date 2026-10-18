@@ -269,7 +269,7 @@
 
     <!-- Camera prominent disclosure. Face detection, never recognition. -->
     <string name="camera_disclosure_title">التحقق من الحضور</string>
-    <string name="camera_disclosure_message">تتحقق الكاميرا الأمامية من وجود شخص عند تسجيل الحضور والانصراف. لا تُلتقط أي صورة، ولا تغادر أي صورة الكاميرا أبدًا.</string>
+    <string name="camera_disclosure_message">تتحقق الكاميرا الأمامية من وجودك عند تسجيل الحضور أو الانصراف.</string>
     <string name="camera_disclosure_button">متابعة</string>
 
     <!-- Recovery screen, shown only after the camera permission is refused -->

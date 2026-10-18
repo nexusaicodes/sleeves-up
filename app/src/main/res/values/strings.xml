@@ -370,11 +370,11 @@
     <!-- Camera prominent disclosure, shown before the camera permission request at the first
          check-in. The camera runs face *detection* — it looks for any face, it does not match one
          against an enrolled identity, so none of this may read as "selfie verification". -->
-    <string name="camera_disclosure_title">Presence verification</string>
-    <!-- Detection is done by the camera hardware and reaches the app as a face count, so no frame is
-         ever written, read or held. "No photo is taken" is the literal truth here, and it replaced
-         "then deleted" — which was the honest claim only while a JPEG briefly existed. -->
-    <string name="camera_disclosure_message">Your front camera checks that someone is there at check-in and check-out. No photo is taken and no image ever leaves the camera.</string>
+    <string name="camera_disclosure_title">Presence check</string>
+    <!-- What happens and when, nothing more. Detection is done by the camera hardware and reaches
+         the app as a face count, so if this ever says anything about images it may only say none is
+         taken — never photo, capture or selfie as something that happens. -->
+    <string name="camera_disclosure_message">The front camera checks you\'re here when you check in or out.</string>
     <string name="camera_disclosure_button">Continue</string>
 
     <!-- Recovery screen, shown only after the camera permission is refused -->
