@@ -374,18 +374,18 @@ private fun MonthlyHoursCard(uiState: ReportsUiState) {
     // Asked once for the series rather than per label, so every bar in one chart is formatted alike.
     val multiYear = uiState.monthlySeries.map { it.month.year }.distinct().size > 1
     val label = { point: MonthPoint -> TimeFormat.axisMonth(point.month, multiYear, patterns) }
+    val entry = stringResource(R.string.cd_monthly_chart_entry)
+    val spoken = uiState.monthlySeries.joinToString(stringResource(R.string.list_separator)) {
+        val duration = TimeFormat.durationShort(it.workedMs, patterns)
+        String.format(Locale.getDefault().withLatinDigits(), entry, label(it), duration)
+    }
 
     ChartCard(title = stringResource(R.string.chart_monthly_title)) {
         BarChart(
             values = hours,
             barColor = MaterialTheme.colorScheme.primary,
             baselineColor = MaterialTheme.colorScheme.outline,
-            contentDescription = stringResource(
-                R.string.cd_monthly_chart,
-                uiState.monthlySeries.joinToString(", ") {
-                    "${label(it)} ${TimeFormat.durationShort(it.workedMs, patterns)}"
-                },
-            ),
+            contentDescription = stringResource(R.string.cd_monthly_chart, spoken),
             modifier = Modifier.fillMaxWidth().height(120.dp),
         )
         Spacer(Modifier.height(8.dp))

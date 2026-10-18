@@ -57,12 +57,12 @@ internal fun SessionIntervalRow(session: CheckInSession) {
     val patterns = LocalTimePatterns.current
     val running = session.stoppedAt == null
     val color = if (running) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-    val range = "${TimeFormat.clock(session.startedAt, patterns)} - " +
-        if (running) {
-            stringResource(R.string.session_in_progress)
-        } else {
-            session.stoppedAt?.let { TimeFormat.clock(it, patterns) }.orEmpty()
-        }
+    val end = if (running) {
+        stringResource(R.string.session_in_progress)
+    } else {
+        session.stoppedAt?.let { TimeFormat.clock(it, patterns) }.orEmpty()
+    }
+    val range = stringResource(R.string.session_range, TimeFormat.clock(session.startedAt, patterns), end)
     // Spoken form of the row. An open one needs no join: the pulse carries no text, and `range`
     // already ends in "ongoing".
     val duration = session.duration?.takeUnless { running }?.let { TimeFormat.durationShort(it, patterns) }

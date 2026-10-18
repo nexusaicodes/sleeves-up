@@ -71,9 +71,9 @@ fun CalendarGrid(
     cellHeight: Dp = 48.dp,
 ) {
     val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
-    val locale = Locale.getDefault()
+    val locale = LocalTimePatterns.current.locale
     val firstDayOfWeek = WeekFields.of(locale).firstDayOfWeek
-    val startOffset = startOffsetIn(yearMonth)
+    val startOffset = startOffsetIn(yearMonth, locale)
     val weekDays = (0L..6L).map { firstDayOfWeek.plus(it) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -90,7 +90,7 @@ fun CalendarGrid(
         }
 
         val totalDays = yearMonth.lengthOfMonth()
-        val rows = weekRowsIn(yearMonth)
+        val rows = weekRowsIn(yearMonth, locale)
 
         for (row in 0 until rows) {
             Row(
@@ -251,17 +251,18 @@ private fun CalendarGridPreview() {
 private const val DAYS_PER_WEEK = 7
 
 /**
- * The column [month]'s first day falls into, under the device locale's week start.
+ * The column [month]'s first day falls into, under [locale]'s week start — the theme's resolved
+ * locale, so the grid and the dates around it agree on which language they are in.
  *
  * Shared with `HistoryScreen`, which needs the row count below to size a cell *before* this grid is
  * composed. Two derivations of the same geometry is how the height gets computed for a different
  * number of rows than the grid then draws.
  */
-internal fun startOffsetIn(month: YearMonth): Int {
-    val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+internal fun startOffsetIn(month: YearMonth, locale: Locale): Int {
+    val firstDayOfWeek = WeekFields.of(locale).firstDayOfWeek
     return (month.atDay(1).dayOfWeek.value - firstDayOfWeek.value + DAYS_PER_WEEK) % DAYS_PER_WEEK
 }
 
 /** Week rows [month] occupies — 4 to 6. A partial trailing week still takes a row, so this rounds up. */
-internal fun weekRowsIn(month: YearMonth): Int =
-    (startOffsetIn(month) + month.lengthOfMonth() + DAYS_PER_WEEK - 1) / DAYS_PER_WEEK
+internal fun weekRowsIn(month: YearMonth, locale: Locale): Int =
+    (startOffsetIn(month, locale) + month.lengthOfMonth() + DAYS_PER_WEEK - 1) / DAYS_PER_WEEK

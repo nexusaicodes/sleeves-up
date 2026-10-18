@@ -91,7 +91,7 @@ fun HistoryScreen(
             SECTION_SPACING - slotBudget
         // The floor wins over fitting: 48dp is the minimum tap target, so a 6-row month on a small
         // screen scrolls a little rather than shrinking its days below it.
-        val cellHeight = (gridBudget / weekRowsIn(uiState.currentMonth))
+        val cellHeight = (gridBudget / weekRowsIn(uiState.currentMonth, LocalTimePatterns.current.locale))
             .coerceIn(MIN_CELL_HEIGHT, MAX_CELL_HEIGHT)
 
         HistoryContent(

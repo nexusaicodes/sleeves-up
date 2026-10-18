@@ -28,6 +28,7 @@
     <string name="todays_sessions_summary">%1$s · %2$s اليوم</string>
     <string name="session_in_progress">جارية</string>
     <string name="cd_session_row">%1$s، %2$s</string>
+    <string name="session_range">%1$s – %2$s</string>
     <plurals name="sessions_count">
         <item quantity="zero">%d جلسة</item>
         <item quantity="one">جلسة واحدة</item>
@@ -143,6 +144,8 @@
         <item quantity="other">الساعات اليومية على مدى %1$d يوم.</item>
     </plurals>
     <string name="cd_monthly_chart">الساعات حسب الشهر: %1$s</string>
+    <string name="cd_monthly_chart_entry">%1$s %2$s</string>
+    <string name="list_separator">"، "</string>
     <string name="chart_start_times_title">أوقات البدء</string>
     <string name="chart_sessions_per_day_title">الجلسات في اليوم</string>
     <string name="bucket_morning">الصباح</string>
@@ -278,4 +281,7 @@
     <string name="date_with_weekday_pattern">EEEE، d MMMM</string>
     <string name="date_axis_day_pattern">d MMM</string>
     <string name="date_axis_month_year_pattern">MMM yy</string>
+    <string name="date_axis_month_pattern">MMM</string>
+    <string name="date_month_year_pattern">MMMM yyyy</string>
+    <string name="language_code">ar</string>
 </resources>

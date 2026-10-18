@@ -33,6 +33,8 @@
     <string name="session_in_progress">ongoing</string>
     <!-- A settled session row, spoken as one phrase: its clock range, then its duration. -->
     <string name="cd_session_row">%1$s, %2$s</string>
+    <!-- A session's start and end, each a clock time or "ongoing". -->
+    <string name="session_range">%1$s - %2$s</string>
     <plurals name="sessions_count">
         <item quantity="one">%d session</item>
         <item quantity="other">%d sessions</item>
@@ -216,6 +218,10 @@
         <item quantity="other">Daily hours over %1$d days.</item>
     </plurals>
     <string name="cd_monthly_chart">Hours by month: %1$s</string>
+    <!-- One month in the monthly chart's spoken list: the month, then its hours. -->
+    <string name="cd_monthly_chart_entry">%1$s %2$s</string>
+    <!-- Joins the entries of a spoken list. Quoted to keep its trailing space. -->
+    <string name="list_separator">", "</string>
     <!-- The two descriptive splits. Neither ranks its slices: there is no better hour to start at
          and no right number of blocks to break a day into, and any copy implying one would be the
          deleted daily target applied to the shape of a day instead of its length. -->
@@ -385,4 +391,9 @@
     <string name="date_with_weekday_pattern">EEEE d MMM</string>
     <string name="date_axis_day_pattern">d MMM</string>
     <string name="date_axis_month_year_pattern">MMM \'\'yy</string>
+    <string name="date_axis_month_pattern">MMM</string>
+    <string name="date_month_year_pattern">MMMM yyyy</string>
+    <!-- The language this file is written in, as an ISO 639 code. The app reads it to know which
+         language Android resolved, so it must name this file's language and nothing else. -->
+    <string name="language_code">en</string>
 </resources>

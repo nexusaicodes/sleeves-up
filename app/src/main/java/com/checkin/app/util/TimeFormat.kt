@@ -125,7 +125,7 @@ object TimeFormat {
  * dates per frame and an instance lives as long as the configuration it was read from.
  */
 // One parameter per string resource: each is a separate translation, and grouping them would only
-// rename the same eight values.
+// rename the same nine values.
 @Suppress("LongParameterList")
 class TimePatterns(
     val locale: Locale,
@@ -137,13 +137,15 @@ class TimePatterns(
     dateWithYear: String,
     dateWithWeekday: String,
     axisDay: String,
+    axisMonth: String,
     axisMonthWithYear: String,
+    monthYear: String,
 ) {
     internal val clockFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(clock, locale)
     internal val dateWithYearFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(dateWithYear, locale)
     internal val dateWithWeekdayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(dateWithWeekday, locale)
     internal val axisDayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(axisDay, locale)
-    internal val axisMonthFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM", locale)
+    internal val axisMonthFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(axisMonth, locale)
     internal val axisMonthWithYearFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(axisMonthWithYear, locale)
-    internal val monthYearFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", locale)
+    internal val monthYearFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(monthYear, locale)
 }

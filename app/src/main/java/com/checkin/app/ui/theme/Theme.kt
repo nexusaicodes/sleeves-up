@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowCompat
 import com.checkin.app.R
 import com.checkin.app.util.TimePatterns
+import com.checkin.app.util.displayLocale
 
 // CheckIn brand scheme, seeded from the launcher indigo (#3F51B5). Dynamic color is intentionally
 // not used, so the app presents one consistent brand identity on every device.
@@ -100,14 +101,21 @@ fun CheckInAppTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Compos
         }
     }
 
-    val locale = LocalConfiguration.current.locales[0]
+    val configuration = LocalConfiguration.current
+    val language = stringResource(R.string.language_code)
+    val locale = remember(configuration, language) {
+        val locales = configuration.locales
+        displayLocale((0 until locales.size()).map { locales[it] }, language)
+    }
     val hoursMinutes = stringResource(R.string.time_hours_minutes)
     val minutesSeconds = stringResource(R.string.time_minutes_seconds)
     val clock = stringResource(R.string.time_clock_pattern)
     val dateWithYear = stringResource(R.string.date_with_year_pattern)
     val dateWithWeekday = stringResource(R.string.date_with_weekday_pattern)
     val axisDay = stringResource(R.string.date_axis_day_pattern)
+    val axisMonth = stringResource(R.string.date_axis_month_pattern)
     val axisMonthWithYear = stringResource(R.string.date_axis_month_year_pattern)
+    val monthYear = stringResource(R.string.date_month_year_pattern)
     // Keyed on the locale alone: the patterns are resources of that same configuration, so a
     // language change recreates the activity and rebuilds both together.
     val patterns = remember(locale) {
@@ -119,7 +127,9 @@ fun CheckInAppTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Compos
             dateWithYear = dateWithYear,
             dateWithWeekday = dateWithWeekday,
             axisDay = axisDay,
+            axisMonth = axisMonth,
             axisMonthWithYear = axisMonthWithYear,
+            monthYear = monthYear,
         )
     }
     val typography = remember(locale) { typographyFor(locale) }

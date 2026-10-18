@@ -1,7 +1,6 @@
 package com.checkin.app
 
 import com.checkin.app.util.TimeFormat
-import com.checkin.app.util.TimePatterns
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDate
@@ -14,29 +13,9 @@ class TimeFormatTest {
     private val minute = 60 * second
     private val hour = 60 * minute
 
-    /** The values in res/values/strings.xml. */
-    private val english = TimePatterns(
-        locale = Locale.UK,
-        hoursMinutes = "%1\$dh %2\$dm",
-        minutesSeconds = "%1\$dm %2\$ds",
-        clock = "hh:mm a",
-        dateWithYear = "d MMM yyyy",
-        dateWithWeekday = "EEEE d MMM",
-        axisDay = "d MMM",
-        axisMonthWithYear = "MMM ''yy",
-    )
-
-    /** The values in res/values-ar/strings.xml. */
-    private val arabic = TimePatterns(
-        locale = Locale.forLanguageTag("ar"),
-        hoursMinutes = "%1\$d س %2\$d د",
-        minutesSeconds = "%1\$d د %2\$d ث",
-        clock = "h:mm a",
-        dateWithYear = "d MMMM yyyy",
-        dateWithWeekday = "EEEE، d MMMM",
-        axisDay = "d MMM",
-        axisMonthWithYear = "MMM yy",
-    )
+    /** The patterns as shipped: read from the string resources, so a broken pattern fails here. */
+    private val english = ShippedPatterns.read("values", listOf(Locale.UK))
+    private val arabic = ShippedPatterns.read("values-ar", listOf(Locale.forLanguageTag("ar")))
 
     @Test
     fun `a fresh clock reads zero minutes and zero seconds`() {
