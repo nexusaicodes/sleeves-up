@@ -6,7 +6,8 @@ import android.content.Context
 import com.checkin.app.R
 
 /**
- * The single place every notification channel is declared.
+ * The single place every fixed notification channel is declared. The habits' reminder channels are
+ * not fixed — one per habit, created and deleted at runtime — and live in [HabitChannels].
  *
  * Channel ids are frozen: the id is the key the OS stores the user's per-channel choices under, so
  * renaming one silently resets the importance, sound and do-not-disturb settings they had chosen.
@@ -21,17 +22,26 @@ object NotificationChannels {
     const val REMINDER = "reminder_channel"
 
     /**
-     * The check-in nudges. Named for what it is now that `notify/engagement/` is `notify/nudge/` —
-     * the previous two ids are retired below.
+     * The seed habit's reminder channel — the id the single pre-habits nudge channel had, kept so an
+     * updated install's channel, and every setting the user made on it, becomes that habit's. Every
+     * later habit's channel is built from its uuid instead (see [HabitChannels]). The ids live on the
+     * habit row, so nothing posts by this constant; it stays as the frozen record of the id, and
+     * `HabitRulesTest` pins it equal to `Habit.SEED_CHANNEL_ID`, which is what the database seeds.
      *
      * A channel id is user-visible state: importance is frozen at creation, so a new id is the only
      * way to change it on an install that already has the channel, and it costs every per-channel
-     * choice the user had made there. Both renames were free only because this app has never had an
+     * choice the user had made there. Both earlier renames were free only because this app had no
      * install base to charge — v1.1 and v2.0 reached Play at effectively zero installs. **That
-     * exemption is now spent.** Treat this id as frozen: a fourth one costs real users their
-     * settings, and the importance below can never be revised without one.
+     * exemption is spent.** Treat this id, and every habit's, as frozen.
      */
     const val NUDGE = "nudge_channel"
+
+    /**
+     * The group every habit's reminder channel sits in, so system settings list them together under
+     * one heading rather than scattered among the timer and the session reminder. Created at runtime
+     * with the habits, like the channels in it.
+     */
+    const val HABIT_GROUP = "habit_reminders"
 
     /**
      * Every id this channel has previously used, deleted rather than left orphaned in the user's
@@ -66,23 +76,6 @@ object NotificationChannels {
                 NotificationManager.IMPORTANCE_HIGH,
             ).apply {
                 description = context.getString(R.string.reminder_channel_description)
-            },
-        )
-
-        // Separate from the reminder channel on purpose: the two are silenced for different reasons,
-        // and muting optional encouragement must not also mute the reminder that catches a session
-        // the user forgot to close.
-        //
-        // HIGH, so it peeks. At DEFAULT it landed quietly in a shade the user might not read for
-        // hours, which for a once-or-twice-a-day message is indistinguishable from not sending it.
-        // The daily cap is what keeps that from being noise; the channel is what lets them stop it.
-        manager.createNotificationChannel(
-            NotificationChannel(
-                NUDGE,
-                context.getString(R.string.nudge_channel_name),
-                NotificationManager.IMPORTANCE_HIGH,
-            ).apply {
-                description = context.getString(R.string.nudge_channel_description)
             },
         )
     }

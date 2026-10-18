@@ -33,6 +33,7 @@ sealed class Screen(val route: String, val titleRes: Int) {
     data object Settings : Tab("settings", R.string.nav_settings, Icons.Default.Settings)
     data object Privacy : Detail("privacy", R.string.nav_privacy, Settings)
     data object Licenses : Detail("licenses", R.string.nav_licenses, Settings)
+    data object Habits : Detail("habits", R.string.nav_habits, Settings)
 }
 
 /**
@@ -47,6 +48,7 @@ internal val allScreens: List<Screen> = listOf(
     Screen.History,
     Screen.Reports,
     Screen.Settings,
+    Screen.Habits,
     Screen.Privacy,
     Screen.Licenses,
 )

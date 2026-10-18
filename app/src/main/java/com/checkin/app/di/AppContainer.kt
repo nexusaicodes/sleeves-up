@@ -5,8 +5,11 @@ import com.checkin.app.data.SystemTimeSource
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.AppDatabase
 import com.checkin.app.data.repository.CheckInRepository
+import com.checkin.app.data.repository.HabitRepository
+import com.checkin.app.notify.AndroidHabitChannels
 import com.checkin.app.notify.AndroidNotifier
 import com.checkin.app.notify.AndroidStringResolver
+import com.checkin.app.notify.HabitChannels
 import com.checkin.app.notify.NotificationFactory
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.nudge.AndroidNudgeAlarms
@@ -18,7 +21,7 @@ import com.checkin.app.notify.nudge.PostedNudges
 import com.checkin.app.notify.nudge.ReminderSettings
 import com.checkin.app.notify.nudge.RoomNudgeSendLog
 import com.checkin.app.notify.nudge.SharedPrefsReminderSettings
-import com.checkin.app.notify.nudge.armNextCheckpoint
+import com.checkin.app.notify.nudge.armFallback
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.DefaultCsvExporter
 import com.checkin.app.platform.DefaultServiceController
@@ -33,15 +36,17 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 /**
- * Minimal manual DI: the single place that builds the repository, the side-effect seams
+ * Minimal manual DI: the single place that builds the repositories, the side-effect seams
  * ([PromptSettings], [ServiceController], [CsvExporter]), and the app-wide coroutine scope.
  * ViewModels receive these via their factories, so they stay pure and unit-testable with fakes.
  */
 interface AppContainer {
     val repository: CheckInRepository
+    val habitRepository: HabitRepository
     val settings: PromptSettings
     val reminderSettings: ReminderSettings
     val serviceController: ServiceController
@@ -53,6 +58,7 @@ interface AppContainer {
     // notifications are described and built one way.
     val notifier: Notifier
     val notificationFactory: NotificationFactory
+    val habitChannels: HabitChannels
 
     // Nudge layer. Isolated from everything above: its own database, and no writes to the sessions
     // table. The ledger holds only what the frequency rules read — see NudgeSendLog for why nothing
@@ -80,8 +86,8 @@ interface AppContainer {
     }
 
     /**
-     * Launches [rearmNudges] on [applicationScope]: the one re-arm both reminder-hour choosers hand
-     * to `chooseFirstReminderHour`, so the tour and Settings cannot launch it differently.
+     * Launches [rearmNudges] on [applicationScope]: the one re-arm every reminder-hour chooser hands
+     * to `chooseReminderHour`, so no two of them can launch it differently.
      */
     fun launchNudgeRearm() {
         applicationScope.launch { rearmNudges() }
@@ -90,7 +96,7 @@ interface AppContainer {
     /**
      * Both dispatcher calls already absorb their own failures, so what this guards is reaching them:
      * the dispatcher is built lazily over both databases, and a failure there falls back to the plain
-     * next checkpoint from the members it is built without. Losing the retry costs at most a nudge;
+     * fallback band from the members it is built without. Losing the retry costs at most a nudge;
      * losing the arm ends the chain the checkpoint alarm exists to keep alive.
      */
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
@@ -105,12 +111,27 @@ interface AppContainer {
     }
 
     private fun armNudgeFallback() {
-        runCatching {
-            nudgeAlarms.armNextCheckpoint(
-                timeSource.nowMillis(),
-                timeSource.zone(),
-                reminderSettings.firstReminderHour(),
-            )
+        runCatching { nudgeAlarms.armFallback(timeSource.nowMillis(), timeSource.zone(), reminderSettings) }
+    }
+
+    /**
+     * Keeps every habit's notification channel in step with the habits table, and re-arms the nudge
+     * alarm whenever the set of habits changes — for the life of the process, from its start.
+     *
+     * Driven off the table rather than called by each write, so no write path can forget either:
+     * a habit created, renamed, archived or restored is one emission, and the first emission is the
+     * process start itself, which is what puts the alarm back after a boot, a package replace or a
+     * force stop. Never throws: a database that will not open still arms the fallback, and a failed
+     * channel write costs that emission's channels, which the dispatcher re-ensures before it posts.
+     */
+    fun launchHabitSync() {
+        applicationScope.launch {
+            habitRepository.allHabitsFlow()
+                .catch { armNudgeFallback() }
+                .collect { habits ->
+                    runCatching { habitChannels.sync(habits) }
+                    rearmNudges()
+                }
         }
     }
 
@@ -139,6 +160,11 @@ class DefaultAppContainer(context: Context) : AppContainer {
         CheckInRepository(AppDatabase.getDatabase(appContext).checkInSessionDao(), timeSource)
     }
 
+    override val habitRepository: HabitRepository by lazy {
+        val db = AppDatabase.getDatabase(appContext)
+        HabitRepository(db.habitDao(), db.appStateDao(), db.checkInSessionDao(), timeSource)
+    }
+
     override val serviceController: ServiceController = DefaultServiceController(appContext)
 
     override val csvExporter: CsvExporter = DefaultCsvExporter(appContext)
@@ -146,6 +172,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val notificationFactory = NotificationFactory(appContext)
 
     override val notifier: Notifier = AndroidNotifier(appContext, notificationFactory)
+
+    override val habitChannels: HabitChannels = AndroidHabitChannels(appContext)
 
     override val nudgeSendLog: NudgeSendLog by lazy {
         RoomNudgeSendLog(NudgeSendDatabase.getDatabase(appContext).nudgeSendDao())
@@ -155,11 +183,13 @@ class DefaultAppContainer(context: Context) : AppContainer {
         NudgeDispatcher(
             strings = AndroidStringResolver(appContext),
             repository = repository,
+            habits = habitRepository,
             notifier = notifier,
             sendLog = { nudgeSendLog },
             timeSource = timeSource,
             reminderSettings = reminderSettings,
             alarms = nudgeAlarms,
+            channels = habitChannels,
         )
     }
 

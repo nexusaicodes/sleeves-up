@@ -18,10 +18,11 @@ interface NudgeSendDao {
      * Every attempt since [since], posted or refused, oldest first — the whole input to the frequency
      * rules.
      *
-     * Returned as the rows rather than as a count, because the rules ask three things of the same
-     * set: how many were shown (the daily cap), which checkpoints were tried (so one cannot be tried
-     * twice), and when the last shown one landed (the minimum gap). Answering all three from one
-     * query is what stops them disagreeing about where the day started.
+     * Returned as the rows rather than as a count, and unfiltered by habit, because the rules ask two
+     * things of the same set: which habits were already tried (so none is tried twice), and when the
+     * last shown one landed, whichever habit it was (the minimum gap). Answering both from one query
+     * is what stops them disagreeing about where the day started; the split by habit is done in
+     * Kotlin.
      */
     @Query("SELECT * FROM nudge_sends WHERE at >= :since ORDER BY at ASC, id ASC")
     suspend fun attemptsSince(since: Long): List<NudgeSend>

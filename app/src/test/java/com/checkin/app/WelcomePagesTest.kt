@@ -42,12 +42,12 @@ class WelcomePagesTest {
     }
 
     /**
-     * The hour is chosen on the reminders page and nowhere else, and that page is last: the
-     * notification dialog follows it, so the reminders are described, timed and then requested.
+     * Habits are named, each with its hour, on one page, and that page is last: the notification
+     * dialog follows it, so the reminders are described, timed and then requested.
      */
     @Test
-    fun `only the last page chooses the reminder hour`() {
-        val choosing = WelcomePages.all.filter { it.choosesReminderHour }
+    fun `only the last page names habits`() {
+        val choosing = WelcomePages.all.filter { it.namesHabits }
 
         assertEquals(listOf(WelcomePages.all.last()), choosing)
     }

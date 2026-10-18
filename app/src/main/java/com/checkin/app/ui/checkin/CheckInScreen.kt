@@ -46,6 +46,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -211,6 +212,7 @@ fun CheckInScreen(
 
             CheckInOutButton(
                 isRunning = uiState.isRunning,
+                habitName = uiState.habitName,
                 onCheckIn = { viewModel.requestCheckIn() },
                 onCheckOut = { viewModel.requestCheckOut() },
             )
@@ -266,7 +268,7 @@ private val SESSION_LIST_MIN = 96.dp
 // and live in TimerGauge.kt, beside the composable they size.
 
 @Composable
-private fun CheckInOutButton(isRunning: Boolean, onCheckIn: () -> Unit, onCheckOut: () -> Unit) {
+private fun CheckInOutButton(isRunning: Boolean, habitName: String?, onCheckIn: () -> Unit, onCheckOut: () -> Unit) {
     val start = startActionColors()
     val stop = stopActionColors()
 
@@ -299,14 +301,21 @@ private fun CheckInOutButton(isRunning: Boolean, onCheckIn: () -> Unit, onCheckO
             modifier = Modifier.size(28.dp),
         )
         Spacer(modifier = Modifier.width(12.dp))
+        // Names the habit, because the switcher is the only other place that says which record this
+        // button writes to. One line, ellipsized: the button's height is a term in this screen's fit
+        // budget, so a long name gives way rather than growing it. Bare only for a habit still owed a
+        // name, which the first-run naming step keeps from ever reaching this screen.
         Text(
-            text = if (isRunning) {
-                stringResource(R.string.check_out)
-            } else {
-                stringResource(R.string.check_in)
+            text = when {
+                habitName == null && isRunning -> stringResource(R.string.check_out)
+                habitName == null -> stringResource(R.string.check_in)
+                isRunning -> stringResource(R.string.check_out_of, habitName)
+                else -> stringResource(R.string.check_in_to, habitName)
             },
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

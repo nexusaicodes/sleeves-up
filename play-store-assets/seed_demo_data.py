@@ -10,7 +10,8 @@ Day *lengths* are still varied, but nothing renders them any more — the calend
 one mark per day shown up, whether it held 45 minutes or nine hours. They vary here
 only so the hours charts are not a flat line.
 
-Usage: python3 seed.py <path-to-_app>
+Usage: python3 seed.py <path-to-_app>  (pulled after the app has opened it once, so the
+habits table and its seed row exist)
 """
 import random
 import sqlite3
@@ -26,6 +27,7 @@ TODAY = date(2026, 8, 28)
 START = (TODAY.replace(day=1) - timedelta(days=1)).replace(day=1)
 MISS_CHANCE = {5: 0.55, 6: 0.65}           # Sat/Sun are the days most often skipped
 WEEKDAY_MISS = 0.10
+DEMO_HABIT = "Writing"                     # the seed habit's name: the switcher and the button show it
 
 # Reproducible: same screenshots on a re-run. The value is *searched*, not arbitrary — it is
 # the seed for which July lands on exactly 24 days shown up of 31, which is what the summary
@@ -104,6 +106,10 @@ def main(db_path: str) -> None:
         "INSERT INTO sessions (started_at, stopped_at, duration, date_key) VALUES (?, ?, ?, ?)",
         rows,
     )
+    # Every session lands in the seed habit (`habit_id` defaults to 1), which the app holds unnamed
+    # until the first-run naming step asks — and a screenshot run that opens on that step shows none
+    # of the above. Named here so the app opens straight onto the record.
+    conn.execute("UPDATE habits SET name = ? WHERE id = 1", (DEMO_HABIT,))
     conn.commit()
     conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
     days = len({r[3] for r in rows})

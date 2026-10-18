@@ -1,6 +1,7 @@
 package com.checkin.app.ui.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -23,12 +24,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.checkin.app.R
 import com.checkin.app.ui.checkin.CheckInViewModel
 import com.checkin.app.ui.components.LocalSnackbarHostState
+import com.checkin.app.ui.habits.HabitsViewModel
 import com.checkin.app.ui.presence.PresenceGate
 
 /**
  * Top-level chrome: a centered title bar and the bottom nav around the nav host. The title names the
  * active section, so a screen never has to draw its own heading; screens receive the combined inset
- * through the Scaffold's padding.
+ * through the Scaffold's padding. The bar's actions hold the [HabitSwitcher] on every tab.
  */
 @Composable
 fun AppNavScaffold(navController: NavHostController) {
@@ -36,6 +38,9 @@ fun AppNavScaffold(navController: NavHostController) {
     // the chrome — the camera preview and the gate's own controls must not sit under the bottom nav.
     val checkInViewModel: CheckInViewModel = viewModel(factory = CheckInViewModel.Factory)
     val checkInState by checkInViewModel.uiState.collectAsStateWithLifecycle()
+    // Activity-scoped, so the switcher reads the same instance AppRoot's first-run steps do.
+    val habitsViewModel: HabitsViewModel = viewModel(factory = HabitsViewModel.Factory)
+    val habitsState by habitsViewModel.uiState.collectAsStateWithLifecycle()
 
     if (checkInState.showPresenceGate) {
         // Full-screen modal gate: the Scaffold is not composed underneath (gate XOR chrome), so the
@@ -69,7 +74,19 @@ fun AppNavScaffold(navController: NavHostController) {
     }
 
     Scaffold(
-        topBar = { AppTopBar(currentScreen = currentScreen, onBack = onBack) },
+        topBar = {
+            AppTopBar(currentScreen = currentScreen, onBack = onBack) {
+                // On every tab, because every tab shows the selected habit's record. Not on a detail
+                // screen: those are about the app, not about a habit, and Habits manages them all.
+                if (currentScreen is Screen.Tab) {
+                    HabitSwitcher(
+                        state = habitsState,
+                        viewModel = habitsViewModel,
+                        onManage = { navController.navigate(Screen.Habits.route) { launchSingleTop = true } },
+                    )
+                }
+            }
+        },
         bottomBar = { BottomNavigationBar(navController, currentScreen, selectedTab) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
@@ -81,9 +98,10 @@ fun AppNavScaffold(navController: NavHostController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AppTopBar(currentScreen: Screen, onBack: (() -> Unit)?) {
+private fun AppTopBar(currentScreen: Screen, onBack: (() -> Unit)?, actions: @Composable RowScope.() -> Unit) {
     CenterAlignedTopAppBar(
         title = { Text(stringResource(currentScreen.titleRes)) },
+        actions = actions,
         navigationIcon = {
             if (onBack != null) {
                 IconButton(onClick = onBack) {

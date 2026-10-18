@@ -55,16 +55,18 @@ class AndroidNotifier(
     }
 
     /**
-     * Reads the three switches that can silence a post to [channelId] and hands them to
+     * Reads the four switches that can silence a post to [channelId] and hands them to
      * [NotificationDelivery], which owns the decision itself and is unit-tested for each of them.
      */
     private fun canPost(channelId: String): Boolean {
         val manager = NotificationManagerCompat.from(context)
+        val channel = manager.getNotificationChannelCompat(channelId)
         return NotificationDelivery.canDeliver(
             permissionGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
                 PackageManager.PERMISSION_GRANTED,
             appEnabled = manager.areNotificationsEnabled(),
-            channelImportance = manager.getNotificationChannelCompat(channelId)?.importance,
+            channelImportance = channel?.importance,
+            groupBlocked = channel?.group?.let { manager.getNotificationChannelGroupCompat(it)?.isBlocked } == true,
         )
     }
 

@@ -7,8 +7,8 @@ import android.content.Intent
 import java.time.ZoneId
 
 /**
- * The single wake-up that carries the check-in nudge: one alarm, set for the instant
- * [NudgeEligibility.nextEligibleAt] names.
+ * The single wake-up that carries every habit's check-in nudge: one alarm, set for the instant
+ * [NudgeEligibility.nextAlarmAcross] names — the soonest any habit is due.
  *
  * **This exists because a periodic worker could not do the job.** [NudgeWorker] asks its question at
  * whatever moment it happens to run, and an app the user is not opening drops through Android's
@@ -22,23 +22,27 @@ import java.time.ZoneId
  *
  * **Deliberately stateless, unlike [com.checkin.app.service.SessionAlarms].** That seam persists its
  * armed instants because they are derived from a session and cannot be recomputed without it. The
- * next nudge instant is derivable from now, the chosen hour and the day's sends, so there is nothing
+ * next nudge instant is derivable from now, the chosen hours and the day's sends, so there is nothing
  * to store and nothing to reconcile against `AlarmManager` (which cannot be asked what is still set).
  *
  * **This seam only sets an instant; [NudgeDispatcher] decides it.** The alarm is one `PendingIntent`,
- * so whatever arms last wins, and a caller arming a plain checkpoint would replace a retry the gap
+ * so whatever arms last wins, and a caller arming a plain band opening would replace a retry the gap
  * was holding or skip a band that is open but unsent. Arming sites therefore go through
  * [NudgeDispatcher] — via `AppContainer.runNudgePass` and `AppContainer.rearmNudges`, which fall back
- * to [armNextCheckpoint] when the dispatcher cannot be built — never through [arm] directly.
+ * to [armFallback] when the dispatcher cannot be built — never through [arm] directly.
  */
 interface NudgeAlarms {
     /** Arms the checkpoint alarm for [atMs], replacing whatever was set. A past instant fires at once. */
     fun arm(atMs: Long)
 }
 
-/** The plain next checkpoint: what to arm when the day's sends cannot be read. */
-fun NudgeAlarms.armNextCheckpoint(nowMs: Long, zone: ZoneId, firstHour: Int) =
-    arm(NudgeSchedule.nextCheckpointAfter(nowMs, zone, firstHour))
+/**
+ * What to arm when the habits or the day's sends cannot be read: the next opening of the earliest
+ * band any habit could have. It needs no database — the hours are prefs — and waking early costs
+ * one pass, which re-arms from the real state if it can read it, where waking late costs a reminder.
+ */
+fun NudgeAlarms.armFallback(nowMs: Long, zone: ZoneId, settings: ReminderSettings) =
+    arm(NudgeSchedule.nextBandAfter(nowMs, zone, settings.earliestHour()))
 
 class AndroidNudgeAlarms(private val context: Context) : NudgeAlarms {
 

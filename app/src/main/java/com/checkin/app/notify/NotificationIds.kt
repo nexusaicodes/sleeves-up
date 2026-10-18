@@ -4,8 +4,9 @@ package com.checkin.app.notify
  * Every notification id the app posts under, including nudges: posting twice under one id replaces
  * rather than adds, so every sender's ids must be visible in one place.
  *
- * A [com.checkin.app.notify.nudge.Nudge] constant's id must be a dedicated constant here, never
- * derived from the enum's ordinal or position — reordering the enum must not change any existing id.
+ * A [com.checkin.app.notify.nudge.Nudge]'s id comes from [habitNudge] — its habit's block plus the
+ * nudge's fixed slot, never the enum's ordinal or position — so reordering the enum cannot change any
+ * existing id, and two habits can never share one.
  *
  * ### PendingIntent request codes — the whole allocation
  *
@@ -21,6 +22,12 @@ package com.checkin.app.notify
  * | 10_000+ | `NotificationFactory.ACTION_REQUEST_BASE` | its action buttons, `MAX_ACTIONS` apiece |
  * | 20_000, 20_001 | `service.SessionAlarms` | the session reminder and the day boundary |
  * | 20_010 | `notify.nudge.NudgeAlarms` | the nudge checkpoint |
+ * | 30_000 | `NotificationFactory.NUDGE_TAP_REQUEST_CODE` | every habit's nudge tap target |
+ *
+ * The nudge tap is one code for every habit, told apart by its intent's data URI
+ * (`checkin://nudge/<uuid>`) rather than by a code apiece: `PendingIntent` equality ignores extras
+ * but not data, and a code per habit would be a band with no upper bound. Its content code would
+ * otherwise come from the 1_000 band off a nudge id in the 100_000s — landing it in no band at all.
  *
  * A fourth band once sat below these, overlapping their numbering: the bare notification id, used
  * for each notification's delete intent. It was exempt because it was the only `getBroadcast`
@@ -28,7 +35,7 @@ package com.checkin.app.notify
  * notification sets a delete intent any more, so the band is unused — **claim a fresh one rather
  * than reviving it**, unless what needs it is again a broadcast.
  *
- * **The values are frozen**, for the same reason the ids are. A fourth sender takes a fresh band
+ * **The values are frozen**, for the same reason the ids are. A new sender takes a fresh band
  * and adds a row here. The three bases live in `NotificationFactory`'s private companion, so the
  * numbers are restated above rather than linked — this table is the readable copy.
  *
@@ -47,19 +54,30 @@ object NotificationIds {
     const val SESSION_REMINDER = 2
 
     /**
-     * One per checkpoint nudge. Distinct ids rather than a shared one, so the tray never silently
-     * swaps one message for another behind the app's back — when a later checkpoint *should* replace
-     * an earlier one, [com.checkin.app.notify.nudge.NudgeDispatcher] cancels its siblings
-     * explicitly, which is a decision in code rather than a side effect of an id collision.
+     * Where habit nudge ids start: far above every fixed id, so no habit's block can reach one.
+     * Each habit owns [HABIT_NUDGE_SLOTS] ids from `base + habitId * slots`, one per nudge slot.
      */
-    const val NUDGE_NOT_CHECKED_IN_FIRST = 10
-    const val NUDGE_NOT_CHECKED_IN_FOLLOW_UP = 11
+    const val HABIT_NUDGE_BASE = 100_000
+
+    /** Ids per habit. One is used today; the rest are room for a second nudge without a re-cut. */
+    const val HABIT_NUDGE_SLOTS = 4
 
     /**
-     * Ids an earlier build posted nudges under and nothing posts under now. Never reused, since a
-     * new nudge on one would replace a stale notification still in an updated install's tray rather
-     * than sit beside it; still cancelled by `PostedNudges.retireAll`, so that stale one clears at the
-     * next check-in like any other. Append, never replace.
+     * The id [slot]'s nudge for [habitId] posts under. Built from the row id rather than the uuid,
+     * because an id is only ever held by the tray, which does not survive the fresh database a
+     * restore lands on — the one case where a row id is reassigned.
      */
-    val RETIRED_NUDGES: List<Int> = listOf(12)
+    fun habitNudge(habitId: Long, slot: Int): Int {
+        require(slot in 0 until HABIT_NUDGE_SLOTS) { "slot $slot outside a habit's block" }
+        return Math.toIntExact(HABIT_NUDGE_BASE + habitId * HABIT_NUDGE_SLOTS + slot)
+    }
+
+    /**
+     * Ids earlier builds posted nudges under and nothing posts under now: v3.0's three checkpoints,
+     * all about the single record such an install had. Never reused, since a new notification on one
+     * would replace a stale one still in an updated install's tray rather than sit beside it; still
+     * cancelled by `PostedNudges.retire`, so that stale one clears at the next check-in like any
+     * other. Append, never replace.
+     */
+    val RETIRED_NUDGES: List<Int> = listOf(10, 11, 12)
 }

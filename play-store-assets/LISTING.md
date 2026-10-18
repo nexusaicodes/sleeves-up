@@ -86,10 +86,14 @@ PRIVATE BY DESIGN
 • No ads. No analytics. No third-party data collection.
 • Your history lives in a local database on your phone. Export it to CSV whenever you like — that copy is yours.
 
+HABITS
+• Keep a separate record for each thing you are showing up for — the gym, the writing, the practice.
+• Switch between them from the top bar. Each has its own calendar, reports and export.
+• Nothing compares one habit with another. Each is its own record.
+
 REMINDERS
-• If you have not checked in, Sleeves Up says so — at most twice a day.
-• You choose the hour they come.
-• Turn them off with a long press on any reminder; that opens the channel and switches it off in one tap.
+• If you have not checked in to a habit, Sleeves Up says so — once that day, around the hour you picked for it.
+• Turn one off with a long press on it; that opens its channel and switches it off in one tap, without touching the others.
 
 WHO IT'S FOR
 Solopreneurs, freelancers, consultants, students, and anyone working without external oversight who wants to build a consistent habit of showing up. Every day counts the same.
@@ -112,12 +116,14 @@ never uploaded leaves everything it meant to say still unsaid.
 
 It is subject to both rules at the top of this file, and the vocabulary table below applies in full —
 it binds a *denial* as much as a boast. It is written for someone updating, who has already been
-through the welcome tour, so it points at Settings rather than at the tour's last page.
+through the welcome tour and will meet the naming step instead, so it says what that step is for.
 
 ```
-Choose when your reminder comes. Pick the hour in Settings, and on a day you haven't checked in yet, it arrives around then.
+Habits: keep a separate record for each thing you show up for. Switch between them from the top bar — each has its own calendar, reports, export and reminder, and nothing compares one with another.
 
-Reminders are steadier too: a phone restart or an app update no longer costs you that day's reminder.
+Everything you have recorded so far becomes your first habit. Give it a name when you next open the app.
+
+Each habit's reminder comes once, around the hour you pick for it, on a day you haven't checked in. A restart or an update no longer costs you that day's reminder.
 ```
 
 ---
@@ -134,6 +140,8 @@ is what makes them easy to write back in.
 | periodic presence check · re-verify | Only check-in and check-out are gated. There is no mid-session check. |
 | selfie · photo · capture | The camera reports a face count as metadata. No image is ever produced. |
 | attendance | The vocabulary was renamed out of the app; the tab is History. |
+| goal · goals · target habit | The word is **habit**. A goal is something to reach, which is a target under another name — Rule 1. |
+| most consistent habit · your best habit · compare your habits · total across habits | Each habit is its own record and nothing sets two side by side. Ranking habits is the personal-best baseline applied across habits instead of across days. |
 | streak · consecutive days · keep the chain going | A streak is a number the next day can take away. The calendar shows consecutive days visually and the app counts none of them. |
 | longest day · best day · personal best · your record | Nothing ranks one of the user's days against the others, and nothing is a baseline anything else is drawn against. |
 | roll up your sleeves · sleeves up! (as an instruction) · let's get to work | The name describes a state, not an order. Nobody has ever rolled their sleeves up for nine hours, so the metaphor carries no measurement — which is exactly what lets it sit on an app where hours grade nothing. Said *at* the user on a cadence it becomes a mascot, and a mascot is the gamification register this app has none of. Gloss it once in the listing; never in a notification, a celebration or an empty state. |

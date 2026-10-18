@@ -75,6 +75,9 @@ class CheckInService : Service() {
     private var startTime: Long = 0
     private var sessionId: Long = -1
 
+    /** The running habit's name for the title, or null before the first read or for an unnamed one. */
+    private var habitName: String? = null
+
     companion object {
         /**
          * Whether a session currently has a **foreground notification** behind it in this process.
@@ -106,6 +109,7 @@ class CheckInService : Service() {
         const val PREFS_NAME = "checkin_timer_prefs"
         const val KEY_SESSION_ID = "session_id"
         const val KEY_START_TIME = "start_time"
+        const val KEY_HABIT_NAME = "habit_name"
     }
 
     override fun onCreate() {
@@ -131,9 +135,13 @@ class CheckInService : Service() {
         // Share the DB row's check-in instant so this notification and the on-screen ticker agree;
         // fall back to now only if the extra is missing.
         startTime = intent.getLongExtra(EXTRA_START_TIME, timeSource.nowMillis())
+        // Unknown until the row is read: the intent carries timing only, and a name left over from an
+        // earlier session would title this one with the wrong habit.
+        habitName = null
         saveState()
 
         enterForeground()
+        nameRunningHabit()
         // The session's alarms are deliberately not armed here. This start can be refused — a
         // restricted App Standby bucket, an OEM that declines a specialUse foreground service — and
         // a refusal must not cost the session its day-boundary close. Arming belongs to whoever
@@ -190,12 +198,28 @@ class CheckInService : Service() {
                 ServiceReconciler.Result.Stop -> tearDown()
                 is ServiceReconciler.Result.Adopt -> {
                     adopt(result)
+                    habitName = container.habitRepository.byId(result.habitId)?.name
                     saveState()
                     postTimerNotification()
                 }
             }
         }
         return START_STICKY
+    }
+
+    /**
+     * Reads the started session's habit and re-posts with its name. A fresh start posts first and
+     * names second, because the foreground deadline does not wait for a database read; the cancel of
+     * an in-flight reconcile keeps the two from racing, as every command's does.
+     */
+    private fun nameRunningHabit() {
+        reconcileJob?.cancel()
+        reconcileJob = serviceScope.launch {
+            val active = repository.getActiveSession()?.takeIf { it.id == sessionId } ?: return@launch
+            habitName = container.habitRepository.byId(active.habitId)?.name
+            saveState()
+            postTimerNotification()
+        }
     }
 
     /** Overwrites in-memory render state with the authoritative DB row's values. */
@@ -248,7 +272,9 @@ class CheckInService : Service() {
     private fun timerSpec() = NotificationSpec(
         id = NotificationIds.TIMER,
         channelId = NotificationChannels.TIMER,
-        title = getString(R.string.notification_title),
+        // Names the habit, so a user with two can tell from the shade which one is running.
+        title = habitName?.let { getString(R.string.notification_title_habit, it) }
+            ?: getString(R.string.notification_title),
         // Must not print the elapsed time — the chronometer already draws it (see the string).
         body = getString(R.string.notification_running),
         actions = listOf(
@@ -272,6 +298,7 @@ class CheckInService : Service() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit {
             putLong(KEY_SESSION_ID, sessionId)
             putLong(KEY_START_TIME, startTime)
+            putString(KEY_HABIT_NAME, habitName)
         }
     }
 
@@ -280,9 +307,11 @@ class CheckInService : Service() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit {
             remove(KEY_SESSION_ID)
             remove(KEY_START_TIME)
+            remove(KEY_HABIT_NAME)
         }
         startTime = 0
         sessionId = -1
+        habitName = null
     }
 
     /** Loads the advisory mirror so the first post is not blank while the DB read is in flight. */
@@ -293,6 +322,7 @@ class CheckInService : Service() {
 
         sessionId = prefs.getLong(KEY_SESSION_ID, -1)
         startTime = savedStartTime
+        habitName = prefs.getString(KEY_HABIT_NAME, null)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

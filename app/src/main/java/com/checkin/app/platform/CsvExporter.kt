@@ -21,9 +21,19 @@ sealed interface ExportResult {
     data class Failure(val message: String?) : ExportResult
 }
 
-/** Writes the sessions CSV and hands it to the system share sheet. */
+/**
+ * Writes one habit's CSV and hands it to the system share sheet. The file holds that habit's days
+ * alone and carries no habit column — the column order is append-only, and a column that only ever
+ * held one value would say nothing — so [habitName] goes in the filename instead (see
+ * [exportFileName]).
+ */
 interface CsvExporter {
-    suspend fun export(startKey: String, endKey: String, summaries: Map<String, DailyAggregate>): ExportResult
+    suspend fun export(
+        habitName: String?,
+        startKey: String,
+        endKey: String,
+        summaries: Map<String, DailyAggregate>,
+    ): ExportResult
 }
 
 class DefaultCsvExporter(private val context: Context) : CsvExporter {
@@ -35,12 +45,13 @@ class DefaultCsvExporter(private val context: Context) : CsvExporter {
     // each separately would produce identical branches.
     @Suppress("TooGenericExceptionCaught")
     override suspend fun export(
+        habitName: String?,
         startKey: String,
         endKey: String,
         summaries: Map<String, DailyAggregate>,
     ): ExportResult = try {
         // Blocking file I/O runs off the main thread; the share Intent stays on Main.
-        val csvFile = withContext(Dispatchers.IO) { writeCsv(startKey, endKey, summaries) }
+        val csvFile = withContext(Dispatchers.IO) { writeCsv(habitName, startKey, endKey, summaries) }
         share(csvFile)
         ExportResult.Success
     } catch (e: Exception) {
@@ -48,9 +59,14 @@ class DefaultCsvExporter(private val context: Context) : CsvExporter {
     }
 
     /** Writes one row per day across the range, gap-filling days with no sessions as zeros. */
-    private fun writeCsv(startKey: String, endKey: String, summaries: Map<String, DailyAggregate>): File {
+    private fun writeCsv(
+        habitName: String?,
+        startKey: String,
+        endKey: String,
+        summaries: Map<String, DailyAggregate>,
+    ): File {
         val exportDir = File(context.cacheDir, "exports").also { it.mkdirs() }
-        val file = File(exportDir, "checkin_${startKey}_$endKey.csv")
+        val file = File(exportDir, exportFileName(habitName, startKey, endKey))
 
         FileWriter(file).use { writer ->
             writer.write(csvHeader())

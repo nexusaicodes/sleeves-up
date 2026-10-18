@@ -14,6 +14,7 @@ import com.checkin.app.ui.about.PrivacyScreen
 import com.checkin.app.ui.checkin.CheckInScreen
 import com.checkin.app.ui.checkin.CheckInViewModel
 import com.checkin.app.ui.components.ConstrainedContent
+import com.checkin.app.ui.habits.HabitsScreen
 import com.checkin.app.ui.history.HistoryScreen
 import com.checkin.app.ui.reports.ReportsScreen
 import com.checkin.app.ui.settings.SettingsScreen
@@ -48,6 +49,9 @@ internal fun NavigationGraph(
             ConstrainedContent {
                 SettingsScreen(
                     innerPadding = innerPadding,
+                    onOpenHabits = {
+                        navController.navigate(Screen.Habits.route) { launchSingleTop = true }
+                    },
                     // launchSingleTop: a double tap on a row would otherwise push two identical
                     // entries, so the first back press appears to do nothing.
                     onOpenPrivacy = {
@@ -58,6 +62,9 @@ internal fun NavigationGraph(
                     },
                 )
             }
+        }
+        composable(Screen.Habits.route) {
+            ConstrainedContent { HabitsScreen(innerPadding = innerPadding) }
         }
         composable(Screen.Privacy.route) {
             ConstrainedContent { PrivacyScreen(innerPadding = innerPadding) }

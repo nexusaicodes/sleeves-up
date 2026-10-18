@@ -7,8 +7,8 @@ import org.junit.Test
 
 /**
  * The guard that decides whether a post reaches anyone. Everything downstream treats a `true` here as
- * proof the user was asked something: the nudge dispatcher spends a slot in the daily cap, and the
- * session reminder marks its alert spent. Each way the platform drops a notification without saying
+ * proof the user was asked something: the nudge dispatcher spaces every other habit's reminder off
+ * it, and the session reminder marks its alert spent. Each way the platform drops a notification without saying
  * so is pinned below.
  */
 class NotificationDeliveryTest {
@@ -22,6 +22,7 @@ class NotificationDeliveryTest {
                 permissionGranted = true,
                 appEnabled = true,
                 channelImportance = default,
+                groupBlocked = false,
             ),
         )
     }
@@ -33,6 +34,7 @@ class NotificationDeliveryTest {
                 permissionGranted = false,
                 appEnabled = true,
                 channelImportance = default,
+                groupBlocked = false,
             ),
         )
     }
@@ -44,6 +46,7 @@ class NotificationDeliveryTest {
                 permissionGranted = true,
                 appEnabled = false,
                 channelImportance = default,
+                groupBlocked = false,
             ),
         )
     }
@@ -60,11 +63,28 @@ class NotificationDeliveryTest {
                 permissionGranted = true,
                 appEnabled = true,
                 channelImportance = NotificationDelivery.IMPORTANCE_NONE,
+                groupBlocked = false,
             ),
         )
     }
 
-    /** Channels are created at startup, so a missing one means something is already wrong. */
+    /**
+     * The habits' fourth switch: system settings can turn the whole reminders group off while every
+     * channel in it still reports its own importance unchanged, and the platform drops the post.
+     */
+    @Test
+    fun `a blocked channel group does not deliver`() {
+        assertFalse(
+            NotificationDelivery.canDeliver(
+                permissionGranted = true,
+                appEnabled = true,
+                channelImportance = default,
+                groupBlocked = true,
+            ),
+        )
+    }
+
+    /** Channels are created before anything posts to them, so a missing one means something is wrong. */
     @Test
     fun `an unknown channel does not deliver`() {
         assertFalse(
@@ -72,6 +92,7 @@ class NotificationDeliveryTest {
                 permissionGranted = true,
                 appEnabled = true,
                 channelImportance = null,
+                groupBlocked = false,
             ),
         )
     }

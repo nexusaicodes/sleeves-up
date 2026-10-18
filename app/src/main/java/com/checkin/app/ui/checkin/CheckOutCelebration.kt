@@ -72,7 +72,8 @@ fun CheckOutCelebration(completed: CheckOutSignal.Completed, onDismiss: () -> Un
             // One announcement for the whole surface. Read as separate nodes it arrives as four
             // disconnected fragments, and the dismiss hint is the least useful of them.
             .clearAndSetSemantics {
-                contentDescription = "$titleText. $sessionText. $dayText"
+                contentDescription = listOfNotNull(completed.habitName, titleText, sessionText, dayText)
+                    .joinToString(". ")
             },
         contentAlignment = Alignment.Center,
     ) {
@@ -86,6 +87,16 @@ fun CheckOutCelebration(completed: CheckOutSignal.Completed, onDismiss: () -> Un
             // gaining an entry rather than a congratulation appearing. It plays once and rests:
             // nothing here loops, and nothing about it changes with how long the session was.
             BrandGrid(size = MARK_SIZE, settle = true)
+            // Which record gained the entry — a name, worded identically for every habit and never
+            // set beside another habit's figures.
+            completed.habitName?.let { name ->
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
             Text(
                 text = titleText,
                 style = MaterialTheme.typography.headlineSmall,
@@ -129,6 +140,7 @@ private fun CheckOutCelebrationPreview() {
                 sessionMs = 2 * 3_600_000L + 14 * 60_000L,
                 dayTotalMs = 6 * 3_600_000L + 12 * 60_000L,
                 daySessionCount = 2,
+                habitName = "Writing",
             ),
             onDismiss = {},
         )
@@ -145,6 +157,7 @@ private fun CheckOutCelebrationShortPreview() {
                 sessionMs = 20 * 60_000L,
                 dayTotalMs = 20 * 60_000L,
                 daySessionCount = 1,
+                habitName = "Gym",
             ),
             onDismiss = {},
         )

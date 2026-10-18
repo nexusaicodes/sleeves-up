@@ -4,11 +4,12 @@
  *
  * This file holds the small fakes, one per seam, each a few lines of recording or canned answers:
  * FakeTimeSource (the clock, and the only place a midnight rollover is driven), FakeServiceController,
- * FakeNotifier, FakeCsvExporter, FakePostedNudges, FakeNudgeSendLog, FakeSessionAlarms.
+ * FakeNotifier, FakeCsvExporter, FakePostedNudges, FakeNudgeSendLog, FakeSessionAlarms,
+ * FakeReminderSettings, FakeNudgeAlarms, FakeHabitChannels.
  *
  * A fake gets its own file once it has behaviour worth reading on its own — an in-memory query
- * surface with ordering and filtering to honour. FakeCheckInSessionDao is the one that earns it;
- * FakeNudgeSendLog does not, because the real ledger is now a single unfiltered range query.
+ * surface with ordering and filtering to honour. FakeCheckInSessionDao and FakeHabitDao earn it;
+ * FakeNudgeSendLog does not, because the real ledger is a single unfiltered range query.
  *
  * Every name here starts with Fake so `ls Fake*` and a grep for the seam's name both find it.
  */
@@ -16,6 +17,8 @@ package com.checkin.app
 
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.DailyAggregate
+import com.checkin.app.data.local.Habit
+import com.checkin.app.notify.HabitChannels
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.nudge.Nudge
@@ -31,6 +34,7 @@ import com.checkin.app.platform.ServiceController
 import com.checkin.app.service.SessionAlarms
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -101,21 +105,27 @@ class FakeNotifier(var refuse: Boolean = false) : Notifier {
 
 class FakeCsvExporter(var result: ExportResult = ExportResult.Success) : CsvExporter {
     var lastRange: Pair<String, String>? = null
+    var lastHabitName: String? = null
+    var lastSummaries: Map<String, DailyAggregate> = emptyMap()
     override suspend fun export(
+        habitName: String?,
         startKey: String,
         endKey: String,
         summaries: Map<String, DailyAggregate>,
     ): ExportResult {
         lastRange = startKey to endKey
+        lastHabitName = habitName
+        lastSummaries = summaries
         return result
     }
 }
 
 class FakePostedNudges : PostedNudges {
-    var retireCount = 0
+    val retired = mutableListOf<Long>()
+    val retireCount: Int get() = retired.size
 
-    override fun retireAll() {
-        retireCount++
+    override fun retire(habitId: Long) {
+        retired += habitId
     }
 }
 
@@ -126,8 +136,8 @@ class FakePostedNudges : PostedNudges {
 class FakeNudgeSendLog : NudgeSendLog {
     val sends = mutableListOf<NudgeSending>()
 
-    override suspend fun record(nudge: Nudge, atMillis: Long, posted: Boolean) {
-        sends += NudgeSending(nudge.name, atMillis, posted)
+    override suspend fun record(habitUuid: String, nudge: Nudge, atMillis: Long, posted: Boolean) {
+        sends += NudgeSending(habitUuid, nudge.name, atMillis, posted)
     }
 
     override suspend fun attemptsSince(since: Long): List<NudgeSending> =
@@ -181,14 +191,27 @@ class FakeSessionAlarms(override var remindersSent: Int = 0) : SessionAlarms {
     }
 }
 
-/** In-memory reminder hour, clamping exactly as the prefs-backed one does. */
-class FakeReminderSettings(hour: Int = NudgeSchedule.DEFAULT_FIRST_HOUR) : ReminderSettings {
-    private var stored = NudgeSchedule.clampFirstHour(hour)
+/** In-memory reminder hours by habit uuid, clamping and defaulting exactly as the prefs-backed one does. */
+class FakeReminderSettings(vararg hours: Pair<String, Int>) : ReminderSettings {
+    private val stored = MutableStateFlow(hours.associate { (uuid, hour) -> uuid to NudgeSchedule.clampHour(hour) })
 
-    override fun firstReminderHour(): Int = stored
+    override fun reminderHour(habitUuid: String): Int = stored.value[habitUuid] ?: NudgeSchedule.DEFAULT_HOUR
 
-    override fun setFirstReminderHour(hour: Int) {
-        stored = NudgeSchedule.clampFirstHour(hour)
+    override fun setReminderHour(habitUuid: String, hour: Int) {
+        stored.value = stored.value + (habitUuid to NudgeSchedule.clampHour(hour))
+    }
+
+    override fun earliestHour(): Int = (stored.value.values + NudgeSchedule.DEFAULT_HOUR).min()
+
+    override fun changes(): Flow<Unit> = stored.map { }
+}
+
+/** Records every reconcile, so a caller can be shown to have ensured a channel before posting to it. */
+class FakeHabitChannels : HabitChannels {
+    val synced = mutableListOf<List<Habit>>()
+
+    override fun sync(habits: List<Habit>) {
+        synced += habits
     }
 }
 

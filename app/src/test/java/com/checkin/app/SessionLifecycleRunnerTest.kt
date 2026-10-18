@@ -52,7 +52,7 @@ class SessionLifecycleRunnerTest {
 
     @Test
     fun `arming schedules both the reminder and the session's own day boundary`() = runTest {
-        repository.checkIn()
+        repository.open()
 
         runner().arm(now)
 
@@ -75,7 +75,7 @@ class SessionLifecycleRunnerTest {
      */
     @Test
     fun `a revive on a later day still targets the session's original boundary`() = runTest {
-        repository.checkIn()
+        repository.open()
         val nextDay = LocalDateTime.of(2026, 6, 16, 8, 0).atZone(zone).toInstant().toEpochMilli()
 
         runner().arm(nextDay)
@@ -96,7 +96,7 @@ class SessionLifecycleRunnerTest {
      */
     @Test
     fun `ensuring reinstates the instants that were already armed`() = runTest {
-        repository.checkIn()
+        repository.open()
         val armedReminder = now + 30 * 60 * 1000L
         alarms.seedArmed(reminderAt = armedReminder, boundaryAt = boundary)
 
@@ -109,7 +109,7 @@ class SessionLifecycleRunnerTest {
     /** A reminder instant already missed is re-derived, or a device coming back buzzes immediately. */
     @Test
     fun `ensuring re-derives a reminder whose instant has passed`() = runTest {
-        repository.checkIn()
+        repository.open()
         alarms.seedArmed(reminderAt = now - 1, boundaryAt = boundary)
 
         runner().ensureArmed(now)
@@ -124,7 +124,7 @@ class SessionLifecycleRunnerTest {
      */
     @Test
     fun `ensuring re-arms a boundary whose instant has passed rather than moving it`() = runTest {
-        repository.checkIn()
+        repository.open()
         alarms.seedArmed(reminderAt = 0L, boundaryAt = boundary)
         val nextDay = LocalDateTime.of(2026, 6, 16, 8, 0).atZone(zone).toInstant().toEpochMilli()
 
@@ -136,7 +136,7 @@ class SessionLifecycleRunnerTest {
     /** The alert ladder belongs to the session, not to whichever process noticed the alarms were gone. */
     @Test
     fun `ensuring leaves the reminder count alone`() = runTest {
-        repository.checkIn()
+        repository.open()
         alarms.remindersSent = 2
 
         runner().ensureArmed(now)
@@ -147,7 +147,7 @@ class SessionLifecycleRunnerTest {
     /** Nothing stored at all — an upgrade over a session that was already open. */
     @Test
     fun `ensuring derives both instants when nothing was stored`() = runTest {
-        repository.checkIn()
+        repository.open()
 
         runner().ensureArmed(now)
 
@@ -169,7 +169,7 @@ class SessionLifecycleRunnerTest {
 
     @Test
     fun `a fired reminder posts and arms the next one`() = runTest {
-        repository.checkIn()
+        repository.open()
 
         val outcome = runner().onReminderFired()
 
@@ -181,7 +181,7 @@ class SessionLifecycleRunnerTest {
     /** The first alerts; the rest accumulate on the shade rather than buzzing every two hours. */
     @Test
     fun `only the first reminder of a session alerts`() = runTest {
-        repository.checkIn()
+        repository.open()
         val runner = runner()
 
         runner.onReminderFired()
@@ -210,7 +210,7 @@ class SessionLifecycleRunnerTest {
      */
     @Test
     fun `a refused post re-arms without consuming the alert`() = runTest {
-        repository.checkIn()
+        repository.open()
         notifier.refuse = true
         val runner = runner()
 
@@ -229,7 +229,7 @@ class SessionLifecycleRunnerTest {
 
     @Test
     fun `the boundary closes the session stamped at midnight, not at the fire time`() = runTest {
-        val session = repository.checkIn()
+        val session = repository.open()
         // The alarm lands late — well into the following day.
         val late = FakeTimeSource(boundary + 3 * 60 * 60 * 1000L, today.plusDays(1))
         val runner = SessionLifecycleRunner(
@@ -254,7 +254,7 @@ class SessionLifecycleRunnerTest {
 
     @Test
     fun `the boundary drops both alarms and the reminder notification`() = runTest {
-        repository.checkIn()
+        repository.open()
 
         runner().onDayBoundaryFired()
 
@@ -269,7 +269,7 @@ class SessionLifecycleRunnerTest {
      */
     @Test
     fun `the boundary closes at the instant it was armed for, not the current zone's midnight`() = runTest {
-        val session = repository.checkIn()
+        val session = repository.open()
         alarms.seedArmed(reminderAt = 0L, boundaryAt = boundary)
         // The device has moved five hours east: recomputing here would land well before the armed
         // instant and silently delete hours the user worked.
@@ -290,7 +290,7 @@ class SessionLifecycleRunnerTest {
     /** Travelling the other way puts the recomputed midnight in the future; a stop instant never is. */
     @Test
     fun `the boundary never stamps a stop in the future`() = runTest {
-        val session = repository.checkIn()
+        val session = repository.open()
         val fireAt = boundary - 4 * 60 * 60 * 1000L
         alarms.seedArmed(reminderAt = 0L, boundaryAt = boundary)
         val early = SessionLifecycleRunner(

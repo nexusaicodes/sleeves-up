@@ -29,10 +29,15 @@ a bar.
 - **A session reminder** every couple of hours while you're checked in. It only asks — ignoring it
   costs you nothing. A session you forget about closes itself at midnight, so a check-in left running
   overnight can't record a sixteen-hour day.
-- **Check-in reminders** — on by default, around an hour you choose on first launch (changeable in
-  Settings) and once more two hours later, and only on a day you haven't checked in. Turn them off where you turn off any other notification: long-press one, or find
-  the **Check-In Reminders** channel in Android's notification settings for the app. Tapping one still
-  runs the same face check.
+- **Habits** — keep a separate record for each thing you're showing up for. A switcher in the top
+  bar picks the habit every tab shows: its own calendar, Reports, CSV and reminder. Nothing on screen
+  compares one habit with another. One session runs at a time, and the switcher stays on its habit
+  until you check out. Habits are archived rather than deleted, and come back from **Settings →
+  Manage habits** with their records intact.
+- **Check-in reminders** — on by default, one per habit, around the hour you choose for it, and only
+  on a day that habit has no session. Turn one off where you turn off any other notification:
+  long-press it, or find that habit's channel under **Habit Reminders** in Android's notification
+  settings for the app. Tapping one still runs the same face check.
 - **Self-contained** — Room-only storage, no backend. Export your log to CSV via the share sheet.
 
 ## Tabs
@@ -42,7 +47,7 @@ a bar.
 | **Check In** | Live timer and the check-in/out button, with today's sessions a tap away |
 | **History** | Monthly calendar marking every day you showed up; tap any day to see that day's sessions. Raw record, no stats — those live in Reports |
 | **Reports** | Pick a month or all time; every figure and chart follows — the numbers, days split, daily hours, hours by month, when your sessions start, how many you run a day, and CSV export of whatever is on screen |
-| **Settings** | About: privacy policy, feedback, open-source licences. Every notification is switched off from its own long-press, not from here |
+| **Settings** | Manage habits (names, reminder hours, archive and restore), and About: privacy policy, feedback, open-source licences. Every notification is switched off from its own long-press, not from here |
 
 ## Requirements
 

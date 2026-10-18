@@ -1,8 +1,9 @@
 package com.checkin.app.notify
 
 /**
- * The boolean extras a notification sets on its tap intent to tell [com.checkin.app.MainActivity]
- * what the user was answering. Each opens the presence gate; none is ever read by a service.
+ * The extras a notification sets on its tap intent to tell [com.checkin.app.MainActivity] what the
+ * user was answering: a boolean per action, each of which opens the presence gate, and the habit a
+ * nudge was about. None is ever read by a service.
  *
  * They live here rather than in `nudge/` because all three senders already deal in this
  * package — the timer, the session reminder and every nudge — while the Activity that reads them
@@ -33,6 +34,13 @@ object LaunchExtras {
     // extra rides an already-posted notification's PendingIntent, so on the one update where a
     // notification is live in the tray, its Check Out action still carries it.
 
-    /** Set by a nudge tap. Opens a session once the gate passes. */
+    /** Set by a nudge tap. Opens a session for [HABIT_UUID]'s habit once the gate passes. */
     const val CHECK_IN = "check_in"
+
+    /**
+     * Which habit a nudge tap is about, by uuid. **Absent on a nudge posted before habits existed** —
+     * an update can land with one still in the tray — and absent means the seed habit, which is the
+     * record that nudge was about.
+     */
+    const val HABIT_UUID = "habit_uuid"
 }

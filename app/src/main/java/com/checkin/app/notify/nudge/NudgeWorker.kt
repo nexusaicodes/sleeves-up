@@ -16,10 +16,10 @@ import java.util.concurrent.TimeUnit
  * documented there. The pass survives because it is the only place `reviveIfNeeded` and `prune` can
  * hang, and because a second chance at the day's nudge costs nothing.
  *
- * "Costs nothing" is [NudgeSnapshot.spentToday] doing that work, not the daily cap. A cap of
- * two lets a pass landing inside a band the alarm has already fired in send the *same* nudge again —
- * identical copy, same id, re-alerting on a high-importance channel, and the day's remaining slot
- * gone. The per-checkpoint rule is what makes a redundant pass genuinely free.
+ * "Costs nothing" is [NudgeSnapshot.spentToday] doing that work. Without it, a pass landing inside
+ * a band the alarm has already fired in sends the *same* habit's nudge again — identical copy, same
+ * id, re-alerting on a high-importance channel. Once per habit per day is what makes a redundant
+ * pass genuinely free.
  */
 class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 

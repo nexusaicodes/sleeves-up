@@ -9,7 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -17,12 +17,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.checkin.app.CheckInApplication
-import com.checkin.app.notify.nudge.chooseFirstReminderHour
 import com.checkin.app.platform.PromptSettings
 import com.checkin.app.ui.checkin.CheckOutCelebration
 import com.checkin.app.ui.checkin.CheckOutSignal
+import com.checkin.app.ui.habits.HabitsViewModel
+import com.checkin.app.ui.habits.NameHabitScreen
 import com.checkin.app.ui.navigation.AppNavScaffold
 import com.checkin.app.ui.presence.PresenceCheckSignal
 import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
@@ -31,9 +33,9 @@ import com.checkin.app.ui.welcome.FirstRun
 import com.checkin.app.ui.welcome.WelcomeScreen
 
 /**
- * The three surfaces that can occupy the whole window, in the order they outrank each other:
- * the first-run welcome, the presence gate, then the app — with the celebration over whichever
- * is showing.
+ * The four surfaces that can occupy the whole window, in the order they outrank each other:
+ * the first-run welcome, the naming step for a habit with no name, the presence gate, then the
+ * app — with the celebration over whichever is showing.
  *
  * **The welcome outranks the gate**, because an introduction the app owes is worth more than the
  * few seconds it delays an action, and the reverse ordering delivers the tour *after* the user
@@ -42,6 +44,11 @@ import com.checkin.app.ui.welcome.WelcomeScreen
  * are armed and its notifications live, so a nudge tap can raise the gate with the tour still
  * owed. The request survives the read (its 10-minute fuse only retires in [MainActivity.onStart][com.checkin.app.MainActivity.onStart]), so the
  * check-in follows immediately after.
+ *
+ * **The naming step outranks the gate for the same reason**, and its reachable case is the same
+ * one: an install updated onto habits owes a name for the record it carried, and a nudge already in
+ * its tray can raise the gate before the user has opened the app since. A gate passed first would
+ * check in to a habit the Check In screen then cannot name.
  *
  * Two states go away with it. Nothing can preempt the welcome, so its pager position cannot be
  * disposed mid-read the way the nav controller's would be — which is what the hoist below exists
@@ -58,16 +65,23 @@ fun AppRoot(onGatePassed: () -> Unit) {
     val context = LocalContext.current
     val container = remember(context) { (context.applicationContext as CheckInApplication).container }
     val settings = container.settings
-    val gateReason by PresenceCheckSignal.request.collectAsStateWithLifecycle()
+    val gateRequest by PresenceCheckSignal.request.collectAsStateWithLifecycle()
     val completed by CheckOutSignal.completed.collectAsStateWithLifecycle()
+    // Activity-scoped, shared with the nav scaffold's switcher: the tour and the naming step read the
+    // habits from the same instance, so a habit named here is the one the switcher then shows.
+    val habitsViewModel: HabitsViewModel = viewModel(factory = HabitsViewModel.Factory)
+    val habits by habitsViewModel.uiState.collectAsStateWithLifecycle()
 
     // Both mirrored so ending the welcome recomposes: PromptSettings is a synchronous prefs read
     // with no Flow behind it, so the writes alone would leave the tour on screen — and a skip
     // resolves the notification ask too, which the step below has to see on the same frame.
     var seenWelcome by rememberSaveable { mutableStateOf(settings.hasSeenWelcome()) }
     var askedNotifications by rememberSaveable { mutableStateOf(settings.hasAskedNotifications()) }
-    var tourReminderHour by rememberSaveable { mutableIntStateOf(container.reminderSettings.firstReminderHour()) }
-    val step = FirstRun.step(seenWelcome, askedNotifications)
+    val step = FirstRun.step(
+        seenWelcome = seenWelcome,
+        habitNeedsName = if (habits.loading) null else habits.needingName != null,
+        askedNotifications = askedNotifications,
+    )
 
     val endWelcome = { exit: FirstRun.Exit ->
         settings.markWelcomeSeen()
@@ -88,22 +102,29 @@ fun AppRoot(onGatePassed: () -> Unit) {
             // No BackHandler by design: the branches around it map back to dismiss, which
             // returns the user to what they were doing, and there is nothing here to return to.
             // Back leaves the app and the welcome is owed again — only ending it writes it.
-            // The reminder page sets the same hour Settings does, through the same
-            // chooseFirstReminderHour, so the store-then-re-arm has one tested path wherever the
-            // hour is chosen. Held here rather than in a ViewModel: the tour is shown once, and a
-            // ViewModel at this scope would outlive it for the rest of the activity.
+            // The habits page names habits and sets their hours through the same HabitsViewModel
+            // the Habits screen uses, so the store-then-re-arm has one tested path wherever a
+            // habit is named.
             WelcomeScreen(
-                reminderHour = tourReminderHour,
-                onReminderHourChosen = { hour ->
-                    tourReminderHour =
-                        container.reminderSettings.chooseFirstReminderHour(hour, container::launchNudgeRearm)
-                },
+                habits = habits.active,
+                nameProblem = habitsViewModel::nameProblem,
+                onSaveHabit = { id, name, hour -> habitsViewModel.save(id, name, hour) },
                 onFinished = { endWelcome(FirstRun.Exit.FINISHED) },
                 onSkipped = { endWelcome(FirstRun.Exit.SKIPPED) },
             )
         }
 
-        gateReason != Reason.NONE -> {
+        // The instant before the habits table has answered: nothing is drawn, rather than the app
+        // drawn and then replaced by the naming step, or the gate opened ahead of it.
+        step == FirstRun.Step.PENDING -> Unit
+
+        step == FirstRun.Step.NAME_HABIT -> habits.needingName?.let { entry ->
+            // No BackHandler, for the welcome's reason: there is nothing behind this to return to.
+            // Keyed so a second unnamed habit would get fresh fields rather than this one's typing.
+            key(entry.habit.id) { NameHabitScreen(entry = entry, viewModel = habitsViewModel) }
+        }
+
+        gateRequest.reason != Reason.NONE -> {
             // Full-screen modal gate: the nav host is not composed underneath, so nothing behind
             // it is reachable by touch, accessibility focus, or the camera. Back dismisses the
             // gate rather than the (absent) host.

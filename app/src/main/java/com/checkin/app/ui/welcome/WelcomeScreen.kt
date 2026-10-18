@@ -42,39 +42,42 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.checkin.app.R
+import com.checkin.app.data.NameProblem
+import com.checkin.app.notify.nudge.NudgeSchedule
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.FullScreenMessage
 import com.checkin.app.ui.components.MESSAGE_BODY_TO_ACTION_GAP
 import com.checkin.app.ui.components.MESSAGE_PADDING
 import com.checkin.app.ui.components.MessageIcon
-import com.checkin.app.ui.components.ReminderHourPicker
 import com.checkin.app.ui.components.animationsEnabled
 import com.checkin.app.ui.components.reminderTimeSummary
+import com.checkin.app.ui.habits.HabitEditorDialog
+import com.checkin.app.ui.habits.HabitEntry
 import com.checkin.app.ui.theme.CheckInAppTheme
 import kotlinx.coroutines.launch
 
 /**
  * The first-run tour: three pages, shown once, ahead of the `POST_NOTIFICATIONS` request rather than
- * beside it. [onFinished] releases the dialog, which is why the last page describes the reminders it
- * is about to ask for.
+ * beside it. [onFinished] releases the dialog, which is why the last page — where the user names
+ * their habits and picks when each is reminded — describes the reminders it is about to ask for.
  *
  * [onSkipped] deliberately does not release it. Skipping and finishing are the same in every other
  * respect — both retire the tour for good — but a skip means nothing has explained the app, so
  * firing the dialog behind it would reproduce in one tap the defect the tour was built to close.
  * Notifications are not lost: the presence gate asks at the first check-in, beside the camera.
  *
- * [reminderHour] is the caller's: [onReminderHourChosen] is expected to store it immediately, so a
- * choice survives the tour being left by Back before it is finished.
+ * [habits] are the caller's, read from the database: [onSaveHabit] is expected to write at once —
+ * a null id creating a habit — so a habit named here survives the tour being left by Back before it
+ * is finished. [nameProblem] is asked before every save, with the habit's id (null for a new one).
  */
 @Composable
 fun WelcomeScreen(
-    reminderHour: Int,
-    onReminderHourChosen: (Int) -> Unit,
+    habits: List<HabitEntry>,
+    nameProblem: (name: String, habitId: Long?) -> NameProblem?,
+    onSaveHabit: (habitId: Long?, name: String, hour: Int) -> Unit,
     onFinished: () -> Unit,
     onSkipped: () -> Unit,
 ) {
@@ -136,7 +139,7 @@ fun WelcomeScreen(
             ) { page ->
                 // No horizontal padding above this: each page brings MESSAGE_PADDING of its own, so
                 // the shared message layout owns its insets exactly as it does behind the gate.
-                WelcomePageContent(pages[page], reminderHour, onReminderHourChosen)
+                WelcomePageContent(pages[page], habits, nameProblem, onSaveHabit)
             }
 
             PageDots(pageCount = pages.size, current = pagerState.currentPage)
@@ -170,37 +173,79 @@ fun WelcomeScreen(
 
 /** Drawn through the shared full-screen message, so the tour and the gate cannot drift apart. */
 @Composable
-private fun WelcomePageContent(page: WelcomePage, reminderHour: Int, onReminderHourChosen: (Int) -> Unit) {
-    var picking by rememberSaveable { mutableStateOf(false) }
+private fun WelcomePageContent(
+    page: WelcomePage,
+    habits: List<HabitEntry>,
+    nameProblem: (name: String, habitId: Long?) -> NameProblem?,
+    onSaveHabit: (habitId: Long?, name: String, hour: Int) -> Unit,
+) {
+    // The habit being named or edited, NEW_HABIT for "Add another habit"; null when no dialog is open.
+    var editing by rememberSaveable { mutableStateOf<Long?>(null) }
     FullScreenMessage(
         icon = { PageIcon(page.icon) },
         title = stringResource(page.titleRes),
         message = stringResource(page.bodyRes),
         actions = {
-            if (page.choosesReminderHour) {
+            if (page.namesHabits) {
                 Spacer(modifier = Modifier.height(MESSAGE_BODY_TO_ACTION_GAP))
-                // The label is only the time it shows, so the action names what a tap does.
-                val changeLabel = stringResource(R.string.reminder_time_change)
-                FilledTonalButton(
-                    onClick = { picking = true },
-                    modifier = Modifier.semantics { onClick(label = changeLabel, action = null) },
-                ) {
-                    Text(reminderTimeSummary(reminderHour))
-                }
+                HabitButtons(habits = habits, onEdit = { editing = it })
             }
         },
     )
-    if (picking) {
-        ReminderHourPicker(
-            selectedHour = reminderHour,
-            onPicked = { hour ->
-                picking = false
-                onReminderHourChosen(hour)
-            },
-            onDismiss = { picking = false },
-        )
+    editing?.let { id ->
+        val entry = habits.firstOrNull { it.habit.id == id }
+        if (id == NEW_HABIT || entry != null) {
+            HabitEditorDialog(
+                title = stringResource(
+                    if (entry?.habit?.name ==
+                        null
+                    ) {
+                        R.string.habit_editor_new_title
+                    } else {
+                        R.string.habit_editor_edit_title
+                    },
+                ),
+                initialName = entry?.habit?.name.orEmpty(),
+                initialHour = entry?.reminderHour ?: NudgeSchedule.DEFAULT_HOUR,
+                nameProblem = { nameProblem(it, entry?.habit?.id) },
+                onSave = { name, hour ->
+                    onSaveHabit(entry?.habit?.id, name, hour)
+                    editing = null
+                },
+                onDismiss = { editing = null },
+            )
+        }
     }
 }
+
+/**
+ * One button per habit — "Name your first habit" for the one the install starts with, then each
+ * habit's name and hour — and a way to add another once every habit has a name. Adding is offered
+ * only then, so the tour never creates a second habit beside a first that is still nameless.
+ */
+@Composable
+private fun HabitButtons(habits: List<HabitEntry>, onEdit: (Long) -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        habits.forEach { entry ->
+            val name = entry.habit.name
+            FilledTonalButton(onClick = { onEdit(entry.habit.id) }) {
+                Text(
+                    if (name == null) {
+                        stringResource(R.string.welcome_name_first_habit)
+                    } else {
+                        stringResource(R.string.welcome_habit_summary, name, reminderTimeSummary(entry.reminderHour))
+                    },
+                )
+            }
+        }
+        if (habits.isNotEmpty() && habits.all { it.habit.name != null }) {
+            TextButton(onClick = { onEdit(NEW_HABIT) }) { Text(stringResource(R.string.welcome_add_habit)) }
+        }
+    }
+}
+
+/** A row id no habit can have — Room's ids start at 1 — standing for the "Add another habit" dialog. */
+private const val NEW_HABIT = -1L
 
 /** An expression, so adding a [WelcomeIcon] fails to compile rather than falling through to a bell. */
 @Composable
@@ -272,6 +317,12 @@ private val ACTION_BOTTOM_GAP = 16.dp
 @Composable
 private fun WelcomeScreenPreview() {
     CheckInAppTheme {
-        WelcomeScreen(reminderHour = 10, onReminderHourChosen = {}, onFinished = {}, onSkipped = {})
+        WelcomeScreen(
+            habits = emptyList(),
+            nameProblem = { _, _ -> null },
+            onSaveHabit = { _, _, _ -> },
+            onFinished = {},
+            onSkipped = {},
+        )
     }
 }

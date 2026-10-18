@@ -2,8 +2,14 @@ package com.checkin.app.notify.nudge
 
 import com.checkin.app.R
 
-/** The wording of a nudge. Held as resource ids so copy stays localizable. */
-data class NudgeCopy(val titleRes: Int, val bodyRes: Int)
+/**
+ * The wording of a nudge. Held as resource ids so copy stays localizable. [titleRes] takes the
+ * habit's name as its one argument, because a reminder that does not say which habit it is about is
+ * one a user with two habits cannot act on; [unnamedTitleRes] stands in for a habit still owed a
+ * name — an install updated onto habits whose user has not yet opened the app, which keeps being
+ * reminded exactly as before the update.
+ */
+data class NudgeCopy(val titleRes: Int, val unnamedTitleRes: Int, val bodyRes: Int)
 
 /**
  * The copy for each nudge — exactly one wording apiece.
@@ -16,13 +22,10 @@ data class NudgeCopy(val titleRes: Int, val bodyRes: Int)
 object NudgeCatalog {
 
     private val copy: Map<Nudge, NudgeCopy> = mapOf(
-        Nudge.NOT_CHECKED_IN_FIRST to NudgeCopy(
-            R.string.nudge_not_checked_in_first_title,
-            R.string.nudge_not_checked_in_first_body,
-        ),
-        Nudge.NOT_CHECKED_IN_FOLLOW_UP to NudgeCopy(
-            R.string.nudge_not_checked_in_follow_up_title,
-            R.string.nudge_not_checked_in_follow_up_body,
+        Nudge.NOT_CHECKED_IN to NudgeCopy(
+            titleRes = R.string.nudge_not_checked_in_title,
+            unnamedTitleRes = R.string.nudge_not_checked_in_unnamed_title,
+            bodyRes = R.string.nudge_not_checked_in_body,
         ),
     )
 

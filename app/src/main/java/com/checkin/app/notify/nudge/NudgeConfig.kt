@@ -3,11 +3,14 @@ package com.checkin.app.notify.nudge
 /**
  * How often a nudge may be sent. Its own file because this is what anyone tuning nudge cadence is
  * looking for, and the three files they would try first — [NudgeEligibility], which reads these
- * values but does not own them, [NudgeSchedule], which owns the checkpoint hours, and
- * [NudgeCatalog], which owns the copy — are all dead ends.
+ * values but does not own them, [NudgeSchedule], which owns the band hours, and [NudgeCatalog],
+ * which owns the copy — are all dead ends.
  *
- * Frequency is bounded three ways and the checkpoint hours are **not** one of them: this type holds
- * two of the bounds, and [NudgeSnapshot.spentToday] is the third.
+ * Frequency is bounded two ways and the band hours are **not** one of them: this type holds the gap,
+ * and [NudgeSnapshot.spentToday] is the other — one nudge per habit per day. **There is no daily
+ * cap across habits**, deliberately: a user with four habits asked for four reminders, and a cap
+ * would decide on their behalf which habits go unmentioned. The gap is what stops those reminders
+ * arriving as a burst.
  *
  * **Cadence only, and there is no longer any other kind of nudge constant.** A reader may come here
  * hunting an attribution window — how long after a nudge a check-in still counted as caused by it.
@@ -16,30 +19,17 @@ package com.checkin.app.notify.nudge
  */
 data class NudgeConfig(
     /**
-     * The coarse frequency bound: how many nudges a calendar day may carry at most.
+     * The minimum spacing between two nudges, **whichever habits they belong to**.
      *
-     * Two, matching the two checkpoints: a cap of one means the first reminder consumes the day and
-     * the follow-up — the one that exists because the day got away — never sends. With one send per
-     * checkpoint already enforced by [NudgeSnapshot.spentToday], this is a backstop rather
-     * than the binding rule; it must never fall below the checkpoint count.
-     */
-    val maxPerDay: Int = 2,
-    /**
-     * The minimum spacing between two nudges, whichever checkpoints they belong to.
+     * Global rather than per habit, because per habit it would bound nothing: each habit sends once
+     * a day anyway. What it stops is two habits with the same hour — or one whose inexact alarm
+     * slipped into another's — arriving back to back as a pair of high-importance messages, which
+     * reads as the app malfunctioning rather than as two reminders.
      *
-     * The checkpoint hours look like they already guarantee this, and they do not: the alarm is
-     * `setAndAllowWhileIdle`, so Doze can defer a delivery by hours. A first checkpoint landing
-     * 1h57m late would otherwise be followed by the follow-up three minutes later — two
-     * high-importance messages back to back, and the whole day's budget spent at once.
-     *
-     * Ninety minutes is under the gap between the two checkpoints
-     * ([NudgeSchedule.FOLLOW_UP_OFFSET_HOURS]), so it never blocks a delivery that arrived on time,
-     * and well over the window in which a repeat reads as a malfunction.
-     *
-     * Note this defers a checkpoint rather than cancelling it: the nudge is not marked sent, and
-     * [NudgeEligibility.nextEligibleAt] arms the alarm for the instant the gap clears while the band
-     * is still open. That is what keeps the rule from silently costing a user the day's second
-     * message.
+     * Note this defers a nudge rather than cancelling it: the nudge is not marked sent, and
+     * [NudgeEligibility.nextAlarmAcross] arms the alarm for the instant the gap clears while the
+     * band is still open. That is what keeps the rule from silently costing a habit its reminder,
+     * and why [NudgeSchedule]'s latest choosable hour leaves room for it before midnight.
      */
     val minGapMs: Long = DEFAULT_MIN_GAP_MS,
     /**

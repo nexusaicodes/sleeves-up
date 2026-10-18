@@ -3,7 +3,6 @@ package com.checkin.app
 import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.nudge.Nudge
 import com.checkin.app.notify.nudge.NudgeCatalog
-import com.checkin.app.notify.nudge.NudgeSchedule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -23,47 +22,30 @@ class NudgeCatalogTest {
         }
     }
 
-    /**
-     * Distinct copy per nudge. A second send in a day arriving as the same string reads as a stuck
-     * loop rather than as a message that came back, which is the whole reason there is one wording
-     * per checkpoint instead of one shared wording sent twice.
-     */
+    /** Slots are fixed numbers; two nudges on one would replace each other in a habit's tray. */
     @Test
-    fun `no two nudges share a resource pair`() {
-        val all = Nudge.entries.map { NudgeCatalog.copyFor(it) }
-        assertEquals(all.size, all.toSet().size)
-    }
-
-    /** One nudge per checkpoint, so no band can resolve to a nudge that does not exist. */
-    @Test
-    fun `every checkpoint has exactly one nudge`() {
-        assertEquals(
-            NudgeSchedule.Checkpoint.entries.toSet(),
-            Nudge.entries.map { it.checkpoint }.toSet(),
-        )
-        assertEquals(NudgeSchedule.Checkpoint.entries.size, Nudge.entries.size)
-    }
-
-    /** Ids are dedicated constants; a collision would make one nudge replace another in the tray. */
-    @Test
-    fun `no two nudges share a notification id`() {
-        val ids = Nudge.entries.map { it.notificationId }
-        assertEquals(ids.size, ids.toSet().size)
+    fun `no two nudges share a slot`() {
+        val slots = Nudge.entries.map { it.slot }
+        assertEquals(slots.size, slots.toSet().size)
     }
 
     /** A retired id reused would let a new nudge replace a stale one in an updated install's tray. */
     @Test
     fun `no nudge posts under a retired id`() {
-        val ids = Nudge.entries.map { it.notificationId }.toSet()
+        val ids = (1L..100L).flatMap { habit -> Nudge.entries.map { it.notificationIdFor(habit) } }
         assertTrue(ids.none { it in NotificationIds.RETIRED_NUDGES })
     }
 
-    /** A ledger key resolves whether it was written by this build or an earlier one. */
+    /**
+     * A ledger key resolves whether this build wrote it or v3.0 did. Every one of v3.0's three keys
+     * stands for today's one nudge, since each was the single record's "not checked in" reminder.
+     */
     @Test
     fun `stored keys resolve, legacy ones included`() {
         Nudge.entries.forEach { assertEquals(it, Nudge.fromStoredKey(it.name)) }
-        assertEquals(Nudge.NOT_CHECKED_IN_FIRST, Nudge.fromStoredKey("NOT_CHECKED_IN_MORNING"))
-        assertEquals(Nudge.NOT_CHECKED_IN_FOLLOW_UP, Nudge.fromStoredKey("NOT_CHECKED_IN_AFTERNOON"))
-        assertNull(Nudge.fromStoredKey("NOT_CHECKED_IN_EVENING"))
+        listOf("NOT_CHECKED_IN_MORNING", "NOT_CHECKED_IN_AFTERNOON", "NOT_CHECKED_IN_EVENING").forEach {
+            assertEquals(it, Nudge.NOT_CHECKED_IN, Nudge.fromStoredKey(it))
+        }
+        assertNull(Nudge.fromStoredKey("SOMETHING_ELSE"))
     }
 }

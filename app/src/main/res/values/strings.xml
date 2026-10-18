@@ -26,6 +26,9 @@
     <!-- Check-In Screen -->
     <string name="check_in">Check In</string>
     <string name="check_out">Check Out</string>
+    <!-- The button names the habit it writes to: the switcher is the only other place that says. -->
+    <string name="check_in_to">Check in to %1$s</string>
+    <string name="check_out_of">Check out of %1$s</string>
     <string name="todays_sessions_summary">%1$s · %2$s today</string>
     <string name="session_in_progress">ongoing</string>
     <!-- A settled session row, spoken as one phrase: its clock range, then its duration. -->
@@ -78,30 +81,32 @@
     <string name="reminder_title">Still checked in?</string>
     <string name="reminder_text">Your session is still running. It closes on its own at midnight.</string>
 
-    <!-- Check-in nudges. This channel is the only opt-out there is — there is no in-app switch — so
-         the name has to be the words a user hunting for one would look for, and the description has
-         to say what turning it off actually stops. "Nudge" is internal vocabulary and stays out of
-         both. A channel's name and description are updatable after creation; its id and importance
-         are not. The name is near-synonymous with "Session Reminders" one row away, so the two
-         descriptions carry the difference: muting the wrong one costs the prompt that catches a
-         forgotten open session. "At most two a day" is NudgeConfig.maxPerDay, not a round number
-         chosen to sound sparing: if that value changes, this line is wrong. It deliberately says
-         nothing about spacing — the minimum gap is ninety minutes, which is not "hours apart". -->
+    <!-- Check-in reminders, one channel per habit, in one group. Each habit's channel is the only
+         opt-out there is for that habit's reminder — there is no in-app switch — so the name has to
+         be the words a user hunting for one would look for, and the description has to say what
+         turning it off actually stops. "Nudge" is internal vocabulary and stays out of all of them.
+         A channel's name and description are updatable after creation; its id and importance are
+         not. "Session Reminders" sits near these, so the descriptions carry the difference: muting
+         the wrong one costs the prompt that catches a forgotten open session. "Once a day at most"
+         is one nudge per habit per day, not a round number chosen to sound sparing: if that rule
+         changes, these lines are wrong. nudge_channel_* name the seed habit's channel until the
+         habit has a name of its own. -->
+    <string name="habit_channel_group_name">Habit Reminders</string>
+    <string name="habit_channel_name">%1$s Reminders</string>
+    <string name="habit_channel_description">Reminds you to check in to %1$s on days you haven\'t yet. Once a day at most.</string>
     <string name="nudge_channel_name">Check-In Reminders</string>
-    <string name="nudge_channel_description">Occasional reminders when you haven\'t checked in. At most two a day.</string>
+    <string name="nudge_channel_description">Reminds you to check in on days you haven\'t yet. Once a day at most.</string>
 
-    <!-- One pair per checkpoint, because a second send in a day arriving as the same string reads as
-         a stuck loop rather than as a message that came back. Each checkpoint has exactly one
-         wording — no variants: nothing in the app can tell two arms apart, so a second one is only a
-         second string to keep in step. Copy never warms or grows more urgent across the day —
-         escalating would invent a deadline this app does not have, and would grade a day that is not
-         over. Both are time-neutral because the user picks the hour, which can be any time of day.
-         No notification names the hour: delivery is best-effort, so a stated time is a punctuality
-         promise the app cannot keep. -->
-    <string name="nudge_not_checked_in_first_title">Ready when you are</string>
-    <string name="nudge_not_checked_in_first_body">You haven\'t checked in yet today. Tap to start your session.</string>
-    <string name="nudge_not_checked_in_follow_up_title">No session yet today</string>
-    <string name="nudge_not_checked_in_follow_up_body">Whenever you start, it counts — a short day is still a day shown up for.</string>
+    <!-- One wording, no variants: nothing in the app can tell two arms apart, so a second one is only
+         a second string to keep in step. The title names the habit, because a reminder that does
+         not say which habit it is about is one a user with two cannot act on; the unnamed title is
+         for a habit still owed a name. Copy never warms or grows urgent — that would invent a
+         deadline this app does not have, and grade a day that is not over. Time-neutral, because the
+         user picks the hour. No notification names the hour: delivery is best-effort, so a stated
+         time is a punctuality promise the app cannot keep. -->
+    <string name="nudge_not_checked_in_title">%1$s: no session yet today</string>
+    <string name="nudge_not_checked_in_unnamed_title">No session yet today</string>
+    <string name="nudge_not_checked_in_body">Whenever you start, it counts — a short day is still a day shown up for.</string>
 
     <!--
       The first-run welcome tour, shown once before anything is asked for. The order is the point:
@@ -120,8 +125,15 @@
     -->
     <string name="welcome_presence_title">Presence, checked on this device</string>
     <string name="welcome_presence_body">The front camera confirms someone\'s there at check-in and check-out. No photo is taken and no image ever leaves the camera.</string>
-    <string name="welcome_reminders_title">A reminder if the day gets away</string>
-    <string name="welcome_reminders_body">If you haven\'t checked in, Sleeves Up reminds you around the hour you pick. Turn reminders off with a long press on one.</string>
+    <!-- The last page names the user's habits and says what reminders are, immediately before the
+         notification dialog that follows it. "Habit", never "goal": a goal is a target, and this app
+         has none. -->
+    <string name="welcome_habits_title">One record for each habit</string>
+    <string name="welcome_habits_body">Name what you\'re showing up for. Each habit keeps its own record, and on days you haven\'t checked in, Sleeves Up reminds you once, around the hour you pick. Turn a reminder off with a long press on it.</string>
+    <string name="welcome_name_first_habit">Name your first habit</string>
+    <string name="welcome_add_habit">Add another habit</string>
+    <!-- A named habit on the tour's last page: its name and when it is reminded. -->
+    <string name="welcome_habit_summary">%1$s · %2$s</string>
     <!-- Spoken by the dot row. HorizontalPager publishes a scroll range and no page count, so
          without this a screen reader is never told where in the tour it is. -->
     <string name="welcome_page_position">Page %1$d of %2$d</string>
@@ -228,19 +240,61 @@
     <string name="export_failed">Export failed: %1$s</string>
 
     <!--
-      The reminder hour, chosen on the tour's last page and changeable in Settings. "Around" is
-      load-bearing on every time stated: the alarm is inexact, so the hour is when a reminder becomes
-      due, not when it lands. The tour's button and the Settings row share the one summary string.
+      A habit's reminder hour, chosen wherever the habit is named and changeable on the Habits
+      screen. "Around" is load-bearing on every time stated: the alarm is inexact, so the hour is
+      when a reminder becomes due, not when it lands. Every place the hour is shown shares the one
+      summary string.
     -->
-    <string name="reminders_section">Reminders</string>
-    <string name="reminder_time_label">Reminder time</string>
     <string name="reminder_time_value">Around %1$s</string>
-    <!-- The tour button's click action, spoken by TalkBack after the summary it shows. -->
+    <!-- A time button's click action, spoken by TalkBack after the summary it shows. -->
     <string name="reminder_time_change">Change reminder time</string>
     <string name="reminder_time_dialog_title">Reminder Time</string>
     <string name="reminder_time_cancel">Cancel</string>
 
-    <!-- About. Settings holds this and the reminder hour — see SettingsScreen for why nothing else. -->
+    <!--
+      Habits. Each is a record of its own, viewed alone: nothing here may compare two habits, rank
+      them, or total them — no "most consistent", no combined figure. "Habit", never "goal".
+    -->
+    <string name="nav_habits">Habits</string>
+    <string name="habits_section">Habits</string>
+    <string name="habits_manage">Manage habits</string>
+    <string name="habits_archived_section">Archived</string>
+    <string name="habits_archived_note">Archived habits keep their records and send no reminders.</string>
+    <string name="habit_new">New habit</string>
+    <string name="habit_edit">Edit</string>
+    <string name="habit_archive">Archive</string>
+    <string name="habit_restore">Restore</string>
+    <string name="habit_unnamed">Unnamed habit</string>
+    <string name="habit_archived">%1$s archived. Its record is kept.</string>
+    <string name="habit_archive_running">Check out of %1$s before archiving it</string>
+    <string name="habit_archive_last">Keep at least one habit</string>
+    <string name="habit_restore_duplicate">Another habit is already called %1$s</string>
+    <!-- The switcher in the top bar. While a session runs it is locked to that habit on every tab. -->
+    <string name="habit_switcher_cd">Habit: %1$s. Switch habit</string>
+    <string name="habit_switch_locked">Check out of %1$s to switch</string>
+    <!-- A nudge for one habit tapped while another habit's session is running. No gate opens. -->
+    <string name="habit_running_check_out_first">%1$s is running. Check out of it first.</string>
+    <string name="habit_running_check_out_first_unnamed">A session is running. Check out of it first.</string>
+    <!-- The editor dialog shared by every place a habit is created or edited. -->
+    <string name="habit_editor_new_title">New Habit</string>
+    <string name="habit_editor_edit_title">Edit Habit</string>
+    <string name="habit_name_label">Name</string>
+    <string name="habit_name_blank">Give it a name</string>
+    <plurals name="habit_name_too_long">
+        <item quantity="one">Keep it to %d character</item>
+        <item quantity="other">Keep it to %d characters</item>
+    </plurals>
+    <string name="habit_name_duplicate">You already have a habit with this name</string>
+    <string name="habit_save">Save</string>
+    <string name="habit_cancel">Cancel</string>
+    <!-- The first-run naming step: owed by a habit with no name — an install updated onto habits, or
+         a tour skipped before the habit was named. It cannot be backed out of, because the Check In
+         button names the habit and has nothing to say until it has a name. -->
+    <string name="name_habit_title">Name your habit</string>
+    <string name="name_habit_body">Sleeves Up keeps a separate record for each habit. Name this one — anything you\'ve already recorded stays with it — and pick roughly when to be reminded.</string>
+    <string name="name_habit_continue">Continue</string>
+
+    <!-- About. Settings holds this and the link to Habits — see SettingsScreen for why nothing else. -->
     <string name="about_section">About</string>
     <string name="about_version">Version %1$s (build %2$d)</string>
     <string name="about_developer">Nexus AI Technology Labs</string>
@@ -283,6 +337,7 @@
     <string name="notification_channel_name">Check-In Timer</string>
     <string name="notification_channel_description">Shows the active check-in timer</string>
     <string name="notification_title">Checked In</string>
+    <string name="notification_title_habit">Checked In: %1$s</string>
     <!-- The elapsed time is drawn by the platform's own chronometer in the timestamp slot, so the
          body must not print it too — it would appear twice, and the copy would be the stale one. -->
     <string name="notification_running">Timing your session</string>

@@ -3,6 +3,7 @@ package com.checkin.app
 import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.platform.csvHeader
 import com.checkin.app.platform.csvRow
+import com.checkin.app.platform.exportFileName
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -64,5 +65,22 @@ class CsvFormatTest {
         assertEquals(9, fields.size)
         assertEquals("0.00", fields[3])
         (4..8).forEach { assertEquals("0", fields[it]) }
+    }
+
+    /** The habit names the file, reduced so no name can put a separator or a rejected character in it. */
+    @Test
+    fun `the file is named for its habit, safely`() {
+        assertEquals(
+            "checkin_morning_run_2026-06-01_2026-06-30.csv",
+            exportFileName("Morning run", "2026-06-01", "2026-06-30"),
+        )
+        assertEquals("checkin_a_b_2026-06-01_2026-06-30.csv", exportFileName("../a/b", "2026-06-01", "2026-06-30"))
+        assertEquals("checkin_café_2026-06-01_2026-06-30.csv", exportFileName("Café!", "2026-06-01", "2026-06-30"))
+    }
+
+    @Test
+    fun `a habit with no usable name still gets a file`() {
+        assertEquals("checkin_habit_2026-06-01_2026-06-30.csv", exportFileName(null, "2026-06-01", "2026-06-30"))
+        assertEquals("checkin_habit_2026-06-01_2026-06-30.csv", exportFileName("!!!", "2026-06-01", "2026-06-30"))
     }
 }

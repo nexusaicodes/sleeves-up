@@ -37,4 +37,20 @@ data class CheckInSession(
      */
     @ColumnInfo(name = "closed_by", defaultValue = "NULL")
     val closedBy: ClosedBy? = null,
+
+    /**
+     * The [Habit] this session belongs to. Its column default is [Habit.SEED_ID], and the migration's
+     * `DEFAULT` says the same: that is how every session recorded before habits existed lands in
+     * the habit the upgrade turned the old record into.
+     *
+     * **No foreign key, deliberately.** Adding one to an existing table means rebuilding it, and
+     * habits are never deleted, so the row this points at always exists. Every query that reads a
+     * record filters on it; the open-session queries alone do not, because there is one open session
+     * across all habits and that rule is only a single query while they stay unscoped.
+     *
+     * Undefaulted in Kotlin for the reason [closedBy]'s writer is: a new insert that never mentioned
+     * the habit would silently file its session under the seed one.
+     */
+    @ColumnInfo(name = "habit_id", defaultValue = "1", index = true)
+    val habitId: Long,
 )

@@ -17,17 +17,53 @@ class FirstRunTest {
 
     @Test
     fun `a fresh install is owed the welcome before anything else`() {
-        assertEquals(Step.WELCOME, FirstRun.step(seenWelcome = false, askedNotifications = false))
+        assertEquals(
+            Step.WELCOME,
+            FirstRun.step(seenWelcome = false, habitNeedsName = true, askedNotifications = false),
+        )
     }
 
     @Test
     fun `the welcome hands off to the notification request`() {
-        assertEquals(Step.ASK_NOTIFICATIONS, FirstRun.step(seenWelcome = true, askedNotifications = false))
+        assertEquals(
+            Step.ASK_NOTIFICATIONS,
+            FirstRun.step(seenWelcome = true, habitNeedsName = false, askedNotifications = false),
+        )
     }
 
     @Test
     fun `nothing is owed once both have been done`() {
-        assertEquals(Step.NONE, FirstRun.step(seenWelcome = true, askedNotifications = true))
+        assertEquals(Step.NONE, FirstRun.step(seenWelcome = true, habitNeedsName = false, askedNotifications = true))
+    }
+
+    /**
+     * The naming step outranks the dialog, and the app, because the Check In button names the habit.
+     * Its reachable case is an install updated onto habits: the tour long since seen, notifications
+     * long since asked, and the record it carried still unnamed.
+     */
+    @Test
+    fun `an unnamed habit is named before the notification request and the app`() {
+        assertEquals(
+            Step.NAME_HABIT,
+            FirstRun.step(seenWelcome = true, habitNeedsName = true, askedNotifications = false),
+        )
+        assertEquals(
+            Step.NAME_HABIT,
+            FirstRun.step(seenWelcome = true, habitNeedsName = true, askedNotifications = true),
+        )
+    }
+
+    /** The welcome still comes first: it is where a fresh install names its habit to begin with. */
+    @Test
+    fun `the welcome outranks naming`() {
+        assertEquals(Step.WELCOME, FirstRun.step(seenWelcome = false, habitNeedsName = true, askedNotifications = true))
+    }
+
+    /** Never guessed before the habits table answers, in either direction. */
+    @Test
+    fun `an unanswered naming question holds everything after the welcome`() {
+        assertEquals(Step.PENDING, FirstRun.step(seenWelcome = true, habitNeedsName = null, askedNotifications = false))
+        assertEquals(Step.PENDING, FirstRun.step(seenWelcome = true, habitNeedsName = null, askedNotifications = true))
     }
 
     /**
@@ -38,28 +74,33 @@ class FirstRunTest {
      */
     @Test
     fun `an install updated onto this build still sees the welcome`() {
-        assertEquals(Step.WELCOME, FirstRun.step(seenWelcome = false, askedNotifications = true))
+        assertEquals(
+            Step.WELCOME,
+            FirstRun.step(seenWelcome = false, habitNeedsName = false, askedNotifications = true),
+        )
     }
 
     /** Walked rather than asserted cell by cell: what must hold is that it only ever moves forward. */
     @Test
     fun `the sequence never returns to the welcome`() {
         var seenWelcome = false
+        var needsName = true
         var askedNotifications = false
         val walked = mutableListOf<Step>()
 
-        repeat(3) {
-            val step = FirstRun.step(seenWelcome, askedNotifications)
+        repeat(4) {
+            val step = FirstRun.step(seenWelcome, needsName, askedNotifications)
             walked += step
             when (step) {
                 Step.WELCOME -> seenWelcome = true
+                Step.NAME_HABIT -> needsName = false
                 Step.ASK_NOTIFICATIONS -> askedNotifications = true
-                Step.NONE -> Unit
+                Step.PENDING, Step.NONE -> Unit
             }
         }
 
-        assertEquals(listOf(Step.WELCOME, Step.ASK_NOTIFICATIONS, Step.NONE), walked)
-        assertEquals(Step.NONE, FirstRun.step(seenWelcome, askedNotifications))
+        assertEquals(listOf(Step.WELCOME, Step.NAME_HABIT, Step.ASK_NOTIFICATIONS, Step.NONE), walked)
+        assertEquals(Step.NONE, FirstRun.step(seenWelcome, needsName, askedNotifications))
     }
 
     /**

@@ -65,3 +65,20 @@ internal fun csvRow(key: String, summary: DailyAggregate?): String {
  * bytes a test pins and the bytes a file gets are the same expression.
  */
 internal fun csvHeader(): String = CSV_HEADER
+
+/**
+ * The exported file's name: `checkin_<habit>_<start>_<end>.csv`, the habit reduced to letters,
+ * digits, `-` and `_` so no name can put a path separator or a character a share target rejects into
+ * it. A habit still owed a name, or one with nothing left after the reduction, is `habit` — the file
+ * is still that habit's alone, it just cannot say so.
+ */
+internal fun exportFileName(habitName: String?, startKey: String, endKey: String): String {
+    val slug = habitName.orEmpty()
+        .replace(FILE_NAME_UNSAFE, "_")
+        .trim('_')
+        .lowercase(Locale.ROOT)
+        .ifEmpty { "habit" }
+    return "checkin_${slug}_${startKey}_$endKey.csv"
+}
+
+private val FILE_NAME_UNSAFE = Regex("[^\\p{L}\\p{N}_-]+")

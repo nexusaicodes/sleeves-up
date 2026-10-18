@@ -25,26 +25,26 @@ import com.checkin.app.notify.nudge.NudgeSchedule
 import com.checkin.app.util.TimeFormat
 
 /**
- * The reminder hour as the user reads it: "Around 10:00 AM". One function for the tour's button and
- * the Settings row, so the two cannot come to describe the same setting differently.
+ * A habit's reminder hour as the user reads it: "Around 10:00 AM". One function for every place the
+ * hour is shown, so none can come to describe the same setting differently.
  */
 @Composable
-fun reminderTimeSummary(firstHour: Int): String =
-    stringResource(R.string.reminder_time_value, TimeFormat.hourOfDay(firstHour))
+fun reminderTimeSummary(hour: Int): String = stringResource(R.string.reminder_time_value, TimeFormat.hourOfDay(hour))
 
 /**
- * Picks the first reminder's hour from [NudgeSchedule.firstHourRange]. Whole hours only: delivery is
+ * Picks a habit's reminder hour from [NudgeSchedule.hourRange]. Whole hours only: delivery is
  * inexact, so a minute the user chose would be a precision the alarm cannot honour.
  *
- * Shared by the welcome tour and Settings, because both are the same choice and a second copy is how
- * one would come to offer hours the other refuses.
+ * Shared by every place a habit's hour is chosen — the tour, the naming step and the habit editor —
+ * because all are the same choice and a second copy is how one would come to offer hours another
+ * refuses.
  *
  * A pick commits and closes in one tap, the way a radio list in a dialog reads; there is no confirm
  * button to miss, and dismissing changes nothing.
  */
 @Composable
 fun ReminderHourPicker(selectedHour: Int, onPicked: (Int) -> Unit, onDismiss: () -> Unit) {
-    val hours = NudgeSchedule.firstHourRange.toList()
+    val hours = NudgeSchedule.hourRange.toList()
     val listState = rememberLazyListState(
         // Opens with the current choice in view rather than at 5 AM, a row above it for context.
         initialFirstVisibleItemIndex = (hours.indexOf(selectedHour) - 1).coerceAtLeast(0),
