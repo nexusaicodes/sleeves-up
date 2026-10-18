@@ -21,21 +21,13 @@ import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.rounded.Face
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -45,42 +37,29 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.checkin.app.R
-import com.checkin.app.data.NameProblem
-import com.checkin.app.notify.nudge.NudgeSchedule
 import com.checkin.app.ui.components.ConstrainedContent
+import com.checkin.app.ui.components.FullScreenAction
 import com.checkin.app.ui.components.FullScreenMessage
-import com.checkin.app.ui.components.MESSAGE_BODY_TO_ACTION_GAP
+import com.checkin.app.ui.components.HabitExampleIcon
 import com.checkin.app.ui.components.MESSAGE_PADDING
 import com.checkin.app.ui.components.MessageIcon
 import com.checkin.app.ui.components.animationsEnabled
-import com.checkin.app.ui.components.reminderTimeSummary
-import com.checkin.app.ui.habits.HabitEditorDialog
-import com.checkin.app.ui.habits.HabitEntry
+import com.checkin.app.ui.components.cyclingHabitExample
 import com.checkin.app.ui.theme.CheckInAppTheme
 import kotlinx.coroutines.launch
 
 /**
- * The first-run tour: three pages, shown once, ahead of the `POST_NOTIFICATIONS` request rather than
- * beside it. [onFinished] releases the dialog, which is why the last page — where the user names
- * their habits and picks when each is reminded — describes the reminders it is about to ask for.
+ * The first-run tour: three pages, shown once, ahead of the naming step and the `POST_NOTIFICATIONS`
+ * request rather than beside them. It names nothing itself: the one path through is the pager and
+ * its button, and naming the first habit, with its reminder hour, is the step [onFinished] leads to.
  *
  * [onSkipped] deliberately does not release it. Skipping and finishing are the same in every other
  * respect — both retire the tour for good — but a skip means nothing has explained the app, so
  * firing the dialog behind it would reproduce in one tap the defect the tour was built to close.
  * Notifications are not lost: the presence gate asks at the first check-in, beside the camera.
- *
- * [habits] are the caller's, read from the database: [onSaveHabit] is expected to write at once —
- * a null id creating a habit — so a habit named here survives the tour being left by Back before it
- * is finished. [nameProblem] is asked before every save, with the habit's id (null for a new one).
  */
 @Composable
-fun WelcomeScreen(
-    habits: List<HabitEntry>,
-    nameProblem: (name: String, habitId: Long?) -> NameProblem?,
-    onSaveHabit: (habitId: Long?, name: String, hour: Int) -> Unit,
-    onFinished: () -> Unit,
-    onSkipped: () -> Unit,
-) {
+fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit) {
     val pages = WelcomePages.all
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
@@ -139,14 +118,15 @@ fun WelcomeScreen(
             ) { page ->
                 // No horizontal padding above this: each page brings MESSAGE_PADDING of its own, so
                 // the shared message layout owns its insets exactly as it does behind the gate.
-                WelcomePageContent(pages[page], habits, nameProblem, onSaveHabit)
+                WelcomePageContent(pages[page])
             }
 
             PageDots(pageCount = pages.size, current = pagerState.currentPage)
 
             Spacer(modifier = Modifier.height(DOTS_TO_ACTION_GAP))
 
-            Button(
+            FullScreenAction(
+                text = stringResource(if (onLastPage) R.string.welcome_start else R.string.welcome_next),
                 onClick = {
                     if (onLastPage) {
                         onFinished()
@@ -154,98 +134,20 @@ fun WelcomeScreen(
                         scope.launch { pagerState.goTo(pagerState.settledPage + 1, animated) }
                     }
                 },
-                modifier = Modifier
-                    .padding(horizontal = MESSAGE_PADDING)
-                    .fillMaxWidth()
-                    .heightIn(min = ACTION_MIN_HEIGHT),
-                shape = RoundedCornerShape(ACTION_CORNER),
-            ) {
-                Text(
-                    text = stringResource(if (onLastPage) R.string.welcome_start else R.string.welcome_next),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(ACTION_BOTTOM_GAP))
+            )
         }
     }
 }
 
 /** Drawn through the shared full-screen message, so the tour and the gate cannot drift apart. */
 @Composable
-private fun WelcomePageContent(
-    page: WelcomePage,
-    habits: List<HabitEntry>,
-    nameProblem: (name: String, habitId: Long?) -> NameProblem?,
-    onSaveHabit: (habitId: Long?, name: String, hour: Int) -> Unit,
-) {
-    // The habit being named or edited, NEW_HABIT for "Add another habit"; null when no dialog is open.
-    var editing by rememberSaveable { mutableStateOf<Long?>(null) }
+private fun WelcomePageContent(page: WelcomePage) {
     FullScreenMessage(
         icon = { PageIcon(page.icon) },
         title = stringResource(page.titleRes),
         message = stringResource(page.bodyRes),
-        actions = {
-            if (page.namesHabits) {
-                Spacer(modifier = Modifier.height(MESSAGE_BODY_TO_ACTION_GAP))
-                HabitButtons(habits = habits, onEdit = { editing = it })
-            }
-        },
     )
-    editing?.let { id ->
-        val entry = habits.firstOrNull { it.habit.id == id }
-        if (id == NEW_HABIT || entry != null) {
-            HabitEditorDialog(
-                title = stringResource(
-                    if (entry?.habit?.name ==
-                        null
-                    ) {
-                        R.string.habit_editor_new_title
-                    } else {
-                        R.string.habit_editor_edit_title
-                    },
-                ),
-                initialName = entry?.habit?.name.orEmpty(),
-                initialHour = entry?.reminderHour ?: NudgeSchedule.DEFAULT_HOUR,
-                nameProblem = { nameProblem(it, entry?.habit?.id) },
-                onSave = { name, hour ->
-                    onSaveHabit(entry?.habit?.id, name, hour)
-                    editing = null
-                },
-                onDismiss = { editing = null },
-            )
-        }
-    }
 }
-
-/**
- * One button per habit — "Name your first habit" for the one the install starts with, then each
- * habit's name and hour — and a way to add another once every habit has a name. Adding is offered
- * only then, so the tour never creates a second habit beside a first that is still nameless.
- */
-@Composable
-private fun HabitButtons(habits: List<HabitEntry>, onEdit: (Long) -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        habits.forEach { entry ->
-            val name = entry.habit.name
-            FilledTonalButton(onClick = { onEdit(entry.habit.id) }) {
-                Text(
-                    if (name == null) {
-                        stringResource(R.string.welcome_name_first_habit)
-                    } else {
-                        stringResource(R.string.welcome_habit_summary, name, reminderTimeSummary(entry.reminderHour))
-                    },
-                )
-            }
-        }
-        if (habits.isNotEmpty() && habits.all { it.habit.name != null }) {
-            TextButton(onClick = { onEdit(NEW_HABIT) }) { Text(stringResource(R.string.welcome_add_habit)) }
-        }
-    }
-}
-
-/** A row id no habit can have — Room's ids start at 1 — standing for the "Add another habit" dialog. */
-private const val NEW_HABIT = -1L
 
 /** An expression, so adding a [WelcomeIcon] fails to compile rather than falling through to a bell. */
 @Composable
@@ -254,7 +156,8 @@ private fun PageIcon(icon: WelcomeIcon) = when (icon) {
     // The camera disclosure's own icon, so the screen met at the first check-in reads as a
     // continuation of this one.
     WelcomeIcon.FACE -> MessageIcon(Icons.Rounded.Face)
-    WelcomeIcon.REMINDER -> MessageIcon(Icons.Default.Notifications)
+    // The habits being cycled through, the same carousel the naming step that follows opens on.
+    WelcomeIcon.HABITS -> HabitExampleIcon(cyclingHabitExample())
 }
 
 /**
@@ -304,23 +207,12 @@ private val DOT_SIZE = 8.dp
 private val DOT_GAP = 4.dp
 private val DOTS_TO_ACTION_GAP = 24.dp
 
-/** A comfortable full-width action. Independent of the Check-In screen's 64.dp primary button,
- *  which is sized by that screen's fit budget rather than by how a button should look. */
-private val ACTION_MIN_HEIGHT = 56.dp
-private val ACTION_CORNER = 16.dp
-
-/** Lifts the action clear of the gesture bar, above the inset `safeDrawingPadding` already applied. */
-private val ACTION_BOTTOM_GAP = 16.dp
-
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun WelcomeScreenPreview() {
     CheckInAppTheme {
         WelcomeScreen(
-            habits = emptyList(),
-            nameProblem = { _, _ -> null },
-            onSaveHabit = { _, _, _ -> },
             onFinished = {},
             onSkipped = {},
         )

@@ -50,7 +50,7 @@ sealed interface HabitsEvent {
 
 /**
  * The habits and their hours, for everything that lists or edits them: the switcher, the Habits
- * screen, the tour's habits page and the naming step.
+ * screen and the naming step.
  *
  * Every hour goes through [chooseReminderHour], and every name through [HabitRules] — checked here
  * so the dialog can say what is wrong before anything is written, and again in [HabitRepository] at
@@ -91,7 +91,7 @@ class HabitsViewModel(
     /**
      * Creates a habit when [habitId] is null, otherwise renames it, and stores [hour] for it. A new
      * habit is selected when [selectNew] — the switcher's "New habit" means "and show it" — and not
-     * otherwise, so naming habits on the tour or the Habits screen leaves the screen where it was.
+     * otherwise, so naming a habit on the Habits screen leaves the screen where it was.
      */
     fun save(habitId: Long?, name: String, hour: Int, selectNew: Boolean = false) {
         viewModelScope.launch {

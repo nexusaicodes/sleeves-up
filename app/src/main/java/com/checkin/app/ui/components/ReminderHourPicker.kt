@@ -37,7 +37,7 @@ fun reminderTimeSummary(hour: Int): String =
  * Picks a habit's reminder hour from [NudgeSchedule.hourRange]. Whole hours only: delivery is
  * inexact, so a minute the user chose would be a precision the alarm cannot honour.
  *
- * Shared by every place a habit's hour is chosen — the tour, the naming step and the habit editor —
+ * Shared by every place a habit's hour is chosen — the naming step and the habit editor —
  * because all are the same choice and a second copy is how one would come to offer hours another
  * refuses.
  *

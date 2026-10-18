@@ -39,7 +39,7 @@ object FirstRun {
         // Check In button with no habit to name, and guessing "named" would let the gate open first.
         habitNeedsName == null -> Step.PENDING
         // Ahead of the dialog for the welcome's reason, and of the app because the Check In button
-        // names the habit. A tour read through usually names it; a skipped one never does.
+        // names the habit. The tour names nothing, so every fresh install comes here next.
         habitNeedsName -> Step.NAME_HABIT
         !askedNotifications -> Step.ASK_NOTIFICATIONS
         else -> Step.NONE

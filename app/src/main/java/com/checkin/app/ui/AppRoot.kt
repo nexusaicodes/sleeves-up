@@ -67,8 +67,8 @@ fun AppRoot(onGatePassed: () -> Unit) {
     val settings = container.settings
     val gateRequest by PresenceCheckSignal.request.collectAsStateWithLifecycle()
     val completed by CheckOutSignal.completed.collectAsStateWithLifecycle()
-    // Activity-scoped, shared with the nav scaffold's switcher: the tour and the naming step read the
-    // habits from the same instance, so a habit named here is the one the switcher then shows.
+    // Activity-scoped, shared with the nav scaffold's switcher: the naming step reads the
+    // habits from the same instance, so a habit named there is the one the switcher then shows.
     val habitsViewModel: HabitsViewModel = viewModel(factory = HabitsViewModel.Factory)
     val habits by habitsViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -102,13 +102,7 @@ fun AppRoot(onGatePassed: () -> Unit) {
             // No BackHandler by design: the branches around it map back to dismiss, which
             // returns the user to what they were doing, and there is nothing here to return to.
             // Back leaves the app and the welcome is owed again — only ending it writes it.
-            // The habits page names habits and sets their hours through the same HabitsViewModel
-            // the Habits screen uses, so the store-then-re-arm has one tested path wherever a
-            // habit is named.
             WelcomeScreen(
-                habits = habits.active,
-                nameProblem = habitsViewModel::nameProblem,
-                onSaveHabit = { id, name, hour -> habitsViewModel.save(id, name, hour) },
                 onFinished = { endWelcome(FirstRun.Exit.FINISHED) },
                 onSkipped = { endWelcome(FirstRun.Exit.SKIPPED) },
             )

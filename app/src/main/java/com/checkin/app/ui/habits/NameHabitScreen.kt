@@ -1,15 +1,12 @@
 package com.checkin.app.ui.habits
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -18,16 +15,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.ui.components.ConstrainedContent
+import com.checkin.app.ui.components.FullScreenAction
 import com.checkin.app.ui.components.FullScreenMessage
+import com.checkin.app.ui.components.HabitExampleIcon
 import com.checkin.app.ui.components.MESSAGE_BODY_TO_ACTION_GAP
-import com.checkin.app.ui.components.MessageIcon
+import com.checkin.app.ui.components.cyclingHabitExample
 
 /**
  * The first-run naming step: a habit with no name — the record an install carried onto habits, or
- * the one a skipped tour left unnamed — is named here, with its reminder hour, before the app opens.
+ * the one every fresh install seeds — is named here, with its reminder hour, before the app opens.
  *
  * **No way out but naming it**, and no `BackHandler`: back leaves the app and the step is owed again,
  * exactly as with the welcome tour. The Check In button names the habit, so the app has nothing to
@@ -48,39 +46,42 @@ fun NameHabitScreen(entry: HabitEntry, viewModel: HabitsViewModel) {
         if (problem == null) viewModel.save(entry.habit.id, name, hour)
     }
 
+    // One example drives both the icon and the placeholder, so the runner is never captioned "Guitar".
+    val example = cyclingHabitExample()
+
     ConstrainedContent {
-        FullScreenMessage(
-            icon = { MessageIcon(Icons.Default.Edit) },
-            title = stringResource(R.string.name_habit_title),
-            message = stringResource(R.string.name_habit_body),
+        Column(
             modifier = Modifier
+                .fillMaxSize()
                 .safeDrawingPadding()
                 .imePadding(),
-            actions = {
-                Spacer(modifier = Modifier.height(MESSAGE_BODY_TO_ACTION_GAP))
-                HabitFields(
-                    name = name,
-                    onNameChange = {
-                        name = it
-                        showProblem = true
-                    },
-                    hour = hour,
-                    onHourChange = { hour = it },
-                    problem = problem,
-                    showProblem = showProblem,
-                    onDone = save,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(modifier = Modifier.height(MESSAGE_BODY_TO_ACTION_GAP))
-                Button(
-                    onClick = save,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 56.dp),
-                ) {
-                    Text(stringResource(R.string.name_habit_continue))
-                }
-            },
-        )
+        ) {
+            FullScreenMessage(
+                icon = { HabitExampleIcon(example) },
+                title = stringResource(R.string.name_habit_title),
+                message = stringResource(R.string.name_habit_body),
+                modifier = Modifier.weight(1f),
+                actions = {
+                    Spacer(modifier = Modifier.height(MESSAGE_BODY_TO_ACTION_GAP))
+                    HabitFields(
+                        name = name,
+                        onNameChange = {
+                            name = it
+                            showProblem = true
+                        },
+                        hour = hour,
+                        onHourChange = { hour = it },
+                        problem = problem,
+                        showProblem = showProblem,
+                        onDone = save,
+                        placeholder = stringResource(example.nameRes),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                },
+            )
+            // Pinned below the scrolling message, where the tour's button was a moment ago, and
+            // carried above the keyboard by the column's imePadding.
+            FullScreenAction(text = stringResource(R.string.name_habit_continue), onClick = save)
+        }
     }
 }

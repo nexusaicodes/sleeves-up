@@ -5,11 +5,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -87,6 +91,24 @@ fun MessageIcon(painter: Painter) {
     )
 }
 
+/**
+ * The one button pinned below a full-screen surface — the tour's Next / Get started and the naming
+ * step's Continue — so stepping from one surface to the next leaves the action where the thumb is.
+ */
+@Composable
+fun FullScreenAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .padding(start = MESSAGE_PADDING, end = MESSAGE_PADDING, bottom = ACTION_BOTTOM_GAP)
+            .fillMaxWidth()
+            .heightIn(min = ACTION_MIN_HEIGHT),
+        shape = RoundedCornerShape(ACTION_CORNER),
+    ) {
+        Text(text = text, style = MaterialTheme.typography.titleMedium)
+    }
+}
+
 /** Wide enough to keep a centred paragraph off the screen edges at any font scale. */
 val MESSAGE_PADDING = 32.dp
 
@@ -99,3 +121,11 @@ val MESSAGE_BODY_TO_ACTION_GAP = 24.dp
 private val MESSAGE_ICON_SIZE = 56.dp
 private val ICON_TO_TITLE_GAP = 24.dp
 private val TITLE_TO_BODY_GAP = 16.dp
+
+/** A comfortable full-width action. Independent of the Check-In screen's 64.dp primary button,
+ *  which is sized by that screen's fit budget rather than by how a button should look. */
+private val ACTION_MIN_HEIGHT = 56.dp
+private val ACTION_CORNER = 16.dp
+
+/** Lifts the action clear of the gesture bar, above the inset `safeDrawingPadding` already applied. */
+private val ACTION_BOTTOM_GAP = 16.dp

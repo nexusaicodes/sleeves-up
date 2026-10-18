@@ -28,7 +28,7 @@ data class Habit(
 
     /**
      * Null means the habit is **owed a name**: the record a pre-habits install carried, and the one
-     * a fresh install seeds before the tour names it. Nothing renders a habit without one — the
+     * a fresh install seeds before the naming step names it. Nothing renders a habit without one — the
      * Check In button names the habit — so `FirstRun.Step.NAME_HABIT` asks for it before the app
      * opens. Stored trimmed, and unique among habits that are not archived (see `HabitNames`).
      */

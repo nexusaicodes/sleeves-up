@@ -40,15 +40,4 @@ class WelcomePagesTest {
 
         assertEquals(icons.size, icons.toSet().size)
     }
-
-    /**
-     * Habits are named, each with its hour, on one page, and that page is last: the notification
-     * dialog follows it, so the reminders are described, timed and then requested.
-     */
-    @Test
-    fun `only the last page names habits`() {
-        val choosing = WelcomePages.all.filter { it.namesHabits }
-
-        assertEquals(listOf(WelcomePages.all.last()), choosing)
-    }
 }

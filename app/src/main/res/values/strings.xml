@@ -112,30 +112,26 @@
 
     <!--
       The first-run welcome tour, shown once before anything is asked for. The order is the point:
-      the notification permission dialog opens the moment the last page is finished, so the
-      reminders are described immediately before they are requested.
+      the naming step follows the last page, and the notification permission dialog follows that,
+      so a reminder hour has just been picked when reminders are requested.
 
       Sentence case — these read as lines, not card titles. Nothing grades a day, by the same rules
       the nudge copy follows.
     -->
-    <string name="welcome_showing_up_title">Showing up is the whole thing</string>
-    <string name="welcome_showing_up_body">Check in when you start, check out when you stop. There\'s no target to clear — a short day counts the same as a long one.</string>
+    <!-- The quote is Will Durant's summary of Aristotle, not Aristotle's words; the attribution says so. -->
+    <string name="welcome_quote_title">Make it a habit</string>
+    <string name="welcome_quote_body">“We are what we repeatedly do. Excellence, then, is not an act, but a habit.” — Will Durant, on Aristotle</string>
     <!--
-      The disclosure's own clauses rather than a paraphrase, so the two cannot drift apart about the
-      same camera. "Confirms someone\'s there" is load-bearing: this is face detection, not
+      The app's thesis. "A glance at the camera", never "scan": this is face detection, not
       recognition, and no copy may read as matching the user against an enrolled identity.
     -->
-    <string name="welcome_presence_title">Presence, checked on this device</string>
-    <string name="welcome_presence_body">The front camera confirms someone\'s there at check-in and check-out. No photo is taken and no image ever leaves the camera.</string>
-    <!-- The last page names the user's habits and says what reminders are, immediately before the
-         notification dialog that follows it. "Habit", never "goal": a goal is a target, and this app
+    <string name="welcome_showing_up_title">Showing up is what counts</string>
+    <string name="welcome_showing_up_body">Check in with a glance at the camera, and check out the same way. Your time is logged, but showing up is what counts.</string>
+    <!-- The last page leads into the naming step, where the first habit's reminder hour is picked
+         immediately before the notification dialog. "Habit", never "goal": a goal is a target, and this app
          has none. -->
-    <string name="welcome_habits_title">One record for each habit</string>
-    <string name="welcome_habits_body">Name what you\'re showing up for. Each habit keeps its own record, and on days you haven\'t checked in, Sleeves Up reminds you once, around the hour you pick. Turn a reminder off with a long press on it.</string>
-    <string name="welcome_name_first_habit">Name your first habit</string>
-    <string name="welcome_add_habit">Add another habit</string>
-    <!-- A named habit on the tour's last page: its name and when it is reminded. -->
-    <string name="welcome_habit_summary">%1$s · %2$s</string>
+    <string name="welcome_habits_title">One habit at a time</string>
+    <string name="welcome_habits_body">Start with one habit you want to build, and add more later — each keeps its own record.</string>
     <!-- Spoken by the dot row. HorizontalPager publishes a scroll range and no page count, so
          without this a screen reader is never told where in the tour it is. -->
     <string name="welcome_page_position">Page %1$d of %2$d</string>
@@ -293,12 +289,20 @@
     <string name="habit_name_duplicate">You already have a habit with this name</string>
     <string name="habit_save">Save</string>
     <string name="habit_cancel">Cancel</string>
-    <!-- The first-run naming step: owed by a habit with no name — an install updated onto habits, or
-         a tour skipped before the habit was named. It cannot be backed out of, because the Check In
+    <!-- The first-run naming step: owed by a habit with no name — an install updated onto habits, and
+         every fresh install, since the tour names nothing. It cannot be backed out of, because the Check In
          button names the habit and has nothing to say until it has a name. -->
-    <string name="name_habit_title">Name your habit</string>
-    <string name="name_habit_body">Sleeves Up keeps a separate record for each habit. Name this one — anything you\'ve already recorded stays with it — and pick roughly when to be reminded.</string>
+    <string name="name_habit_title">What are you showing up for?</string>
+    <string name="name_habit_body">Add more in the app when you want.</string>
     <string name="name_habit_continue">Continue</string>
+    <!-- Cycled as the name field's placeholder beside a matching icon. Activities, never targets:
+         a number in an example would suggest a habit is a bar to clear. -->
+    <string name="habit_example_running">Running</string>
+    <string name="habit_example_reading">Reading</string>
+    <string name="habit_example_meditation">Meditation</string>
+    <string name="habit_example_guitar">Guitar</string>
+    <string name="habit_example_gym">Gym</string>
+    <string name="habit_example_drawing">Drawing</string>
 
     <!-- Language. The choice is Android's own per-app setting; this row only opens it. -->
     <string name="language_section">Language</string>

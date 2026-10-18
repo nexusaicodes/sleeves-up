@@ -75,15 +75,12 @@
     <string name="nudge_not_checked_in_body">متى بدأت فهو يُحتسب، فاليوم القصير يومٌ حضرتَ فيه أيضًا.</string>
 
     <!-- The first-run welcome tour -->
-    <string name="welcome_showing_up_title">الحضور هو كل شيء</string>
-    <string name="welcome_showing_up_body">سجّل حضورك حين تبدأ، وانصرافك حين تتوقف. لا هدف عليك بلوغه، فاليوم القصير يُحتسب كاليوم الطويل تمامًا.</string>
-    <string name="welcome_presence_title">التحقق من الحضور على هذا الجهاز</string>
-    <string name="welcome_presence_body">تتأكد الكاميرا الأمامية من وجود شخص عند تسجيل الحضور والانصراف. لا تُلتقط أي صورة، ولا تغادر أي صورة الكاميرا أبدًا.</string>
-    <string name="welcome_habits_title">سجلّ مستقل لكل عادة</string>
-    <string name="welcome_habits_body">سمِّ ما تحرص على الحضور من أجله. لكل عادة سجلّها الخاص، وفي الأيام التي لم تسجّل فيها حضورك يذكّرك Sleeves Up مرة واحدة، قرابة الساعة التي تختارها. أوقف أي تذكير بالضغط عليه مطولًا.</string>
-    <string name="welcome_name_first_habit">سمِّ عادتك الأولى</string>
-    <string name="welcome_add_habit">إضافة عادة أخرى</string>
-    <string name="welcome_habit_summary">%1$s · %2$s</string>
+    <string name="welcome_quote_title">اجعلها عادة</string>
+    <string name="welcome_quote_body">«نحن ما نفعله مرارًا وتكرارًا. فالتميّز إذن ليس فعلًا، بل عادة.» — ويل ديورانت، عن أرسطو</string>
+    <string name="welcome_showing_up_title">الحضور هو ما يُحتسب</string>
+    <string name="welcome_showing_up_body">سجّل حضورك بنظرة إلى الكاميرا، وانصرافك بالطريقة نفسها. يُسجَّل وقتك، لكن الحضور هو ما يُحتسب.</string>
+    <string name="welcome_habits_title">عادة واحدة في كل مرة</string>
+    <string name="welcome_habits_body">ابدأ بعادة واحدة تريد بناءها، وأضف المزيد لاحقًا — لكل عادة سجلّها الخاص.</string>
     <string name="welcome_page_position">الصفحة %1$d من %2$d</string>
     <string name="welcome_skip">تخطٍّ</string>
     <string name="welcome_next">التالي</string>
@@ -207,9 +204,15 @@
     <string name="habit_name_duplicate">لديك عادة بهذا الاسم بالفعل</string>
     <string name="habit_save">حفظ</string>
     <string name="habit_cancel">إلغاء</string>
-    <string name="name_habit_title">سمِّ عادتك</string>
-    <string name="name_habit_body">يحتفظ Sleeves Up بسجلّ مستقل لكل عادة. سمِّ هذه العادة، وسيبقى كل ما سجّلته معها، ثم اختر متى تريد أن نذكّرك تقريبًا.</string>
+    <string name="name_habit_title">ما الذي تحضر من أجله؟</string>
+    <string name="name_habit_body">أضف المزيد من داخل التطبيق متى شئت.</string>
     <string name="name_habit_continue">متابعة</string>
+    <string name="habit_example_running">الجري</string>
+    <string name="habit_example_reading">القراءة</string>
+    <string name="habit_example_meditation">التأمل</string>
+    <string name="habit_example_guitar">الغيتار</string>
+    <string name="habit_example_gym">النادي الرياضي</string>
+    <string name="habit_example_drawing">الرسم</string>
 
     <!-- Language -->
     <string name="language_section">اللغة</string>

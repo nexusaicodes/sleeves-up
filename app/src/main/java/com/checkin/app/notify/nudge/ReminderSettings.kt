@@ -97,7 +97,7 @@ class SharedPrefsReminderSettings(private val prefs: SharedPreferences) : Remind
  * returning the hour actually stored. Choosing the hour already stored changes nothing and re-arms
  * nothing.
  *
- * The one path every chooser takes — the tour, the naming step and the Habits screen — so none can
+ * The one path every chooser takes — the naming step and the Habits screen — so none can
  * store a new hour and leave the alarm armed for the old one, which would deliver the next reminder
  * at an hour the user just moved away from. [rearm] is expected to be `AppContainer.launchNudgeRearm`,
  * which runs [NudgeDispatcher.rearm] off the main thread: that call reads the day's sends, so the
