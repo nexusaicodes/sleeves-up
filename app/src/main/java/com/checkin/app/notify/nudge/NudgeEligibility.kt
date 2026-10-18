@@ -41,7 +41,7 @@ object NudgeEligibility {
     fun select(snapshot: NudgeSnapshot): Nudge? {
         if (!spacedFarEnough(snapshot)) return null
         return Nudge.entries.firstOrNull { nudge ->
-            stillSendable(snapshot, nudge) && NudgeSchedule.inBand(snapshot.hourOfDay, snapshot.reminderHour)
+            stillSendable(snapshot, nudge) && NudgeSchedule.inBand(snapshot.minuteOfDay, snapshot.reminderMinute)
         }
     }
 
@@ -51,7 +51,7 @@ object NudgeEligibility {
      *
      * It is the later of the band opening and the minimum gap clearing, or now when both have passed
      * — kept only if that is still inside the band. That covers the two cases a plain "next band"
-     * arm loses: a band that is open but unsent (a re-arm after an update, a reboot or a new hour),
+     * arm loses: a band that is open but unsent (a re-arm after an update, a reboot or a new time),
      * which comes back as now; and a reminder the gap is holding back behind another habit's, which
      * comes back as the instant the gap clears. A clock moved backwards puts the last send in the
      * future, so the gap clears later — exactly when [spacedFarEnough] would next allow it.
@@ -84,12 +84,12 @@ object NudgeEligibility {
         val todays = Nudge.entries
             .filter { stillSendable(snapshot, it) }
             .mapNotNull {
-                val band = NudgeSchedule.bandOn(today, zone, snapshot.reminderHour)
+                val band = NudgeSchedule.bandOn(today, zone, snapshot.reminderMinute)
                 val opensAt = maxOf(band.first, gapClearsAt)
                 (if (opensAt > snapshot.nowMillis) opensAt else dueAt).takeIf { it in band }
             }
             .minOrNull()
-        return todays ?: NudgeSchedule.bandOn(today.plusDays(1), zone, snapshot.reminderHour).first
+        return todays ?: NudgeSchedule.bandOn(today.plusDays(1), zone, snapshot.reminderMinute).first
     }
 
     /**

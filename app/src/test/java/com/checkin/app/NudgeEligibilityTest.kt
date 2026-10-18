@@ -20,7 +20,10 @@ class NudgeEligibilityTest {
     /** A chosen hour other than the default, so nothing here passes by coinciding with it. */
     private val chosen = 8
 
-    /** One habit's state in which its nudge should fire; individual tests break one thing at a time. */
+    /**
+     * One habit's state in which its nudge should fire; individual tests break one thing at a time.
+     * Times are given as an hour plus an optional [minute] / [reminderMinute] past it.
+     */
     private fun eligible(
         hourOfDay: Int = chosen,
         reminderHour: Int = chosen,
@@ -29,10 +32,12 @@ class NudgeEligibilityTest {
         lastShownAtMs: Long? = null,
         config: NudgeConfig = NudgeConfig(),
         nowMillis: Long = 100 * hour,
+        minute: Int = 0,
+        reminderMinute: Int = 0,
     ) = NudgeSnapshot(
         nowMillis = nowMillis,
-        hourOfDay = hourOfDay,
-        reminderHour = reminderHour,
+        minuteOfDay = hourOfDay * 60 + minute,
+        reminderMinute = reminderHour * 60 + reminderMinute,
         hasCheckedInToday = hasCheckedInToday,
         spentToday = spentToday,
         lastShownAtMs = lastShownAtMs,
@@ -144,6 +149,7 @@ class NudgeEligibilityTest {
         reminderHour: Int = chosen,
     ) = eligible(
         hourOfDay = Instant.ofEpochMilli(nowMs).atZone(utc).hour,
+        minute = Instant.ofEpochMilli(nowMs).atZone(utc).minute,
         reminderHour = reminderHour,
         hasCheckedInToday = hasCheckedInToday,
         spentToday = spentToday,
@@ -243,18 +249,21 @@ class NudgeEligibilityTest {
             ZoneId.of("Europe/London") to LocalDate.of(2026, 3, 29),
             ZoneId.of("Europe/London") to LocalDate.of(2026, 10, 25),
         )
-        val hours = listOf(NudgeSchedule.hourRange.first, chosen, NudgeSchedule.hourRange.last)
+        // A time off the hour among them, since reminders are chosen to the minute.
+        val minutes =
+            listOf(NudgeSchedule.minuteRange.first, chosen * 60, chosen * 60 + 25, NudgeSchedule.minuteRange.last)
         for ((zone, date) in days) {
-            hours.forEach { assertAgreementOver(zone, date, it) }
+            minutes.forEach { assertAgreementOver(zone, date, it) }
         }
     }
 
-    private fun assertAgreementOver(zone: ZoneId, date: LocalDate, reminderHour: Int) {
-        fun local(hour: Int, minute: Int = 0) = date.atTime(hour, minute).atZone(zone).toInstant().toEpochMilli()
+    private fun assertAgreementOver(zone: ZoneId, date: LocalDate, reminderMinute: Int) {
+        fun local(minuteOfDay: Int) =
+            date.atTime(minuteOfDay / 60, minuteOfDay % 60).atZone(zone).toInstant().toEpochMilli()
         val states: List<Pair<Set<Nudge>, Long?>> = listOf(
             emptySet<Nudge>() to null,
-            emptySet<Nudge>() to local(reminderHour, 10),
-            setOf(Nudge.NOT_CHECKED_IN) to local(reminderHour),
+            emptySet<Nudge>() to local(reminderMinute + 10),
+            setOf(Nudge.NOT_CHECKED_IN) to local(reminderMinute),
         )
         val dayStart = date.atStartOfDay(zone).toInstant().toEpochMilli()
         val dayEnd = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
@@ -262,14 +271,14 @@ class NudgeEligibilityTest {
             for (now in dayStart until dayEnd step 10 * 60_000L) {
                 val snapshot = NudgeSnapshot(
                     nowMillis = now,
-                    hourOfDay = Instant.ofEpochMilli(now).atZone(zone).hour,
-                    reminderHour = reminderHour,
+                    minuteOfDay = Instant.ofEpochMilli(now).atZone(zone).let { it.hour * 60 + it.minute },
+                    reminderMinute = reminderMinute,
                     hasCheckedInToday = false,
                     spentToday = spent,
                     lastShownAtMs = lastShown,
                 )
                 val next = NudgeEligibility.nextEligibleAt(snapshot, zone)
-                val label = "$zone $date hour=$reminderHour spent=$spent at ${Instant.ofEpochMilli(now)}"
+                val label = "$zone $date minute=$reminderMinute spent=$spent at ${Instant.ofEpochMilli(now)}"
 
                 assertTrue("next before now: $label", next >= now)
                 assertEquals(label, NudgeEligibility.select(snapshot) != null, next == now)

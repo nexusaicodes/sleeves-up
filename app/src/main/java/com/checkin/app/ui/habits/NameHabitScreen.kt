@@ -25,7 +25,7 @@ import com.checkin.app.ui.components.cyclingHabitExample
 
 /**
  * The first-run naming step: a habit with no name — the record an install carried onto habits, or
- * the one every fresh install seeds — is named here, with its reminder hour, before the app opens.
+ * the one every fresh install seeds — is named here, with its reminder time, before the app opens.
  *
  * **No way out but naming it**, and no `BackHandler`: back leaves the app and the step is owed again,
  * exactly as with the welcome tour. The Check In button names the habit, so the app has nothing to
@@ -38,12 +38,12 @@ import com.checkin.app.ui.components.cyclingHabitExample
 @Composable
 fun NameHabitScreen(entry: HabitEntry, viewModel: HabitsViewModel) {
     var name by rememberSaveable { mutableStateOf("") }
-    var hour by rememberSaveable { mutableIntStateOf(entry.reminderHour) }
+    var minute by rememberSaveable { mutableIntStateOf(entry.reminderMinute) }
     var showProblem by rememberSaveable { mutableStateOf(false) }
     val problem = viewModel.nameProblem(name, entry.habit.id)
     val save = {
         showProblem = true
-        if (problem == null) viewModel.save(entry.habit.id, name, hour)
+        if (problem == null) viewModel.save(entry.habit.id, name, minute)
     }
 
     // One example drives both the icon and the placeholder, so the runner is never captioned "Guitar".
@@ -69,8 +69,8 @@ fun NameHabitScreen(entry: HabitEntry, viewModel: HabitsViewModel) {
                             name = it
                             showProblem = true
                         },
-                        hour = hour,
-                        onHourChange = { hour = it },
+                        minute = minute,
+                        onMinuteChange = { minute = it },
                         problem = problem,
                         showProblem = showProblem,
                         onDone = save,

@@ -169,6 +169,8 @@
     <string name="reminder_time_change">تغيير وقت التذكير</string>
     <string name="reminder_time_dialog_title">وقت التذكير</string>
     <string name="reminder_time_cancel">إلغاء</string>
+    <string name="reminder_time_confirm">تعيين</string>
+    <string name="reminder_time_range">بين %1$s و%2$s</string>
 
     <!-- Habits. Nothing here compares, ranks or totals two habits. -->
     <string name="nav_habits">العادات</string>

@@ -14,7 +14,7 @@ import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.HabitEdit
 import com.checkin.app.data.repository.HabitRepository
 import com.checkin.app.notify.nudge.ReminderSettings
-import com.checkin.app.notify.nudge.chooseReminderHour
+import com.checkin.app.notify.nudge.chooseReminderTime
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,8 +24,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** An active habit with the hour its reminder is due. */
-data class HabitEntry(val habit: Habit, val reminderHour: Int)
+/** An active habit with the time its reminder is due. */
+data class HabitEntry(val habit: Habit, val reminderMinute: Int)
 
 data class HabitsUiState(
     val loading: Boolean = true,
@@ -49,10 +49,10 @@ sealed interface HabitsEvent {
 }
 
 /**
- * The habits and their hours, for everything that lists or edits them: the switcher, the Habits
+ * The habits and their times, for everything that lists or edits them: the switcher, the Habits
  * screen and the naming step.
  *
- * Every hour goes through [chooseReminderHour], and every name through [HabitRules] — checked here
+ * Every reminder time goes through [chooseReminderTime], and every name through [HabitRules] — checked here
  * so the dialog can say what is wrong before anything is written, and again in [HabitRepository] at
  * the write, since two dialogs can be open on one list.
  */
@@ -60,7 +60,7 @@ class HabitsViewModel(
     private val habits: HabitRepository,
     repository: CheckInRepository,
     private val reminderSettings: ReminderSettings,
-    /** Launches the nudge re-arm off the main thread; see [chooseReminderHour]. */
+    /** Launches the nudge re-arm off the main thread; see [chooseReminderTime]. */
     private val rearmNudges: () -> Unit,
 ) : ViewModel() {
 
@@ -72,12 +72,12 @@ class HabitsViewModel(
         habits.archivedHabitsFlow(),
         habits.selectedHabitFlow(),
         repository.activeSessionFlow(),
-        // Re-reads every hour when one changes: SharedPreferences has no flow of its own.
+        // Re-reads every reminder time when one changes: SharedPreferences has no flow of its own.
         reminderSettings.changes(),
     ) { active, archived, selected, open, _ ->
         HabitsUiState(
             loading = false,
-            active = active.map { HabitEntry(it, reminderSettings.reminderHour(it.uuid)) },
+            active = active.map { HabitEntry(it, reminderSettings.reminderMinute(it.uuid)) },
             archived = archived,
             selected = selected,
             running = open?.let { session -> active.firstOrNull { it.id == session.habitId } },
@@ -89,23 +89,23 @@ class HabitsViewModel(
         HabitRules.nameProblem(name, uiState.value.active.map { it.habit }, forId)
 
     /**
-     * Creates a habit when [habitId] is null, otherwise renames it, and stores [hour] for it. A new
+     * Creates a habit when [habitId] is null, otherwise renames it, and stores [minute] as its reminder time. A new
      * habit is selected when [selectNew] — the switcher's "New habit" means "and show it" — and not
      * otherwise, so naming a habit on the Habits screen leaves the screen where it was.
      */
-    fun save(habitId: Long?, name: String, hour: Int, selectNew: Boolean = false) {
+    fun save(habitId: Long?, name: String, minute: Int, selectNew: Boolean = false) {
         viewModelScope.launch {
             val edit = if (habitId == null) habits.create(name) else habits.rename(habitId, name)
             val saved = (edit as? HabitEdit.Saved)?.habit ?: return@launch
             if (habitId == null) {
                 // Stored outright and re-armed unconditionally: a new habit is a new band whatever
-                // its hour, and the re-arm the insert itself triggers may have read the prefs before
+                // its time, and the re-arm the insert itself triggers may have read the prefs before
                 // this write landed.
-                reminderSettings.setReminderHour(saved.uuid, hour)
+                reminderSettings.setReminderMinute(saved.uuid, minute)
                 rearmNudges()
                 if (selectNew) habits.select(saved.id)
             } else {
-                reminderSettings.chooseReminderHour(saved.uuid, hour, rearmNudges)
+                reminderSettings.chooseReminderTime(saved.uuid, minute, rearmNudges)
             }
         }
     }

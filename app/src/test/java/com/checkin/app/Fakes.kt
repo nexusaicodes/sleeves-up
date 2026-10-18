@@ -191,17 +191,17 @@ class FakeSessionAlarms(override var remindersSent: Int = 0) : SessionAlarms {
     }
 }
 
-/** In-memory reminder hours by habit uuid, clamping and defaulting exactly as the prefs-backed one does. */
-class FakeReminderSettings(vararg hours: Pair<String, Int>) : ReminderSettings {
-    private val stored = MutableStateFlow(hours.associate { (uuid, hour) -> uuid to NudgeSchedule.clampHour(hour) })
+/** In-memory reminder minutes by habit uuid, clamping and defaulting exactly as the prefs-backed one does. */
+class FakeReminderSettings(vararg minutes: Pair<String, Int>) : ReminderSettings {
+    private val stored = MutableStateFlow(minutes.associate { (uuid, m) -> uuid to NudgeSchedule.clampMinute(m) })
 
-    override fun reminderHour(habitUuid: String): Int = stored.value[habitUuid] ?: NudgeSchedule.DEFAULT_HOUR
+    override fun reminderMinute(habitUuid: String): Int = stored.value[habitUuid] ?: NudgeSchedule.DEFAULT_MINUTE
 
-    override fun setReminderHour(habitUuid: String, hour: Int) {
-        stored.value = stored.value + (habitUuid to NudgeSchedule.clampHour(hour))
+    override fun setReminderMinute(habitUuid: String, minute: Int) {
+        stored.value = stored.value + (habitUuid to NudgeSchedule.clampMinute(minute))
     }
 
-    override fun earliestHour(): Int = (stored.value.values + NudgeSchedule.DEFAULT_HOUR).min()
+    override fun earliestMinute(): Int = (stored.value.values + NudgeSchedule.DEFAULT_MINUTE).min()
 
     override fun changes(): Flow<Unit> = stored.map { }
 }

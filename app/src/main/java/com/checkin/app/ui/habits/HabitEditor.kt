@@ -4,11 +4,18 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -21,6 +28,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
@@ -35,13 +43,13 @@ import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.data.HabitRules
 import com.checkin.app.data.NameProblem
-import com.checkin.app.ui.components.ReminderHourPicker
+import com.checkin.app.ui.components.ReminderTimePicker
 import com.checkin.app.ui.components.reminderTimeSummary
 
 /**
- * A habit's name and reminder hour, as one pair of fields. Every place a habit is created or named —
+ * A habit's name and reminder time, as one pair of fields. Every place a habit is created or named —
  * the editor dialog and the first-run naming step — draws these, so a name cannot be accepted
- * in one place and refused in another, and the hour is always chosen beside the name it belongs to.
+ * in one place and refused in another, and the time is always chosen beside the name it belongs to.
  *
  * [problem] is shown only once [showProblem] is set — after an attempt to save, or an edit — so a
  * field opened empty does not greet the user with an error for something they have not done yet.
@@ -54,8 +62,8 @@ import com.checkin.app.ui.components.reminderTimeSummary
 fun HabitFields(
     name: String,
     onNameChange: (String) -> Unit,
-    hour: Int,
-    onHourChange: (Int) -> Unit,
+    minute: Int,
+    onMinuteChange: (Int) -> Unit,
     problem: NameProblem?,
     showProblem: Boolean,
     onDone: () -> Unit,
@@ -70,7 +78,11 @@ fun HabitFields(
     val supportingText: (@Composable () -> Unit)? = (problem?.takeIf { showProblem })?.let { { Text(problemText(it)) } }
     val keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done)
     val keyboardActions = KeyboardActions(onDone = { onDone() })
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         if (placeholder == null) {
             OutlinedTextField(
                 value = name,
@@ -123,21 +135,28 @@ fun HabitFields(
         }
         // The label is only the time it shows, so the action names what a tap does.
         val changeLabel = stringResource(R.string.reminder_time_change)
+        // Sized to its text rather than the field above it: a full-width bar reads as a second
+        // primary action beside Continue, where this is a setting with a sensible default.
         FilledTonalButton(
             onClick = { picking = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics { onClick(label = changeLabel, action = null) },
+            contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+            modifier = Modifier.semantics { onClick(label = changeLabel, action = null) },
         ) {
-            Text(reminderTimeSummary(hour))
+            Icon(
+                imageVector = Icons.Outlined.Schedule,
+                contentDescription = null,
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+            )
+            Spacer(modifier = Modifier.width(ButtonDefaults.IconSpacing))
+            Text(reminderTimeSummary(minute))
         }
     }
     if (picking) {
-        ReminderHourPicker(
-            selectedHour = hour,
+        ReminderTimePicker(
+            selectedMinute = minute,
             onPicked = {
                 picking = false
-                onHourChange(it)
+                onMinuteChange(it)
             },
             onDismiss = { picking = false },
         )
@@ -160,18 +179,18 @@ private fun problemText(problem: NameProblem): String = when (problem) {
 fun HabitEditorDialog(
     title: String,
     initialName: String,
-    initialHour: Int,
+    initialMinute: Int,
     nameProblem: (String) -> NameProblem?,
-    onSave: (name: String, hour: Int) -> Unit,
+    onSave: (name: String, minute: Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var name by rememberSaveable { mutableStateOf(initialName) }
-    var hour by rememberSaveable { mutableIntStateOf(initialHour) }
+    var minute by rememberSaveable { mutableIntStateOf(initialMinute) }
     var showProblem by rememberSaveable { mutableStateOf(false) }
     val problem = nameProblem(name)
     val save = {
         showProblem = true
-        if (problem == null) onSave(name, hour)
+        if (problem == null) onSave(name, minute)
     }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -183,8 +202,8 @@ fun HabitEditorDialog(
                     name = it
                     showProblem = true
                 },
-                hour = hour,
-                onHourChange = { hour = it },
+                minute = minute,
+                onMinuteChange = { minute = it },
                 problem = problem,
                 showProblem = showProblem,
                 onDone = save,

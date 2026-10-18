@@ -20,7 +20,7 @@ class NudgeConfigTest {
     fun `the latest band still has room for a slipped alarm and a deferral`() {
         // Read from both files rather than restated here: a test carrying its own copy of the
         // numbers would keep passing while the two it is comparing drifted apart.
-        val latestBandMs = (HOURS_PER_DAY - NudgeSchedule.hourRange.last) * HOUR_MS
+        val latestBandMs = (MINUTES_PER_DAY - NudgeSchedule.minuteRange.last) * MINUTE_MS
         val needed = ALARM_SLIP_MS + NudgeConfig.DEFAULT_MIN_GAP_MS
         assertTrue(
             "the latest band (${latestBandMs}ms) must outlast an alarm slip plus the gap (${needed}ms), " +
@@ -30,8 +30,9 @@ class NudgeConfigTest {
     }
 
     private companion object {
-        const val HOUR_MS = 60L * 60L * 1_000L
-        const val HOURS_PER_DAY = 24
+        const val MINUTE_MS = 60L * 1_000L
+        const val HOUR_MS = 60L * MINUTE_MS
+        const val MINUTES_PER_DAY = 24 * 60
 
         /** How late `setAndAllowWhileIdle` may deliver, as `NudgeSchedule` states it. */
         const val ALARM_SLIP_MS = HOUR_MS

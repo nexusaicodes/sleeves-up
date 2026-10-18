@@ -61,8 +61,9 @@ object TimeFormat {
         .toLocalTime()
         .format(patterns.clockFormatter)
 
-    /** A whole local hour of day, 0-23, in the same form as [clock] (e.g. "10:00 am"). */
-    fun hourOfDay(hour: Int, patterns: TimePatterns): String = LocalTime.of(hour, 0).format(patterns.clockFormatter)
+    /** A local minute of the day, 0-1439, in the same form as [clock] (e.g. 615 is "10:15 am"). */
+    fun timeOfDay(minuteOfDay: Int, patterns: TimePatterns): String =
+        LocalTime.ofSecondOfDay(minuteOfDay * SECONDS_PER_MINUTE).format(patterns.clockFormatter)
 
     /** A date the user reads in isolation, so it carries the year (e.g. "25 Jul 2026"). */
     fun dateWithYear(date: LocalDate, patterns: TimePatterns): String = date.format(patterns.dateWithYearFormatter)

@@ -11,14 +11,14 @@ package com.checkin.app.notify.nudge
  */
 data class NudgeSnapshot(
     val nowMillis: Long,
-    /** Local hour of day, 0-23. */
-    val hourOfDay: Int,
+    /** Local minute of the day, 0-1439. */
+    val minuteOfDay: Int,
     /**
-     * The hour chosen for this habit. Deliberately undefaulted: a builder that forgot it would
-     * evaluate the band for the default hour while the alarm was armed from the stored one — an
+     * The minute of the day chosen for this habit. Deliberately undefaulted: a builder that forgot it
+     * would evaluate the band for the default time while the alarm was armed from the stored one — an
      * alarm firing at an instant the rules decline.
      */
-    val reminderHour: Int,
+    val reminderMinute: Int,
     /**
      * This habit has a session today, open or closed.
      *

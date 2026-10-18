@@ -88,8 +88,8 @@ interface AppContainer {
     }
 
     /**
-     * Launches [rearmNudges] on [applicationScope]: the one re-arm every reminder-hour chooser hands
-     * to `chooseReminderHour`, so no two of them can launch it differently.
+     * Launches [rearmNudges] on [applicationScope]: the one re-arm every reminder-time chooser hands
+     * to `chooseReminderTime`, so no two of them can launch it differently.
      */
     fun launchNudgeRearm() {
         applicationScope.launch { rearmNudges() }

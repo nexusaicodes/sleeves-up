@@ -132,11 +132,11 @@ internal fun HabitSwitcher(state: HabitsUiState, viewModel: HabitsViewModel, onM
         HabitEditorDialog(
             title = stringResource(R.string.habit_editor_new_title),
             initialName = "",
-            initialHour = NudgeSchedule.DEFAULT_HOUR,
+            initialMinute = NudgeSchedule.DEFAULT_MINUTE,
             nameProblem = { viewModel.nameProblem(it, forId = null) },
-            onSave = { name, hour ->
+            onSave = { name, minute ->
                 // Created from the switcher means "and show it": the new habit becomes the selection.
-                viewModel.save(habitId = null, name = name, hour = hour, selectNew = true)
+                viewModel.save(habitId = null, name = name, minute = minute, selectNew = true)
                 creating = false
             },
             onDismiss = { creating = false },

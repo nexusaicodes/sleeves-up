@@ -99,8 +99,9 @@ class TimeFormatTest {
     }
 
     @Test
-    fun `an hour of day reads in the language's own clock`() {
-        assertEquals("10:00 am", TimeFormat.hourOfDay(10, english))
-        assertEquals("10:00 ص", TimeFormat.hourOfDay(10, arabic))
+    fun `a time of day reads in the language's own clock`() {
+        assertEquals("10:00 am", TimeFormat.timeOfDay(10 * 60, english))
+        assertEquals("10:00 ص", TimeFormat.timeOfDay(10 * 60, arabic))
+        assertEquals("09:05 pm", TimeFormat.timeOfDay(21 * 60 + 5, english))
     }
 }

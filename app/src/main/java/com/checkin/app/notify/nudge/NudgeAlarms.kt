@@ -22,7 +22,7 @@ import java.time.ZoneId
  *
  * **Deliberately stateless, unlike [com.checkin.app.service.SessionAlarms].** That seam persists its
  * armed instants because they are derived from a session and cannot be recomputed without it. The
- * next nudge instant is derivable from now, the chosen hours and the day's sends, so there is nothing
+ * next nudge instant is derivable from now, the chosen times and the day's sends, so there is nothing
  * to store and nothing to reconcile against `AlarmManager` (which cannot be asked what is still set).
  *
  * **This seam only sets an instant; [NudgeDispatcher] decides it.** The alarm is one `PendingIntent`,
@@ -38,18 +38,18 @@ interface NudgeAlarms {
 
 /**
  * What to arm when the habits or the day's sends cannot be read: the next opening of the earliest
- * band any habit could have. It needs no database — the hours are prefs — and waking early costs
+ * band any habit could have. It needs no database — the times are prefs — and waking early costs
  * one pass, which re-arms from the real state if it can read it, where waking late costs a reminder.
  */
 fun NudgeAlarms.armFallback(nowMs: Long, zone: ZoneId, settings: ReminderSettings) =
-    arm(NudgeSchedule.nextBandAfter(nowMs, zone, settings.earliestHour()))
+    arm(NudgeSchedule.nextBandAfter(nowMs, zone, settings.earliestMinute()))
 
 class AndroidNudgeAlarms(private val context: Context) : NudgeAlarms {
 
     private val alarmManager: AlarmManager?
         get() = context.getSystemService(AlarmManager::class.java)
 
-    // RTC_WAKEUP, not ELAPSED_REALTIME: a checkpoint is a local wall-clock hour.
+    // RTC_WAKEUP, not ELAPSED_REALTIME: a checkpoint is a local wall-clock time.
     override fun arm(atMs: Long) {
         alarmManager?.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pendingIntent())
     }

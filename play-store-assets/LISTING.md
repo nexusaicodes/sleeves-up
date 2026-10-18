@@ -96,7 +96,7 @@ HABITS
 • Nothing compares one habit with another. Each is its own record.
 
 REMINDERS
-• If you have not checked in to a habit, Sleeves Up says so — once that day, around the hour you picked for it.
+• If you have not checked in to a habit, Sleeves Up says so — once that day, around the time you picked for it.
 • Turn one off with a long press on it; that opens its channel and switches it off in one tap, without touching the others.
 
 WHO IT'S FOR
@@ -127,7 +127,7 @@ Habits: keep a separate record for each thing you show up for. Switch between th
 
 Everything you have recorded so far becomes your first habit. Give it a name when you next open the app.
 
-Each habit's reminder comes once, around the hour you pick for it, on a day you haven't checked in. A restart or an update no longer costs you that day's reminder.
+Each habit's reminder comes once, around the time you pick for it, on a day you haven't checked in. A restart or an update no longer costs you that day's reminder.
 ```
 
 ---

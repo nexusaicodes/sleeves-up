@@ -36,7 +36,7 @@ class NudgeDispatcherTest {
     // The seed habit's chosen hour, local, on a day it has no session. Deliberately not the default,
     // so a dispatcher that ignored the stored hour would fail here rather than pass by coincidence.
     private val chosenHour = 8
-    private val reminderSettings = FakeReminderSettings(FakeHabitDao.SEED_UUID to chosenHour)
+    private val reminderSettings = FakeReminderSettings(FakeHabitDao.SEED_UUID to chosenHour * 60)
     private val today = LocalDate.of(2026, 6, 15)
     private val triggerHour = at(chosenHour)
 
@@ -74,7 +74,7 @@ class NudgeDispatcherTest {
 
     private suspend fun newHabit(name: String, hour: Int): Habit {
         val habit = (habits.create(name) as HabitEdit.Saved).habit
-        reminderSettings.setReminderHour(habit.uuid, hour)
+        reminderSettings.setReminderMinute(habit.uuid, hour * 60)
         return habit
     }
 
@@ -256,7 +256,7 @@ class NudgeDispatcherTest {
     /** The hour is read at every pass, so a change takes effect without rebuilding anything. */
     @Test
     fun `the snapshot follows the stored hour`() = runTest {
-        reminderSettings.setReminderHour(seed.uuid, chosenHour + 1)
+        reminderSettings.setReminderMinute(seed.uuid, (chosenHour + 1) * 60)
 
         assertTrue(dispatcher().runOnce().isEmpty())
     }
@@ -421,10 +421,25 @@ class NudgeDispatcherTest {
         assertEquals(listOf(at(chosenHour, date = today.plusDays(1))), alarms.armed)
     }
 
-    /** Arming reads the stored hour under the lock, so a new hour is armed for, not the old one. */
+    /** Reminders are chosen to the minute: a pass before it posts nothing, and the alarm is armed on it. */
     @Test
-    fun `rearm arms for the hour stored before it`() = runTest {
-        reminderSettings.setReminderHour(seed.uuid, chosenHour + 3)
+    fun `a reminder off the hour is due on its minute, not its hour`() = runTest {
+        reminderSettings.setReminderMinute(seed.uuid, chosenHour * 60 + 40)
+
+        assertTrue(dispatcher(FakeTimeSource(at(chosenHour, 39), today)).runOnce().isEmpty())
+        assertEquals(listOf(at(chosenHour, 40)), alarms.armed)
+        assertEquals(
+            listOf(Habit.SEED_ID),
+            dispatcher(FakeTimeSource(at(chosenHour, 40), today)).runOnce().map {
+                it.id
+            },
+        )
+    }
+
+    /** Arming reads the stored time under the lock, so a new time is armed for, not the old one. */
+    @Test
+    fun `rearm arms for the time stored before it`() = runTest {
+        reminderSettings.setReminderMinute(seed.uuid, (chosenHour + 3) * 60)
 
         dispatcher(FakeTimeSource(at(chosenHour - 2), today)).rearm()
 

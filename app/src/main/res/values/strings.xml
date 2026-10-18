@@ -104,7 +104,7 @@
          not say which habit it is about is one a user with two cannot act on; the unnamed title is
          for a habit still owed a name. Copy never warms or grows urgent — that would invent a
          deadline this app does not have, and grade a day that is not over. Time-neutral, because the
-         user picks the hour. No notification names the hour: delivery is best-effort, so a stated
+         user picks the time. No notification names the time: delivery is best-effort, so a stated
          time is a punctuality promise the app cannot keep. -->
     <string name="nudge_not_checked_in_title">%1$s: no session yet today</string>
     <string name="nudge_not_checked_in_unnamed_title">No session yet today</string>
@@ -113,7 +113,7 @@
     <!--
       The first-run welcome tour, shown once before anything is asked for. The order is the point:
       the naming step follows the last page, and the notification permission dialog follows that,
-      so a reminder hour has just been picked when reminders are requested.
+      so a reminder time has just been picked when reminders are requested.
 
       Sentence case — these read as lines, not card titles. Nothing grades a day, by the same rules
       the nudge copy follows.
@@ -127,7 +127,7 @@
     -->
     <string name="welcome_showing_up_title">Showing up is what counts</string>
     <string name="welcome_showing_up_body">Check in with a glance at the camera, and check out the same way. Your time is logged, but showing up is what counts.</string>
-    <!-- The last page leads into the naming step, where the first habit's reminder hour is picked
+    <!-- The last page leads into the naming step, where the first habit's reminder time is picked
          immediately before the notification dialog. "Habit", never "goal": a goal is a target, and this app
          has none. -->
     <string name="welcome_habits_title">One habit at a time</string>
@@ -242,16 +242,19 @@
     <string name="export_failed">Export failed: %1$s</string>
 
     <!--
-      A habit's reminder hour, chosen wherever the habit is named and changeable on the Habits
-      screen. "Around" is load-bearing on every time stated: the alarm is inexact, so the hour is
-      when a reminder becomes due, not when it lands. Every place the hour is shown shares the one
-      summary string.
+      A habit's reminder time, chosen to the minute wherever the habit is named and changeable on
+      the Habits screen. "Around" is load-bearing on every time stated: the alarm is inexact, so the
+      time is when a reminder becomes due, not when it lands. Every place the time is shown shares
+      the one summary string.
     -->
     <string name="reminder_time_value">Around %1$s</string>
     <!-- A time button's click action, spoken by TalkBack after the summary it shows. -->
     <string name="reminder_time_change">Change reminder time</string>
     <string name="reminder_time_dialog_title">Reminder Time</string>
     <string name="reminder_time_cancel">Cancel</string>
+    <string name="reminder_time_confirm">Set</string>
+    <!-- Under the clock: the range a reminder may be set in, turning to the error colour outside it. -->
+    <string name="reminder_time_range">Between %1$s and %2$s</string>
 
     <!--
       Habits. Each is a record of its own, viewed alone: nothing here may compare two habits, rank

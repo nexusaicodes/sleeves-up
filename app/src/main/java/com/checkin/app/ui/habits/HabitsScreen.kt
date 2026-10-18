@@ -41,7 +41,7 @@ import com.checkin.app.ui.components.SectionDivider
 import com.checkin.app.ui.components.reminderTimeSummary
 
 /**
- * The habits: each one's name and reminder hour, a way to add one, and the archived ones with a way
+ * The habits: each one's name and reminder time, a way to add one, and the archived ones with a way
  * back. It lists habits and **compares none of them** — no figure sits beside a name, because a
  * count or a total next to each row is a ranking of the user's habits, which this app never makes.
  * Their records are on the other tabs, one habit at a time.
@@ -99,7 +99,7 @@ fun HabitsScreen(
                     if (index > 0) SectionDivider()
                     HabitRow(
                         habit = entry.habit,
-                        detail = reminderTimeSummary(entry.reminderHour),
+                        detail = reminderTimeSummary(entry.reminderMinute),
                         onEdit = { editing = entry.habit.id },
                         onArchive = { viewModel.archive(entry.habit) },
                     )
@@ -138,10 +138,10 @@ fun HabitsScreen(
                     if (isNew) R.string.habit_editor_new_title else R.string.habit_editor_edit_title,
                 ),
                 initialName = entry?.habit?.name.orEmpty(),
-                initialHour = entry?.reminderHour ?: NudgeSchedule.DEFAULT_HOUR,
+                initialMinute = entry?.reminderMinute ?: NudgeSchedule.DEFAULT_MINUTE,
                 nameProblem = { viewModel.nameProblem(it, entry?.habit?.id) },
-                onSave = { name, hour ->
-                    viewModel.save(entry?.habit?.id, name, hour)
+                onSave = { name, minute ->
+                    viewModel.save(entry?.habit?.id, name, minute)
                     editing = null
                 },
                 onDismiss = { editing = null },

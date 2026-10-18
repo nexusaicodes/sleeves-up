@@ -15,6 +15,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoField
 
 /**
  * Assembles a snapshot per active habit, asks [NudgeEligibility] what to send, and posts the result.
@@ -114,13 +115,13 @@ class NudgeDispatcher(
     /**
      * Arms the alarm for [NudgeEligibility.nextAlarmAcross] without running a pass — for every site
      * that has just lost or moved the alarm: process start (which every boot and package replace
-     * goes through), a new or changed hour, and a habit created, archived or restored. Serialised
-     * with [runOnce] on the same lock, so the hour reads, the decision and the arm are one step: a
-     * choice stored before this is called cannot be overwritten by an arm derived from the hour it
+     * goes through), a new or changed reminder time, and a habit created, archived or restored. Serialised
+     * with [runOnce] on the same lock, so the time reads, the decision and the arm are one step: a
+     * choice stored before this is called cannot be overwritten by an arm derived from the time it
      * replaced.
      *
      * A band open but unsent when the alarm was lost gets its nudge later today rather than tomorrow,
-     * but not at once: these sites are usually the user opening the app or changing an hour, and a
+     * but not at once: these sites are usually the user opening the app or changing a time, and a
      * "you haven't checked in" posted seconds later over that screen is noise. Never throws except to
      * cancel — a failed read arms the plain fallback, and a cancelled one arms nothing, leaving the
      * alarm already set in place rather than replacing it with one that knows less.
@@ -188,7 +189,7 @@ class NudgeDispatcher(
     private suspend fun buildStates(): List<HabitState> {
         val now = timeSource.nowMillis()
         val zone = timeSource.zone()
-        // The day and the hour from the one clock read: a second read for the date can land past
+        // The day and the minute from the one clock read: a second read for the date can land past
         // midnight while `now` did not, opening tomorrow's empty ledger with today's band.
         val local = Instant.ofEpochMilli(now).atZone(zone)
         val today = local.toLocalDate()
@@ -208,8 +209,8 @@ class NudgeDispatcher(
                 habit,
                 NudgeSnapshot(
                     nowMillis = now,
-                    hourOfDay = local.hour,
-                    reminderHour = reminderSettings.reminderHour(habit.uuid),
+                    minuteOfDay = local.get(ChronoField.MINUTE_OF_DAY),
+                    reminderMinute = reminderSettings.reminderMinute(habit.uuid),
                     // Deliberately the habit's rows for the day and not `getActiveSession()`: a
                     // session still open from an earlier day is a lost day-boundary close, not a user
                     // who is present. See the field.

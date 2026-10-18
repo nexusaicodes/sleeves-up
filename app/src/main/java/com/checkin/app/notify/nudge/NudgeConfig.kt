@@ -22,14 +22,14 @@ data class NudgeConfig(
      * The minimum spacing between two nudges, **whichever habits they belong to**.
      *
      * Global rather than per habit, because per habit it would bound nothing: each habit sends once
-     * a day anyway. What it stops is two habits with the same hour — or one whose inexact alarm
+     * a day anyway. What it stops is two habits with the same time — or one whose inexact alarm
      * slipped into another's — arriving back to back as a pair of high-importance messages, which
      * reads as the app malfunctioning rather than as two reminders.
      *
      * Note this defers a nudge rather than cancelling it: the nudge is not marked sent, and
      * [NudgeEligibility.nextAlarmAcross] arms the alarm for the instant the gap clears while the
      * band is still open. That is what keeps the rule from silently costing a habit its reminder,
-     * and why [NudgeSchedule]'s latest choosable hour leaves room for it before midnight.
+     * and why [NudgeSchedule]'s latest choosable time leaves room for it before midnight.
      */
     val minGapMs: Long = DEFAULT_MIN_GAP_MS,
     /**
@@ -37,7 +37,7 @@ data class NudgeConfig(
      * [NudgeEligibility.nextAlarmAt].
      *
      * Only an arm made off the back of something else lands on a due nudge: a process start, a new
-     * hour, a pass that threw. The commonest of those is the user opening the app, and firing then
+     * reminder time, a pass that threw. The commonest of those is the user opening the app, and firing then
      * posts "you haven't checked in" seconds later over the screen they opened to check in from.
      * Half an hour gives them the chance to, and the pass that fires then asks again. It is also
      * what keeps a pass that throws every time from re-arming itself at the alarm's minimum
