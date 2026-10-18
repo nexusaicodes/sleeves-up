@@ -18,17 +18,16 @@ internal fun BottomNavigationBar(navController: NavController, currentScreen: Sc
                 label = { Text(title) },
                 selected = selectedTab == screen,
                 onClick = {
-                    // A detail is popped first. `saveState` would otherwise store it as part of its
-                    // parent tab's stack and `restoreState` would put the user back on the detail
-                    // next time they tap that tab — so tapping the lit Settings tab from Licenses
-                    // would land on Licenses again and read as a dead tab.
-                    val detail = currentScreen as? Screen.Detail
-                    // False when the parent isn't on the stack and nothing popped; fall through to a
-                    // normal navigate then, rather than leaving the tap doing nothing at all.
-                    val popped = detail != null &&
-                        navController.popBackStack(detail.parent.route, inclusive = false)
-                    // Popping already landed on the tapped tab; navigating again would re-save it.
-                    if (popped && detail?.parent == screen) return@NavigationBarItem
+                    // Details are popped first, down to whichever tab sits beneath them. `saveState`
+                    // would otherwise store a detail as part of that tab's stack and `restoreState`
+                    // would put the user back on it next time they tap the tab — Licenses reopening
+                    // under Settings, or Habits (pushed from the Check In tab's switcher, so above a
+                    // tab that is not its parent) reopening under Check In.
+                    if (currentScreen is Screen.Detail) {
+                        while (navController.currentScreen() is Screen.Detail && navController.popBackStack()) Unit
+                        // Popping already landed on the tapped tab; navigating again would re-save it.
+                        if (navController.currentScreen() == screen) return@NavigationBarItem
+                    }
 
                     navController.navigate(screen.route) {
                         popUpTo(navController.graph.startDestinationId) {
@@ -42,3 +41,5 @@ internal fun BottomNavigationBar(navController: NavController, currentScreen: Sc
         }
     }
 }
+
+private fun NavController.currentScreen(): Screen? = allScreens.firstOrNull { it.route == currentDestination?.route }
