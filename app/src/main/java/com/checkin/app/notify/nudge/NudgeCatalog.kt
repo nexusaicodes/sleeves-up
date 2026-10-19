@@ -14,10 +14,8 @@ data class NudgeCopy(val titleRes: Int, val unnamedTitleRes: Int, val bodyRes: I
 /**
  * The copy for each nudge — exactly one wording apiece.
  *
- * There is deliberately **no variant mechanism**. Each nudge carried two arms bucketed per install,
- * and the only thing that could ever read which arm won was the conversion analytics this package no
- * longer keeps. An experiment whose result nothing can read is not an experiment, and re-adding one
- * means first building something that measures it.
+ * There is deliberately **no variant mechanism**: an experiment is only worth running with something
+ * that reads which arm won, and nothing in the app measures that. Build the measurement first.
  */
 object NudgeCatalog {
 

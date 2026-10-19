@@ -9,7 +9,7 @@ import com.checkin.app.R
 import java.util.Locale
 
 /**
- * Two families, split by the size they are read at.
+ * Two Latin families, split by the size they are read at (Arabic replaces both — see `Arabic`).
  *
  * Outfit's x-height is 0.460 em against Manrope's 0.540 — a difference that decides the split rather
  * than following from it. Outfit reads as elegant on the 45sp gauge and would be thin in a 12sp

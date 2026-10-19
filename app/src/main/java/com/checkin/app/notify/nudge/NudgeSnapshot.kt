@@ -25,9 +25,9 @@ data class NudgeSnapshot(
      * This is the only presence question the rules ask, and it is deliberately about *today's record*
      * rather than about whether a session is open right now. A session still open from an earlier day
      * is not evidence the user is here: it is a session whose day-boundary close was lost to a force
-     * stop or a package replace. Suppressing on "a row is open" left such a session silencing every
-     * nudge indefinitely, on exactly the device that had stopped being opened — and the nudge it
-     * silenced was the one that would have surfaced the problem.
+     * stop or a package replace. Suppressing on "a row is open" would let such a session silence every
+     * nudge indefinitely, on exactly the device that has stopped being opened — and the nudge it
+     * silenced would be the one that surfaces the problem.
      *
      * Scoped to the habit, so checking in to one habit does not quieten another's reminder.
      */
@@ -38,8 +38,8 @@ data class NudgeSnapshot(
      * The band is hours wide and [NudgeWorker] runs hourly, so without this a repeat pass inside it
      * re-selects the same nudge and reposts identical copy under the same id. A refused attempt
      * counts too, and that is what makes "a refused nudge waits for tomorrow" true across processes:
-     * with only posts recorded, every re-arm read a refused band as open and unsent, and a user who
-     * had turned the channel off was woken for a pass into it on every process start that day.
+     * were only posts recorded, every re-arm would read a refused band as open and unsent, and a user
+     * who had turned the channel off would be woken for a pass into it on every process start.
      */
     val spentToday: Set<Nudge> = emptySet(),
     /**

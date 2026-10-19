@@ -50,10 +50,12 @@ import com.checkin.app.ui.components.reminderTimeSummary
 /**
  * The habits: each one's name and reminder time, a way to add one, and the archived ones with a way
  * back. **It is also where switching happens**: tapping a habit shows it on every tab and calls
- * [onSelected], which returns to wherever the user came from; Edit and Archive are in its overflow menu. The
- * selected habit carries a check, the one mark that distinguishes a row. It lists habits and **compares none of them** — no figure sits beside a name, because a
- * count or a total next to each row is a ranking of the user's habits, which this app never makes.
- * Their records are on the other tabs, one habit at a time.
+ * [onSelected], which returns to wherever the user came from; Edit and Archive are in each row's
+ * overflow menu. The selected habit carries a check, the one mark that distinguishes a row.
+ *
+ * It lists habits and **compares none of them** — no figure sits beside a name, because a count or
+ * a total next to each row is a ranking of the user's habits, which this app never makes. Their
+ * records are on the other tabs, one habit at a time.
  *
  * Archive is offered on every active habit and refused with a reason where it cannot happen: the
  * habit with the open session (check out first), and the last active one (the app always shows a

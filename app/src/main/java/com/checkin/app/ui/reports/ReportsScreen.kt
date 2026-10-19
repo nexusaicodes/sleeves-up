@@ -85,7 +85,7 @@ fun ReportsScreen(
     // non-replaying, so a config-change re-collect can't re-show a past result.
     val snackbarHostState = LocalSnackbarHostState.current
     // The failure case interpolates a runtime message, so this reads resources rather than hoisting
-    // three `stringResource` values, only one of which could be resolved ahead of the event.
+    // three `stringResource` values, one of which cannot be resolved ahead of the event.
     val resources = LocalResources.current
     LaunchedEffect(Unit) {
         viewModel.exportEvents.collect { event ->
@@ -181,8 +181,8 @@ private fun ScopeSelector(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
-            // Two lines rather than one: at a large font scale a single line clipped "August 2026"
-            // to "Augus…", and a truncated month is not a date the user can read.
+            // Two lines rather than one: at a large font scale a single line clips "August 2026" to
+            // "Augus…", and a truncated month is not a date the user can read.
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
@@ -244,10 +244,9 @@ private fun EmptyScope(scope: ReportScope) {
  * Every scalar is stated once, here, and the charts below carry only what a chart adds. Spread
  * across the holes and legends instead, a figure renders twice with nothing added the second time.
  *
- * **Every row is a quantity and none is a rank.** The two averages arrived from History's deleted
- * month card, and they are allowed here for the reason they were refused there: a row states a
- * figure, where the ring measured it against a denominator these do not have — the only one
- * available is the user's own all-time equivalent, which is a personal best under another name.
+ * **Every row is a quantity and none is a rank.** The two averages are rows rather than rings
+ * because a row states a figure, where a ring measures it against a denominator these do not have —
+ * the only one available is the user's own all-time equivalent, a personal best under another name.
  */
 @Composable
 private fun ScopeStatsCard(uiState: ReportsUiState) {
@@ -450,7 +449,7 @@ private fun StartTimesCard(uiState: ReportsUiState) {
  *
  * A day of one long session and a day of four short ones are two rhythms, not a better and a worse
  * one, so the slices are the same three neutral hues and nothing here is highlighted. The mean sits
- * in the stats table above rather than in the hole, where it read as a figure the ring was measuring.
+ * in the stats table above rather than in the hole, where it would read as a figure the ring measures.
  */
 @Composable
 private fun SessionsPerDayCard(uiState: ReportsUiState) {
@@ -531,9 +530,9 @@ private fun daysPhrase(count: Int): String = pluralStringResource(R.plurals.days
 /**
  * Exports what the screen is showing.
  *
- * One button, not the old This month / All time pair: the scope selector already asks that question,
- * and a second answer to it beside the first is a control that can disagree with the screen above
- * it. It also makes an arbitrary past month exportable, which the pair could not express.
+ * One button that follows the scope selector rather than a range choice of its own: a second answer
+ * to the selector's question is a control that can disagree with the screen above it. Any past month
+ * is exportable by stepping to it.
  */
 @Composable
 private fun ExportCard(scope: ReportScope, onExport: () -> Unit) {

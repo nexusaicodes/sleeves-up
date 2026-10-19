@@ -285,8 +285,7 @@ tasks.register("verifyLicenseCoverage") {
         // neither fails on an entry covering nothing shipped, so a dependency that leaves the graph
         // strands its attribution and the screen keeps crediting a library the APK does not carry.
         // That is not a licence risk, but it is a false statement in the one screen whose whole job
-        // is to be accurate about what the app redistributes, and nothing else would ever catch it:
-        // javax.inject sat there for months after ML Kit took it off the classpath.
+        // is to be accurate about what the app redistributes, and nothing else would ever catch it.
         val inert = coordinates.filterNot { pattern ->
             if (pattern.startsWith("font:")) {
                 val stem = pattern.removePrefix("font:")
@@ -312,10 +311,9 @@ tasks.register("verifyLicenseCoverage") {
 }
 
 // CLAUDE.md is the tree's map, and the way it goes wrong is mechanical: a file is added, renamed or
-// moved and the prose keeps the old name. Two audits running months apart found the same class of
-// defect — a paragraph naming a symbol that no longer existed, and a file the map never mentioned —
-// so it is checked rather than re-read. Only the file-name half is automated: what a file *does* is
-// prose and stays human, exactly as with the licence list.
+// moved and the prose keeps the old name, or a new file never earns a line. That is checked rather
+// than re-read. Only the file-name half is automated: what a file *does* is prose and stays human,
+// exactly as with the licence list.
 val docMapFile: RegularFile = rootProject.layout.projectDirectory.file("CLAUDE.md")
 
 tasks.register("verifyDocMap") {
@@ -384,11 +382,10 @@ tasks.register("verifyDocMap") {
         // nested types whose simple name collides with a platform one — `ServiceReconciler.Result` is
         // why, since NudgeWorker rightly writes `Result.failure()` for a method it never calls.
         //
-        // What it does NOT catch: a reference whose *owner* is gone entirely, which is how
-        // `AuthGate.BIOMETRIC_FALLBACK_AFTER_MS` survived in this file. Catching that needs a rule
-        // that can tell a deleted project type from a platform one, and every version tried flagged
-        // real platform references — measured at 14 false positives to 1 true one. Left uncaught on
-        // purpose rather than gated dishonestly.
+        // What it does NOT catch: a reference whose *owner* is gone entirely. Catching that needs a
+        // rule that can tell a deleted project type from a platform one, and every version tried
+        // flagged real platform references — measured at 14 false positives to 1 true one. Left
+        // uncaught on purpose rather than gated dishonestly.
         val commentPattern = Regex("""/\*(?s:.*?)\*/|//[^\n]*""")
         val sourceText = (sourceFiles + buildScript.asFile).joinToString("\n") { it.readText() }
         val codeOnly = commentPattern.replace(sourceText, " ")

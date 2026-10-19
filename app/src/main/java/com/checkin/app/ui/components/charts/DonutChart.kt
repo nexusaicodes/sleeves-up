@@ -21,8 +21,8 @@ import androidx.compose.ui.unit.dp
  * A proportional ring over [values], coloured pairwise by [colors]. The hole keeps it readable at
  * small sizes and leaves room for [content] in the middle.
  *
- * [content] is clamped to the square inscribed in the hole, so it cannot reach the arc at any font
- * scale or screen size. That bound is applied here rather than being left to callers deliberately.
+ * [content] is clamped to the square inscribed in the hole ([ChartGeometry.INSCRIBED_SQUARE]), so it
+ * cannot reach the arc at any font scale or screen size.
  *
  * [contentDescription] must state the values in words — the split is conveyed by colour alone
  * otherwise, which is unreadable to a screen reader and to anyone who can't distinguish the hues.

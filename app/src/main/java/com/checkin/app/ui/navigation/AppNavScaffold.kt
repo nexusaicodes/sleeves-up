@@ -31,7 +31,7 @@ import com.checkin.app.ui.presence.PresenceGate
 import kotlinx.coroutines.launch
 
 /**
- * Top-level chrome: a centered title bar and the bottom nav around the nav host. The title names the
+ * Top-level chrome: a start-aligned title bar and the bottom nav around the nav host. The title names the
  * active section, so a screen never has to draw its own heading; screens receive the combined inset
  * through the Scaffold's padding. The bar's actions hold the [HabitSwitcher] on every tab.
  */
@@ -72,7 +72,7 @@ fun AppNavScaffold(navController: NavHostController) {
         is Screen.Tab -> currentScreen
     }
 
-    // Only a detail screen gets a back arrow; the tabs keep the bare centred title.
+    // Only a detail screen gets a back arrow.
     val onBack: (() -> Unit)? = if (currentScreen is Screen.Detail) {
         { navController.popBackStack() }
     } else {

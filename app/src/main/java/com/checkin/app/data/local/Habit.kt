@@ -11,8 +11,8 @@ import androidx.room.PrimaryKey
  * **[uuid] is the habit's permanent identity, and [id] is not.** The row id is what sessions point
  * at, and it restarts on a fresh `_app` — which is excluded from cloud backup — while
  * `reminder_prefs` and `nudges.db` are backed up. Anything keyed outside this database is therefore
- * keyed on [uuid]: the reminder hour, the nudge ledger and (through [channelId]) the notification
- * channel. A restore can then orphan a key, which costs a default hour; it can never hand one
+ * keyed on [uuid]: the reminder time, the nudge ledger and (through [channelId]) the notification
+ * channel. A restore can then orphan a key, which costs a default time; it can never hand one
  * habit's choice to another.
  *
  * **Habits are never deleted**, only [archived], which is what lets `sessions.habit_id` go without a
@@ -30,7 +30,7 @@ data class Habit(
      * Null means the habit is **owed a name**: the record a pre-habits install carried, and the one
      * a fresh install seeds before the naming step names it. Nothing renders a habit without one — the
      * Check In button names the habit — so `FirstRun.Step.NAME_HABIT` asks for it before the app
-     * opens. Stored trimmed, and unique among habits that are not archived (see `HabitNames`).
+     * opens. Stored trimmed, and unique among habits that are not archived (see [com.checkin.app.data.HabitRules]).
      */
     @ColumnInfo(name = "name")
     val name: String?,

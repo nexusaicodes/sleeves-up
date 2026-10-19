@@ -29,12 +29,6 @@ package com.checkin.app.notify
  * but not data, and a code per habit would be a band with no upper bound. Its content code would
  * otherwise come from the 1_000 band off a nudge id in the 100_000s — landing it in no band at all.
  *
- * A fourth band once sat below these, overlapping their numbering: the bare notification id, used
- * for each notification's delete intent. It was exempt because it was the only `getBroadcast`
- * allocation here and a broadcast intent can never equal an activity one whatever the code. No
- * notification sets a delete intent any more, so the band is unused — **claim a fresh one rather
- * than reviving it**, unless what needs it is again a broadcast.
- *
  * **The values are frozen**, for the same reason the ids are. A new sender takes a fresh band
  * and adds a row here. The three bases live in `NotificationFactory`'s private companion, so the
  * numbers are restated above rather than linked — this table is the readable copy.

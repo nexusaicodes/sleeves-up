@@ -34,7 +34,7 @@ import java.time.ZoneOffset
 class NudgeDispatcherTest {
 
     // The seed habit's chosen hour, local, on a day it has no session. Deliberately not the default,
-    // so a dispatcher that ignored the stored hour would fail here rather than pass by coincidence.
+    // so a dispatcher that ignored the stored time would fail here rather than pass by coincidence.
     private val chosenHour = 8
     private val reminderSettings = FakeReminderSettings(FakeHabitDao.SEED_UUID to chosenHour * 60)
     private val today = LocalDate.of(2026, 6, 15)
@@ -143,9 +143,8 @@ class NudgeDispatcherTest {
 
     /**
      * A session still open from an earlier day is not evidence the user is present — it is one whose
-     * day-boundary close was lost to a force stop or a package replace. Suppressing on it left such a
-     * session silencing every nudge indefinitely, on exactly the device that had stopped being
-     * opened, and the nudge it silenced was the one that would have surfaced the problem.
+     * day-boundary close was lost to a force stop or a package replace. Suppressing on it would let
+     * such a session silence every nudge indefinitely — see [NudgeSnapshot.hasCheckedInToday].
      */
     @Test
     fun `an open session from an earlier day does not suppress`() = runTest {
@@ -253,7 +252,7 @@ class NudgeDispatcherTest {
         assertTrue(Nudge.NOT_CHECKED_IN.notificationIdFor(Habit.SEED_ID) !in notifier.cancelled)
     }
 
-    /** The hour is read at every pass, so a change takes effect without rebuilding anything. */
+    /** The reminder time is read at every pass, so a change takes effect without rebuilding anything. */
     @Test
     fun `the snapshot follows the stored hour`() = runTest {
         reminderSettings.setReminderMinute(seed.uuid, (chosenHour + 1) * 60)
@@ -293,7 +292,7 @@ class NudgeDispatcherTest {
     }
 
     /**
-     * Two habits at one hour arrive ninety minutes apart, not as a burst: the first post of a pass
+     * Two habits at one time arrive ninety minutes apart, not as a burst: the first post of a pass
      * moves the gap for every habit after it, and the alarm is armed for when it clears.
      */
     @Test
@@ -371,8 +370,8 @@ class NudgeDispatcherTest {
     }
 
     /**
-     * A refusal recorded by an earlier process is still a refusal: with only posts recorded, every
-     * process start read the band as unsent and woke the device for a pass into a blocked channel.
+     * A refusal recorded by an earlier process is still a refusal: were only posts recorded, every
+     * process start would read the band as unsent and wake the device for a pass into a blocked channel.
      */
     @Test
     fun `rearm does not retry a nudge whose post was refused`() = runTest {
@@ -399,7 +398,7 @@ class NudgeDispatcherTest {
     }
 
     /**
-     * The day comes from the same clock read as the hour. Read separately, a pass in the last
+     * The day comes from the same clock read as the minute of the day. Read separately, a pass in the last
      * millisecond of the day could take the date from after midnight: tomorrow's empty ledger, with
      * today's band still open — and the nudge already sent would be sent again.
      */

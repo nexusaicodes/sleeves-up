@@ -22,8 +22,8 @@ sealed class Screen(val route: String, val titleRes: Int) {
     sealed class Tab(route: String, titleRes: Int, val icon: ImageVector) : Screen(route, titleRes)
 
     /**
-     * A destination pushed above [parent]: the top bar trades the centred title for a back arrow and
-     * [parent] stays selected below, so a sub-screen still reads as part of its section.
+     * A destination pushed above [parent]: the top bar puts a back arrow before the title and [parent]
+     * stays selected below, so a sub-screen still reads as part of its section.
      */
     sealed class Detail(route: String, titleRes: Int, val parent: Tab) : Screen(route, titleRes)
 

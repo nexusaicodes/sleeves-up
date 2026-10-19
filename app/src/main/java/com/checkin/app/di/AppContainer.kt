@@ -79,9 +79,9 @@ interface AppContainer {
     }
 
     /**
-     * [NudgeDispatcher.rearm] for a fire-and-forget caller: process start. Never throws except to
-     * cancel, because it runs on [applicationScope], which has no exception handler — a throw there
-     * kills the process.
+     * [NudgeDispatcher.rearm] for a fire-and-forget caller: the habits collector and every
+     * reminder-time chooser. Never throws except to cancel, because it runs on [applicationScope],
+     * which has no exception handler — a throw there kills the process.
      */
     suspend fun rearmNudges() {
         guardNudgeArm { nudgeDispatcher.rearm() }
@@ -216,9 +216,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
     // decides the instant: it is the fallback arm when the dispatcher cannot be built.
     override val nudgeAlarms: NudgeAlarms = AndroidNudgeAlarms(appContext)
 
-    // One instance, shared by the runner and the watchdog below. The armed instants live in
-    // SharedPreferences, so a second would read the same values; hoisting it keeps both callers
-    // demonstrably on one seam rather than on two that happen to agree.
+    // Held by the runner alone; the watchdog repairs alarms through the runner, not through this.
     private val sessionAlarms: SessionAlarms = AndroidSessionAlarms(appContext)
 
     override val sessionLifecycleRunner: SessionLifecycleRunner by lazy {

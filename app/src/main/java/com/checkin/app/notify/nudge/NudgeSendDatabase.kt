@@ -11,16 +11,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * The nudge send ledger, deliberately separate from the sessions DB (`_app`) — no schema change here
  * can put a user's session records at risk or widen what the CSV export covers.
  *
- * **Its first version was 1 with no migrations, and that is the point of the new filename.** The
- * predecessor was `engagement.db`, a general engagement log whose every column but these two had no
- * reader. Renaming a database does not move it, so the old file is *deleted* — [deleteRetiredFile],
- * called once per process — rather than left on disk as a file nothing would ever open again, the
- * same retirement the old work name and the old channel ids get. Carrying the old file forward
- * instead would have meant a migration from its schema, which is code that runs once and is then
- * wrong to delete but impossible to reach.
- *
- * What that costs is the current day's sends, on the one upgrade where it happens: at worst a
- * duplicate nudge that day. Session records are in the other database and are untouched.
+ * It replaces an older file, [RETIRED_DB], rather than migrating it. Renaming a database does not
+ * move it, so the old file is *deleted* — [deleteRetiredFile], called once per process — rather than
+ * left on disk where nothing would ever open it again, the same retirement the old work name and the
+ * old channel ids get. What that costs is the current day's sends on the one upgrade where it
+ * happens: at worst a duplicate nudge that day.
  *
  * Version 3 adds [NudgeSend.posted] and [NudgeSend.habitUuid] in **one step from v3.0's schema**
  * ([MIGRATION_1_3]), through a real migration rather than the destructive backstop, so the day's

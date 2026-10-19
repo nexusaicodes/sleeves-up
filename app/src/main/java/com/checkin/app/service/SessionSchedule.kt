@@ -10,8 +10,7 @@ import java.time.format.DateTimeFormatter
  * "still going?" reminder, and the day boundary that closes it.
  *
  * The cadence is a plain interval, deliberately not randomized: nothing here verifies anything, so
- * there is no check for a predictable time to defeat. Neither instant derives from a daily target —
- * there is none.
+ * there is no check for a predictable time to defeat.
  *
  * ### Reading the `service` package
  *
@@ -42,8 +41,7 @@ object SessionSchedule {
      *
      * Two hours: close enough together that a session forgotten in the morning is caught in the
      * afternoon, far enough apart that one deliberately left running is not harassed. Only the first
-     * reminder of a session alerts; the rest post silently, so a session running overnight
-     * accumulates on the shade instead of buzzing every two hours until dawn.
+     * of a session alerts — see [SessionLifecycleRunner.onReminderFired].
      */
     const val REMINDER_INTERVAL_MS = 120L * MINUTE_MS
 
@@ -63,11 +61,9 @@ object SessionSchedule {
     /**
      * The local midnight that ends the day named by an ISO `date_key`.
      *
-     * The closing instant is derived from the session's own day rather than from when the alarm
-     * happened to fire. An inexact alarm is allowed to land late — hours late, if the device was in
-     * Doze — and stamping a check-out at the fire time would credit a forgotten session with hours
-     * on a day it does not belong to. Returns null on a malformed key rather than throwing, matching
-     * how the rest of the app treats the nullable `date_key` it holds.
+     * Derived from the session's own day rather than from when the alarm fired, since an inexact
+     * alarm may land hours late (see [SessionLifecycleRunner.onDayBoundaryFired]). Returns null on a
+     * malformed key rather than throwing, matching how the rest of the app treats `date_key`.
      */
     @Suppress("SwallowedException")
     fun dayBoundaryOf(dateKey: String, zone: ZoneId): Long? = try {

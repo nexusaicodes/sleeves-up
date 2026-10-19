@@ -31,8 +31,9 @@ import kotlinx.coroutines.launch
  * has no API to migrate a stored opt-out back into the system. The one thing a user does set, each
  * habit's reminder time, is *timing*, not consent — no channel setting can say when a reminder is
  * due — and it lives on the Habits screen beside the habit it belongs to, so this screen holds no
- * state of its own; [runningHabitName] is passed in only to lock the Habits link while a session runs. The language is the platform's per-app setting, so the row here opens that screen
- * rather than offering a picker of its own that could disagree with it.
+ * state of its own; [runningHabitName] is passed in only to lock the Habits link while a session
+ * runs. The language is the platform's per-app setting, so the row here opens that screen rather
+ * than offering a picker of its own that could disagree with it.
  */
 @Composable
 fun SettingsScreen(

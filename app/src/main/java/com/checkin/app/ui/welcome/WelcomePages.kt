@@ -36,7 +36,7 @@ object WelcomePages {
             icon = WelcomeIcon.FACE,
         ),
         // Last, because it leads straight into the naming step, where the first habit is named and
-        // its reminder hour picked. The icon rides on the page rather than being picked by index, so
+        // its reminder time picked. The icon rides on the page rather than being picked by index, so
         // reordering these moves the mark with the words.
         WelcomePage(
             titleRes = R.string.welcome_habits_title,

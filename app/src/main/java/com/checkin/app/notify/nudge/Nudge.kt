@@ -4,7 +4,7 @@ import com.checkin.app.notify.NotificationIds
 
 /**
  * The kinds of nudge the app can send, **per habit**. One today: a habit that has no session yet
- * today is reminded once, around the hour chosen for it. Names are persisted in the send ledger, so
+ * today is reminded once, around the time chosen for it. Names are persisted in the send ledger, so
  * renaming a constant orphans its history — and with it the once-a-day dedup for any send already
  * recorded — unless the old name is added to [LEGACY_KEYS].
  *

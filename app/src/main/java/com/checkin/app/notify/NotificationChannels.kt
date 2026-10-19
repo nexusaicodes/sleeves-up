@@ -14,7 +14,8 @@ import com.checkin.app.R
  *
  * **Importance is frozen too, and more quietly**: the system applies it only at creation, so a
  * changed value here is ignored on any install that already has the channel. Revising it for
- * everyone means a new id, which resets the settings above. Get these right before an install base.
+ * everyone means a new id, which resets the settings above. The app has an install base, so both are
+ * frozen in practice: append a new id, never edit one.
  */
 object NotificationChannels {
 
@@ -27,12 +28,7 @@ object NotificationChannels {
      * later habit's channel is built from its uuid instead (see [HabitChannels]). The ids live on the
      * habit row, so nothing posts by this constant; it stays as the frozen record of the id, and
      * `HabitRulesTest` pins it equal to `Habit.SEED_CHANNEL_ID`, which is what the database seeds.
-     *
-     * A channel id is user-visible state: importance is frozen at creation, so a new id is the only
-     * way to change it on an install that already has the channel, and it costs every per-channel
-     * choice the user had made there. Both earlier renames were free only because this app had no
-     * install base to charge — v1.1 and v2.0 reached Play at effectively zero installs. **That
-     * exemption is spent.** Treat this id, and every habit's, as frozen.
+     * Frozen for the reasons in the object doc, like every habit's id.
      */
     const val NUDGE = "nudge_channel"
 

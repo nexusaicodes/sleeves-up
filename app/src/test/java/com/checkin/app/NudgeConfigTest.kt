@@ -8,7 +8,7 @@ import org.junit.Test
 /**
  * Joins the two files that between them decide when a nudge can be sent.
  *
- * [NudgeSchedule]'s latest choosable hour is documented as leaving a band wide enough for an
+ * [NudgeSchedule]'s latest choosable time is documented as leaving a band wide enough for an
  * inexact alarm's slip plus [NudgeConfig.DEFAULT_MIN_GAP_MS] — a claim about a constant that lives
  * in the other file, with nothing holding the two together. Two copies of one fact in two files is
  * how a reminder comes to be deferred past midnight, which on a device is indistinguishable from an

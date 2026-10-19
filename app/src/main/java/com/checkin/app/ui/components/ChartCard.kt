@@ -25,8 +25,7 @@ import androidx.compose.ui.unit.dp
  * needs and an optional [subtitle] for the span or unit the chart covers.
  *
  * Its own name rather than a spacing argument at seven call sites, and a delegation rather than a
- * second Card — the two were separate copies that had already drifted 4dp apart, which is how a card
- * comes to look slightly different depending on which tab you meet it on.
+ * second Card, so a chart card cannot drift from every other card in padding or shape.
  *
  * The three small pieces such a card is built out of — [LegendRow], [AxisLabel] and [StatsRow] —
  * live below it, so the card and its parts are one file to open rather than a name to guess at.
@@ -65,15 +64,14 @@ fun AxisLabel(text: String) {
 /**
  * One label-value line of the stats table.
  *
- * **The label is the half that gives way, never the value.** Under a plain `SpaceBetween` both
- * children compete for the width and the label wins, because it is measured first — at a 2x font
- * scale "Sessions per day showed up" left its value wrapping to three lines of one character each,
- * so "2.2" rendered as a vertical `2` `.` `2`. A wrapped number stops reading as a number at all,
- * where a wrapped label is merely a label on two lines.
+ * **The label is the half that gives way, never the value.** Under a plain `SpaceBetween` the label
+ * is measured first and wins the width, so at a 2x font scale a long label squeezes "2.2" into a
+ * vertical `2` `.` `2`. A wrapped number stops reading as a number; a wrapped label is merely a label
+ * on two lines.
  *
- * The value is therefore unweighted (it is measured first and takes what it needs, on one line) and
- * the label is weighted (it takes the remainder and wraps into it). Same order of sacrifice as the
- * session ledger row, for the same reason.
+ * So the value is unweighted (measured first, taking what it needs on one line) and the label is
+ * weighted (taking the remainder and wrapping into it) — the same order of sacrifice as
+ * [SessionIntervalRow].
  */
 @Composable
 fun StatsRow(label: String, value: String) {

@@ -73,7 +73,7 @@ class NudgeEligibilityTest {
         assertNull(NudgeEligibility.select(eligible(hourOfDay = 0)))
     }
 
-    /** The band follows the hour chosen for the habit, not a fixed clock. */
+    /** The band follows the time chosen for the habit, not a fixed clock. */
     @Test
     fun `the chosen hour moves the band`() {
         assertNull(NudgeEligibility.select(eligible(hourOfDay = 10, reminderHour = 15)))
@@ -88,8 +88,8 @@ class NudgeEligibilityTest {
     /**
      * Once a day per habit, however often the question is asked inside the band — the checkpoint
      * alarm, then the hourly worker. Without this a later pass reposts the same nudge under the same
-     * id with the same copy, re-alerting on a high-importance channel. Moving the hour does not
-     * reopen it either: the dedup is per nudge, not per hour.
+     * id with the same copy, re-alerting on a high-importance channel. Moving the time does not
+     * reopen it either: the dedup is per nudge, not per time.
      */
     @Test
     fun `a nudge already attempted today does not fire again`() {
@@ -111,7 +111,7 @@ class NudgeEligibilityTest {
     }
 
     /**
-     * The gap spans habits: two habits sharing an hour, or one whose inexact alarm slipped into
+     * The gap spans habits: two habits sharing a time, or one whose inexact alarm slipped into
      * another's, would otherwise arrive as two high-importance messages back to back.
      */
     @Test
@@ -140,7 +140,7 @@ class NudgeEligibilityTest {
     private fun at(hour: Int, minute: Int = 0, date: LocalDate = day): Long =
         date.atTime(hour, minute).atZone(utc).toInstant().toEpochMilli()
 
-    /** A snapshot whose hour is derived from its instant, as the dispatcher builds one. */
+    /** A snapshot whose minute of the day is derived from its instant, as the dispatcher builds one. */
     private fun live(
         nowMs: Long,
         spentToday: Set<Nudge> = emptySet(),
@@ -234,8 +234,8 @@ class NudgeEligibilityTest {
     }
 
     /**
-     * The same agreement at the ends of the hour range and across DST transitions, where [select]
-     * reads a local hour and [NudgeEligibility.nextEligibleAt] reads instants. Santiago moves its
+     * The same agreement at the ends of the choosable range and across DST transitions, where [select]
+     * reads a local minute and [NudgeEligibility.nextEligibleAt] reads instants. Santiago moves its
      * clocks *at* midnight, so the day's end is the instant in question; London moves them inside the
      * night. Swept over each local day's real instants, so a skipped or repeated hour is swept
      * exactly as the device lives it.
@@ -292,7 +292,7 @@ class NudgeEligibilityTest {
 
     /**
      * The alarm never fires straight away. A due nudge is armed off the back of a process start or a
-     * new hour — usually the user opening the app — and posting then lands over the screen they
+     * new time — usually the user opening the app — and posting then lands over the screen they
      * opened to check in from.
      */
     @Test
@@ -347,7 +347,7 @@ class NudgeEligibilityTest {
         assertEquals(at(9), NudgeEligibility.nextAlarmAcross(listOf(gym, writing, doneToday), utc))
     }
 
-    /** Two habits at one hour: the one the gap holds back is armed for when it clears. */
+    /** Two habits at one time: the one the gap holds back is armed for when it clears. */
     @Test
     fun `a habit held behind another's reminder is armed for the gap clearing`() {
         val now = at(9, 5)

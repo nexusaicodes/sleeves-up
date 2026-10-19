@@ -13,8 +13,8 @@ import java.time.ZoneId
  * **This exists because a periodic worker could not do the job.** [NudgeWorker] asks its question at
  * whatever moment it happens to run, and an app the user is not opening drops through Android's
  * standby buckets until that is roughly once a day — at a *consistent* hour, since a deferred
- * periodic job settles into one. A nudge whose whole trigger is "is it past 10am" then never fires
- * again, and the failure is self-reinforcing: the user this feature exists for is precisely the one
+ * periodic job settles into one. A nudge whose trigger is "is it past the chosen time" then never
+ * fires again, and the failure is self-reinforcing: the user this feature exists for is precisely the one
  * whose worker has stopped running. A time-of-day trigger needs a time-of-day primitive.
  *
  * Inexact, for the reasons set out on [com.checkin.app.service.SessionAlarms] — and with more room

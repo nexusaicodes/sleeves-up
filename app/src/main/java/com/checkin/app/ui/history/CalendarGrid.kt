@@ -43,11 +43,11 @@ import java.util.Locale
 /**
  * A month of cells, each either a day the user showed up or a day they did not.
  *
- * **The shade is binary and must stay that way.** A cell used to be drawn at a strength proportional
- * to its hours against the user's longest day; that made every ordinary day render as a partial
- * version of their best one, and a single nine-hour day re-graded the whole history behind it. A
- * 45-minute day and a nine-hour day are now the same mark, which is what "a day counts because it
- * has a session" looks like on a calendar.
+ * **The shade is binary and must stay that way.** A strength proportional to a day's hours against
+ * the user's longest day renders every ordinary day as a partial version of their best one, and a
+ * single nine-hour day re-grades the whole history behind it (see `dayColor`). A 45-minute day and a
+ * nine-hour day are the same mark, which is what "a day counts because it has a session" looks like
+ * on a calendar.
  *
  * @param trackingStartDate the day of the first session, or null when there are none yet — in which
  *   case no day is inside the tracked window, so the whole month draws as days the record does not

@@ -29,7 +29,7 @@ data class HabitEntry(val habit: Habit, val reminderMinute: Int)
 
 data class HabitsUiState(
     val loading: Boolean = true,
-    /** Oldest first — the switcher's order, which is creation order and ranks nothing. */
+    /** Oldest first — creation order, which ranks nothing. */
     val active: List<HabitEntry> = emptyList(),
     val archived: List<Habit> = emptyList(),
     /** The habit every screen is showing. */
@@ -52,9 +52,9 @@ sealed interface HabitsEvent {
  * The habits and their times, for everything that lists or edits them: the switcher, the Habits
  * screen and the naming step.
  *
- * Every reminder time goes through [chooseReminderTime], and every name through [HabitRules] — checked here
- * so the dialog can say what is wrong before anything is written, and again in [HabitRepository] at
- * the write, since two dialogs can be open on one list.
+ * Every reminder time goes through [chooseReminderTime], and every name through [HabitRules] —
+ * checked here so the dialog can say what is wrong before anything is written, and again in
+ * [HabitRepository] at the write, since two dialogs can be open on one list.
  */
 class HabitsViewModel(
     private val habits: HabitRepository,
@@ -89,9 +89,9 @@ class HabitsViewModel(
         HabitRules.nameProblem(name, uiState.value.active.map { it.habit }, forId)
 
     /**
-     * Creates a habit when [habitId] is null, otherwise renames it, and stores [minute] as its reminder time. A new
-     * habit is selected when [selectNew] — the switcher's "New habit" means "and show it" — and not
-     * otherwise, so naming a habit on the Habits screen leaves the screen where it was.
+     * Creates a habit when [habitId] is null, otherwise renames it, and stores [minute] as its
+     * reminder time. A new habit is selected only when [selectNew]; otherwise the selection stays
+     * where it was, so adding a habit on the Habits screen does not switch away from the current one.
      */
     fun save(habitId: Long?, name: String, minute: Int, selectNew: Boolean = false) {
         viewModelScope.launch {

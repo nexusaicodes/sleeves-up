@@ -22,8 +22,8 @@ import androidx.compose.ui.unit.dp
  * A tappable row inside a [SectionCard]: a label, an optional [value] beneath it stating the current
  * setting, and a trailing icon for where it leads. A row that is not [enabled] dims and ignores taps.
  *
- * Shared rather than private to the About card, because the 48dp tap target below is the kind of
- * rule the next screen needing a row like this would otherwise reinvent without.
+ * Shared across Settings, Habits and About because the 48dp tap target below is the kind of rule a
+ * screen needing a row like this would otherwise reinvent without.
  */
 @Composable
 fun ActionRow(

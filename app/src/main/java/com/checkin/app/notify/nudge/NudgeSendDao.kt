@@ -6,7 +6,7 @@ import androidx.room.Query
 
 /**
  * Three statements, and every one of them drives behaviour. Nothing here exists to be read back
- * later by a person: a query that answered only a question nobody asks is what this table replaced.
+ * later by a person — see [NudgeSendLog].
  */
 @Dao
 interface NudgeSendDao {

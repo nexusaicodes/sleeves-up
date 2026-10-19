@@ -3,19 +3,14 @@ package com.checkin.app.notify.nudge
 /**
  * How often a nudge may be sent. Its own file because this is what anyone tuning nudge cadence is
  * looking for, and the three files they would try first — [NudgeEligibility], which reads these
- * values but does not own them, [NudgeSchedule], which owns the band hours, and [NudgeCatalog],
- * which owns the copy — are all dead ends.
+ * values but does not own them, [NudgeSchedule], which owns the bands, and [NudgeCatalog], which
+ * owns the copy — are all dead ends.
  *
- * Frequency is bounded two ways and the band hours are **not** one of them: this type holds the gap,
+ * Frequency is bounded two ways and the band is **not** one of them: this type holds the gap,
  * and [NudgeSnapshot.spentToday] is the other — one nudge per habit per day. **There is no daily
  * cap across habits**, deliberately: a user with four habits asked for four reminders, and a cap
  * would decide on their behalf which habits go unmentioned. The gap is what stops those reminders
  * arriving as a burst.
- *
- * **Cadence only, and there is no longer any other kind of nudge constant.** A reader may come here
- * hunting an attribution window — how long after a nudge a check-in still counted as caused by it.
- * There isn't one: conversion attribution was deleted along with the analytics that were its only
- * consumer, and [NudgeSendLog] now records a send and nothing else.
  */
 data class NudgeConfig(
     /**
@@ -37,8 +32,8 @@ data class NudgeConfig(
      * [NudgeEligibility.nextAlarmAt].
      *
      * Only an arm made off the back of something else lands on a due nudge: a process start, a new
-     * reminder time, a pass that threw. The commonest of those is the user opening the app, and firing then
-     * posts "you haven't checked in" seconds later over the screen they opened to check in from.
+     * reminder time, a pass that threw. The commonest of those is the user opening the app, and firing
+     * then posts "you haven't checked in" seconds later over the screen they opened to check in from.
      * Half an hour gives them the chance to, and the pass that fires then asks again. It is also
      * what keeps a pass that throws every time from re-arming itself at the alarm's minimum
      * futurity, a wake every few seconds for the rest of the band.

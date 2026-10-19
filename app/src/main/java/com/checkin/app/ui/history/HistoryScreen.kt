@@ -198,8 +198,8 @@ private val DETAIL_SLOT_HEIGHT = 180.dp
 private val SECTION_SPACING = 16.dp
 
 /**
- * The part of the above that grows with the user's font setting: the slot is text all the way down
- * now — a title, a two-line message, or a date, a summary line and the ledger rows.
+ * The part of the above that grows with the user's font setting: the slot is text all the way down —
+ * a title, a two-line message, or a date, a summary line and the ledger rows.
  *
  * Deliberately generous, and the two errors are not symmetric: over-stating only shrinks the grid,
  * which the 48dp cell floor absorbs by scrolling, whereas under-stating clips the slot.
@@ -215,7 +215,7 @@ private val TEXT_CONTENT_HEIGHT = 110.dp
  * did nothing at all.
  *
  * There is no aggregation here beyond the day's own total, which is the sum of the rows printed
- * directly beneath it. History states what was recorded; the deriving belongs on Reports.
+ * directly beneath it.
  */
 private fun LazyListScope.daySlotItems(uiState: HistoryUiState) {
     val dateKey = uiState.selectedDateKey

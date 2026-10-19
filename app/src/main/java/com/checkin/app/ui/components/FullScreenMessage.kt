@@ -29,11 +29,11 @@ import androidx.compose.ui.unit.dp
  * The app's one full-screen message: an icon, a title, a paragraph, and whatever the caller puts
  * below them.
  *
- * The presence gate's stops and the welcome tour's pages are this arrangement with different words,
- * and they are drawn from here rather than each carrying a copy so that a change to the spacing, the
- * insets or the behaviour at a large font scale cannot land on one and miss the other. The scroll
- * wrapper is exactly such a change: at the largest accessibility font sizes this content is taller
- * than a phone, and centred text with no scroll puts the actions off screen.
+ * The presence gate's stops, the welcome tour's pages and the naming step are this arrangement with
+ * different words, drawn from here so that a change to the spacing, the insets or the behaviour at a
+ * large font scale cannot land on one and miss the others. The scroll wrapper is such a behaviour: at
+ * the largest accessibility font sizes this content is taller than a phone, and centred text with no
+ * scroll puts the actions off screen.
  */
 @Composable
 fun FullScreenMessage(

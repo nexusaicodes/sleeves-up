@@ -39,26 +39,25 @@ import com.checkin.app.ui.welcome.WelcomeScreen
  *
  * **The welcome outranks the gate**, because an introduction the app owes is worth more than the
  * few seconds it delays an action, and the reverse ordering delivers the tour *after* the user
- * has already checked in — an introduction to an app they have just used. That case is the one
- * that ships: every existing install updates onto this build owing the welcome while its alarms
- * are armed and its notifications live, so a nudge tap can raise the gate with the tour still
- * owed. The request survives the read (its 10-minute fuse only retires in [MainActivity.onStart][com.checkin.app.MainActivity.onStart]), so the
- * check-in follows immediately after.
+ * has already checked in — an introduction to an app they have just used. The reachable case is an
+ * install updated from a build without the welcome: it owes the tour while its alarms are armed and
+ * its notifications live, so a nudge tap can raise the gate with the tour still owed. The request
+ * survives the read (its 10-minute fuse only retires in
+ * [MainActivity.onStart][com.checkin.app.MainActivity.onStart]), so the check-in follows immediately.
  *
- * **The naming step outranks the gate for the same reason**, and its reachable case is the same
- * one: an install updated onto habits owes a name for the record it carried, and a nudge already in
- * its tray can raise the gate before the user has opened the app since. A gate passed first would
- * check in to a habit the Check In screen then cannot name.
+ * **The naming step outranks the gate for the same reason**: an install updated onto habits owes a
+ * name for the record it carried, and a nudge already in its tray can raise the gate before the
+ * user has opened the app since. A gate passed first would check in to a habit the Check In screen
+ * then cannot name.
  *
- * Two states go away with it. Nothing can preempt the welcome, so its pager position cannot be
- * disposed mid-read the way the nav controller's would be — which is what the hoist below exists
- * to prevent for the host. And a pending celebration can no longer be drawn over the tour, since
- * every check-out path now sits behind it.
+ * Two states follow from the ordering. Nothing can preempt the welcome, so its pager position is
+ * never disposed mid-read the way the nav controller's would be — the hoist below prevents that for
+ * the host. And a pending celebration is never drawn over the tour, since every check-out path sits
+ * behind it.
  *
  * A `@Composable` rather than the body of [MainActivity.onCreate][com.checkin.app.MainActivity.onCreate]
- * so each branch is one call site.
- * [AppNavScaffold] in two arms would carry two structural identities, and a step change would
- * discard the NavHost and reset the active tab.
+ * so each branch is one call site: [AppNavScaffold] in two arms would carry two structural
+ * identities, and a step change would discard the NavHost and reset the active tab.
  */
 @Composable
 fun AppRoot(onGatePassed: () -> Unit) {
@@ -132,8 +131,8 @@ fun AppRoot(onGatePassed: () -> Unit) {
         else -> {
             // Gated on the step, not on sitting below the welcome branch: the ordering is the
             // reason the welcome exists, and enforced by branch position it is a rule no test
-            // can see. Outside the gate for the older reason too — PresenceGate raises its own
-            // request, and two stacked system dialogs is a dialog the user can't answer.
+            // can see. Outside the gate too: PresenceGate raises its own request, and two stacked
+            // system dialogs is a dialog the user can't answer.
             if (step == FirstRun.Step.ASK_NOTIFICATIONS) NotificationPermissionOnFirstOpen(settings)
             AppNavScaffold(navController)
         }
@@ -150,17 +149,17 @@ fun AppRoot(onGatePassed: () -> Unit) {
 }
 
 /**
- * Asks for `POST_NOTIFICATIONS` once, on the first launch that reaches the nav host — which is
- * now the launch *after* the welcome tour, never the first frame of a fresh install.
+ * Asks for `POST_NOTIFICATIONS` once, the first time the nav host is reached — after the welcome
+ * tour and the naming step, never on the first frame of a fresh install.
  *
  * Nudges are on by default and the timer notification is the app's main surface, so waiting for
  * the first check-in to ask — which is when [PresenceGate] would — leaves a new user with every
  * notification silently dead until then, including the one telling them they haven't checked in.
- * Asking on the very first frame was the other extreme and the one this replaced: the dialog
- * arrived before a word about the app had been on screen. The welcome's last page describes the
- * reminders this then requests, so the ask has a reason by the time it appears. Nothing else is
- * asked at launch: the camera and its prominent disclosure stay behind the gate, where a check
- * actually needs them. A *skipped* welcome never reaches here at all — see [FirstRun.Exit].
+ * Asking before the tour would raise the dialog before a word about the app had been on screen;
+ * here it follows the tour and a reminder time the user has just chosen, so it has a reason by
+ * the time it appears. Nothing else is asked at launch: the camera and its prominent disclosure
+ * stay behind the gate, where a check actually needs them. A *skipped* welcome never reaches here
+ * at all — see [FirstRun.asksNotificationsAfter].
  *
  * Asked once, tracked in prefs rather than inferred from the grant, because a refusal and a
  * never-asked look the same through `PackageManager` — and Android drops the dialog silently

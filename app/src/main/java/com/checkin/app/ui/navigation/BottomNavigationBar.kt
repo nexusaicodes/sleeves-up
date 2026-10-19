@@ -21,8 +21,8 @@ internal fun BottomNavigationBar(navController: NavController, currentScreen: Sc
                     // Details are popped first, down to whichever tab sits beneath them. `saveState`
                     // would otherwise store a detail as part of that tab's stack and `restoreState`
                     // would put the user back on it next time they tap the tab — Licenses reopening
-                    // under Settings, or Habits (pushed from the Check In tab's switcher, so above a
-                    // tab that is not its parent) reopening under Check In.
+                    // under Settings, or Habits (pushed from any tab's switcher, so often above a tab
+                    // that is not its parent) reopening under that tab.
                     if (currentScreen is Screen.Detail) {
                         while (navController.currentScreen() is Screen.Detail && navController.popBackStack()) Unit
                         // Popping already landed on the tapped tab; navigating again would re-save it.

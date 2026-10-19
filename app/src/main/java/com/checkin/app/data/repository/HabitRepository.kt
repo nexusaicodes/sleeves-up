@@ -65,7 +65,7 @@ class HabitRepository(
      * The habit the app is showing — see [HabitRules.effectiveSelection] for why the open session
      * outranks the stored choice.
      *
-     * **`distinctUntilChanged` is load-bearing, exactly as it is on `trackingStartFlow`.** Both Room
+     * **`distinctUntilChanged` is load-bearing, exactly as it is on `trackingStartFlow`.** All three Room
      * sources re-emit on any write to their table, so this would otherwise emit on every check-in and
      * check-out — and every ViewModel `flatMapLatest`s its whole graph of Room flows off it. A rebuild
      * per write is the dropped-invalidation window the `dayTrigger` dedupe exists to close. It still
@@ -86,7 +86,7 @@ class HabitRepository(
     /**
      * Stores [habitId] as the selection, returning false — and storing nothing — when another
      * habit's session is open (the switcher lock) or the habit is not active. The lock is enforced
-     * here as well as in the menu, because a nudge tap selects too.
+     * here as well as in the switcher, because a nudge tap selects too.
      */
     suspend fun select(habitId: Long): Boolean {
         val running = sessionDao.getActiveSession()
@@ -96,7 +96,7 @@ class HabitRepository(
         return true
     }
 
-    /** Creates a habit. Its reminder hour is the caller's to store, against the returned uuid. */
+    /** Creates a habit. Its reminder time is the caller's to store, against the returned uuid. */
     suspend fun create(name: String): HabitEdit {
         HabitRules.nameProblem(name, habitDao.activeHabits())?.let { return HabitEdit.Rejected(it) }
         val uuid = newUuid()

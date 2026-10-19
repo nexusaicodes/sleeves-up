@@ -12,11 +12,10 @@ data class DeviceBuild(val manufacturer: String, val model: String, val androidR
 /**
  * Builds the feedback email.
  *
- * This app makes no network calls of its own, so feedback leaves through the user's own mail app and
- * nothing is transmitted until they press send — the merged manifest holds no INTERNET permission,
- * so it could not transmit anything if it tried (see [ExternalLinks]). It is also
- * why the diagnostics sit in the body as plain text rather than an attachment or a hidden header:
- * the user reads exactly what they are about to send, and the footer invites them to delete it.
+ * The app makes no network calls of its own (see [ExternalLinks]), so feedback leaves through the
+ * user's own mail app and nothing is transmitted until they press send. The diagnostics sit in the
+ * body as plain text rather than an attachment or a hidden header for the same reason: the user
+ * reads exactly what they are about to send, and the footer invites them to delete it.
  */
 object Feedback {
 

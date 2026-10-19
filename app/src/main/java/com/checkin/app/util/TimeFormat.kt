@@ -21,8 +21,8 @@ private const val MILLIS_PER_MINUTE = MILLIS_PER_SECOND * SECONDS_PER_MINUTE
  * queried.** `CheckInSessionDao`'s range queries depend on its lexicographic ordering and the CSV
  * `Date` column is machine-read. The rule that follows: **every file that produces or parses a
  * `date_key` keeps its own private `ISO_LOCAL_DATE`, and none of them is drift to be consolidated
- * here** — there are around ten, across `data/`, `service/`, `notify/` and each ViewModel, and
- * they are machine-facing to a one. Only the display side comes here, so the test to apply is
+ * here** — there are around ten, across `data/`, `service/`, `platform/`, `notify/` and `ui/`,
+ * and they are machine-facing to a one. Only the display side comes here, so the test to apply is
  * whether a user reads the result, not whether the code formats a date. [dateKeyWithWeekday] is
  * the entry point that takes a `date_key` and returns something a user reads.
  *
@@ -107,9 +107,8 @@ object TimeFormat {
      * A month heading a user reads in full (e.g. "August 2026").
      *
      * Spelled out and always carrying the year, unlike [axisMonth], because this is a heading read
-     * on its own rather than a label under a bar with a title above it. Two screens show one — the
-     * History month selector and the Reports scope label — and they are the same heading, so they
-     * come from here: built inline they were free to disagree, and a change would land on one.
+     * on its own rather than a label under a bar with a title above it. The History month selector and
+     * the Reports scope label both show it, and come from here so they cannot disagree.
      */
     fun monthYear(month: YearMonth, patterns: TimePatterns): String = month.format(patterns.monthYearFormatter)
 

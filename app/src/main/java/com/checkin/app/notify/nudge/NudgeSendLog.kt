@@ -13,11 +13,9 @@ data class NudgeSending(val habitUuid: String, val key: String, val atMillis: Lo
  * The app's whole interface to the send ledger, and the ledger's whole purpose: remembering what was
  * already sent today so the next pass does not send it again.
  *
- * This is scheduler state, not analytics. It replaced a log that also recorded opens, dismissals,
- * conversions, session reminders and foreground-service lifecycle events — none of which anything
- * ever read back. **Nothing may be added here that no code path reads**: the app makes no network
- * calls and ships no surface that displays this data, so a row written for someone to look at later
- * is a row nobody looks at.
+ * This is scheduler state, not analytics. **Nothing may be added here that no code path reads**: the
+ * app makes no network calls and ships no surface that displays this data, so a row written for
+ * someone to look at later is a row nobody looks at.
  */
 interface NudgeSendLog {
 

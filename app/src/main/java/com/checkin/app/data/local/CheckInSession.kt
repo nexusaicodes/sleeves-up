@@ -24,16 +24,9 @@ data class CheckInSession(
     /**
      * What ended this session, or null while it is still open.
      *
-     * A record of what happened, not a judgement on it and not an edit: the row is immutable
-     * whichever value it carries, the duration is unchanged, and nothing in the app *displays* it.
-     * It exists so the CSV can say which stop instants the user chose, from which surface, and
-     * which midnight chose for them — a distinction the export could not otherwise carry, since a
-     * forgotten session is stamped at a plausible time.
-     *
-     * Nullable rather than defaulted, because an open session has not been ended by anything and a
-     * value here would be a claim about a stop that has not happened. That is also why
-     * [com.checkin.app.data.repository.CheckInRepository.checkOutAt] takes it with no default: the
-     * boolean this replaced was inherited silently by every caller that never mentioned it.
+     * Exported, never displayed — see [ClosedBy]. Nullable rather than defaulted, because an open
+     * session has not been ended by anything and a value here would be a claim about a stop that
+     * has not happened.
      */
     @ColumnInfo(name = "closed_by", defaultValue = "NULL")
     val closedBy: ClosedBy? = null,
@@ -48,8 +41,8 @@ data class CheckInSession(
      * record filters on it; the open-session queries alone do not, because there is one open session
      * across all habits and that rule is only a single query while they stay unscoped.
      *
-     * Undefaulted in Kotlin for the reason [closedBy]'s writer is: a new insert that never mentioned
-     * the habit would silently file its session under the seed one.
+     * Undefaulted in Kotlin, so a new insert that never mentions the habit fails to compile rather
+     * than silently filing its session under the seed one.
      */
     @ColumnInfo(name = "habit_id", defaultValue = "1", index = true)
     val habitId: Long,

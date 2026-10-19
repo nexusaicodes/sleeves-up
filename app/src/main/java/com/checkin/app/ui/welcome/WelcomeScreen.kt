@@ -51,12 +51,10 @@ import kotlinx.coroutines.launch
 /**
  * The first-run tour: three pages, shown once, ahead of the naming step and the `POST_NOTIFICATIONS`
  * request rather than beside them. It names nothing itself: the one path through is the pager and
- * its button, and naming the first habit, with its reminder hour, is the step [onFinished] leads to.
+ * its button, and naming the first habit, with its reminder time, is the step [onFinished] leads to.
  *
- * [onSkipped] deliberately does not release it. Skipping and finishing are the same in every other
- * respect — both retire the tour for good — but a skip means nothing has explained the app, so
- * firing the dialog behind it would reproduce in one tap the defect the tour was built to close.
- * Notifications are not lost: the presence gate asks at the first check-in, beside the camera.
+ * [onSkipped] retires the tour for good as finishing does, but does not release the notification
+ * request — see [FirstRun.asksNotificationsAfter].
  */
 @Composable
 fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit) {

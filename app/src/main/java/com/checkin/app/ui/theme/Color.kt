@@ -25,10 +25,10 @@ private val OnStopDark = Color(0xFF3B0A0A)
 /**
  * Theme-aware colour for a day the user showed up.
  *
- * There is deliberately **one** strength and no overload taking a fraction. A day used to be drawn
- * at an alpha proportional to its hours against the user's longest day, which made the shade a
- * ranking: one nine-hour day permanently re-rendered every ordinary day as a fainter version of it.
- * A day either has a session or it does not, and that is the whole of what a cell says.
+ * There is deliberately **one** strength and no overload taking a fraction. An alpha proportional
+ * to a day's hours against the user's longest day makes the shade a ranking: one nine-hour day
+ * re-renders every ordinary day as a fainter version of it, for good. A day either has a session or
+ * it does not, and that is the whole of what a cell says.
  *
  * Callers that need this over a background at reduced weight apply their own alpha for legibility —
  * a fixed constant, never a figure derived from a duration.

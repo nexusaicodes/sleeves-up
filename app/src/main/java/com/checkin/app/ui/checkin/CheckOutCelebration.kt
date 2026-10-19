@@ -34,8 +34,8 @@ import com.checkin.app.util.TimeFormat
  *
  * **It celebrates showing up, never how long for.** The copy, the emphasis and the icon are
  * identical at twenty minutes and at four hours — a message that warmed as the number grew would be
- * the deleted daily target returning as a congratulation threshold, which is the one thing this
- * screen must not become. The duration is stated because it is a quantity worth seeing, exactly as
+ * a daily target returning as a congratulation threshold, which is the one thing this screen must
+ * not become. The duration is stated because it is a quantity worth seeing, exactly as
  * it is everywhere else in the app, and it is never graded.
  *
  * **Nothing retires it on a timer.** A tap anywhere and the back gesture are the only ways out, so
@@ -84,10 +84,8 @@ fun CheckOutCelebration(completed: CheckOutSignal.Completed, onDismiss: () -> Un
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.padding(32.dp),
         ) {
-            // The one place the app spends anything on motion. The mark settles a cell at a time
-            // and the last one lands with a slight overshoot, so what the user sees is the record
-            // gaining an entry rather than a congratulation appearing. It plays once and rests:
-            // nothing here loops, and nothing about it changes with how long the session was.
+            // The record gaining an entry rather than a congratulation appearing (see `BrandGrid`'s
+            // settle). It plays once and rests, and nothing about it changes with the duration.
             BrandGrid(size = MARK_SIZE, settle = true)
             // Which record gained the entry — a name, worded identically for every habit and never
             // set beside another habit's figures.

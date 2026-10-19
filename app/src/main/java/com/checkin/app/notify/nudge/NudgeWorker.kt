@@ -54,22 +54,14 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
         private const val WORK_NAME = "nudge_pass"
 
         /**
-         * The name this work was enqueued under before `notify/engagement/` became `notify/nudge/`.
+         * A name this work was previously enqueued under, cancelled before every enqueue.
          *
          * A unique name is WorkManager's own persisted key, so renaming does not rename the existing
-         * work — it enqueues new work and leaves the old `WorkSpec` standing. Because the worker
-         * class moved packages in the same change, that orphan names a class that no longer
-         * resolves, so WorkManager cannot instantiate it and fails it on a schedule forever. Had only
-         * the name changed, it would have been worse: [ExistingPeriodicWorkPolicy.KEEP] would leave
-         * two live hourly passes, doubling every revive, re-arm and prune. Cancelling before the
-         * enqueue is what makes the rename a rename either way — the exact analogue of deleting a
-         * retired notification channel.
-         *
-         * Verified on device: after the upgrade `WorkName` joins one `WorkSpec` in state 5
-         * (CANCELLED) under this name, and one in state 0 (ENQUEUED) under [WORK_NAME].
-         *
-         * Keep this call for as long as any install may still hold the old work — nothing reports
-         * back that it is gone. Append rather than replace if the name ever changes again.
+         * work — it enqueues new work and leaves the old `WorkSpec` standing, here naming a worker
+         * class that no longer resolves. Cancelling it is the analogue of deleting a retired
+         * notification channel. Keep this call for as long as any install may still hold the old
+         * work — nothing reports back that it is gone — and append rather than replace if the name
+         * ever changes again. [WORK_NAME] is frozen for the same reason.
          */
         private const val RETIRED_WORK_NAME = "engagement_nudge_pass"
         private const val INTERVAL_MINUTES = 60L
@@ -94,7 +86,7 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
 
             // A first pass at enqueue time would run on a fresh install while the welcome tour is up:
             // a nudge over it, or — with notifications not yet asked for — a refused attempt that
-            // spends the day's first reminder. The backstop can wait an interval like any other pass.
+            // spends the day's reminder. The backstop can wait an interval like any other pass.
             val request = PeriodicWorkRequestBuilder<NudgeWorker>(
                 INTERVAL_MINUTES,
                 TimeUnit.MINUTES,

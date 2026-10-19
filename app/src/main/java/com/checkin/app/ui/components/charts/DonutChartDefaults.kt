@@ -17,9 +17,7 @@ object DonutChartDefaults {
 
     /**
      * Ring thickness. Kept near a tenth of the diameter: the arc has to read as a band rather than a
-     * hairline, but every dp of it comes straight out of the hole a caption would sit in, and the
-     * app's own progress gauge runs about half this ratio. No caller passes `content` today — see
-     * [ChartGeometry.INSCRIBED_SQUARE] on why the bound is kept dormant rather than deleted.
+     * hairline, but every dp of it comes straight out of the hole a caption would sit in.
      */
     val StrokeWidth: Dp = 12.dp
 
@@ -29,9 +27,9 @@ object DonutChartDefaults {
     /**
      * Ring diameter, grown with the user's font scale.
      *
-     * Sized for a caption in the hole, which **no current caller draws** — the rule is kept live
-     * because the next one will. That caption would be in `sp` while the ring is a fixed `dp`, so
-     * raising the system font size shrinks the hole in real terms until the text no longer fits it.
+     * Sized for a caption in the hole, which no current caller draws (see
+     * [ChartGeometry.INSCRIBED_SQUARE]). That caption would be in `sp` while the ring is a fixed `dp`,
+     * so raising the system font size shrinks the hole in real terms until the text no longer fits.
      * Growing the ring in step keeps it whole for the scales people actually use; the cap stops the
      * ring crowding the legend beside it on a narrow screen, and past that a caption ellipsizes.
      */

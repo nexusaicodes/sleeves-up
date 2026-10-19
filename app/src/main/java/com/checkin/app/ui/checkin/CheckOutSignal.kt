@@ -44,8 +44,7 @@ object CheckOutSignal {
     /**
      * How long an unshown celebration stays live.
      *
-     * Deliberately far shorter than [PresenceCheckSignal.EXPIRY_MS]
-     * [com.checkin.app.ui.presence.PresenceCheckSignal.EXPIRY_MS], because the two are waiting for
+     * Deliberately far shorter than `PresenceCheckSignal.EXPIRY_MS`, because the two are waiting for
      * different things. That gate expects a legitimate round trip out of the app — it sends the user
      * to system settings and waits for them to come back. This one is a reaction to something the
      * user *just* did, and nothing about it survives the moment: a congratulation for a session

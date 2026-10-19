@@ -16,8 +16,8 @@ import kotlinx.coroutines.launch
  * restricted and would be refused in exactly that case. Posting a notification and closing a row
  * need neither a service nor a foreground state.
  *
- * The service is told afterwards only so its notification stops advancing or is taken down, and only
- * when it is already alive in this process. If it is not, there is no notification to correct.
+ * The service is told afterwards only so its notification is redrawn from the row or taken down, and
+ * only when it is already alive in this process. If it is not, there is no notification to correct.
  */
 class SessionAlarmReceiver : BroadcastReceiver() {
 

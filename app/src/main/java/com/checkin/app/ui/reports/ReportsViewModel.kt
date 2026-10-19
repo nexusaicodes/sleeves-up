@@ -55,9 +55,9 @@ data class ReportsUiState(
     /**
      * Worked time per *tracked* day — missed days stay in the denominator.
      *
-     * A quantity the screen prints as a row. It carried a ring on History's month card once and must
-     * not carry one again: the only denominator available to fill an arc against is the user's own
-     * all-time equivalent, which is a personal best under another name and ratchets.
+     * A quantity the screen prints as a row, never as a ring: the only denominator available to fill
+     * an arc against is the user's own all-time equivalent, which is a personal best under another
+     * name and ratchets.
      */
     val avgDailyMs: Long = 0L,
     /** Mean sessions per day shown up — a rhythm, not a score. */
@@ -285,10 +285,7 @@ class ReportsViewModel(
      * Exports whatever the screen is showing.
      *
      * The range is the active scope's own window, so the file and the screen cannot describe
-     * different days — they read the one `resolve`. That matters because the exporter gap-fills:
-     * a range reaching past [ConsistencyStats.countedThrough] writes dates that have not happened
-     * out as days the user recorded nothing, and one starting before the tracking start does the
-     * same for days before they had opened the app.
+     * different days — they read the one `resolve`, which is where the clamping and its reasons live.
      *
      * The clock is read **once**: a rollover between two readings would pair a start and an end
      * taken from different days.

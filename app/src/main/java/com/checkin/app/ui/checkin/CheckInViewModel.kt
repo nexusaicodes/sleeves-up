@@ -29,8 +29,9 @@ import java.time.format.DateTimeFormatter
 
 /**
  * What the gate is being opened for, so that passing it performs the action the user asked for
- * rather than a fixed one. The root gate's equivalent is `PresenceCheckSignal.Reason`, which covers the same actions for a check requested from
- * a notification — with check-out split in two, one value per `ClosedBy`.
+ * rather than a fixed one. The root gate's equivalent is `PresenceCheckSignal.Reason`, which covers
+ * the same actions for a check requested from a notification — with check-out split in two, one
+ * value per `ClosedBy`.
  */
 sealed class PresenceAction {
     data object None : PresenceAction()
@@ -94,7 +95,7 @@ class CheckInViewModel(
             ) { active, sessions, gate, trackingStart, habit ->
                 // The running flag, completed total, and live-ticker basis all derive from this single
                 // sessions emission (via `ticker`), so a check-out moves the closing session into the
-                // total in one atomic step — no one-frame dip or 00:00:00 flash. A session still open
+                // total in one atomic step — no one-frame dip or flash of zero. A session still open
                 // from a prior day (checked in across midnight) is not in today's list, so the ticker
                 // falls back to the active row; deriving isRunning from ticker keeps it true there,
                 // guarding against a double check-in while today's total correctly stays at 0. The
@@ -144,7 +145,7 @@ class CheckInViewModel(
         presenceAction.value = PresenceAction.None
     }
 
-    /** Called once the auth gate (face detection or biometric fallback) has passed. */
+    /** Called once the presence gate (face detection or its device-unlock fallback) has passed. */
     fun onAuthSuccess() {
         showGate.value = false
         when (presenceAction.value) {
@@ -180,8 +181,6 @@ class CheckInViewModel(
             // for a check-in is stale whichever way the check-in was made, and one left in the tray
             // sends the user back through the presence gate to reach a session already open.
             postedNudges.retire(habitId)
-            // No refresh: the inserted row is what `hasEverTracked` reads, and its flow already
-            // carries it.
         }
     }
 
@@ -196,8 +195,6 @@ class CheckInViewModel(
             // The other writer, MainActivity.onRootGatePassed, raises this too — a check-out from
             // the notification earned the same acknowledgement as one from the button.
             closed?.let { raiseCheckOutCelebration(repository, habits, it, timeSource.nowMillis()) }
-            // No manual refresh: the reactive session flows already reflect the closed session, and
-            // the day clock owns the date roll.
         }
     }
 

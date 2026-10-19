@@ -12,18 +12,17 @@ import java.util.UUID
 /**
  * The record: sessions, the habits they belong to, and the one row of app state that indexes them.
  *
- * **Version 2 is the first real migration this database has had.** Version 1 was *collapsed*, not
- * new — the settled end of a migration chain flattened while the Play install base was still
- * effectively zero — and that exemption is spent. [MIGRATION_1_2] carries a v3.0 install's record
- * into habits: it creates `habits` and `app_state`, adds `sessions.habit_id` defaulting to
- * [Habit.SEED_ID], and so files every session already recorded under the seed habit, unnamed until
- * the first-run naming step asks.
+ * **Every schema change is a real migration from here on.** Version 1 was a chain collapsed while
+ * the Play install base was effectively zero, and that exemption is spent. [MIGRATION_1_2] carries
+ * a v3.0 install's record into habits: it creates `habits` and `app_state`, adds `sessions.habit_id`
+ * defaulting to [Habit.SEED_ID], and so files every session already recorded under the seed habit,
+ * unnamed until the first-run naming step asks.
  *
  * Two things to know before writing the next one:
  *
  * - **`ALTER TABLE ... DROP COLUMN` is not available.** SQLite learned it in 3.35, which shipped in
- *   Android 14; `minSdk` is 33, and API 33 ships **3.32.2**, where it is a bare syntax error —
- *   measured on an API 33 emulator, not recalled. Rebuild the table instead: create, `INSERT …
+ *   Android 14; `minSdk` is 33, and API 33 ships **3.32.2**, where it is a bare syntax error.
+ *   Rebuild the table instead: create, `INSERT …
  *   SELECT`, drop, rename, with the new table spelled to match what Room generates for the entity
  *   exactly, since Room validates the schema on the next open and a stray `NOT NULL` or a missing
  *   `AUTOINCREMENT` fails there rather than in the migration.

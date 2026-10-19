@@ -43,7 +43,7 @@ class NudgeScheduleTest {
     }
 
     /**
-     * The latest choosable hour still leaves three hours before midnight: an inexact alarm may land
+     * The latest choosable time still leaves three hours before midnight: an inexact alarm may land
      * up to an hour late, and a habit held back behind another's reminder by the ninety-minute gap
      * later still, so a narrower band could close before either delivery.
      */
@@ -92,9 +92,9 @@ class NudgeScheduleTest {
     }
 
     /**
-     * Strictly after, and that is load-bearing: [com.checkin.app.notify.nudge.NudgeAlarmReceiver]
-     * re-arms from inside the pass the alarm just triggered, so an inclusive comparison would
-     * schedule the instant that had only just fired and spin on it.
+     * Strictly after, and that is load-bearing: the fallback can be armed from inside the pass the
+     * alarm just triggered (see [com.checkin.app.notify.nudge.armFallback]), so an inclusive
+     * comparison would schedule the instant that had only just fired and spin on it.
      */
     @Test
     fun `an instant exactly on the band's opening yields tomorrow's`() {
@@ -106,7 +106,7 @@ class NudgeScheduleTest {
         assertEquals(at(utc, day.plusDays(1), hour), NudgeSchedule.nextBandAfter(at(utc, day, 23, 59), utc, minute))
     }
 
-    /** Changing the hour moves the next alarm with it — the reason every chooser re-arms at once. */
+    /** Changing the time moves the next alarm with it — the reason every chooser re-arms at once. */
     @Test
     fun `a different chosen hour arms a different instant`() {
         assertEquals(at(utc, day, 15), NudgeSchedule.nextBandAfter(at(utc, day, 6), utc, 15 * 60))
@@ -140,7 +140,7 @@ class NudgeScheduleTest {
 
     // --- bandOn ---
 
-    /** The instant band is the hour band, so the alarm and the rule mean the same span. */
+    /** The same band [NudgeSchedule.inBand] reads by minute, so the alarm and the rule mean the same span. */
     @Test
     fun `the band's instants run from the chosen hour to midnight`() {
         assertEquals(at(utc, day, hour) until at(utc, day.plusDays(1), 0), NudgeSchedule.bandOn(day, utc, minute))

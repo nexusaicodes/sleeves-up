@@ -115,7 +115,7 @@ class NudgeDispatcher(
     /**
      * Arms the alarm for [NudgeEligibility.nextAlarmAcross] without running a pass — for every site
      * that has just lost or moved the alarm: process start (which every boot and package replace
-     * goes through), a new or changed reminder time, and a habit created, archived or restored. Serialised
+     * goes through), a new or changed reminder time, and every change to the habits table. Serialised
      * with [runOnce] on the same lock, so the time reads, the decision and the arm are one step: a
      * choice stored before this is called cannot be overwritten by an arm derived from the time it
      * replaced.

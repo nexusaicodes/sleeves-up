@@ -8,9 +8,8 @@ package com.checkin.app.ui.welcome
  * Composable cannot be unit-tested on this suite. The welcome comes first so the introduction lands
  * before the permission dialog rather than behind it — the ordering is the reason the welcome
  * exists, and left to which branch is written first it would be a rule no test can see. Naming a
- * habit comes between the two, so an install updated onto habits, or a tour skipped before its
- * habit was named, still never reaches the app with a habit it cannot name. Same shape
- * and same reason as `DEVICE_UNLOCK_OFFERED_AFTER_MS` in `ui/presence/DeviceUnlock`.
+ * habit comes between the two, so neither a fresh install (the tour names nothing) nor one updated
+ * onto habits ever reaches the app with a habit it cannot name.
  */
 object FirstRun {
 
@@ -30,10 +29,11 @@ object FirstRun {
      * the record cannot mark the question answered.
      */
     fun step(seenWelcome: Boolean, habitNeedsName: Boolean?, askedNotifications: Boolean): Step = when {
-        // Ahead of the notifications test, so an install updated onto this build — already carrying
-        // `notifications_asked` while `welcome_seen` defaults false — sees the welcome once rather
-        // than never. Reading that flag as "an update, skip it" instead couples the two: anything
-        // that came to set it earlier would disable the welcome for everyone, with nothing failing.
+        // Ahead of the notifications test, so an install updated from a build without the welcome —
+        // already carrying `notifications_asked` while `welcome_seen` defaults false — sees the
+        // welcome once rather than never. Reading that flag as "an update, skip it" instead couples
+        // the two: anything that came to set it earlier would disable the welcome for everyone,
+        // with nothing failing.
         !seenWelcome -> Step.WELCOME
         // Never guessed: drawing the app and then replacing it with the naming step would flash a
         // Check In button with no habit to name, and guessing "named" would let the gate open first.
@@ -48,10 +48,9 @@ object FirstRun {
     /**
      * Whether ending the welcome this way releases the launch-time notification request.
      *
-     * Only a welcome read through does. The last page is what gives that dialog a reason, so a skip
-     * that fired it anyway would reproduce the defect this screen exists to fix, in one tap and
-     * before a word about the app had been on screen. A skip costs the user no notifications: the
-     * presence gate still asks at the first check-in, beside the camera.
+     * Only a welcome read through does. The tour is what gives that dialog a reason, so a skip that
+     * fired it anyway would raise it in one tap with nothing about the app said. A skip costs the
+     * user no notifications: the presence gate still asks at the first check-in, beside the camera.
      */
     fun asksNotificationsAfter(exit: Exit): Boolean = exit == Exit.FINISHED
 }

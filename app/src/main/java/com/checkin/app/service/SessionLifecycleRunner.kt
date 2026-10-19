@@ -18,10 +18,8 @@ import java.time.ZoneId
  * Owns what happens to a session while it is open: arming both alarms, reminding the user it is
  * still running, and closing it at the day boundary.
  *
- * Three jobs, and the closing one is the load-bearing one — [onDayBoundaryFired] is the app's only
- * un-gated check-out and the only write to `sessions` anywhere in this package. It cannot be gated:
- * the point is to close a session the user forgot, and a forgotten session is precisely the one
- * nobody is present to authenticate.
+ * The closing job is the load-bearing one: [onDayBoundaryFired] is the app's only un-gated
+ * check-out and the only write to `sessions` anywhere in this package.
  *
  * Nothing here verifies anything and nothing is deducted — the reminder only asks, and ignoring it
  * costs nothing at all. **Never make it stop the clock**: a question nobody saw would then silently
@@ -174,8 +172,7 @@ class SessionLifecycleRunner(
         val closeAt = (alarms.dayBoundaryAt.takeIf { it > 0L } ?: dayBoundaryFor(active))
             .coerceAtMost(timeSource.nowMillis())
 
-        // The one un-gated check-out in the app, and the only writer that flags a session as
-        // closed by the boundary rather than by the user.
+        // The only writer of ClosedBy.DAY_BOUNDARY.
         repository.checkOutAt(active.id, closeAt, ClosedBy.DAY_BOUNDARY)
         alarms.cancelAll()
         notifier.cancel(NotificationIds.SESSION_REMINDER)
@@ -200,8 +197,8 @@ class SessionLifecycleRunner(
     /**
      * The platform would not display the reminder. Re-armed **without advancing the count**, so the
      * first reminder the user can actually see still alerts — silence is not an answer, and a
-     * reminder nobody saw must not be treated as one that was ignored. Advancing here is the bug this
-     * exists to prevent: it marked the alert spent on a refusal and never alerted again all session.
+     * reminder nobody saw must not be treated as one that was ignored. Advancing here would spend the
+     * session's one alerting reminder on a post nobody received.
      */
     private fun refused(firedAt: Long): Outcome {
         alarms.scheduleReminderAt(SessionSchedule.nextReminderAt(firedAt))

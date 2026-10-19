@@ -1,9 +1,8 @@
 # Sleeves Up
 
-A personal Android tracker built around **showing up**. It records your working time through
-authenticated **check-in / check-out** intervals and shows the record building up over time. There
-is no target and no grade: a day counts because you turned up for it, not because its hours cleared
-a bar.
+A personal Android tracker built around **showing up**. It records time through presence-checked
+**check-in / check-out** intervals and shows the record building up. There is no target and no
+grade: a day counts because you turned up for it, not because its hours cleared a bar.
 
 | | | | |
 | --- | --- | --- | --- |
@@ -11,107 +10,87 @@ a bar.
 
 ## What it does
 
-- **Check in / check out** from the first tab. Every check-in *and* check-out is gated by an
-  on-device face check, with **device unlock** as a fallback. No photo is taken: the camera hardware
-  reports whether a face is in frame and the app reads only that count, so frames never leave the
-  camera pipeline and there is no image to store, show or delete.
-- **Net daily time** = the sum of your completed check-in/out intervals for the day (open intervals
-  are excluded). Every day counts — 7 days a week, no weekend or holiday exemption.
-- **A day counts if it has a session.** A 45-minute day on a bad week counts as showing up exactly
-  as much as a nine-hour one — the calendar draws both the same way. Your hours are shown everywhere
-  — in the totals, the charts and the export — as a quantity and never as a verdict: nothing is
-  ranked against your longest day or your own best, and nothing is ever coloured red.
-- **Today counts the moment you check out.** Your days-shown-up count, your charts and the calendar
-  update there and then, not at the next midnight. Until that first check-out the day simply isn't
-  counted yet — it never shows up as a day you missed, so the numbers only ever move up as a day
-  goes on.
-- **Sessions are immutable** — no editing, deleting, or manual entry, by design.
-- **A session reminder** every couple of hours while you're checked in. It only asks — ignoring it
-  costs you nothing. A session you forget about closes itself at midnight, so a check-in left running
-  overnight can't record a sixteen-hour day.
-- **Habits** — keep a separate record for each thing you're showing up for. A switcher in the top
-  bar picks the habit every tab shows: its own calendar, Reports, CSV and reminder. Nothing on screen
-  compares one habit with another. One session runs at a time, and the switcher stays on its habit
-  until you check out. Habits are archived rather than deleted, and come back from **Settings →
-  Manage habits** with their records intact.
-- **Check-in reminders** — on by default, one per habit, around the hour you choose for it, and only
-  on a day that habit has no session. Turn one off where you turn off any other notification:
-  long-press it, or find that habit's channel under **Habit Reminders** in Android's notification
-  settings for the app. Tapping one still runs the same face check.
-- **Self-contained** — Room-only storage, no backend. Export your log to CSV via the share sheet.
+- **Check in / check out**, each gated by an on-device face check with **device unlock** as the
+  fallback. No photo is taken: the camera hardware reports whether a face is in frame and the app
+  reads only that count.
+- **A day counts if it has a session** — 45 minutes counts exactly as much as nine hours, every day
+  of the week. Daily time is the sum of completed intervals. Hours appear in totals, charts and the
+  export as a plain quantity: nothing is ranked against your best, and nothing is coloured red.
+- **Today counts the moment you check out**, and never shows as missed before then, so the numbers
+  only move up during a day.
+- **Sessions are immutable** — no editing, deleting or manual entry.
+- **A session reminder** every two hours while you're checked in; ignoring it costs nothing. A
+  session you forget closes itself at midnight.
+- **Habits** — a separate record for each thing you're showing up for. The top-bar switcher picks
+  the habit every tab shows; nothing compares one habit with another. One session runs at a time,
+  and the switcher stays on its habit until you check out. Habits are archived rather than deleted
+  and can be restored, records intact, from the Habits screen.
+- **Check-in reminders** — on by default, one per habit, around the time you choose, only on a day
+  that habit has no session. Turn one off like any notification: long-press it, or find the habit's
+  channel under **Habit Reminders** in Android's settings for the app.
+- **Self-contained** — Room-only storage, no backend, no internet permission. CSV export via the
+  share sheet.
+- **English (UK) and Arabic**, chosen through Android's per-app language setting.
 
 ## Tabs
 
 | Tab | What it shows |
 | --- | --- |
 | **Check In** | Live timer and the check-in/out button, with today's sessions a tap away |
-| **History** | Monthly calendar marking every day you showed up; tap any day to see that day's sessions. Raw record, no stats — those live in Reports |
-| **Reports** | Pick a month or all time; every figure and chart follows — the numbers, days split, daily hours, hours by month, when your sessions start, how many you run a day, and CSV export of whatever is on screen |
-| **Settings** | Manage habits (names, reminder hours, archive and restore), and About: privacy policy, feedback, open-source licences. Every notification is switched off from its own long-press, not from here |
+| **History** | Monthly calendar marking every day you showed up; tap a day for its sessions |
+| **Reports** | A month or all time: the numbers, days split, daily hours, hours by month, start times, sessions per day, and CSV export of that span |
+| **Settings** | Manage habits (names, reminder times, archive, restore), app language, and About: privacy, feedback, open-source licences |
 
 ## Requirements
 
-- Android Studio (ships with the JetBrains JDK 21 the Gradle daemon needs)
+- Android Studio (ships the JetBrains JDK 21 the Gradle daemon needs)
 - A device or emulator on **Android 13+** (min SDK 33; compile/target SDK 36)
-- Grants for **Camera** (face verification), asked for at the first check-in, and **Notifications** (the live timer and reminders), asked for on first open
+- **Notifications** permission, asked after the first-run tour; **Camera**, asked at the first check-in
 
 ## Build & run
 
-The Gradle wrapper is pinned to **Gradle 8.13**. Android Studio finds the required JDK automatically —
-just open the project and Run. For **CLI builds**, point Gradle's toolchain detection at the JetBrains
-JDK bundled with Android Studio:
+The Gradle wrapper is pinned to **Gradle 8.13**. In Android Studio, open the project and Run. For
+CLI builds, point Gradle at Android Studio's bundled JDK:
 
 ```bash
 export JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew :app:testDebugUnitTest -Dorg.gradle.java.installations.paths="$JBR"  # JVM unit tests
-./gradlew :app:assembleDebug     -Dorg.gradle.java.installations.paths="$JBR"  # build debug APK
+./gradlew :app:assembleDebug     -Dorg.gradle.java.installations.paths="$JBR"  # debug APK
 ./gradlew :app:installDebug      -Dorg.gradle.java.installations.paths="$JBR"  # install on a device
+./gradlew :app:testDebugUnitTest --tests "com.checkin.app.ConsistencyStatsTest"  # one test class
 ```
 
-Run a single test class:
+## Checks
 
 ```bash
-./gradlew :app:testDebugUnitTest --tests "com.checkin.app.ConsistencyStatsTest"
+./gradlew staticAnalysis              # ktlint + detekt (no baseline: fix or suppress at the site)
+./gradlew ktlintFormat                # auto-fix formatting
+./gradlew :app:verifyDocMap           # CLAUDE.md and the source tree agree
+./gradlew :app:verifyLicenseCoverage  # in-app licence list matches the release classpath
+./gradlew :app:lintDebug              # Android lint
 ```
 
-## Static analysis
-
-**ktlint** (formatting) and **detekt** (code smells) both gate CI. Style comes from `.editorconfig`;
-detekt's rules are `config/detekt/detekt.yml` layered over its shipped defaults. There is no baseline
-file — the tree is clean, and a new finding is meant to be fixed or suppressed at the site with a
-reason.
-
-```bash
-./gradlew staticAnalysis     # ktlintCheck + detekt
-./gradlew ktlintFormat       # auto-fix formatting
-./gradlew :app:verifyDocMap  # CLAUDE.md names every source file, every name resolves, and no
-                             # comment points at a member a project type no longer has
-```
-
-CI runs `staticAnalysis` and `verifyDocMap` together as its first step: neither needs a compiled
-classpath, so a style, smell or stale-doc failure reports in seconds rather than after a full build.
-
-Run the same gate before each commit (once per clone):
+CI runs all of these on push and PR to `main`, cheapest first. To run `staticAnalysis` before each
+commit (once per clone):
 
 ```bash
 git config core.hooksPath githooks
 ```
 
-The hook is a no-op unless the commit stages Kotlin, and it refuses to commit a signing key or a
-populated `keystore.properties`.
+The hook only runs when Kotlin is staged, and always refuses to commit a keystore,
+`keystore.properties` or `local.properties`.
 
 ## Tech
 
-Kotlin · Jetpack Compose (Material 3, a fixed indigo brand theme in light + dark, branded splash,
-`WindowSizeClass`-adaptive) · Room (via KSP, reactive `Flow` queries) · a `specialUse` foreground
-service for the live timer and session reminder · CameraX preview + Camera2 HAL face detection · BiometricPrompt
-fallback. MVVM with a single reactive `UiState` per screen and lightweight manual DI (`AppContainer`).
-
-See [`CLAUDE.md`](CLAUDE.md) for architecture details, conventions, and non-obvious behaviors.
+Kotlin · Jetpack Compose (Material 3, fixed indigo theme, light + dark) · Room via KSP · a
+`specialUse` foreground service for the live timer notification · CameraX + Camera2 HAL face
+detection · BiometricPrompt fallback · WorkManager. MVVM, one reactive `UiState` per screen, manual
+DI (`AppContainer`). See [`CLAUDE.md`](CLAUDE.md) for architecture, conventions and non-obvious
+behaviour.
 
 ## License
 
-Apache License 2.0 — see [`LICENSE`](LICENSE). The third-party licences the app itself redistributes
-are listed in-app under **Settings → Open source licences**, and generated from the release runtime
-classpath rather than the dependency block (`./gradlew :app:verifyLicenseCoverage` fails the build if
-the two ever disagree).
+Apache License 2.0 — see [`LICENSE`](LICENSE). Third-party licences the app redistributes are listed
+in-app under **Settings → Open source licences**. The list is hand-maintained, and
+`./gradlew :app:verifyLicenseCoverage` fails the build if it and the release runtime classpath
+disagree in either direction.

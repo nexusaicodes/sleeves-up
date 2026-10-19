@@ -49,12 +49,7 @@ private const val CSV_HEADER = "Date,First Check In,Last Check Out,Total Hours,S
     "Day Boundary Check Outs,In App Check Outs,Timer Notification Check Outs," +
     "Reminder Notification Check Outs\n"
 
-/**
- * One day's row, or a gap-filled day of zeros when [summary] is null.
- *
- * Top-level and pure so the column order can be pinned by a JVM test — [DefaultCsvExporter] needs a
- * `Context` and cannot be, which is how a header could otherwise be reordered with nothing failing.
- */
+/** One day's row, or a gap-filled day of zeros when [summary] is null. */
 internal fun csvRow(key: String, summary: DailyAggregate?): String {
     val firstIn = summary?.firstCheckIn?.let(::csvClock) ?: ""
     val lastOut = summary?.lastCheckOut?.let(::csvClock) ?: ""
@@ -79,10 +74,10 @@ private fun csvClock(epochMillis: Long): String =
 internal fun csvHeader(): String = CSV_HEADER
 
 /**
- * The exported file's name: `checkin_<habit>_<start>_<end>.csv`, the habit reduced to letters,
- * their combining marks, digits, `-` and `_` so no name can put a path separator or a character a share target rejects into
- * it. A habit still owed a name, or one with nothing left after the reduction, is `habit` — the file
- * is still that habit's alone, it just cannot say so.
+ * The exported file's name: `checkin_<habit>_<start>_<end>.csv`, the habit reduced to letters, their
+ * combining marks, digits, `-` and `_` so no name can put a path separator, or a character a share
+ * target rejects, into it. A habit still owed a name, or one with nothing left after the reduction,
+ * is `habit` — the file is still that habit's alone, it just cannot say so.
  */
 internal fun exportFileName(habitName: String?, startKey: String, endKey: String): String {
     val slug = habitName.orEmpty()

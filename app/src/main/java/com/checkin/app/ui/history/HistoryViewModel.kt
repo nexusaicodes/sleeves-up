@@ -34,8 +34,8 @@ data class HistoryUiState(
     val trackingStartDate: LocalDate?,
     val today: LocalDate,
     /**
-     * The last day every figure here counts through — [today] once it has been checked out of,
-     * otherwise yesterday. See `ConsistencyStats.countedThrough`.
+     * The last day the calendar shades — [today] once it has been checked out of, otherwise
+     * yesterday. See `ConsistencyStats.countedThrough`.
      */
     val countedThrough: LocalDate,
     val summaries: Map<String, DailyAggregate> = emptyMap(),
@@ -63,8 +63,8 @@ class HistoryViewModel(
         .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), replay = 1)
 
     // Month summaries, re-queried when the visible month or the habit changes and never on a
-    // resume. The Room flow re-emits on every write on its own, so a resume tick here only tore the
-    // subscription down and rebuilt it — the window in which an invalidation dispatched to the
+    // resume. The Room flow re-emits on every write on its own, so a resume tick would only tear the
+    // subscription down and rebuild it — opening the window in which an invalidation dispatched to the
     // observer being replaced is lost, which is what `dayTrigger` dedupes for the rest of the screen.
     private val monthData = combine(habitId, currentMonth) { habit, month -> habit to month }
         .flatMapLatest { (habit, month) ->
@@ -87,17 +87,15 @@ class HistoryViewModel(
             }
         }
 
-    // One day subscription drives the whole screen: the counting boundary, the today marker and the
-    // selected day's rows all roll together on refresh and at midnight, with no divergent poll loops.
+    // One day subscription drives the whole screen: the counting boundary and the today marker roll
+    // together on refresh and at midnight.
     val uiState: StateFlow<HistoryUiState> = combine(timeSource.dayTrigger(refresh), habitId) { today, habit ->
         today to habit
     }
         .flatMapLatest { (today, habit) -> repository.trackingStartFlow(habit).map { Triple(today, habit, it) } }
         .flatMapLatest { (today, habit, start) ->
-            // A **one-day** query answers the only all-record question left: has today been checked
-            // out of yet. `countedThrough` is exactly "today's key is present", so the whole range
-            // never needs reading — this screen ranks nothing and so has no all-record baseline to
-            // measure a day against.
+            // A **one-day** query answers whether today has been checked out of yet: `countedThrough`
+            // is exactly "today's key is present", so the whole record never needs reading.
             val todayKey = today.format(dateFormatter)
             val countedThroughFlow = repository.dailyAggregatesFlow(habit, todayKey, todayKey)
                 .map { ConsistencyStats.countedThrough(repository.byDateKey(it), today) }

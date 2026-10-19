@@ -76,10 +76,8 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * midnight alarm. It changes nothing about the row's duration or its immutability; the CSV
      * export is the only thing that ever reads it, and nothing displays it.
      *
-     * It has **no default**, deliberately. Its predecessor was a boolean defaulting to false, so a
-     * caller that never mentioned it silently asserted a value — which was harmless while there were
-     * two endings and one of them was the default, and is a wrong answer now that there are four.
-     * A new check-out path must state which one it is, or it does not compile.
+     * It has **no default**, deliberately: a new check-out path must state which of the four endings
+     * it is, or it does not compile — a default would let one silently claim to be another.
      *
      * The closed row comes back so a caller that wants to report what was recorded reads the stored
      * figure rather than recomputing it: a second subtraction at the call site would be a second
@@ -117,7 +115,7 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
 
     /**
      * Keys aggregates by their day. A day present in the map is a day the user showed up; a day
-     * absent from it is one they didn't — which is the whole of what the app now decides about a day.
+     * absent from it is one they didn't — which is the whole of what the app decides about a day.
      */
     fun byDateKey(aggregates: List<DailyAggregate>): Map<String, DailyAggregate> = aggregates.associateBy { it.dateKey }
 

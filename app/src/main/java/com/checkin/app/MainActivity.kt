@@ -86,9 +86,7 @@ class MainActivity : FragmentActivity() {
         CheckOutSignal.expireIfStale(now)
 
         // The most reliable revive point there is: a visible Activity is always allowed to start a
-        // foreground service, where the background callers may be refused. Without it, opening the
-        // app on a session whose service was killed shows a running timer — rendered from the row —
-        // with nothing behind it, and the session stays lost.
+        // foreground service, where the background callers may be refused (see SessionWatchdog).
         container.applicationScope.launch {
             container.sessionWatchdog.reviveIfNeeded()
         }
