@@ -90,10 +90,10 @@ class HabitsViewModel(
 
     /**
      * Creates a habit when [habitId] is null, otherwise renames it, and stores [minute] as its
-     * reminder time. A new habit is selected only when [selectNew]; otherwise the selection stays
-     * where it was, so adding a habit on the Habits screen does not switch away from the current one.
+     * reminder time. A new habit is not selected: adding one on the Habits screen leaves the
+     * current one showing, and switching is a tap on its row.
      */
-    fun save(habitId: Long?, name: String, minute: Int, selectNew: Boolean = false) {
+    fun save(habitId: Long?, name: String, minute: Int) {
         viewModelScope.launch {
             val edit = if (habitId == null) habits.create(name) else habits.rename(habitId, name)
             val saved = (edit as? HabitEdit.Saved)?.habit ?: return@launch
@@ -103,7 +103,6 @@ class HabitsViewModel(
                 // this write landed.
                 reminderSettings.setReminderMinute(saved.uuid, minute)
                 rearmNudges()
-                if (selectNew) habits.select(saved.id)
             } else {
                 reminderSettings.chooseReminderTime(saved.uuid, minute, rearmNudges)
             }
