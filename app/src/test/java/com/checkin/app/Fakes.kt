@@ -28,6 +28,7 @@ import com.checkin.app.notify.nudge.NudgeSendLog
 import com.checkin.app.notify.nudge.NudgeSending
 import com.checkin.app.notify.nudge.PostedNudges
 import com.checkin.app.notify.nudge.ReminderSettings
+import com.checkin.app.notify.nudge.SharedPrefsReminderSettings
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.ExportResult
 import com.checkin.app.platform.ServiceController
@@ -201,7 +202,13 @@ class FakeReminderSettings(vararg minutes: Pair<String, Int>) : ReminderSettings
         stored.value = stored.value + (habitUuid to NudgeSchedule.clampMinute(minute))
     }
 
-    override fun earliestMinute(): Int = (stored.value.values + NudgeSchedule.DEFAULT_MINUTE).min()
+    private var active: Set<String>? = null
+
+    override fun earliestMinute(): Int = SharedPrefsReminderSettings.earliest(stored.value, active)
+
+    override fun rememberActive(habitUuids: Set<String>) {
+        active = habitUuids
+    }
 
     override fun changes(): Flow<Unit> = stored.map { }
 }

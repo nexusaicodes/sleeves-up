@@ -56,6 +56,15 @@ object PresenceCheckSignal {
 
     val request = MutableStateFlow(Request.NONE)
 
+    /**
+     * How many nudge taps are being resolved — read off the database to decide whether each opens a
+     * gate, says another habit is running, or does nothing. The root draws nothing while any is (and
+     * the splash screen stays up on a cold start), so the nav host cannot appear for the wrong habit
+     * and take a tap before the gate replaces it. A count rather than a flag, so the first of two
+     * quick taps to finish cannot uncover the host while the second is still deciding.
+     */
+    val resolvingTaps = MutableStateFlow(0)
+
     private var raisedAtMillis = 0L
 
     /** Raises the gate, stamping when it was asked for so [expireIfStale] can retire it. */

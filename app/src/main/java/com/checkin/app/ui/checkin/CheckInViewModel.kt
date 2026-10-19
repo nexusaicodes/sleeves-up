@@ -21,8 +21,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
@@ -70,28 +73,34 @@ class CheckInViewModel(
     private val showGate = MutableStateFlow(false)
     private val presenceAction = MutableStateFlow<PresenceAction>(PresenceAction.None)
 
+    // One subscription each to the open session and the selected habit, shared by everything below:
+    // the habit's id keys the rebuild and the habit itself draws the label, so the two are always
+    // the same emission and the label never names a habit the queries are not about.
+    private val activeSession = repository.activeSessionFlow()
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), replay = 1)
+    private val selectedHabit = habits.selectedHabitFlow(activeSession = activeSession)
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), replay = 1)
+
     // Rebuild on a screen resume, when the day rolls over at midnight, or when the habit on screen
     // changes. Keyed on the habit's id alone — a rename redraws the label through the inner combine
     // rather than rebuilding every query — and both halves are deduped at source, so neither a resume
     // nor a write to either table re-subscribes anything.
-    val uiState: StateFlow<CheckInUiState> = combine(timeSource.dayTrigger(refresh), habits.selectedHabitIdFlow()) {
-            today,
-            habitId,
-        ->
-        today to habitId
-    }
+    val uiState: StateFlow<CheckInUiState> = combine(
+        timeSource.dayTrigger(refresh),
+        selectedHabit.map { it.id }.distinctUntilChanged(),
+    ) { today, habitId -> today to habitId }
         .flatMapLatest { (today, habitId) ->
             val todayKey = today.format(dateFormatter)
 
             combine(
-                repository.activeSessionFlow(),
+                activeSession,
                 repository.sessionsForDateFlow(habitId, todayKey),
                 combine(showGate, presenceAction) { show, action -> show to action },
                 // "Has ever tracked" is "has ever checked in to this habit", so it is read off the
                 // sessions themselves — the same reactive emission that opens the first one closes
                 // the welcome, with no refresh to remember.
                 repository.trackingStartFlow(habitId),
-                habits.selectedHabitFlow(),
+                selectedHabit,
             ) { active, sessions, gate, trackingStart, habit ->
                 // The running flag, completed total, and live-ticker basis all derive from this single
                 // sessions emission (via `ticker`), so a check-out moves the closing session into the

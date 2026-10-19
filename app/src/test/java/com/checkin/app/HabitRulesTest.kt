@@ -28,6 +28,18 @@ class HabitRulesTest {
         assertNull(HabitRules.nameProblem("x".repeat(HabitRules.MAX_NAME_LENGTH), emptyList()))
     }
 
+    /** The limit is what the user sees: an emoji is one character, and stripped spaces are none. */
+    @Test
+    fun `the length limit counts code points of the normalised name`() {
+        val emoji = "\uD83C\uDFC3" // one code point, two UTF-16 units
+        assertNull(HabitRules.nameProblem("x".repeat(HabitRules.MAX_NAME_LENGTH - 1) + emoji, emptyList()))
+        assertNull(HabitRules.nameProblem("  " + "x".repeat(HabitRules.MAX_NAME_LENGTH) + "  ", emptyList()))
+        assertEquals(
+            NameProblem.TOO_LONG,
+            HabitRules.nameProblem("x".repeat(HabitRules.MAX_NAME_LENGTH) + emoji, emptyList()),
+        )
+    }
+
     @Test
     fun `a duplicate is judged ignoring case and against other habits only`() {
         val active = listOf(habit(1, "Gym"))

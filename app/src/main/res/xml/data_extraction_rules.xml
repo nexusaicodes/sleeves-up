@@ -25,10 +25,11 @@
         -->
         <exclude domain="sharedpref" path="prompt_prefs.xml" />
         <!--
-          `reminder_prefs` is deliberately not excluded: it holds the reminder hour the user chose,
-          which is a preference rather than a record of something done on this device, so restoring
-          it lands their own choice on the new one.
+          `reminder_prefs` holds each habit's reminder minute, keyed by the habit's uuid, and the
+          habits live in `_app`. A cloud restore brings no `_app`, so the new device seeds a habit
+          with a fresh uuid and no restored time could ever be read.
         -->
+        <exclude domain="sharedpref" path="reminder_prefs.xml" />
     </cloud-backup>
     <device-transfer>
         <!--

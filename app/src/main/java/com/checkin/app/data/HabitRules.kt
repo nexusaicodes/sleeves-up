@@ -15,6 +15,8 @@ object HabitRules {
     /**
      * Long enough for any name a person gives a habit, short enough that "Check in to …" stays a
      * button label and "… Reminders" stays a channel name rather than wrapping into a paragraph.
+     * Counted in code points of the normalised name, so an emoji is one character and the spaces
+     * [normalise] strips count for nothing.
      */
     const val MAX_NAME_LENGTH = 25
 
@@ -31,7 +33,7 @@ object HabitRules {
         val normalised = normalise(name)
         return when {
             normalised.isEmpty() -> NameProblem.BLANK
-            normalised.length > MAX_NAME_LENGTH -> NameProblem.TOO_LONG
+            normalised.codePointCount(0, normalised.length) > MAX_NAME_LENGTH -> NameProblem.TOO_LONG
             activeHabits.any { it.id != forId && it.name.equals(normalised, ignoreCase = true) } ->
                 NameProblem.DUPLICATE
             else -> null

@@ -19,13 +19,14 @@ import kotlinx.coroutines.flow.callbackFlow
  * channel's question — see [NudgeEligibility] — so this holds when they arrive and nothing about
  * whether.
  *
- * **Keyed by the habit's uuid, never its row id.** This file is a preference the user chose, so it
- * is deliberately backed up (see `data_extraction_rules.xml`) — while `_app`, which holds the habits,
- * is not. A row id restarts on the fresh database a restore lands on, so a key built from one would
- * hand the first restored habit's time to whichever new habit took its number; a uuid can only ever
- * match the habit it was chosen for, and an orphaned one costs the default time. Its own namespace
- * rather than a key in `prompt_prefs`, because that file records prompts already raised and is
- * excluded from backup for that reason.
+ * **Keyed by the habit's uuid, never its row id, and excluded from cloud backup with `_app`.** Every
+ * time belongs to a habit `_app` holds, and a cloud restore brings no `_app`: the restored database
+ * seeds a habit with a fresh uuid, so a restored time could never be read — only counted by
+ * [earliestMinute]. A device-to-device transfer carries both files and keeps every time with its
+ * habit. The uuid key holds whatever travels: a row id restarts at 1 on a rebuilt database and would
+ * hand one habit's time to whichever new habit took its number; a uuid can only match the habit it
+ * was chosen for. Its own namespace rather than a key in `prompt_prefs`, which records prompts
+ * already raised.
  *
  * **This is where the range is enforced, and the only place.** Both accessors clamp into
  * [NudgeSchedule.minuteRange], so everything downstream — the schedule maths, the rules, the copy —
@@ -39,12 +40,18 @@ interface ReminderSettings {
     fun setReminderMinute(habitUuid: String, minute: Int)
 
     /**
-     * The earliest time any habit could be reminded at — every stored time and the default, which a
-     * habit nobody has chosen for is reminded at. Read without the habits, for the alarm's fallback
-     * when the database cannot be: it may include an archived habit's time, and waking early is the
-     * harmless direction to be wrong in.
+     * The earliest time any active habit is reminded at. Read without the database, for the alarm's
+     * fallback when the database cannot be, so it reads the active set [rememberActive] last stored;
+     * before any is stored, every stored time and the default, since waking early is the harmless
+     * direction to be wrong in.
      */
     fun earliestMinute(): Int
+
+    /**
+     * Records which habits are active, by uuid, for [earliestMinute] — so an archived habit keeps its
+     * time for when it is brought back without pulling the fallback alarm earlier meanwhile.
+     */
+    fun rememberActive(habitUuids: Set<String>)
 
     /**
      * Emits once on collection and again after any time changes, so a screen listing habits with
@@ -59,6 +66,23 @@ class SharedPrefsReminderSettings(private val prefs: SharedPreferences) : Remind
         const val NAME = "reminder_prefs"
 
         private const val KEY_PREFIX = "reminder_minute_"
+
+        // Not under KEY_PREFIX, so the scan for times never reads it as one.
+        private const val KEY_ACTIVE = "active_habit_uuids"
+
+        /**
+         * [ReminderSettings.earliestMinute] over [stored] times by uuid: the earliest over the
+         * [active] habits (the default for one with no time stored), or over every stored time and
+         * the default when the active set is unknown. Pure, so it is tested without prefs.
+         */
+        fun earliest(stored: Map<String, Int>, active: Set<String>?): Int {
+            val minutes = if (active == null) {
+                stored.values + NudgeSchedule.DEFAULT_MINUTE
+            } else {
+                active.map { stored[it] ?: NudgeSchedule.DEFAULT_MINUTE }
+            }
+            return minutes.map(NudgeSchedule::clampMinute).minOrNull() ?: NudgeSchedule.DEFAULT_MINUTE
+        }
 
         fun create(context: Context) = SharedPrefsReminderSettings(
             context.applicationContext.getSharedPreferences(NAME, Context.MODE_PRIVATE),
@@ -75,13 +99,20 @@ class SharedPrefsReminderSettings(private val prefs: SharedPreferences) : Remind
         prefs.edit { putInt(KEY_PREFIX + habitUuid, NudgeSchedule.clampMinute(minute)) }
     }
 
-    override fun earliestMinute(): Int = prefs.all
-        .filterKeys { it.startsWith(KEY_PREFIX) }
-        .values
-        .filterIsInstance<Int>()
-        .map(NudgeSchedule::clampMinute)
-        .plus(NudgeSchedule.DEFAULT_MINUTE)
-        .min()
+    override fun earliestMinute(): Int {
+        val stored = prefs.all.entries
+            .filter { it.key.startsWith(KEY_PREFIX) }
+            .mapNotNull { (key, value) -> (value as? Int)?.let { key.removePrefix(KEY_PREFIX) to it } }
+            .toMap()
+        return earliest(stored, prefs.getStringSet(KEY_ACTIVE, null))
+    }
+
+    // Written only on a change: every write wakes changes(), and the habits table emits far more often
+    // than the active set moves.
+    override fun rememberActive(habitUuids: Set<String>) {
+        if (prefs.getStringSet(KEY_ACTIVE, null) == habitUuids) return
+        prefs.edit { putStringSet(KEY_ACTIVE, habitUuids.toSet()) }
+    }
 
     override fun changes(): Flow<Unit> = callbackFlow {
         // Held in a local for the life of the collection: SharedPreferences keeps its listeners

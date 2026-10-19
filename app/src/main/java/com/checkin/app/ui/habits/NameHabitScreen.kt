@@ -11,11 +11,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.checkin.app.R
+import com.checkin.app.data.NameProblem
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.FullScreenAction
 import com.checkin.app.ui.components.FullScreenMessage
@@ -40,10 +42,19 @@ fun NameHabitScreen(entry: HabitEntry, viewModel: HabitsViewModel) {
     var name by rememberSaveable { mutableStateOf("") }
     var minute by rememberSaveable { mutableIntStateOf(entry.reminderMinute) }
     var showProblem by rememberSaveable { mutableStateOf(false) }
-    val problem = viewModel.nameProblem(name, entry.habit.id)
+    // A refusal at the write, shown until the name is edited; see HabitEditorDialog.
+    var refused by rememberSaveable { mutableStateOf<NameProblem?>(null) }
+    var saving by remember { mutableStateOf(false) }
+    val problem = refused ?: viewModel.nameProblem(name, entry.habit.id)
     val save = {
         showProblem = true
-        if (problem == null) viewModel.save(entry.habit.id, name, minute)
+        if (problem == null && !saving) {
+            saving = true
+            viewModel.save(entry.habit.id, name, minute) { result ->
+                saving = false
+                refused = result
+            }
+        }
     }
 
     // One example drives both the icon and the placeholder, so the runner is never captioned "Guitar".
@@ -67,6 +78,7 @@ fun NameHabitScreen(entry: HabitEntry, viewModel: HabitsViewModel) {
                         name = name,
                         onNameChange = {
                             name = it
+                            refused = null
                             showProblem = true
                         },
                         minute = minute,

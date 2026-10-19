@@ -26,6 +26,7 @@ import com.checkin.app.ui.presence.PresenceGate
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.util.latinDigitsOverride
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -43,7 +44,7 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        installSplashScreen().setKeepOnScreenCondition { PresenceCheckSignal.resolvingTaps.value > 0 }
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
@@ -109,7 +110,15 @@ class MainActivity : FragmentActivity() {
                 val habitUuid = intent.getStringExtra(LaunchExtras.HABIT_UUID)
                 intent.removeExtra(LaunchExtras.HABIT_UUID)
                 val container = (application as CheckInApplication).container
-                container.applicationScope.launch { onNudgeTapped(habitUuid) }
+                // Set before the launch, so not one frame of the nav host is drawn in between.
+                PresenceCheckSignal.resolvingTaps.update { it + 1 }
+                container.applicationScope.launch {
+                    try {
+                        onNudgeTapped(habitUuid)
+                    } finally {
+                        PresenceCheckSignal.resolvingTaps.update { it - 1 }
+                    }
+                }
             }
         }
     }
@@ -122,12 +131,13 @@ class MainActivity : FragmentActivity() {
      * The nudge is retired on the tap rather than after the gate resolves: it has served its purpose
      * the moment it is tapped, whether or not the check-in that follows completes. Nothing the app
      * posts is autoCancel, so this cancel is the app's job. A nudge posted before habits existed
-     * carries no habit and is about the seed habit; one for a habit since archived opens nothing.
+     * carries no habit and is about the seed habit; one for a habit since archived opens nothing, and
+     * so does one whose habit is not in the database at all — it is about no habit there is.
      */
     private suspend fun onNudgeTapped(habitUuid: String?) {
         val container = (application as CheckInApplication).container
         val habits = container.habitRepository
-        val habit = (habitUuid?.let { habits.byUuid(it) } ?: habits.byId(Habit.SEED_ID)) ?: return
+        val habit = (if (habitUuid == null) habits.byId(Habit.SEED_ID) else habits.byUuid(habitUuid)) ?: return
         container.postedNudges.retire(habit.id)
         if (habit.archived) return
         val running = container.repository.getActiveSession()

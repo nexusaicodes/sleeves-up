@@ -3,6 +3,8 @@ package com.checkin.app
 import com.checkin.app.util.displayLocale
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.time.DayOfWeek
+import java.time.temporal.WeekFields
 import java.util.Locale
 
 class DisplayLocaleTest {
@@ -21,8 +23,15 @@ class DisplayLocaleTest {
     }
 
     @Test
-    fun `no matching preference falls back to the bare language`() {
-        assertEquals(Locale.forLanguageTag("en"), displayLocale(listOf(german), "en"))
+    fun `no matching preference keeps the first preference's region`() {
+        val fallback = displayLocale(listOf(german, Locale.JAPAN), "en")
+        assertEquals(Locale.forLanguageTag("en-DE"), fallback)
+        assertEquals(DayOfWeek.MONDAY, WeekFields.of(fallback).firstDayOfWeek)
+    }
+
+    @Test
+    fun `no preferences at all falls back to the bare language`() {
+        assertEquals(Locale.forLanguageTag("en"), displayLocale(emptyList(), "en"))
     }
 
     /** The code is how the theme learns which file Android picked, so it must name that file. */

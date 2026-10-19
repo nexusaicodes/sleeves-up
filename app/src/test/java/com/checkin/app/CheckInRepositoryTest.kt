@@ -1,12 +1,16 @@
 package com.checkin.app
 
 import com.checkin.app.data.local.CheckInSession
+import com.checkin.app.data.local.CheckInSessionDao
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.local.Habit
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.CheckInResult
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -170,6 +174,22 @@ class CheckInRepositoryTest {
 
         assertEquals(CheckInResult.OtherHabitOpen(gym), repo.checkIn(WRITING))
         assertEquals(1, dao.sessions.size)
+    }
+
+    /** Two writers resolving together — the Check-In screen and a nudge tap — must open one row. */
+    @Test
+    fun `concurrent check-ins open one session`() = runBlocking {
+        val fake = FakeCheckInSessionDao()
+        val interleaving = object : CheckInSessionDao by fake {
+            override suspend fun getActiveSession(): CheckInSession? = fake.getActiveSession().also { yield() }
+        }
+        val repo = CheckInRepository(interleaving, FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
+
+        val results = listOf(async { repo.checkIn(GYM) }, async { repo.checkIn(WRITING) }).awaitAll()
+
+        assertEquals(1, fake.sessions.size)
+        assertEquals(1, results.count { it is CheckInResult.Opened })
+        assertTrue(results.any { it is CheckInResult.OtherHabitOpen })
     }
 
     @Test

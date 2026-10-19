@@ -6,6 +6,7 @@ import com.checkin.app.data.SystemTimeSource
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.AppState
 import com.checkin.app.data.local.AppStateDao
+import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.CheckInSessionDao
 import com.checkin.app.data.local.Habit
 import com.checkin.app.data.local.HabitDao
@@ -71,11 +72,18 @@ class HabitRepository(
      * per write is the dropped-invalidation window the `dayTrigger` dedupe exists to close. It still
      * emits on a rename, which carries a new name; screens that query by habit key on
      * [selectedHabitIdFlow] instead, so a rename redraws a label without rebuilding a query.
+     *
+     * A ViewModel that also reads the open session or the active habits passes its own shared copies
+     * of them as [activeSession] and [activeHabits], so each table is observed once rather than once
+     * per derivation.
      */
-    fun selectedHabitFlow(): Flow<Habit> = combine(
+    fun selectedHabitFlow(
+        activeSession: Flow<CheckInSession?> = sessionDao.getActiveSessionFlow(),
+        activeHabits: Flow<List<Habit>> = habitDao.activeHabitsFlow(),
+    ): Flow<Habit> = combine(
         appStateDao.selectedHabitIdFlow(),
-        sessionDao.getActiveSessionFlow(),
-        habitDao.activeHabitsFlow(),
+        activeSession,
+        activeHabits,
     ) { stored, active, habits ->
         HabitRules.effectiveSelection(stored, active?.habitId, habits)
     }.filterNotNull().distinctUntilChanged()

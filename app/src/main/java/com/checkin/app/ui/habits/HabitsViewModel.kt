@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -67,11 +68,17 @@ class HabitsViewModel(
     private val eventChannel = Channel<HabitsEvent>(Channel.BUFFERED)
     val events: Flow<HabitsEvent> = eventChannel.receiveAsFlow()
 
+    // Shared with the selection below, so each table is observed once.
+    private val activeHabits = habits.activeHabitsFlow()
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), replay = 1)
+    private val activeSession = repository.activeSessionFlow()
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), replay = 1)
+
     val uiState: StateFlow<HabitsUiState> = combine(
-        habits.activeHabitsFlow(),
+        activeHabits,
         habits.archivedHabitsFlow(),
-        habits.selectedHabitFlow(),
-        repository.activeSessionFlow(),
+        habits.selectedHabitFlow(activeSession = activeSession, activeHabits = activeHabits),
+        activeSession,
         // Re-reads every reminder time when one changes: SharedPreferences has no flow of its own.
         reminderSettings.changes(),
     ) { active, archived, selected, open, _ ->
@@ -90,13 +97,21 @@ class HabitsViewModel(
 
     /**
      * Creates a habit when [habitId] is null, otherwise renames it, and stores [minute] as its
-     * reminder time. A new habit is not selected: adding one on the Habits screen leaves the
-     * current one showing, and switching is a tap on its row.
+     * reminder time, then calls [onResult] with null — or with the problem the repository refused
+     * the name for, storing nothing. A new habit is not selected: adding one on the Habits screen
+     * leaves the current one showing, and switching is a tap on its row.
+     *
+     * The result comes back because [nameProblem] reads the last emitted list, which a write
+     * elsewhere can have overtaken: the caller keeps its fields until the write has landed.
      */
-    fun save(habitId: Long?, name: String, minute: Int) {
+    fun save(habitId: Long?, name: String, minute: Int, onResult: (NameProblem?) -> Unit = {}) {
         viewModelScope.launch {
             val edit = if (habitId == null) habits.create(name) else habits.rename(habitId, name)
-            val saved = (edit as? HabitEdit.Saved)?.habit ?: return@launch
+            if (edit is HabitEdit.Rejected) {
+                onResult(edit.problem)
+                return@launch
+            }
+            val saved = (edit as HabitEdit.Saved).habit
             if (habitId == null) {
                 // Stored outright and re-armed unconditionally: a new habit is a new band whatever
                 // its time, and the re-arm the insert itself triggers may have read the prefs before
@@ -106,6 +121,7 @@ class HabitsViewModel(
             } else {
                 reminderSettings.chooseReminderTime(saved.uuid, minute, rearmNudges)
             }
+            onResult(null)
         }
     }
 

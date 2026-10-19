@@ -25,13 +25,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -84,14 +83,22 @@ class ReportsViewModel(
 
     private val refresh = MutableStateFlow(0)
 
-    // The habit on screen, shared so the stats pipeline and the scope reset below read one
-    // subscription. Deduped at source, so it emits on a switch and on nothing else.
-    private val habitId = habits.selectedHabitIdFlow()
-        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), replay = 1)
-
     // Opens on the current month rather than on the whole record: the live question is the month in
     // progress, and it is the scope History opens on too.
     private val scope = MutableStateFlow<ReportScope>(ReportScope.Month(YearMonth.from(timeSource.today())))
+
+    // The habit the figures last described, so a switch can be told apart from the first emission.
+    private var shownHabitId: Long? = null
+
+    // The habit on screen, deduped at source, so it emits on a switch and on nothing else. A month
+    // stepped to under one habit means nothing under the next — each habit's record has its own
+    // span — so a switch returns to the month in progress, where the tab opens. Reset here, before
+    // the pipeline rebuilds for the new habit, so the switch is one rebuild rather than two, and
+    // nothing holds the subscription open while the tab is off screen.
+    private val habitId = habits.selectedHabitIdFlow().onEach { id ->
+        if (shownHabitId != null && id != shownHabitId) selectMonth()
+        shownHabitId = id
+    }
 
     // One-shot export outcomes — a Channel (not a StateFlow) so a config-change re-collect can't replay
     // a past result as a duplicate snackbar.
@@ -130,12 +137,6 @@ class ReportsViewModel(
                 }
             }
         }
-
-    init {
-        // A month stepped to under one habit means nothing under the next — each habit's record has
-        // its own span — so a switch returns to the month in progress, where the tab opens.
-        viewModelScope.launch { habitId.drop(1).collect { selectMonth() } }
-    }
 
     val uiState: StateFlow<ReportsUiState> = statsFlow.stateIn(
         viewModelScope,

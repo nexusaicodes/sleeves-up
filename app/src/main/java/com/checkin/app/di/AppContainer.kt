@@ -117,8 +117,9 @@ interface AppContainer {
     }
 
     /**
-     * Keeps every habit's notification channel in step with the habits table, and re-arms the nudge
-     * alarm whenever the set of habits changes — for the life of the process, from its start.
+     * Keeps every habit's notification channel and the reminder fallback's active set in step with
+     * the habits table, and re-arms the nudge alarm whenever the set of habits changes — for the life
+     * of the process, from its start.
      *
      * Driven off the table rather than called by each write, so no write path can forget either:
      * a habit created, renamed, archived or restored is one emission, and the first emission is the
@@ -132,6 +133,8 @@ interface AppContainer {
                 .catch { armNudgeFallback() }
                 .collect { habits ->
                     runCatching { habitChannels.sync(habits) }
+                    val active = habits.filterNot { it.archived }.mapTo(mutableSetOf()) { it.uuid }
+                    runCatching { reminderSettings.rememberActive(active) }
                     rearmNudges()
                 }
         }

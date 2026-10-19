@@ -65,6 +65,7 @@ fun AppRoot(onGatePassed: () -> Unit) {
     val container = remember(context) { (context.applicationContext as CheckInApplication).container }
     val settings = container.settings
     val gateRequest by PresenceCheckSignal.request.collectAsStateWithLifecycle()
+    val resolvingTaps by PresenceCheckSignal.resolvingTaps.collectAsStateWithLifecycle()
     val completed by CheckOutSignal.completed.collectAsStateWithLifecycle()
     // Activity-scoped, shared with the nav scaffold's switcher: the naming step reads the
     // habits from the same instance, so a habit named there is the one the switcher then shows.
@@ -116,6 +117,10 @@ fun AppRoot(onGatePassed: () -> Unit) {
             // Keyed so a second unnamed habit would get fresh fields rather than this one's typing.
             key(entry.habit.id) { NameHabitScreen(entry = entry, viewModel = habitsViewModel) }
         }
+
+        // A nudge tap still deciding whether it opens the gate: nothing is drawn, for the PENDING
+        // step's reason — the nav host drawn and then replaced could be tapped in between.
+        resolvingTaps > 0 -> Unit
 
         gateRequest.reason != Reason.NONE -> {
             // Full-screen modal gate: the nav host is not composed underneath, so nothing behind

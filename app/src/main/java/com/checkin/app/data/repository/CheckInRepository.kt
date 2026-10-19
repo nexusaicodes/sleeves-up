@@ -9,6 +9,8 @@ import com.checkin.app.data.local.DailyAggregate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -32,13 +34,17 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
 
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE // "yyyy-MM-dd"
 
+    /** Holds [checkIn]'s read and insert together, so two writers cannot both find nothing open. */
+    private val checkInLock = Mutex()
+
     /**
      * Opens a session for [habitId], unless one is already open — for it or for any other habit.
      * Two gated paths reach a check-in — the Check-In screen and a nudge tap — and either can resolve
      * while the other's gate is still on screen, so the one-open-session invariant is enforced here
-     * rather than at each call site. A second open row would never be closed (`getActiveSession()`
-     * returns one) and its hours would never reach `duration`. The switcher locks while a session
-     * runs, so [CheckInResult.OtherHabitOpen] is the backstop for that lock rather than an expected
+     * rather than at each call site, under [checkInLock]: `AppContainer` builds one repository, and
+     * the two writers run on different dispatchers. A second open row would never be closed
+     * (`getActiveSession()` returns one) and its hours would never reach `duration`. The switcher
+     * locks while a session runs, so [CheckInResult.OtherHabitOpen] is the backstop for that lock rather than an expected
      * outcome.
      *
      * **Writing the row is half of a check-in; the caller owns the other half.** This does not start
@@ -48,16 +54,20 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * a refusal silently produce a session with no day-boundary close. Both writers do it:
      * `CheckInViewModel.executeCheckIn` and `MainActivity.onRootGatePassed`. A new caller must too.
      */
-    suspend fun checkIn(habitId: Long): CheckInResult {
+    suspend fun checkIn(habitId: Long): CheckInResult = checkInLock.withLock {
         dao.getActiveSession()?.let { open ->
-            return if (open.habitId == habitId) CheckInResult.AlreadyOpen(open) else CheckInResult.OtherHabitOpen(open)
+            return@withLock if (open.habitId == habitId) {
+                CheckInResult.AlreadyOpen(open)
+            } else {
+                CheckInResult.OtherHabitOpen(open)
+            }
         }
         val session = CheckInSession(
             startedAt = timeSource.nowMillis(),
             dateKey = timeSource.today().format(dateFormatter),
             habitId = habitId,
         )
-        return CheckInResult.Opened(session.copy(id = dao.insertSession(session)))
+        CheckInResult.Opened(session.copy(id = dao.insertSession(session)))
     }
 
     suspend fun checkOut(sessionId: Long, closedBy: ClosedBy): CheckInSession? =

@@ -154,9 +154,11 @@ fun HabitsScreen(
                 initialName = entry?.habit?.name.orEmpty(),
                 initialMinute = entry?.reminderMinute ?: NudgeSchedule.DEFAULT_MINUTE,
                 nameProblem = { viewModel.nameProblem(it, entry?.habit?.id) },
-                onSave = { name, minute ->
-                    viewModel.save(entry?.habit?.id, name, minute)
-                    editing = null
+                onSave = { name, minute, onResult ->
+                    viewModel.save(entry?.habit?.id, name, minute) { problem ->
+                        if (problem == null) editing = null
+                        onResult(problem)
+                    }
                 },
                 onDismiss = { editing = null },
             )

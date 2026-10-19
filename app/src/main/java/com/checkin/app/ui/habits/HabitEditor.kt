@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -71,9 +72,8 @@ fun HabitFields(
     placeholder: String? = null,
 ) {
     var picking by rememberSaveable { mutableStateOf(false) }
-    // Capped at the input rather than only refused at save, so the counter the user is typing
-    // against and the rule the repository applies are the same number.
-    val onValueChange = { value: String -> onNameChange(value.take(HabitRules.MAX_NAME_LENGTH)) }
+    // The name is not capped at the input: one past the limit shows NameProblem.TOO_LONG as it is
+    // typed, the same rule the repository applies, rather than being cut short without a word.
     val isError = showProblem && problem != null
     val supportingText: (@Composable () -> Unit)? = (problem?.takeIf { showProblem })?.let { { Text(problemText(it)) } }
     val keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done)
@@ -86,7 +86,7 @@ fun HabitFields(
         if (placeholder == null) {
             OutlinedTextField(
                 value = name,
-                onValueChange = onValueChange,
+                onValueChange = onNameChange,
                 label = { Text(stringResource(R.string.habit_name_label)) },
                 singleLine = true,
                 isError = isError,
@@ -100,7 +100,7 @@ fun HabitFields(
             val titleStyle = MaterialTheme.typography.headlineSmall.copy(textAlign = TextAlign.Center)
             TextField(
                 value = name,
-                onValueChange = onValueChange,
+                onValueChange = onNameChange,
                 textStyle = titleStyle,
                 // Faint and crossfading, so a cycling example never reads as a name already typed.
                 placeholder = {
@@ -174,6 +174,11 @@ private fun problemText(problem: NameProblem): String = when (problem) {
 /**
  * Creates or edits a habit in a dialog. [nameProblem] is asked on every edit and before saving; a
  * save it refuses keeps the dialog open with the reason shown.
+ *
+ * [onSave] reports back through its third argument: null once the write has landed, which is the
+ * caller's cue to close the dialog, or the problem the write was refused for, which the dialog then
+ * shows until the name is edited. Save does nothing while a write is outstanding, so a double tap
+ * cannot create the habit twice.
  */
 @Composable
 fun HabitEditorDialog(
@@ -181,16 +186,24 @@ fun HabitEditorDialog(
     initialName: String,
     initialMinute: Int,
     nameProblem: (String) -> NameProblem?,
-    onSave: (name: String, minute: Int) -> Unit,
+    onSave: (name: String, minute: Int, onResult: (NameProblem?) -> Unit) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var name by rememberSaveable { mutableStateOf(initialName) }
     var minute by rememberSaveable { mutableIntStateOf(initialMinute) }
     var showProblem by rememberSaveable { mutableStateOf(false) }
-    val problem = nameProblem(name)
+    var refused by rememberSaveable { mutableStateOf<NameProblem?>(null) }
+    var saving by remember { mutableStateOf(false) }
+    val problem = refused ?: nameProblem(name)
     val save = {
         showProblem = true
-        if (problem == null) onSave(name, minute)
+        if (problem == null && !saving) {
+            saving = true
+            onSave(name, minute) { result ->
+                saving = false
+                refused = result
+            }
+        }
     }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -200,6 +213,7 @@ fun HabitEditorDialog(
                 name = name,
                 onNameChange = {
                     name = it
+                    refused = null
                     showProblem = true
                 },
                 minute = minute,
