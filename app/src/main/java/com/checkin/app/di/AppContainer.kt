@@ -25,6 +25,8 @@ import com.checkin.app.notify.nudge.armFallback
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.DefaultCsvExporter
 import com.checkin.app.platform.DefaultServiceController
+import com.checkin.app.platform.LanguageSettings
+import com.checkin.app.platform.LocaleManagerLanguageSettings
 import com.checkin.app.platform.PromptSettings
 import com.checkin.app.platform.ServiceController
 import com.checkin.app.platform.SharedPrefsPromptSettings
@@ -43,7 +45,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Minimal manual DI: the single place that builds the repositories, the side-effect seams
- * ([PromptSettings], [ServiceController], [CsvExporter]), and the app-wide coroutine scope.
+ * ([PromptSettings], [LanguageSettings], [ServiceController], [CsvExporter]), and the app-wide coroutine scope.
  * ViewModels receive these via their factories, so they stay pure and unit-testable with fakes.
  */
 interface AppContainer {
@@ -51,6 +53,7 @@ interface AppContainer {
     val habitRepository: HabitRepository
     val settings: PromptSettings
     val reminderSettings: ReminderSettings
+    val languageSettings: LanguageSettings
     val serviceController: ServiceController
     val csvExporter: CsvExporter
     val timeSource: TimeSource
@@ -173,6 +176,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val settings: PromptSettings = SharedPrefsPromptSettings.create(appContext)
 
     override val reminderSettings: ReminderSettings = SharedPrefsReminderSettings.create(appContext)
+
+    override val languageSettings: LanguageSettings = LocaleManagerLanguageSettings(appContext)
 
     override val repository: CheckInRepository by lazy {
         CheckInRepository(AppDatabase.getDatabase(appContext).checkInSessionDao(), timeSource)

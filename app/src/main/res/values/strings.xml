@@ -23,6 +23,9 @@
     <string name="nav_licenses">Open Source</string>
     <string name="nav_privacy">Privacy</string>
 
+    <!-- Shared by every dialog's dismiss button. -->
+    <string name="action_cancel">Cancel</string>
+
     <!-- Check-In Screen -->
     <string name="check_in">Check In</string>
     <string name="check_out">Check Out</string>
@@ -251,7 +254,6 @@
     <!-- A time button's click action, spoken by TalkBack after the summary it shows. -->
     <string name="reminder_time_change">Change reminder time</string>
     <string name="reminder_time_dialog_title">Reminder Time</string>
-    <string name="reminder_time_cancel">Cancel</string>
     <string name="reminder_time_confirm">Set</string>
     <!-- Under the clock: the range a reminder may be set in, turning to the error colour outside it. -->
     <string name="reminder_time_range">Between %1$s and %2$s</string>
@@ -299,7 +301,6 @@
     </plurals>
     <string name="habit_name_duplicate">You already have a habit with this name</string>
     <string name="habit_save">Save</string>
-    <string name="habit_cancel">Cancel</string>
     <!-- The first-run naming step: owed by a habit with no name — an install updated onto habits, and
          every fresh install, since the tour names nothing. It cannot be backed out of, because the Check In
          button names the habit and has nothing to say until it has a name. -->
@@ -321,7 +322,8 @@
     <string name="language_section">Language</string>
     <string name="language_app">App language</string>
     <string name="language_system_default">System default</string>
-    <string name="language_cancel">Cancel</string>
+    <!-- The row's action, spoken by TalkBack: a tap opens the picker in place. -->
+    <string name="language_change">Change language</string>
     <string name="language_english" translatable="false">English</string>
     <string name="language_arabic" translatable="false">العربية</string>
 

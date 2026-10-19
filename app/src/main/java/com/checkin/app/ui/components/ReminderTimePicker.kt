@@ -81,7 +81,7 @@ fun ReminderTimePicker(selectedMinute: Int, onPicked: (Int) -> Unit, onDismiss: 
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.reminder_time_cancel)) }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
 }

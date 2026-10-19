@@ -226,7 +226,7 @@ fun HabitEditorDialog(
             )
         },
         confirmButton = { TextButton(onClick = save) { Text(stringResource(R.string.habit_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.habit_cancel)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 

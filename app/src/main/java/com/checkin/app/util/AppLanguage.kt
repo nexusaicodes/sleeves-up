@@ -17,18 +17,22 @@ enum class AppLanguage(val code: String?) {
     ;
 
     /**
-     * The locale to hand Android for this choice, given the user's [system] locales, or null to
-     * follow them. A language is never stored bare: the user's own locale in it keeps its region (and
-     * any regional preferences), which is where the week start comes from, and with none the first
-     * system locale lends its region — the same rule [displayLocale] reads the screen's locale by.
+     * The locale to hand Android for this choice, or null to follow the system. **Always the bare
+     * language**: Android lists the system locales after it, and [displayLocale] takes the region and
+     * regional preferences from there, so they follow the system rather than freezing as they stood
+     * when the choice was made.
      */
-    fun localeFor(system: List<Locale>): Locale? = code?.let { displayLocale(system, it) }
+    val locale: Locale? get() = code?.let(Locale::forLanguageTag)
 
     companion object {
-        /** The choice the stored per-app [appLocales] amount to; none stored follows the system. */
-        fun of(appLocales: List<Locale>): AppLanguage {
+        /**
+         * The choice the stored per-app [appLocales] amount to: none stored follows the system, and a
+         * stored locale in a language the app does not ship (set by adb, another settings screen or a
+         * restore) is null — none of these choices, rather than one it is not.
+         */
+        fun of(appLocales: List<Locale>): AppLanguage? {
             val language = appLocales.firstOrNull()?.language ?: return SYSTEM
-            return entries.firstOrNull { it.code == language } ?: SYSTEM
+            return entries.firstOrNull { it.code == language }
         }
     }
 }

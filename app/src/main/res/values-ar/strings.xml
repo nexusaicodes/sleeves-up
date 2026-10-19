@@ -20,6 +20,9 @@
     <string name="nav_licenses">المصادر المفتوحة</string>
     <string name="nav_privacy">الخصوصية</string>
 
+    <!-- Shared by every dialog's dismiss button. -->
+    <string name="action_cancel">إلغاء</string>
+
     <!-- Check-In Screen -->
     <string name="check_in">تسجيل الحضور</string>
     <string name="check_out">تسجيل الانصراف</string>
@@ -168,7 +171,6 @@
     <string name="reminder_time_value">قرابة %1$s</string>
     <string name="reminder_time_change">تغيير وقت التذكير</string>
     <string name="reminder_time_dialog_title">وقت التذكير</string>
-    <string name="reminder_time_cancel">إلغاء</string>
     <string name="reminder_time_confirm">تعيين</string>
     <string name="reminder_time_range">بين %1$s و%2$s</string>
 
@@ -209,7 +211,6 @@
     </plurals>
     <string name="habit_name_duplicate">لديك عادة بهذا الاسم بالفعل</string>
     <string name="habit_save">حفظ</string>
-    <string name="habit_cancel">إلغاء</string>
     <string name="name_habit_title">ما الذي تحضر من أجله؟</string>
     <string name="name_habit_body">أضف المزيد من داخل التطبيق متى شئت.</string>
     <string name="name_habit_continue">متابعة</string>
@@ -224,7 +225,8 @@
     <string name="language_section">اللغة</string>
     <string name="language_app">لغة التطبيق</string>
     <string name="language_system_default">لغة النظام</string>
-    <string name="language_cancel">إلغاء</string>
+    <!-- The row's action, spoken by TalkBack: a tap opens the picker in place. -->
+    <string name="language_change">تغيير اللغة</string>
 
     <!-- About -->
     <string name="about_section">حول التطبيق</string>

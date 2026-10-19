@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 /**
  * A tappable row inside a [SectionCard]: a label, an optional [value] beneath it stating the current
  * setting, and a trailing icon for where it leads. A row that is not [enabled] dims and ignores taps.
+ * A row that opens a dialog in place leads nowhere, so it passes no [icon] — a chevron promises a new
+ * screen — and names its action through [onClickLabel] instead.
  *
  * Shared across Settings, Habits and About because the 48dp tap target below is the kind of rule a
  * screen needing a row like this would otherwise reinvent without.
@@ -28,16 +30,17 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ActionRow(
     label: String,
-    icon: ImageVector,
+    icon: ImageVector?,
     contentDescription: String?,
     value: String? = null,
     enabled: Boolean = true,
+    onClickLabel: String? = null,
     onClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = enabled, onClick = onClick)
+            .clickable(enabled = enabled, onClickLabel = onClickLabel, onClick = onClick)
             // Disabled reads as dimmed, the way Material draws a disabled control's content.
             .alpha(if (enabled) 1f else DISABLED_ALPHA)
             // 48dp of height is the minimum tap target; the vertical padding gets it there without
@@ -56,12 +59,14 @@ fun ActionRow(
                 )
             }
         }
-        Spacer(modifier = Modifier.width(12.dp))
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        if (icon != null) {
+            Spacer(modifier = Modifier.width(12.dp))
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
