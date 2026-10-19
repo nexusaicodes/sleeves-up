@@ -80,7 +80,9 @@ fun HabitFields(
     val keyboardActions = KeyboardActions(onDone = { onDone() })
     Column(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
+        // Centred under the naming step's centred title field; start-aligned in a dialog, under its
+        // start-aligned outlined field.
+        horizontalAlignment = if (placeholder == null) Alignment.Start else Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (placeholder == null) {

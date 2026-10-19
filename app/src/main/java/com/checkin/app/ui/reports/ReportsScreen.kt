@@ -259,7 +259,10 @@ private fun ScopeStatsCard(uiState: ReportsUiState) {
                 StatsRow(stringResource(R.string.stat_tracking_since), TimeFormat.dateWithYear(start, patterns))
             }
         }
-        StatsRow(stringResource(R.string.stat_tracked_days), "${uiState.totalDays}")
+        StatsRow(
+            stringResource(R.string.stat_tracked_days),
+            pluralStringResource(R.plurals.days_count, uiState.totalDays, uiState.totalDays),
+        )
         StatsRow(
             stringResource(R.string.stat_showed_up),
             pluralStringResource(R.plurals.days_count, uiState.showedUpDays, uiState.showedUpDays),
