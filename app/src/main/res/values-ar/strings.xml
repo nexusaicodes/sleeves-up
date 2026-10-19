@@ -223,7 +223,8 @@
     <!-- Language -->
     <string name="language_section">اللغة</string>
     <string name="language_app">لغة التطبيق</string>
-    <string name="language_opens_settings">يفتح إعدادات Android</string>
+    <string name="language_system_default">لغة النظام</string>
+    <string name="language_cancel">إلغاء</string>
 
     <!-- About -->
     <string name="about_section">حول التطبيق</string>

@@ -315,10 +315,15 @@
     <string name="habit_example_gym">Gym</string>
     <string name="habit_example_drawing">Drawing</string>
 
-    <!-- Language. The choice is Android's own per-app setting; this row only opens it. -->
+    <!-- Language. The choice is Android's own per-app setting, the same one its App language
+         screen writes; the app keeps no copy. Each language is named in itself, so the two names
+         are never translated: someone who cannot read the current language can still find theirs. -->
     <string name="language_section">Language</string>
     <string name="language_app">App language</string>
-    <string name="language_opens_settings">Opens Android settings</string>
+    <string name="language_system_default">System default</string>
+    <string name="language_cancel">Cancel</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_arabic" translatable="false">العربية</string>
 
     <!-- About. Settings holds this and the link to Habits — see SettingsScreen for why nothing else. -->
     <string name="about_section">About</string>
