@@ -45,12 +45,11 @@ import kotlinx.coroutines.withContext
  * Licences flagged [LibraryLicense.bundled] have their text shipped rather than linked. Every link
  * here hands a URL to the browser via [ExternalLinks], which needs a browser and a connection — so
  * on an offline device a link alone would leave unreadable the licences the app is obliged to
- * reproduce in full: Apache-2.0 for the code, the OFL for the two typefaces.
+ * reproduce in full: Apache-2.0 for the code, the OFL for the bundled typefaces.
  */
 @Composable
 fun LicensesScreen(innerPadding: PaddingValues) {
-    // The context is here for the intent launchers; resources come through their own local, since
-    // reading them back off the context is what the licence text used to do.
+    // The context is for the intent launchers; the licence text is read through LocalResources.
     val context = LocalContext.current
     val resources = LocalResources.current
     val snackbarHostState = LocalSnackbarHostState.current
@@ -60,7 +59,8 @@ fun LicensesScreen(innerPadding: PaddingValues) {
 
     val bundledLicenses = remember { LibraryLicense.entries.filter { it.bundled } }
     // Both hoisted above the lazy list so each paragraph can stay a real lazy item — Apache-2.0 alone
-    // splits into 33 of them, and composing them all on the frame the toggle flips is long enough to see.
+    // splits into 33 of them, and composing them all on the frame the toggle flips is long enough to
+    // see.
     // Expansion is saveable (a rotation mid-licence would lose the reader's place); the text is not,
     // since holding 11 KB per licence in the state bundle costs more than reading the file again.
     var expanded by rememberSaveable { mutableStateOf(emptySet<String>()) }
@@ -115,7 +115,7 @@ fun LicensesScreen(innerPadding: PaddingValues) {
                 )
                 library.note?.let {
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = it, style = MaterialTheme.typography.bodySmall)
+                    Text(text = stringResource(it), style = MaterialTheme.typography.bodySmall)
                 }
                 // Kept wide: the two CameraX licences sit side by side, and adjacent tap targets
                 // this small are easy to confuse for one another.

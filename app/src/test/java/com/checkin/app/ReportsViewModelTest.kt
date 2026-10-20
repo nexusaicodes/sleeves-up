@@ -2,7 +2,10 @@ package com.checkin.app
 
 import com.checkin.app.data.SessionBand
 import com.checkin.app.data.StartBucket
+import com.checkin.app.data.local.Habit
 import com.checkin.app.data.repository.CheckInRepository
+import com.checkin.app.data.repository.HabitEdit
+import com.checkin.app.data.repository.HabitRepository
 import com.checkin.app.platform.ExportResult
 import com.checkin.app.ui.reports.DayPoint
 import com.checkin.app.ui.reports.MonthPoint
@@ -32,9 +35,66 @@ class ReportsViewModelTest {
         dao: FakeCheckInSessionDao,
         exporter: FakeCsvExporter,
         time: FakeTimeSource,
+        habitDao: FakeHabitDao = FakeHabitDao(),
+        appState: FakeAppStateDao = FakeAppStateDao(),
     ): ReportsViewModel {
         val repo = CheckInRepository(dao, time)
-        return ReportsViewModel(repo, time, exporter)
+        return ReportsViewModel(repo, HabitRepository(habitDao, appState, dao, time), time, exporter)
+    }
+
+    /** Every figure is the selected habit's alone; another habit's sessions on the same days count for nothing. */
+    @Test
+    fun `the figures are the selected habit's alone`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-06-10", startedAt = 0L, durationMs = 3_600_000L, habitId = Habit.SEED_ID)
+        dao.seedCompleted("2026-06-10", startedAt = 10L, durationMs = 7_200_000L, habitId = 2L)
+        dao.seedCompleted("2026-06-11", startedAt = 20L, durationMs = 7_200_000L, habitId = 2L)
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
+
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.showedUpDays)
+        assertEquals(3_600_000L, state.totalWorkedMs)
+        assertEquals(1, state.totalSessions)
+        assertEquals(LocalDate.of(2026, 6, 10), state.trackingStartDate)
+    }
+
+    /** A month stepped to under one habit means nothing under the next, so a switch returns to now. */
+    @Test
+    fun `switching habits returns the scope to the current month`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        val habitDao = FakeHabitDao()
+        val appState = FakeAppStateDao()
+        val time = FakeTimeSource(0L, LocalDate.of(2026, 6, 15))
+        val writing = (HabitRepository(habitDao, appState, dao, time).create("Writing") as HabitEdit.Saved).habit
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), time, habitDao, appState)
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        viewModel.selectAllTime()
+        advanceUntilIdle()
+
+        appState.selected.value = writing.id
+        advanceUntilIdle()
+
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+    }
+
+    /** The file is the habit's record alone, and names it, since nothing inside the file says which. */
+    @Test
+    fun `an export writes the selected habit's days and names it`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-06-10", startedAt = 0L, durationMs = 3_600_000L, habitId = Habit.SEED_ID)
+        dao.seedCompleted("2026-06-11", startedAt = 20L, durationMs = 7_200_000L, habitId = 2L)
+        val exporter = FakeCsvExporter(ExportResult.Success)
+        val viewModel = buildViewModel(dao, exporter, FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
+
+        viewModel.exportCsv()
+        advanceUntilIdle()
+
+        assertEquals("Seed", exporter.lastHabitName)
+        assertEquals(setOf("2026-06-10"), exporter.lastSummaries.keys)
+        assertEquals("2026-06-10" to "2026-06-14", exporter.lastRange)
     }
 
     @Test

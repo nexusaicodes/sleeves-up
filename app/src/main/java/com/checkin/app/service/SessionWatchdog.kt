@@ -61,9 +61,7 @@ class SessionWatchdog(
         if (serviceRunning()) return false
         val active = repository.getActiveSession() ?: return false
 
-        // revive(), not startTimer(): that path takes its timing from the intent and rewrites the
-        // render mirror from it, which is right for a session that has not begun and wrong for one
-        // already running.
+        // revive(), not startTimer() — see CheckInService.handleRevive.
         // The result is deliberately not inspected: a refusal is a normal outcome here, and the
         // next of the three callers retries. Returning true says an attempt was made, not that it
         // was allowed.

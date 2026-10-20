@@ -40,11 +40,7 @@ interface SessionAlarms {
     /** Drops both alarms, both instants and the reminder count together. */
     fun cancelAll()
 
-    /**
-     * Reminders posted for the current session. Only the first alerts — a two-hour cadence that
-     * buzzes every time would wake a user all night on behalf of a session they left running on
-     * purpose, and the reminder has no deadline to justify that.
-     */
+    /** Reminders posted for the current session; only the first alerts. */
     var remindersSent: Int
 
     /**

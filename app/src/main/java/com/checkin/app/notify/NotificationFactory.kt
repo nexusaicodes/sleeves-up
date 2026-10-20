@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import androidx.core.net.toUri
 import com.checkin.app.MainActivity
 import com.checkin.app.R
 
@@ -26,11 +27,11 @@ class NotificationFactory(private val context: Context) {
             .setSmallIcon(R.drawable.ic_stat_checkin)
             .setContentTitle(spec.title)
             .setContentText(spec.body)
-            .setContentIntent(launchIntent(contentRequestCode(spec.id), spec.launchExtra))
+            .setContentIntent(contentIntent(spec))
             .setOngoing(spec.ongoing)
             .setSilent(spec.silent)
             // Always false, so the app decides when a notification leaves the tray. Whoever handles
-            // a tap cancels it explicitly — `PostedNudges.retireAll` for a nudge, the service for the
+            // a tap cancels it explicitly — `PostedNudges.retire` for a nudge, the service for the
             // reminder — which keeps that cancel in one place per notification instead of splitting
             // it between the platform and the handler.
             .setAutoCancel(false)
@@ -62,15 +63,28 @@ class NotificationFactory(private val context: Context) {
     }
 
     /**
+     * A habit's nudge taps all share [NUDGE_TAP_REQUEST_CODE] and differ by data URI, which
+     * `PendingIntent` equality does compare — so each habit's notification keeps its own target
+     * without a request code per habit. Everything else keys its code off its notification id.
+     */
+    private fun contentIntent(spec: NotificationSpec): PendingIntent = spec.launchHabitUuid?.let { uuid ->
+        launchIntent(NUDGE_TAP_REQUEST_CODE, spec.launchExtra, uuid)
+    } ?: launchIntent(contentRequestCode(spec.id), spec.launchExtra)
+
+    /**
      * [PendingIntent] equality ignores extras, so two intents that differ only by what they carry
      * collide under `FLAG_UPDATE_CURRENT` and the second silently rewrites the first — a "Check Out"
-     * action would end up behind the notification's own body tap. Distinct request codes are what
-     * keeps them apart.
+     * action would end up behind the notification's own body tap. Distinct request codes, or for a
+     * nudge distinct data, are what keeps them apart.
      */
-    private fun launchIntent(requestCode: Int, launchExtra: String?): PendingIntent {
+    private fun launchIntent(requestCode: Int, launchExtra: String?, habitUuid: String? = null): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             launchExtra?.let { putExtra(it, true) }
+            habitUuid?.let {
+                putExtra(LaunchExtras.HABIT_UUID, it)
+                data = "$NUDGE_TAP_URI_PREFIX$it".toUri()
+            }
         }
         return PendingIntent.getActivity(
             context,
@@ -103,5 +117,11 @@ class NotificationFactory(private val context: Context) {
 
         /** Actions per notification the request-code scheme has room for. Android shows three. */
         const val MAX_ACTIONS = 8
+
+        /** Every habit's nudge tap; listed with the other bands in [NotificationIds]. */
+        const val NUDGE_TAP_REQUEST_CODE = 30_000
+
+        /** The scheme exists only to make each habit's tap intent distinct; nothing resolves it. */
+        const val NUDGE_TAP_URI_PREFIX = "checkin://nudge/"
     }
 }

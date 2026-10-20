@@ -14,6 +14,7 @@ import com.checkin.app.data.TimeSource
 import com.checkin.app.data.dayTrigger
 import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.data.repository.CheckInRepository
+import com.checkin.app.data.repository.HabitRepository
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.ExportResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -24,9 +25,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -51,9 +54,9 @@ data class ReportsUiState(
     /**
      * Worked time per *tracked* day — missed days stay in the denominator.
      *
-     * A quantity the screen prints as a row. It carried a ring on History's month card once and must
-     * not carry one again: the only denominator available to fill an arc against is the user's own
-     * all-time equivalent, which is a personal best under another name and ratchets.
+     * A quantity the screen prints as a row, never as a ring: the only denominator available to fill
+     * an arc against is the user's own all-time equivalent, which is a personal best under another
+     * name and ratchets.
      */
     val avgDailyMs: Long = 0L,
     /** Mean sessions per day shown up — a rhythm, not a score. */
@@ -71,6 +74,7 @@ data class ReportsUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReportsViewModel(
     private val repository: CheckInRepository,
+    private val habits: HabitRepository,
     private val timeSource: TimeSource,
     private val csvExporter: CsvExporter,
 ) : ViewModel() {
@@ -83,6 +87,19 @@ class ReportsViewModel(
     // progress, and it is the scope History opens on too.
     private val scope = MutableStateFlow<ReportScope>(ReportScope.Month(YearMonth.from(timeSource.today())))
 
+    // The habit the figures last described, so a switch can be told apart from the first emission.
+    private var shownHabitId: Long? = null
+
+    // The habit on screen, deduped at source, so it emits on a switch and on nothing else. A month
+    // stepped to under one habit means nothing under the next — each habit's record has its own
+    // span — so a switch returns to the month in progress, where the tab opens. Reset here, before
+    // the pipeline rebuilds for the new habit, so the switch is one rebuild rather than two, and
+    // nothing holds the subscription open while the tab is off screen.
+    private val habitId = habits.selectedHabitIdFlow().onEach { id ->
+        if (shownHabitId != null && id != shownHabitId) selectMonth()
+        shownHabitId = id
+    }
+
     // One-shot export outcomes — a Channel (not a StateFlow) so a config-change re-collect can't replay
     // a past result as a duplicate snackbar.
     private val exportChannel = Channel<ExportResult>(Channel.BUFFERED)
@@ -94,14 +111,16 @@ class ReportsViewModel(
      * The tracking start is a DB read rather than a setting, so a record with no sessions behind it
      * cannot report days the user failed to show up for.
      */
-    private val statsFlow: Flow<ReportsUiState> = timeSource.dayTrigger(refresh)
-        .flatMapLatest { today -> repository.trackingStartFlow().map { today to it } }
-        .flatMapLatest { (today, start) ->
+    private val statsFlow: Flow<ReportsUiState> = combine(timeSource.dayTrigger(refresh), habitId) { today, habit ->
+        today to habit
+    }
+        .flatMapLatest { (today, habit) -> repository.trackingStartFlow(habit).map { Triple(today, habit, it) } }
+        .flatMapLatest { (today, habit, start) ->
             // A **one-day** query answers the only all-record question the window needs: has today
             // been checked out of yet. `countedThrough` is exactly "today's key is present", so the
             // whole record is never read just to find where counting stops.
             val todayKey = today.format(dateFormatter)
-            val countedThroughFlow = repository.dailyAggregatesFlow(todayKey, todayKey)
+            val countedThroughFlow = repository.dailyAggregatesFlow(habit, todayKey, todayKey)
                 .map { ConsistencyStats.countedThrough(repository.byDateKey(it), today) }
 
             // Room invalidates per *table*, so the one-day query re-emits on every write to
@@ -114,7 +133,7 @@ class ReportsViewModel(
                 if (window == null) {
                     flowOf(ReportsUiState(loading = false, scope = activeScope, trackingStartDate = start))
                 } else {
-                    windowStats(activeScope, start, window)
+                    windowStats(habit, activeScope, start, window)
                 }
             }
         }
@@ -138,6 +157,7 @@ class ReportsViewModel(
      * each day's *first* session, so a day worked in three blocks would contribute one start.
      */
     private fun windowStats(
+        habitId: Long,
         activeScope: ReportScope,
         trackingStart: LocalDate?,
         window: ReportWindow,
@@ -145,8 +165,8 @@ class ReportsViewModel(
         val startKey = window.start.format(dateFormatter)
         val endKey = window.end.format(dateFormatter)
         return combine(
-            repository.dailyAggregatesFlow(startKey, endKey),
-            repository.sessionStartsFlow(startKey, endKey),
+            repository.dailyAggregatesFlow(habitId, startKey, endKey),
+            repository.sessionStartsFlow(habitId, startKey, endKey),
         ) { aggregates, sessionStarts ->
             val summaries = repository.byDateKey(aggregates)
             val showedUp = ConsistencyStats.showedUpDays(summaries)
@@ -266,10 +286,7 @@ class ReportsViewModel(
      * Exports whatever the screen is showing.
      *
      * The range is the active scope's own window, so the file and the screen cannot describe
-     * different days — they read the one `resolve`. That matters because the exporter gap-fills:
-     * a range reaching past [ConsistencyStats.countedThrough] writes dates that have not happened
-     * out as days the user recorded nothing, and one starting before the tracking start does the
-     * same for days before they had opened the app.
+     * different days — they read the one `resolve`, which is where the clamping and its reasons live.
      *
      * The clock is read **once**: a rollover between two readings would pair a start and an end
      * taken from different days.
@@ -277,14 +294,17 @@ class ReportsViewModel(
     fun exportCsv() {
         viewModelScope.launch {
             val today = timeSource.today()
+            // The habit on screen, read once like the clock: the file is that habit's record alone,
+            // and names it, since nothing inside the file says which habit it is.
+            val habit = habits.selectedHabitFlow().first()
             // Nothing recorded at all: there is no window to clamp to, let alone a day to write.
-            val trackingStart = repository.trackingStart() ?: run {
+            val trackingStart = repository.trackingStart(habit.id) ?: run {
                 exportChannel.send(ExportResult.Nothing)
                 return@launch
             }
             val todayKey = today.format(dateFormatter)
             val countedThrough = ConsistencyStats.countedThrough(
-                repository.getDailySummaries(todayKey, todayKey),
+                repository.getDailySummaries(habit.id, todayKey, todayKey),
                 today,
             )
             // Tracking that began today, or a scope holding no counted day, leaves nothing to write.
@@ -294,7 +314,7 @@ class ReportsViewModel(
             }
             val startStr = window.start.format(dateFormatter)
             val endStr = window.end.format(dateFormatter)
-            val summaries = repository.getDailySummaries(startStr, endStr)
+            val summaries = repository.getDailySummaries(habit.id, startStr, endStr)
             // A window can be well-formed and still hold nothing: every check-in abandoned, or the
             // app installed and left idle. Exporting anyway would share a file that is pure
             // gap-fill — a document asserting absences the app never recorded.
@@ -302,7 +322,7 @@ class ReportsViewModel(
                 exportChannel.send(ExportResult.Nothing)
                 return@launch
             }
-            exportChannel.send(csvExporter.export(startStr, endStr, summaries))
+            exportChannel.send(csvExporter.export(habit.name, startStr, endStr, summaries))
         }
     }
 
@@ -314,6 +334,7 @@ class ReportsViewModel(
                 val container = (this[APPLICATION_KEY] as CheckInApplication).container
                 ReportsViewModel(
                     container.repository,
+                    container.habitRepository,
                     container.timeSource,
                     container.csvExporter,
                 )

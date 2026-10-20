@@ -11,6 +11,8 @@ import com.checkin.app.data.dayTrigger
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
+import com.checkin.app.data.repository.CheckInResult
+import com.checkin.app.data.repository.HabitRepository
 import com.checkin.app.notify.nudge.PostedNudges
 import com.checkin.app.platform.ServiceController
 import com.checkin.app.service.SessionLifecycleRunner
@@ -19,15 +21,20 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 
 /**
  * What the gate is being opened for, so that passing it performs the action the user asked for
- * rather than a fixed one. The root gate's equivalent is `PresenceCheckSignal.Reason`, which covers the same actions for a check requested from
- * a notification — with check-out split in two, one value per `ClosedBy`.
+ * rather than a fixed one. The root gate's equivalent is `PresenceCheckSignal.Reason`, which covers
+ * the same actions for a check requested from a notification — with check-out split in two, one
+ * value per `ClosedBy`.
  */
 sealed class PresenceAction {
     data object None : PresenceAction()
@@ -38,6 +45,9 @@ sealed class PresenceAction {
 /** Immutable snapshot the Check-In screen renders. Elapsed time is screen-driven, not held here. */
 data class CheckInUiState(
     val loading: Boolean = true,
+    /** The habit on screen, which the Check In button names. Null only until the first read lands. */
+    val habitId: Long? = null,
+    val habitName: String? = null,
     val isRunning: Boolean = false,
     val currentSessionStartTime: Long? = null,
     val todayDateKey: String = "",
@@ -50,6 +60,7 @@ data class CheckInUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 class CheckInViewModel(
     private val repository: CheckInRepository,
+    private val habits: HabitRepository,
     private val timeSource: TimeSource,
     private val serviceController: ServiceController,
     private val sessionLifecycleRunner: SessionLifecycleRunner,
@@ -62,30 +73,49 @@ class CheckInViewModel(
     private val showGate = MutableStateFlow(false)
     private val presenceAction = MutableStateFlow<PresenceAction>(PresenceAction.None)
 
-    // Rebuild on a screen resume OR when the day rolls over at midnight.
-    val uiState: StateFlow<CheckInUiState> = timeSource.dayTrigger(refresh)
-        .flatMapLatest { today ->
+    // One subscription each to the open session and the selected habit, shared by everything below:
+    // the habit's id keys the rebuild and the habit itself draws the label, so the two are always
+    // the same emission and the label never names a habit the queries are not about.
+    private val activeSession = repository.activeSessionFlow()
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), replay = 1)
+    private val selectedHabit = habits.selectedHabitFlow(activeSession = activeSession)
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), replay = 1)
+
+    // Rebuild on a screen resume, when the day rolls over at midnight, or when the habit on screen
+    // changes. Keyed on the habit's id alone — a rename redraws the label through the inner combine
+    // rather than rebuilding every query — and both halves are deduped at source, so neither a resume
+    // nor a write to either table re-subscribes anything.
+    val uiState: StateFlow<CheckInUiState> = combine(
+        timeSource.dayTrigger(refresh),
+        selectedHabit.map { it.id }.distinctUntilChanged(),
+    ) { today, habitId -> today to habitId }
+        .flatMapLatest { (today, habitId) ->
             val todayKey = today.format(dateFormatter)
 
             combine(
-                repository.activeSessionFlow(),
-                repository.sessionsForDateFlow(todayKey),
+                activeSession,
+                repository.sessionsForDateFlow(habitId, todayKey),
                 combine(showGate, presenceAction) { show, action -> show to action },
-                // "Has ever tracked" is "has ever checked in", so it is read off the sessions
-                // themselves — the same reactive emission that opens the first one closes the
-                // welcome, with no refresh to remember.
-                repository.trackingStartFlow(),
-            ) { active, sessions, gate, trackingStart ->
+                // "Has ever tracked" is "has ever checked in to this habit", so it is read off the
+                // sessions themselves — the same reactive emission that opens the first one closes
+                // the welcome, with no refresh to remember.
+                repository.trackingStartFlow(habitId),
+                selectedHabit,
+            ) { active, sessions, gate, trackingStart, habit ->
                 // The running flag, completed total, and live-ticker basis all derive from this single
                 // sessions emission (via `ticker`), so a check-out moves the closing session into the
-                // total in one atomic step — no one-frame dip or 00:00:00 flash. A session still open
+                // total in one atomic step — no one-frame dip or flash of zero. A session still open
                 // from a prior day (checked in across midnight) is not in today's list, so the ticker
                 // falls back to the active row; deriving isRunning from ticker keeps it true there,
-                // guarding against a double check-in while today's total correctly stays at 0.
+                // guarding against a double check-in while today's total correctly stays at 0. The
+                // active row is unscoped — one open session across all habits — so it is kept only if
+                // it is this habit's; the switcher lock means it always is, and this is the backstop.
                 val openToday = sessions.firstOrNull { it.stoppedAt == null }
-                val ticker = openToday ?: active?.takeIf { it.dateKey != todayKey }
+                val ticker = openToday ?: active?.takeIf { it.dateKey != todayKey && it.habitId == habitId }
                 CheckInUiState(
                     loading = false,
+                    habitId = habitId,
+                    habitName = habit.name.takeIf { habit.id == habitId },
                     isRunning = ticker != null,
                     currentSessionStartTime = ticker?.startedAt,
                     todayDateKey = todayKey,
@@ -124,7 +154,7 @@ class CheckInViewModel(
         presenceAction.value = PresenceAction.None
     }
 
-    /** Called once the auth gate (face detection or biometric fallback) has passed. */
+    /** Called once the presence gate (face detection or its device-unlock fallback) has passed. */
     fun onAuthSuccess() {
         showGate.value = false
         when (presenceAction.value) {
@@ -136,8 +166,20 @@ class CheckInViewModel(
     }
 
     private fun executeCheckIn() {
+        // The habit the button named when it was pressed: read off the state the user was looking at
+        // rather than re-resolved after the gate, so the check-in lands on the habit they chose. The
+        // live selection only when nothing has rendered yet, which no tap can precede.
+        val shown = uiState.value.habitId
         viewModelScope.launch {
-            val session = repository.checkIn()
+            val habitId = shown ?: habits.selectedHabitIdFlow().first()
+            // Only a new session is started and armed. One already open for this habit — two gated
+            // paths resolving together — keeps its alarms, since re-arming would reset its reminder
+            // ladder; another habit's open session means the switcher lock was bypassed somehow, and
+            // writing nothing is the only safe answer.
+            val session = when (val result = repository.checkIn(habitId)) {
+                is CheckInResult.Opened -> result.session
+                is CheckInResult.AlreadyOpen, is CheckInResult.OtherHabitOpen -> return@launch
+            }
             serviceController.startTimer(session.id, session.startedAt)
             // Armed here rather than inside the service, because `startTimer` can be refused — a
             // restricted standby bucket, an OEM that declines the foreground start — and a session
@@ -147,9 +189,7 @@ class CheckInViewModel(
             // Cleared on every check-in, not just the one a notification tap opened: a nudge asking
             // for a check-in is stale whichever way the check-in was made, and one left in the tray
             // sends the user back through the presence gate to reach a session already open.
-            postedNudges.retireAll()
-            // No refresh: the inserted row is what `hasEverTracked` reads, and its flow already
-            // carries it.
+            postedNudges.retire(habitId)
         }
     }
 
@@ -163,9 +203,7 @@ class CheckInViewModel(
             serviceController.stop()
             // The other writer, MainActivity.onRootGatePassed, raises this too — a check-out from
             // the notification earned the same acknowledgement as one from the button.
-            closed?.let { raiseCheckOutCelebration(repository, it, timeSource.nowMillis()) }
-            // No manual refresh: the reactive session flows already reflect the closed session, and
-            // the day clock owns the date roll.
+            closed?.let { raiseCheckOutCelebration(repository, habits, it, timeSource.nowMillis()) }
         }
     }
 
@@ -175,6 +213,7 @@ class CheckInViewModel(
                 val container = (this[APPLICATION_KEY] as CheckInApplication).container
                 CheckInViewModel(
                     container.repository,
+                    container.habitRepository,
                     container.timeSource,
                     container.serviceController,
                     container.sessionLifecycleRunner,

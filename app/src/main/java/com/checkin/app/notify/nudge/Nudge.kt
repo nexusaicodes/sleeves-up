@@ -3,25 +3,36 @@ package com.checkin.app.notify.nudge
 import com.checkin.app.notify.NotificationIds
 
 /**
- * The kinds of nudge the app can send. Order is the evaluation priority should two
- * ever be eligible in one pass — the first match wins, so the most valuable nudge goes first; today
- * the checkpoint bands are disjoint, so at most one is. Names are persisted in the send ledger, so renaming a
- * constant orphans its history — and with it the per-checkpoint dedup for any send already recorded.
+ * The kinds of nudge the app can send, **per habit**. One today: a habit that has no session yet
+ * today is reminded once, around the time chosen for it. Names are persisted in the send ledger, so
+ * renaming a constant orphans its history — and with it the once-a-day dedup for any send already
+ * recorded — unless the old name is added to [LEGACY_KEYS].
  *
- * [notificationId] must reference a dedicated constant in [NotificationIds], never derive from this
- * enum's ordinal or position: two nudges sharing an id replace each other in the tray, and reordering
- * this enum must not change any existing id.
+ * [slot] places the nudge inside its habit's block of notification ids (see
+ * [NotificationIds.habitNudge]); it must be a fixed number, never this enum's ordinal, so reordering
+ * the enum cannot move an id a posted notification already holds.
  */
-enum class Nudge(val notificationId: Int, val checkpoint: NudgeSchedule.Checkpoint) {
-    /**
-     * The user hasn't checked in today. One per checkpoint rather than one with a threshold: each
-     * carries its own copy, so a second send in a day reads as a different message instead of the
-     * same string arriving twice.
-     *
-     * Order matches [NudgeSchedule.Checkpoint], and the bands they map to do not overlap, so the
-     * first-match rule in [NudgeEligibility] picks the checkpoint the current hour is actually in.
-     */
-    NOT_CHECKED_IN_MORNING(NotificationIds.NUDGE_NOT_CHECKED_IN_MORNING, NudgeSchedule.Checkpoint.MORNING),
-    NOT_CHECKED_IN_AFTERNOON(NotificationIds.NUDGE_NOT_CHECKED_IN_AFTERNOON, NudgeSchedule.Checkpoint.AFTERNOON),
-    NOT_CHECKED_IN_EVENING(NotificationIds.NUDGE_NOT_CHECKED_IN_EVENING, NudgeSchedule.Checkpoint.EVENING),
+enum class Nudge(val slot: Int) {
+    /** The habit has no session today. One per habit per day; there is no follow-up. */
+    NOT_CHECKED_IN(0),
+    ;
+
+    fun notificationIdFor(habitId: Long): Int = NotificationIds.habitNudge(habitId, slot)
+
+    companion object {
+        /**
+         * Ledger keys an earlier build recorded, mapped to the nudge that now stands for them. Every
+         * one of v3.0's three checkpoints asked the same question of the one record that install
+         * had, which is the seed habit's, so a send under any of them on the day of the update means
+         * that habit was already reminded today. Append, never replace.
+         */
+        private val LEGACY_KEYS: Map<String, Nudge> = mapOf(
+            "NOT_CHECKED_IN_MORNING" to NOT_CHECKED_IN,
+            "NOT_CHECKED_IN_AFTERNOON" to NOT_CHECKED_IN,
+            "NOT_CHECKED_IN_EVENING" to NOT_CHECKED_IN,
+        )
+
+        /** The nudge a ledger [key] records, or null for one nothing now owns. */
+        fun fromStoredKey(key: String): Nudge? = entries.firstOrNull { it.name == key } ?: LEGACY_KEYS[key]
+    }
 }

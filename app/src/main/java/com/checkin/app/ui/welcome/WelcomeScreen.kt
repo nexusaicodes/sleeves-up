@@ -21,11 +21,8 @@ import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.rounded.Face
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,22 +38,23 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.ui.components.ConstrainedContent
+import com.checkin.app.ui.components.FullScreenAction
 import com.checkin.app.ui.components.FullScreenMessage
+import com.checkin.app.ui.components.HabitExampleIcon
 import com.checkin.app.ui.components.MESSAGE_PADDING
 import com.checkin.app.ui.components.MessageIcon
 import com.checkin.app.ui.components.animationsEnabled
+import com.checkin.app.ui.components.cyclingHabitExample
 import com.checkin.app.ui.theme.CheckInAppTheme
 import kotlinx.coroutines.launch
 
 /**
- * The first-run tour: three pages, shown once, ahead of the `POST_NOTIFICATIONS` request rather than
- * beside it. [onFinished] releases the dialog, which is why the last page describes the reminders it
- * is about to ask for.
+ * The first-run tour: three pages, shown once, ahead of the naming step and the `POST_NOTIFICATIONS`
+ * request rather than beside them. It names nothing itself: the one path through is the pager and
+ * its button, and naming the first habit, with its reminder time, is the step [onFinished] leads to.
  *
- * [onSkipped] deliberately does not release it. Skipping and finishing are the same in every other
- * respect — both retire the tour for good — but a skip means nothing has explained the app, so
- * firing the dialog behind it would reproduce in one tap the defect the tour was built to close.
- * Notifications are not lost: the presence gate asks at the first check-in, beside the camera.
+ * [onSkipped] retires the tour for good as finishing does, but does not release the notification
+ * request — see [FirstRun.asksNotificationsAfter].
  */
 @Composable
 fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit) {
@@ -125,7 +123,8 @@ fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit) {
 
             Spacer(modifier = Modifier.height(DOTS_TO_ACTION_GAP))
 
-            Button(
+            FullScreenAction(
+                text = stringResource(if (onLastPage) R.string.welcome_start else R.string.welcome_next),
                 onClick = {
                     if (onLastPage) {
                         onFinished()
@@ -133,19 +132,7 @@ fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit) {
                         scope.launch { pagerState.goTo(pagerState.settledPage + 1, animated) }
                     }
                 },
-                modifier = Modifier
-                    .padding(horizontal = MESSAGE_PADDING)
-                    .fillMaxWidth()
-                    .heightIn(min = ACTION_MIN_HEIGHT),
-                shape = RoundedCornerShape(ACTION_CORNER),
-            ) {
-                Text(
-                    text = stringResource(if (onLastPage) R.string.welcome_start else R.string.welcome_next),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(ACTION_BOTTOM_GAP))
+            )
         }
     }
 }
@@ -167,7 +154,8 @@ private fun PageIcon(icon: WelcomeIcon) = when (icon) {
     // The camera disclosure's own icon, so the screen met at the first check-in reads as a
     // continuation of this one.
     WelcomeIcon.FACE -> MessageIcon(Icons.Rounded.Face)
-    WelcomeIcon.REMINDER -> MessageIcon(Icons.Default.Notifications)
+    // The habits being cycled through, the same carousel the naming step that follows opens on.
+    WelcomeIcon.HABITS -> HabitExampleIcon(cyclingHabitExample())
 }
 
 /**
@@ -217,19 +205,14 @@ private val DOT_SIZE = 8.dp
 private val DOT_GAP = 4.dp
 private val DOTS_TO_ACTION_GAP = 24.dp
 
-/** A comfortable full-width action. Independent of the Check-In screen's 64.dp primary button,
- *  which is sized by that screen's fit budget rather than by how a button should look. */
-private val ACTION_MIN_HEIGHT = 56.dp
-private val ACTION_CORNER = 16.dp
-
-/** Lifts the action clear of the gesture bar, above the inset `safeDrawingPadding` already applied. */
-private val ACTION_BOTTOM_GAP = 16.dp
-
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun WelcomeScreenPreview() {
     CheckInAppTheme {
-        WelcomeScreen(onFinished = {}, onSkipped = {})
+        WelcomeScreen(
+            onFinished = {},
+            onSkipped = {},
+        )
     }
 }

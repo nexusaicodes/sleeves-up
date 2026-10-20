@@ -25,7 +25,7 @@ class PresenceCheckSignalTest {
         PresenceCheckSignal.raise(Reason.CHECK_IN, raisedAt)
 
         assertTrue(PresenceCheckSignal.expireIfStale(raisedAt))
-        assertEquals(Reason.CHECK_IN, PresenceCheckSignal.request.value)
+        assertEquals(Reason.CHECK_IN, PresenceCheckSignal.request.value.reason)
     }
 
     @Test
@@ -35,7 +35,7 @@ class PresenceCheckSignalTest {
 
         val thirtySecondsLater = raisedAt + 30_000L
         assertTrue(PresenceCheckSignal.expireIfStale(thirtySecondsLater))
-        assertEquals(Reason.CHECK_OUT_FROM_TIMER, PresenceCheckSignal.request.value)
+        assertEquals(Reason.CHECK_OUT_FROM_TIMER, PresenceCheckSignal.request.value.reason)
     }
 
     @Test
@@ -45,7 +45,7 @@ class PresenceCheckSignalTest {
 
         val twelveHoursLater = raisedAt + 12 * 60 * 60 * 1000L
         assertFalse(PresenceCheckSignal.expireIfStale(twelveHoursLater))
-        assertEquals(Reason.NONE, PresenceCheckSignal.request.value)
+        assertEquals(Reason.NONE, PresenceCheckSignal.request.value.reason)
     }
 
     @Test
@@ -60,7 +60,7 @@ class PresenceCheckSignalTest {
     fun `an absent request stays absent however much time passes`() {
         // Nothing was asked for, so nothing may be reported as live — expiry must not invent one.
         assertFalse(PresenceCheckSignal.expireIfStale(raisedAt))
-        assertEquals(Reason.NONE, PresenceCheckSignal.request.value)
+        assertEquals(Reason.NONE, PresenceCheckSignal.request.value.reason)
     }
 
     @Test
@@ -72,6 +72,17 @@ class PresenceCheckSignalTest {
         val muchLater = raisedAt + 12 * 60 * 60 * 1000L
         PresenceCheckSignal.raise(Reason.CHECK_IN, muchLater)
         assertTrue(PresenceCheckSignal.expireIfStale(muchLater))
-        assertEquals(Reason.CHECK_IN, PresenceCheckSignal.request.value)
+        assertEquals(Reason.CHECK_IN, PresenceCheckSignal.request.value.reason)
+    }
+
+    /** The habit rides with the reason in one value, so the two cannot be read from different moments. */
+    @Test
+    fun `a check-in request carries its habit, and clearing drops both`() {
+        PresenceCheckSignal.raise(Reason.CHECK_IN, raisedAt, habitId = 4L)
+
+        assertEquals(PresenceCheckSignal.Request(Reason.CHECK_IN, habitId = 4L), PresenceCheckSignal.request.value)
+
+        PresenceCheckSignal.clear()
+        assertEquals(PresenceCheckSignal.Request.NONE, PresenceCheckSignal.request.value)
     }
 }

@@ -1,6 +1,9 @@
 package com.checkin.app
 
+import com.checkin.app.data.local.Habit
 import com.checkin.app.data.repository.CheckInRepository
+import com.checkin.app.data.repository.HabitEdit
+import com.checkin.app.data.repository.HabitRepository
 import com.checkin.app.ui.history.HistoryViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -20,9 +23,41 @@ class HistoryViewModelTest {
     @get:Rule
     val mainRule = MainDispatcherRule()
 
-    private fun buildViewModel(dao: FakeCheckInSessionDao, time: FakeTimeSource): HistoryViewModel {
+    private fun buildViewModel(
+        dao: FakeCheckInSessionDao,
+        time: FakeTimeSource,
+        habitDao: FakeHabitDao = FakeHabitDao(),
+        appState: FakeAppStateDao = FakeAppStateDao(),
+    ): HistoryViewModel {
         val repo = CheckInRepository(dao, time)
-        return HistoryViewModel(repo, time)
+        return HistoryViewModel(repo, HabitRepository(habitDao, appState, dao, time), time)
+    }
+
+    /** One habit's calendar never shows another's days, and switching redraws it for the new habit. */
+    @Test
+    fun `the calendar and the selected day follow the selected habit`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        val habitDao = FakeHabitDao()
+        val appState = FakeAppStateDao()
+        val time = FakeTimeSource(0L, LocalDate.of(2026, 6, 15))
+        val writing = (HabitRepository(habitDao, appState, dao, time).create("Writing") as HabitEdit.Saved).habit
+        dao.seedCompleted("2026-06-10", startedAt = 100L, durationMs = 60_000L, habitId = Habit.SEED_ID)
+        dao.seedCompleted("2026-06-12", startedAt = 200L, durationMs = 60_000L, habitId = writing.id)
+        val viewModel = buildViewModel(dao, time, habitDao, appState)
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        viewModel.selectDay("2026-06-10")
+        advanceUntilIdle()
+
+        assertEquals(setOf("2026-06-10"), viewModel.uiState.value.summaries.keys)
+        assertEquals(LocalDate.of(2026, 6, 10), viewModel.uiState.value.trackingStartDate)
+        assertEquals(1, viewModel.uiState.value.selectedDaySessions.size)
+
+        appState.selected.value = writing.id
+        advanceUntilIdle()
+
+        assertEquals(setOf("2026-06-12"), viewModel.uiState.value.summaries.keys)
+        assertEquals(LocalDate.of(2026, 6, 12), viewModel.uiState.value.trackingStartDate)
+        assertTrue(viewModel.uiState.value.selectedDaySessions.isEmpty())
     }
 
     @Test

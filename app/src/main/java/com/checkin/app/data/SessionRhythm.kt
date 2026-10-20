@@ -7,9 +7,9 @@ import java.time.ZoneId
 /**
  * When in the day a session began. Descriptive: no bucket is better than another.
  *
- * These names also exist on `NudgeSchedule.Checkpoint`, breaking at different hours (12/17 here,
- * 10/14/19 there) and deliberately not unified: this describes when a session the user already
- * started began, that decides when to send them a message.
+ * Not to be unified with [com.checkin.app.notify.nudge.NudgeSchedule]'s bands, which also divide the
+ * day: this describes when a session the user already started began, that decides when to send them
+ * a message, from a time the user chose.
  */
 enum class StartBucket {
     MORNING,
@@ -30,7 +30,7 @@ enum class SessionBand {
  * Nothing here ranks anything, and nothing here may grow a baseline. These figures exist so a user
  * can recognise their own pattern — that they start late, that they work in two blocks — and every
  * one of them is a plain count with no preferable direction. A "best time to start" or a "most
- * productive block" would be the deleted daily target wearing a different hat.
+ * productive block" would grade the user, which nothing in this app may do.
  *
  * Android-free and clock-free: the caller supplies the zone, so the buckets are testable on the JVM
  * and a device in another zone is not a different code path.

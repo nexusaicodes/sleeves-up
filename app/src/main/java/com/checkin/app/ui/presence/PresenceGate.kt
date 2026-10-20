@@ -36,7 +36,8 @@ private val PRESENCE_PERMISSIONS = arrayOf(
 )
 
 /**
- * The one entry point to a presence check, and the only place either permission is asked for.
+ * The one entry point to a presence check, and the only place the camera permission is asked for
+ * (`POST_NOTIFICATIONS` is also asked once at first open, by `AppRoot`).
  *
  * Everything the check needs is raised here, in the order Play policy requires and at the moment the
  * feature actually demands it: the prominent disclosure, then the runtime permissions, then the
@@ -64,12 +65,11 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     var requested by rememberSaveable { mutableStateOf(false) }
     // Whether a system permission dialog is on screen right now — which `requested` cannot answer,
     // since it stays true after a refusal and keying on it would shut the camera out permanently.
-    // It outranks the camera in the `when` below: granting CAMERA while refusing POST_NOTIFICATIONS
-    // is one tap apart in the same dialog, so the next visit re-asks with the camera already
-    // granted, and that dialog is a translucent activity that never stops this one — the preview
-    // underneath would keep streaming and pass the check while the user was still reading a system
-    // prompt they never connected to checking in. Saveable because the dialog outlives a rotation
-    // beneath it; the launcher's callback always fires, so this cannot latch on.
+    // It outranks the camera in the `when` below: a visit can re-ask for POST_NOTIFICATIONS with
+    // the camera already granted, and that dialog is a translucent activity that never stops this
+    // one — the preview underneath would keep streaming and pass the check while the user was still
+    // reading a system prompt. Saveable because the dialog outlives a rotation beneath it; the
+    // launcher's callback always fires, so this cannot latch on.
     var requestInFlight by rememberSaveable { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -144,7 +144,8 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
             onDismiss = onDismiss,
         )
 
-        // The system dialog is up: hold the full-screen surface rather than flashing a screen behind it.
+        // Disclosed but not yet asked: the effect above is about to raise the dialog, so hold the
+        // full-screen surface rather than flashing a screen behind it.
         else -> Box(modifier = Modifier.fillMaxSize())
     }
 }

@@ -22,8 +22,8 @@ sealed class Screen(val route: String, val titleRes: Int) {
     sealed class Tab(route: String, titleRes: Int, val icon: ImageVector) : Screen(route, titleRes)
 
     /**
-     * A destination pushed above [parent]: the top bar trades the centred title for a back arrow and
-     * [parent] stays selected below, so a sub-screen still reads as part of its section.
+     * A destination pushed above [parent]: the top bar puts a back arrow before the title and [parent]
+     * stays selected below, so a sub-screen still reads as part of its section.
      */
     sealed class Detail(route: String, titleRes: Int, val parent: Tab) : Screen(route, titleRes)
 
@@ -33,6 +33,7 @@ sealed class Screen(val route: String, val titleRes: Int) {
     data object Settings : Tab("settings", R.string.nav_settings, Icons.Default.Settings)
     data object Privacy : Detail("privacy", R.string.nav_privacy, Settings)
     data object Licenses : Detail("licenses", R.string.nav_licenses, Settings)
+    data object Habits : Detail("habits", R.string.nav_habits, Settings)
 }
 
 /**
@@ -47,6 +48,7 @@ internal val allScreens: List<Screen> = listOf(
     Screen.History,
     Screen.Reports,
     Screen.Settings,
+    Screen.Habits,
     Screen.Privacy,
     Screen.Licenses,
 )

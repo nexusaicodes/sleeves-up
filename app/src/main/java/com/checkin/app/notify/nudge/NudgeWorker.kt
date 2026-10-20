@@ -16,10 +16,10 @@ import java.util.concurrent.TimeUnit
  * documented there. The pass survives because it is the only place `reviveIfNeeded` and `prune` can
  * hang, and because a second chance at the day's nudge costs nothing.
  *
- * "Costs nothing" is [NudgeSnapshot.alreadySentToday] doing that work, not the daily cap. A cap of
- * two lets a pass landing inside a band the alarm has already fired in send the *same* nudge again —
- * identical copy, same id, re-alerting on a high-importance channel, and the day's remaining slot
- * gone. The per-checkpoint rule is what makes a redundant pass genuinely free.
+ * "Costs nothing" is [NudgeSnapshot.spentToday] doing that work. Without it, a pass landing inside
+ * a band the alarm has already fired in sends the *same* habit's nudge again — identical copy, same
+ * id, re-alerting on a high-importance channel. Once per habit per day is what makes a redundant
+ * pass genuinely free.
  */
 class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
@@ -32,14 +32,11 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             // worker is not among the exemptions — which is why this is the last of the three revive
             // points rather than the only one. It reports a refusal as `false` and never throws.
             container.sessionWatchdog.reviveIfNeeded()
-            // Re-arm before dispatching: a checkpoint alarm lost to a force stop is repaired here
-            // even on a pass that then finds nothing eligible to send.
-            //
-            // Guarded on its own, like every other arming site: `setAndAllowWhileIdle` throws past
-            // the platform's 500-alarm cap, and sharing the outer catch would let that one throw skip
-            // the dispatch and the prune — the two jobs this pass exists for.
-            runCatching { container.nudgeAlarms.armNext(container.timeSource.nowMillis()) }
-            container.nudgeDispatcher.runOnce()
+            // The pass also re-arms the checkpoint alarm, so an alarm lost to a force stop is repaired
+            // here even on a pass that finds nothing to send — and through the container, so a
+            // dispatcher that cannot be built still arms the plain checkpoint. It never throws, so a
+            // refused arm cannot skip the prune below.
+            container.runNudgePass()
             container.nudgeSendLog.prune(
                 container.timeSource.nowMillis() - RETENTION_MS,
             )
@@ -57,22 +54,14 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
         private const val WORK_NAME = "nudge_pass"
 
         /**
-         * The name this work was enqueued under before `notify/engagement/` became `notify/nudge/`.
+         * A name this work was previously enqueued under, cancelled before every enqueue.
          *
          * A unique name is WorkManager's own persisted key, so renaming does not rename the existing
-         * work — it enqueues new work and leaves the old `WorkSpec` standing. Because the worker
-         * class moved packages in the same change, that orphan names a class that no longer
-         * resolves, so WorkManager cannot instantiate it and fails it on a schedule forever. Had only
-         * the name changed, it would have been worse: [ExistingPeriodicWorkPolicy.KEEP] would leave
-         * two live hourly passes, doubling every revive, re-arm and prune. Cancelling before the
-         * enqueue is what makes the rename a rename either way — the exact analogue of deleting a
-         * retired notification channel.
-         *
-         * Verified on device: after the upgrade `WorkName` joins one `WorkSpec` in state 5
-         * (CANCELLED) under this name, and one in state 0 (ENQUEUED) under [WORK_NAME].
-         *
-         * Keep this call for as long as any install may still hold the old work — nothing reports
-         * back that it is gone. Append rather than replace if the name ever changes again.
+         * work — it enqueues new work and leaves the old `WorkSpec` standing, here naming a worker
+         * class that no longer resolves. Cancelling it is the analogue of deleting a retired
+         * notification channel. Keep this call for as long as any install may still hold the old
+         * work — nothing reports back that it is gone — and append rather than replace if the name
+         * ever changes again. [WORK_NAME] is frozen for the same reason.
          */
         private const val RETIRED_WORK_NAME = "engagement_nudge_pass"
         private const val INTERVAL_MINUTES = 60L
@@ -95,10 +84,13 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             // both calls, so the ordering is visibly on the thing it has to be ordered on.
             workManager.cancelUniqueWork(RETIRED_WORK_NAME)
 
+            // A first pass at enqueue time would run on a fresh install while the welcome tour is up:
+            // a nudge over it, or — with notifications not yet asked for — a refused attempt that
+            // spends the day's reminder. The backstop can wait an interval like any other pass.
             val request = PeriodicWorkRequestBuilder<NudgeWorker>(
                 INTERVAL_MINUTES,
                 TimeUnit.MINUTES,
-            ).build()
+            ).setInitialDelay(INTERVAL_MINUTES, TimeUnit.MINUTES).build()
 
             workManager.enqueueUniquePeriodicWork(
                 WORK_NAME,

@@ -44,7 +44,7 @@ CAPTION_LEADING = 66
 DEVICE_TOP = 320
 DEVICE_BOTTOM = 1856
 DEVICE_RADIUS = 38
-EXPECTED = 7
+EXPECTED = 8
 
 ROW = re.compile(r"^\|\s*(\d)\s*\|\s*`([^`]+)`\s*\|[^|]*\|\s*([^|]+?)\s*\|\s*$")
 

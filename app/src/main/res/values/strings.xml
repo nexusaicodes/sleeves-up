@@ -13,7 +13,7 @@
 <resources>
     <!-- App Name. "Sleeves Up" is the product (matching the Play listing); "Check In" is the
          action, and the two are not interchangeable — see nav_check_in and check_in below. -->
-    <string name="app_name">Sleeves Up</string>
+    <string name="app_name" translatable="false">Sleeves Up</string>
 
     <!-- Navigation -->
     <string name="nav_check_in">Check In</string>
@@ -23,13 +23,21 @@
     <string name="nav_licenses">Open Source</string>
     <string name="nav_privacy">Privacy</string>
 
+    <!-- Shared by every dialog's dismiss button. -->
+    <string name="action_cancel">Cancel</string>
+
     <!-- Check-In Screen -->
     <string name="check_in">Check In</string>
     <string name="check_out">Check Out</string>
+    <!-- The button names the habit it writes to: the switcher is the only other place that says. -->
+    <string name="check_in_to">Check in to %1$s</string>
+    <string name="check_out_of">Check out of %1$s</string>
     <string name="todays_sessions_summary">%1$s · %2$s today</string>
     <string name="session_in_progress">ongoing</string>
     <!-- A settled session row, spoken as one phrase: its clock range, then its duration. -->
     <string name="cd_session_row">%1$s, %2$s</string>
+    <!-- A session's start and end, each a clock time or "ongoing". -->
+    <string name="session_range">%1$s - %2$s</string>
     <plurals name="sessions_count">
         <item quantity="one">%d session</item>
         <item quantity="other">%d sessions</item>
@@ -78,49 +86,55 @@
     <string name="reminder_title">Still checked in?</string>
     <string name="reminder_text">Your session is still running. It closes on its own at midnight.</string>
 
-    <!-- Check-in nudges. This channel is the only opt-out there is — there is no in-app switch — so
-         the name has to be the words a user hunting for one would look for, and the description has
-         to say what turning it off actually stops. "Nudge" is internal vocabulary and stays out of
-         both. A channel's name and description are updatable after creation; its id and importance
-         are not. The name is near-synonymous with "Session Reminders" one row away, so the two
-         descriptions carry the difference: muting the wrong one costs the prompt that catches a
-         forgotten open session. -->
+    <!-- Check-in reminders, one channel per habit, in one group. Each habit's channel is the only
+         opt-out there is for that habit's reminder — there is no in-app switch — so the name has to
+         be the words a user hunting for one would look for, and the description has to say what
+         turning it off actually stops. "Nudge" is internal vocabulary and stays out of all of them.
+         A channel's name and description are updatable after creation; its id and importance are
+         not. "Session Reminders" sits near these, so the descriptions carry the difference: muting
+         the wrong one costs the prompt that catches a forgotten open session. "Once a day at most"
+         is one nudge per habit per day, not a round number chosen to sound sparing: if that rule
+         changes, these lines are wrong. nudge_channel_* name the seed habit's channel until the
+         habit has a name of its own. -->
+    <string name="habit_channel_group_name">Habit Reminders</string>
+    <string name="habit_channel_name">%1$s Reminders</string>
+    <string name="habit_channel_description">Reminds you to check in to %1$s on days you haven\'t yet. Once a day at most.</string>
     <string name="nudge_channel_name">Check-In Reminders</string>
-    <string name="nudge_channel_description">Occasional reminders when you haven\'t checked in. At most two a day.</string>
+    <string name="nudge_channel_description">Reminds you to check in on days you haven\'t yet. Once a day at most.</string>
 
-    <!-- One pair per checkpoint, because a second send in a day arriving as the same string reads as
-         a stuck loop rather than as a message that came back. Each checkpoint has exactly one wording — no variants: nothing in the app can tell two arms apart, so a second one is
-only a second string to keep in step. Copy never warms or grows more urgent across the day — escalating would invent a
-         deadline this app does not have, and would grade a day that is not over. No copy names the
-         hour: delivery is best-effort, so a stated time is a punctuality promise the app cannot
-         keep. -->
-    <string name="nudge_not_checked_in_morning_title">Ready when you are</string>
-    <string name="nudge_not_checked_in_morning_body">You haven\'t checked in yet today. Tap to start your session.</string>
-    <string name="nudge_not_checked_in_afternoon_title">No session yet today</string>
-    <string name="nudge_not_checked_in_afternoon_body">Whenever you start, it counts — a short day is still a day shown up for.</string>
-    <string name="nudge_not_checked_in_evening_title">Still time today</string>
-    <string name="nudge_not_checked_in_evening_body">Today\'s record closes at midnight. Tap to check in.</string>
+    <!-- One wording, no variants: nothing in the app can tell two arms apart, so a second one is only
+         a second string to keep in step. The title names the habit, because a reminder that does
+         not say which habit it is about is one a user with two cannot act on; the unnamed title is
+         for a habit still owed a name. Copy never warms or grows urgent — that would invent a
+         deadline this app does not have, and grade a day that is not over. Time-neutral, because the
+         user picks the time. No notification names the time: delivery is best-effort, so a stated
+         time is a punctuality promise the app cannot keep. -->
+    <string name="nudge_not_checked_in_title">%1$s: no session yet today</string>
+    <string name="nudge_not_checked_in_unnamed_title">No session yet today</string>
+    <string name="nudge_not_checked_in_body">Whenever you start, it counts — a short day is still a day shown up for.</string>
 
     <!--
       The first-run welcome tour, shown once before anything is asked for. The order is the point:
-      the notification permission dialog opens the moment the last page is finished, so the
-      reminders are described immediately before they are requested.
+      the naming step follows the last page, and the notification permission dialog follows that,
+      so a reminder time has just been picked when reminders are requested.
 
-      Sentence case — these read as lines, not card titles. Nothing grades a day or names an hour,
-      by the same rules the nudge copy follows. "Twice a day" is NudgeConfig.maxPerDay, not a round
-      number chosen to sound generous: if that value changes, this line is wrong.
+      Sentence case — these read as lines, not card titles. Nothing grades a day, by the same rules
+      the nudge copy follows.
     -->
-    <string name="welcome_showing_up_title">Showing up is the whole thing</string>
-    <string name="welcome_showing_up_body">Check in when you start, check out when you stop. There\'s no target to clear — a short day counts the same as a long one.</string>
+    <!-- The quote is Will Durant's summary of Aristotle, not Aristotle's words; the attribution says so. -->
+    <string name="welcome_quote_title">Make it a habit</string>
+    <string name="welcome_quote_body">“We are what we repeatedly do. Excellence, then, is not an act, but a habit.” — Will Durant, on Aristotle</string>
     <!--
-      The disclosure's own clauses rather than a paraphrase, so the two cannot drift apart about the
-      same camera. "Confirms someone\'s there" is load-bearing: this is face detection, not
+      The app's thesis. "A glance at the camera", never "scan": this is face detection, not
       recognition, and no copy may read as matching the user against an enrolled identity.
     -->
-    <string name="welcome_presence_title">Presence, checked on this device</string>
-    <string name="welcome_presence_body">The front camera confirms someone\'s there at check-in and check-out. No photo is taken and no image ever leaves the camera.</string>
-    <string name="welcome_reminders_title">A reminder if the day gets away</string>
-    <string name="welcome_reminders_body">If you haven\'t checked in, Sleeves Up says so — at most twice a day. Turn them off with a long press on any reminder.</string>
+    <string name="welcome_showing_up_title">Showing up is what counts</string>
+    <string name="welcome_showing_up_body">Check in with a glance at the camera, and check out the same way. Your time is logged, but showing up is what counts.</string>
+    <!-- The last page leads into the naming step, where the first habit's reminder time is picked
+         immediately before the notification dialog. "Habit", never "goal": a goal is a target, and this app
+         has none. -->
+    <string name="welcome_habits_title">One habit at a time</string>
+    <string name="welcome_habits_body">Start with one habit you want to build, and add more later — each keeps its own record.</string>
     <!-- Spoken by the dot row. HorizontalPager publishes a scroll range and no page count, so
          without this a screen reader is never told where in the tour it is. -->
     <string name="welcome_page_position">Page %1$d of %2$d</string>
@@ -203,6 +217,10 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
         <item quantity="other">Daily hours over %1$d days.</item>
     </plurals>
     <string name="cd_monthly_chart">Hours by month: %1$s</string>
+    <!-- One month in the monthly chart's spoken list: the month, then its hours. -->
+    <string name="cd_monthly_chart_entry">%1$s %2$s</string>
+    <!-- Joins the entries of a spoken list. Quoted to keep its trailing space. -->
+    <string name="list_separator">", "</string>
     <!-- The two descriptive splits. Neither ranks its slices: there is no better hour to start at
          and no right number of blocks to break a day into, and any copy implying one would be the
          deleted daily target applied to the shape of a day instead of its length. -->
@@ -226,7 +244,90 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
     <string name="export_nothing">No completed days to export yet</string>
     <string name="export_failed">Export failed: %1$s</string>
 
-    <!-- About. Settings holds nothing else — see SettingsScreen for why. -->
+    <!--
+      A habit's reminder time, chosen to the minute wherever the habit is named and changeable on
+      the Habits screen. "Around" is load-bearing on every time stated: the alarm is inexact, so the
+      time is when a reminder becomes due, not when it lands. Every place the time is shown shares
+      the one summary string.
+    -->
+    <string name="reminder_time_value">Around %1$s</string>
+    <!-- A time button's click action, spoken by TalkBack after the summary it shows. -->
+    <string name="reminder_time_change">Change reminder time</string>
+    <string name="reminder_time_dialog_title">Reminder Time</string>
+    <string name="reminder_time_confirm">Set</string>
+    <!-- Under the clock: the range a reminder may be set in, turning to the error colour outside it. -->
+    <string name="reminder_time_range">Between %1$s and %2$s</string>
+
+    <!--
+      Habits. Each is a record of its own, viewed alone: nothing here may compare two habits, rank
+      them, or total them — no "most consistent", no combined figure. "Habit", never "goal".
+    -->
+    <string name="nav_habits">Habits</string>
+    <string name="habits_section">Habits</string>
+    <string name="habits_manage">Manage habits</string>
+    <!-- Under Settings' Manage habits row while a session runs, which locks it. -->
+    <string name="habits_manage_locked">Check out of %1$s first</string>
+    <string name="habits_archived_section">Archived</string>
+    <string name="habits_archived_note">Archived habits keep their records and send no reminders.</string>
+    <string name="habit_new">New habit</string>
+    <string name="habit_edit">Edit</string>
+    <!-- A habit row's overflow button, spoken by TalkBack with the habit it belongs to. -->
+    <string name="habit_more_actions">More options for %1$s</string>
+    <!-- A habit row's tap action, spoken by TalkBack: it shows that habit on every tab. -->
+    <string name="habit_select">Show this habit</string>
+    <!-- Spoken on the check beside the habit every tab is showing. -->
+    <string name="habit_selected">Showing</string>
+    <string name="habit_archive">Archive</string>
+    <string name="habit_restore">Restore</string>
+    <string name="habit_unnamed">Unnamed habit</string>
+    <string name="habit_archived">%1$s archived. Its record is kept.</string>
+    <string name="habit_archive_running">Check out of %1$s before archiving it</string>
+    <string name="habit_archive_last">Keep at least one habit</string>
+    <string name="habit_restore_duplicate">Another habit is already called %1$s</string>
+    <!-- The switcher in the top bar. While a session runs it is locked to that habit on every tab. -->
+    <string name="habit_switcher_cd">Habit: %1$s. Switch habit</string>
+    <string name="habit_switch_locked">Check out of %1$s to switch or manage habits</string>
+    <!-- A nudge for one habit tapped while another habit's session is running. No gate opens. -->
+    <string name="habit_running_check_out_first">%1$s is running. Check out of it first.</string>
+    <string name="habit_running_check_out_first_unnamed">A session is running. Check out of it first.</string>
+    <!-- The editor dialog shared by every place a habit is created or edited. -->
+    <string name="habit_editor_new_title">New Habit</string>
+    <string name="habit_editor_edit_title">Edit Habit</string>
+    <string name="habit_name_label">Name</string>
+    <string name="habit_name_blank">Give it a name</string>
+    <plurals name="habit_name_too_long">
+        <item quantity="one">Keep it to %d character</item>
+        <item quantity="other">Keep it to %d characters</item>
+    </plurals>
+    <string name="habit_name_duplicate">You already have a habit with this name</string>
+    <string name="habit_save">Save</string>
+    <!-- The first-run naming step: owed by a habit with no name — an install updated onto habits, and
+         every fresh install, since the tour names nothing. It cannot be backed out of, because the Check In
+         button names the habit and has nothing to say until it has a name. -->
+    <string name="name_habit_title">What are you showing up for?</string>
+    <string name="name_habit_body">Add more in the app when you want.</string>
+    <string name="name_habit_continue">Continue</string>
+    <!-- Cycled as the name field's placeholder beside a matching icon. Activities, never targets:
+         a number in an example would suggest a habit is a bar to clear. -->
+    <string name="habit_example_running">Running</string>
+    <string name="habit_example_reading">Reading</string>
+    <string name="habit_example_meditation">Meditation</string>
+    <string name="habit_example_guitar">Guitar</string>
+    <string name="habit_example_gym">Gym</string>
+    <string name="habit_example_drawing">Drawing</string>
+
+    <!-- Language. The choice is Android's own per-app setting, the same one its App language
+         screen writes; the app keeps no copy. Each language is named in itself, so the two names
+         are never translated: someone who cannot read the current language can still find theirs. -->
+    <string name="language_section">Language</string>
+    <string name="language_app">App language</string>
+    <string name="language_system_default">System default</string>
+    <!-- The row's action, spoken by TalkBack: a tap opens the picker in place. -->
+    <string name="language_change">Change language</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_arabic" translatable="false">العربية</string>
+
+    <!-- About. Settings holds this and the link to Habits — see SettingsScreen for why nothing else. -->
     <string name="about_section">About</string>
     <string name="about_version">Version %1$s (build %2$d)</string>
     <string name="about_developer">Nexus AI Technology Labs</string>
@@ -234,7 +335,7 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
     <string name="about_privacy_policy">Privacy policy</string>
     <string name="about_feedback">Send feedback</string>
     <string name="about_rate">Rate on Google Play</string>
-    <string name="about_licenses">Open source licenses</string>
+    <string name="about_licenses">Open source licences</string>
     <string name="about_open_link">Opens outside the app</string>
     <string name="about_no_email_app">No email app found. Address copied: %1$s</string>
     <string name="about_no_browser">No browser found. Link copied to the clipboard.</string>
@@ -256,7 +357,13 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
     <string name="privacy_check_title">How to Check</string>
     <string name="privacy_check_body">You don\'t have to take this on trust. Android lists every permission an app declares under App info, and Google Play lists them on the store page. This app has no network permission to list.</string>
 
-    <!-- Open source licenses -->
+    <!-- Open source licences. The library names, copyrights and licence names on that screen are
+         proper nouns and legal text and stay as written; only these notes are prose. -->
+    <string name="licenses_note_androidx">Core, Compose, Material 3, Lifecycle, Navigation, Room, WorkManager, Biometric and their dependencies.</string>
+    <string name="licenses_note_camerax">camera-core embeds libyuv, which carries its own BSD licence.</string>
+    <string name="licenses_note_outfit">Display, headline and title sizes.</string>
+    <string name="licenses_note_manrope">Body and label sizes.</string>
+    <string name="licenses_note_plex_arabic">All text when the app is in Arabic.</string>
     <string name="licenses_intro">Sleeves Up is built on these projects. Grouped by upstream project rather than by artifact.</string>
     <!-- Named after the licence it opens: these buttons sit below every library card, far from any
          context. The text is bundled rather than linked because Apache-2.0 section 4(a) and the OFL
@@ -269,6 +376,7 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
     <string name="notification_channel_name">Check-In Timer</string>
     <string name="notification_channel_description">Shows the active check-in timer</string>
     <string name="notification_title">Checked In</string>
+    <string name="notification_title_habit">Checked In: %1$s</string>
     <!-- The elapsed time is drawn by the platform's own chronometer in the timestamp slot, so the
          body must not print it too — it would appear twice, and the copy would be the stale one. -->
     <string name="notification_running">Timing your session</string>
@@ -277,11 +385,11 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
     <!-- Camera prominent disclosure, shown before the camera permission request at the first
          check-in. The camera runs face *detection* — it looks for any face, it does not match one
          against an enrolled identity, so none of this may read as "selfie verification". -->
-    <string name="camera_disclosure_title">Presence verification</string>
-    <!-- Detection is done by the camera hardware and reaches the app as a face count, so no frame is
-         ever written, read or held. "No photo is taken" is the literal truth here, and it replaced
-         "then deleted" — which was the honest claim only while a JPEG briefly existed. -->
-    <string name="camera_disclosure_message">Your front camera checks that someone is there at check-in and check-out. No photo is taken and no image ever leaves the camera.</string>
+    <string name="camera_disclosure_title">Presence check</string>
+    <!-- What happens and when, nothing more. Detection is done by the camera hardware and reaches
+         the app as a face count, so if this ever says anything about images it may only say none is
+         taken — never photo, capture or selfie as something that happens. -->
+    <string name="camera_disclosure_message">The front camera checks you\'re here when you check in or out.</string>
     <string name="camera_disclosure_button">Continue</string>
 
     <!-- Recovery screen, shown only after the camera permission is refused -->
@@ -289,4 +397,25 @@ only a second string to keep in step. Copy never warms or grows more urgent acro
     <string name="camera_permission_message">Check-in and check-out verify your presence with the front camera, so neither can run without it.</string>
     <string name="camera_permission_button">Grant access</string>
     <string name="presence_gate_cancel">Not now</string>
+
+    <!--
+      Time and date formats. These are patterns, not prose: each language sets its own unit letters
+      and field order. The duration templates take two whole numbers (%1$d then %2$d); the date
+      patterns are java.time DateTimeFormatter patterns (d day, EEEE weekday, MMM/MMMM month, yy/yyyy
+      year, hh/h hour, mm minute, a am/pm; text in single quotes is literal, and \'\' is one
+      apostrophe). Digits are always Latin. Translate the order and the punctuation, never the letters
+      of a pattern.
+    -->
+    <string name="time_hours_minutes">%1$dh %2$dm</string>
+    <string name="time_minutes_seconds">%1$dm %2$ds</string>
+    <string name="time_clock_pattern">hh:mm a</string>
+    <string name="date_with_year_pattern">d MMM yyyy</string>
+    <string name="date_with_weekday_pattern">EEEE d MMM</string>
+    <string name="date_axis_day_pattern">d MMM</string>
+    <string name="date_axis_month_year_pattern">MMM \'\'yy</string>
+    <string name="date_axis_month_pattern">MMM</string>
+    <string name="date_month_year_pattern">MMMM yyyy</string>
+    <!-- The language this file is written in, as an ISO 639 code. The app reads it to know which
+         language Android resolved, so it must name this file's language and nothing else. -->
+    <string name="language_code">en</string>
 </resources>

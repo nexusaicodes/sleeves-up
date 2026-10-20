@@ -2,6 +2,7 @@ package com.checkin.app.ui.checkin
 
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.repository.CheckInRepository
+import com.checkin.app.data.repository.HabitRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
@@ -33,16 +34,17 @@ object CheckOutSignal {
     data class Completed(
         /** The closed session's recorded duration, read off the stored row, never recomputed. */
         val sessionMs: Long,
-        /** Every completed session on the closed session's own day, including this one. */
+        /** Every completed session of the habit's on the closed session's own day, this one included. */
         val dayTotalMs: Long,
         val daySessionCount: Int,
+        /** The habit the session belonged to, or null for one still owed a name. */
+        val habitName: String?,
     )
 
     /**
      * How long an unshown celebration stays live.
      *
-     * Deliberately far shorter than [PresenceCheckSignal.EXPIRY_MS]
-     * [com.checkin.app.ui.presence.PresenceCheckSignal.EXPIRY_MS], because the two are waiting for
+     * Deliberately far shorter than `PresenceCheckSignal.EXPIRY_MS`, because the two are waiting for
      * different things. That gate expects a legitimate round trip out of the app — it sends the user
      * to system settings and waits for them to come back. This one is a reaction to something the
      * user *just* did, and nothing about it survives the moment: a congratulation for a session
@@ -56,9 +58,9 @@ object CheckOutSignal {
     private var raisedAtMillis = 0L
 
     /** Raises the celebration, stamping when so [expireIfStale] can retire an unseen one. */
-    fun raise(sessionMs: Long, dayTotalMs: Long, daySessionCount: Int, nowMillis: Long) {
+    fun raise(sessionMs: Long, dayTotalMs: Long, daySessionCount: Int, habitName: String?, nowMillis: Long) {
         raisedAtMillis = nowMillis
-        completed.value = Completed(sessionMs, dayTotalMs, daySessionCount)
+        completed.value = Completed(sessionMs, dayTotalMs, daySessionCount, habitName)
     }
 
     /** Retires the celebration once it has been dismissed. */
@@ -88,19 +90,26 @@ object CheckOutSignal {
  * Gathers what [closed] is worth saying and raises it, shared by both check-out writers so the two
  * cannot drift into showing different things for the same event.
  *
- * The day figures are read against the **closed session's own** `date_key`, not against today: a
- * session belongs wholly to the day it began on, so one started before midnight and checked out
- * after it reports the day it actually belongs to rather than the empty one it ended in.
+ * The day figures are read against the **closed session's own** `date_key` and **its own habit**,
+ * not against today and the selection: a session belongs wholly to the day it began on and to the
+ * habit it was checked in to, so one closed after midnight reports the day it belongs to rather
+ * than the empty one it ended in, and a day's figures never fold in another habit's sessions.
  *
  * [nowMillis] is passed rather than read off [repository] because the repository's clock is its own
  * private business, and both call sites already hold the injectable one the tests drive.
  */
-suspend fun raiseCheckOutCelebration(repository: CheckInRepository, closed: CheckInSession, nowMillis: Long) {
-    val day = repository.getDailySummaries(closed.dateKey, closed.dateKey)[closed.dateKey]
+suspend fun raiseCheckOutCelebration(
+    repository: CheckInRepository,
+    habits: HabitRepository,
+    closed: CheckInSession,
+    nowMillis: Long,
+) {
+    val day = repository.getDailySummaries(closed.habitId, closed.dateKey, closed.dateKey)[closed.dateKey]
     CheckOutSignal.raise(
         sessionMs = closed.duration ?: 0L,
         dayTotalMs = day?.totalDurationMs ?: 0L,
         daySessionCount = day?.sessionCount ?: 0,
+        habitName = habits.byId(closed.habitId)?.name,
         nowMillis = nowMillis,
     )
 }

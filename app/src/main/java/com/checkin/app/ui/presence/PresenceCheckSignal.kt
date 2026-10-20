@@ -15,8 +15,9 @@ object PresenceCheckSignal {
      *
      * The two check-out reasons differ only in the [ClosedBy] they carry: both close the active
      * session, and the gate itself renders identically for either. They are separate values rather
-     * than one value plus a payload because the flow holds an enum, and a payload beside it is a
-     * second thing to keep in step with the first.
+     * than one value plus a payload because the set of endings is closed and small, so an enum
+     * value apiece costs nothing. The habit a check-in is for is the opposite — an open set the user
+     * grows — which is why it rides on [Request] beside the reason rather than in it.
      */
     enum class Reason(val closedBy: ClosedBy? = null) {
         /** No gate requested. */
@@ -28,8 +29,19 @@ object PresenceCheckSignal {
         /** Session reminder's "Check Out" action: success checks the active session out. */
         CHECK_OUT_FROM_REMINDER(ClosedBy.REMINDER_NOTIFICATION),
 
-        /** Nudge tap: success starts a session. */
+        /** Nudge tap: success starts a session for [Request.habitId]. */
         CHECK_IN,
+    }
+
+    /**
+     * A gate request: why, and — for [Reason.CHECK_IN] alone — which habit. One value in one flow,
+     * so the reason and its habit can never be read from two different moments. Check-out needs no
+     * habit: it closes the one open session, whichever habit holds it.
+     */
+    data class Request(val reason: Reason, val habitId: Long? = null) {
+        companion object {
+            val NONE = Request(Reason.NONE)
+        }
     }
 
     /**
@@ -42,19 +54,28 @@ object PresenceCheckSignal {
      */
     const val EXPIRY_MS = 10 * 60 * 1000L
 
-    val request = MutableStateFlow(Reason.NONE)
+    val request = MutableStateFlow(Request.NONE)
+
+    /**
+     * How many nudge taps are being resolved — read off the database to decide whether each opens a
+     * gate, says another habit is running, or does nothing. The root draws nothing while any is (and
+     * the splash screen stays up on a cold start), so the nav host cannot appear for the wrong habit
+     * and take a tap before the gate replaces it. A count rather than a flag, so the first of two
+     * quick taps to finish cannot uncover the host while the second is still deciding.
+     */
+    val resolvingTaps = MutableStateFlow(0)
 
     private var raisedAtMillis = 0L
 
     /** Raises the gate, stamping when it was asked for so [expireIfStale] can retire it. */
-    fun raise(reason: Reason, nowMillis: Long) {
+    fun raise(reason: Reason, nowMillis: Long, habitId: Long? = null) {
         raisedAtMillis = nowMillis
-        request.value = reason
+        request.value = Request(reason, habitId)
     }
 
     /** Retires the request once it has been answered or dismissed. */
     fun clear() {
-        request.value = Reason.NONE
+        request.value = Request.NONE
         raisedAtMillis = 0L
     }
 
@@ -68,9 +89,9 @@ object PresenceCheckSignal {
      * onto a row the app deliberately gives no way to edit or delete.
      */
     fun expireIfStale(nowMillis: Long): Boolean {
-        if (request.value != Reason.NONE && nowMillis - raisedAtMillis > EXPIRY_MS) {
+        if (request.value.reason != Reason.NONE && nowMillis - raisedAtMillis > EXPIRY_MS) {
             clear()
         }
-        return request.value != Reason.NONE
+        return request.value.reason != Reason.NONE
     }
 }

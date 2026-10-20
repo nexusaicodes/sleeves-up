@@ -54,8 +54,10 @@ import com.checkin.app.ui.components.charts.BarChart
 import com.checkin.app.ui.components.charts.DonutChart
 import com.checkin.app.ui.components.charts.DonutChartDefaults
 import com.checkin.app.ui.components.charts.LineChart
+import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.dayColor
 import com.checkin.app.util.TimeFormat
+import com.checkin.app.util.withLatinDigits
 import java.util.Locale
 
 private const val MILLIS_PER_HOUR = 3_600_000f
@@ -83,7 +85,7 @@ fun ReportsScreen(
     // non-replaying, so a config-change re-collect can't re-show a past result.
     val snackbarHostState = LocalSnackbarHostState.current
     // The failure case interpolates a runtime message, so this reads resources rather than hoisting
-    // three `stringResource` values, only one of which could be resolved ahead of the event.
+    // three `stringResource` values, one of which cannot be resolved ahead of the event.
     val resources = LocalResources.current
     LaunchedEffect(Unit) {
         viewModel.exportEvents.collect { event ->
@@ -179,8 +181,8 @@ private fun ScopeSelector(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
-            // Two lines rather than one: at a large font scale a single line clipped "August 2026"
-            // to "Augus…", and a truncated month is not a date the user can read.
+            // Two lines rather than one: at a large font scale a single line clips "August 2026" to
+            // "Augus…", and a truncated month is not a date the user can read.
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
@@ -208,7 +210,7 @@ private fun ScopeSelector(
  */
 @Composable
 private fun scopeLabel(scope: ReportScope, inline: Boolean = false): String = when (scope) {
-    is ReportScope.Month -> TimeFormat.monthYear(scope.month)
+    is ReportScope.Month -> TimeFormat.monthYear(scope.month, LocalTimePatterns.current)
     ReportScope.AllTime ->
         stringResource(if (inline) R.string.scope_all_time_inline else R.string.scope_all_time)
 }
@@ -242,22 +244,25 @@ private fun EmptyScope(scope: ReportScope) {
  * Every scalar is stated once, here, and the charts below carry only what a chart adds. Spread
  * across the holes and legends instead, a figure renders twice with nothing added the second time.
  *
- * **Every row is a quantity and none is a rank.** The two averages arrived from History's deleted
- * month card, and they are allowed here for the reason they were refused there: a row states a
- * figure, where the ring measured it against a denominator these do not have — the only one
- * available is the user's own all-time equivalent, which is a personal best under another name.
+ * **Every row is a quantity and none is a rank.** The two averages are rows rather than rings
+ * because a row states a figure, where a ring measures it against a denominator these do not have —
+ * the only one available is the user's own all-time equivalent, a personal best under another name.
  */
 @Composable
 private fun ScopeStatsCard(uiState: ReportsUiState) {
+    val patterns = LocalTimePatterns.current
     ChartCard(title = stringResource(R.string.scope_stats_title)) {
         // Only meaningful under all time; a month scope's own start is the month, which the selector
         // states directly above.
         if (uiState.scope is ReportScope.AllTime) {
             uiState.trackingStartDate?.let { start ->
-                StatsRow(stringResource(R.string.stat_tracking_since), TimeFormat.dateWithYear(start))
+                StatsRow(stringResource(R.string.stat_tracking_since), TimeFormat.dateWithYear(start, patterns))
             }
         }
-        StatsRow(stringResource(R.string.stat_tracked_days), "${uiState.totalDays}")
+        StatsRow(
+            stringResource(R.string.stat_tracked_days),
+            pluralStringResource(R.plurals.days_count, uiState.totalDays, uiState.totalDays),
+        )
         StatsRow(
             stringResource(R.string.stat_showed_up),
             pluralStringResource(R.plurals.days_count, uiState.showedUpDays, uiState.showedUpDays),
@@ -268,18 +273,19 @@ private fun ScopeStatsCard(uiState: ReportsUiState) {
         )
         SectionDivider()
         // A total, and nothing measures it.
-        StatsRow(stringResource(R.string.stat_total_hours), TimeFormat.durationShort(uiState.totalWorkedMs))
+        StatsRow(stringResource(R.string.stat_total_hours), TimeFormat.durationShort(uiState.totalWorkedMs, patterns))
         StatsRow(
             stringResource(R.string.stat_total_sessions),
             pluralStringResource(R.plurals.sessions_count, uiState.totalSessions, uiState.totalSessions),
         )
-        StatsRow(stringResource(R.string.stat_avg_per_day), TimeFormat.durationShort(uiState.avgDailyMs))
+        StatsRow(stringResource(R.string.stat_avg_per_day), TimeFormat.durationShort(uiState.avgDailyMs, patterns))
         StatsRow(stringResource(R.string.stat_sessions_per_day), formatAverage(uiState.avgSessionsPerDay))
     }
 }
 
 @Composable
 private fun DailyHoursCard(uiState: ReportsUiState) {
+    val patterns = LocalTimePatterns.current
     val hours = uiState.dailySeries.map { it.workedMs / MILLIS_PER_HOUR }
     // The chart's own mean, not a configured bar: it shows where the window sits relative to itself
     // rather than against a target a day could fall short of.
@@ -313,8 +319,8 @@ private fun DailyHoursCard(uiState: ReportsUiState) {
         )
         Spacer(Modifier.height(8.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            AxisLabel(uiState.dailySeries.firstOrNull()?.date?.let(TimeFormat::axisDay).orEmpty())
-            AxisLabel(uiState.dailySeries.lastOrNull()?.date?.let(TimeFormat::axisDay).orEmpty())
+            AxisLabel(uiState.dailySeries.firstOrNull()?.date?.let { TimeFormat.axisDay(it, patterns) }.orEmpty())
+            AxisLabel(uiState.dailySeries.lastOrNull()?.date?.let { TimeFormat.axisDay(it, patterns) }.orEmpty())
         }
     }
 }
@@ -365,22 +371,23 @@ private fun SplitCard(uiState: ReportsUiState) {
  */
 @Composable
 private fun MonthlyHoursCard(uiState: ReportsUiState) {
+    val patterns = LocalTimePatterns.current
     val hours = uiState.monthlySeries.map { it.workedMs / MILLIS_PER_HOUR }
     // Asked once for the series rather than per label, so every bar in one chart is formatted alike.
     val multiYear = uiState.monthlySeries.map { it.month.year }.distinct().size > 1
-    val label = { point: MonthPoint -> TimeFormat.axisMonth(point.month, multiYear) }
+    val label = { point: MonthPoint -> TimeFormat.axisMonth(point.month, multiYear, patterns) }
+    val entry = stringResource(R.string.cd_monthly_chart_entry)
+    val spoken = uiState.monthlySeries.joinToString(stringResource(R.string.list_separator)) {
+        val duration = TimeFormat.durationShort(it.workedMs, patterns)
+        String.format(Locale.getDefault().withLatinDigits(), entry, label(it), duration)
+    }
 
     ChartCard(title = stringResource(R.string.chart_monthly_title)) {
         BarChart(
             values = hours,
             barColor = MaterialTheme.colorScheme.primary,
             baselineColor = MaterialTheme.colorScheme.outline,
-            contentDescription = stringResource(
-                R.string.cd_monthly_chart,
-                uiState.monthlySeries.joinToString(", ") {
-                    "${label(it)} ${TimeFormat.durationShort(it.workedMs)}"
-                },
-            ),
+            contentDescription = stringResource(R.string.cd_monthly_chart, spoken),
             modifier = Modifier.fillMaxWidth().height(120.dp),
         )
         Spacer(Modifier.height(8.dp))
@@ -394,7 +401,7 @@ private fun MonthlyHoursCard(uiState: ReportsUiState) {
                     ) {
                         AxisLabel(label(point))
                         Text(
-                            text = TimeFormat.durationShort(point.workedMs),
+                            text = TimeFormat.durationShort(point.workedMs, patterns),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -445,7 +452,7 @@ private fun StartTimesCard(uiState: ReportsUiState) {
  *
  * A day of one long session and a day of four short ones are two rhythms, not a better and a worse
  * one, so the slices are the same three neutral hues and nothing here is highlighted. The mean sits
- * in the stats table above rather than in the hole, where it read as a figure the ring was measuring.
+ * in the stats table above rather than in the hole, where it would read as a figure the ring measures.
  */
 @Composable
 private fun SessionsPerDayCard(uiState: ReportsUiState) {
@@ -515,7 +522,7 @@ private fun descriptiveHues(): List<Color> = listOf(
 )
 
 /** One decimal place: the figure is a rhythm, and a second digit implies a precision it lacks. */
-private fun formatAverage(value: Float): String = String.format(Locale.getDefault(), "%.1f", value)
+private fun formatAverage(value: Float): String = String.format(Locale.getDefault().withLatinDigits(), "%.1f", value)
 
 @Composable
 private fun sessionsPhrase(count: Int): String = pluralStringResource(R.plurals.sessions_count, count, count)
@@ -526,9 +533,9 @@ private fun daysPhrase(count: Int): String = pluralStringResource(R.plurals.days
 /**
  * Exports what the screen is showing.
  *
- * One button, not the old This month / All time pair: the scope selector already asks that question,
- * and a second answer to it beside the first is a control that can disagree with the screen above
- * it. It also makes an arbitrary past month exportable, which the pair could not express.
+ * One button that follows the scope selector rather than a range choice of its own: a second answer
+ * to the selector's question is a control that can disagree with the screen above it. Any past month
+ * is exportable by stepping to it.
  */
 @Composable
 private fun ExportCard(scope: ReportScope, onExport: () -> Unit) {

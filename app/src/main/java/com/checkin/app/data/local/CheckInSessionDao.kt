@@ -6,6 +6,12 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * **Every query that reads a record is scoped to one habit, and the open-session ones are not.**
+ * There is one open session across all habits — the switcher locks while it runs — and that rule is
+ * a single query only while [getActiveSession] stays unscoped. Everything else takes a `habitId`,
+ * because a habit's record is read alone: nothing in the app compares or pools two of them.
+ */
 @Dao
 interface CheckInSessionDao {
     @Insert
@@ -23,16 +29,16 @@ interface CheckInSessionDao {
     @Query("SELECT * FROM sessions WHERE id = :sessionId LIMIT 1")
     suspend fun getSessionById(sessionId: Long): CheckInSession?
 
-    @Query("SELECT * FROM sessions WHERE date_key = :dateKey ORDER BY started_at ASC")
-    suspend fun getSessionsByDate(dateKey: String): List<CheckInSession>
+    @Query("SELECT * FROM sessions WHERE habit_id = :habitId AND date_key = :dateKey ORDER BY started_at ASC")
+    suspend fun getSessionsByDate(habitId: Long, dateKey: String): List<CheckInSession>
 
-    @Query("SELECT * FROM sessions WHERE date_key = :dateKey ORDER BY started_at ASC")
-    fun getSessionsByDateFlow(dateKey: String): Flow<List<CheckInSession>>
+    @Query("SELECT * FROM sessions WHERE habit_id = :habitId AND date_key = :dateKey ORDER BY started_at ASC")
+    fun getSessionsByDateFlow(habitId: Long, dateKey: String): Flow<List<CheckInSession>>
 
     /**
      * The day summaries in a range. **This statement and [getDailyAggregatesFlow]'s are deliberately
-     * identical and must stay so** — one serves the CSV export, which needs an answer once, and the
-     * other serves the screens, which need to re-render on every write. Room cannot express both
+     * identical and must stay so** — one serves the one-shot reads (the CSV export, the check-out
+     * celebration), and the other serves the screens, which need to re-render on every write. Room cannot express both
      * return types off one declaration, so the SQL is duplicated; the cost is that editing one and
      * missing the other makes the file and the screen it was exported from disagree, silently.
      * Change them together.
@@ -60,13 +66,14 @@ interface CheckInSessionDao {
                COALESCE(SUM(CASE WHEN closed_by = 'reminder_notification' THEN 1 ELSE 0 END), 0)
                    AS reminderNotificationCheckOuts
         FROM sessions
-        WHERE date_key BETWEEN :startDate AND :endDate
+        WHERE habit_id = :habitId
+          AND date_key BETWEEN :startDate AND :endDate
           AND stopped_at IS NOT NULL
         GROUP BY date_key
         ORDER BY date_key ASC
     """,
     )
-    suspend fun getDailyAggregates(startDate: String, endDate: String): List<DailyAggregate>
+    suspend fun getDailyAggregates(habitId: Long, startDate: String, endDate: String): List<DailyAggregate>
 
     @Query(
         """
@@ -82,13 +89,14 @@ interface CheckInSessionDao {
                COALESCE(SUM(CASE WHEN closed_by = 'reminder_notification' THEN 1 ELSE 0 END), 0)
                    AS reminderNotificationCheckOuts
         FROM sessions
-        WHERE date_key BETWEEN :startDate AND :endDate
+        WHERE habit_id = :habitId
+          AND date_key BETWEEN :startDate AND :endDate
           AND stopped_at IS NOT NULL
         GROUP BY date_key
         ORDER BY date_key ASC
     """,
     )
-    fun getDailyAggregatesFlow(startDate: String, endDate: String): Flow<List<DailyAggregate>>
+    fun getDailyAggregatesFlow(habitId: Long, startDate: String, endDate: String): Flow<List<DailyAggregate>>
 
     /**
      * Start instants of the completed sessions in the range, for the start-time split.
@@ -101,23 +109,24 @@ interface CheckInSessionDao {
     @Query(
         """
         SELECT started_at FROM sessions
-        WHERE date_key BETWEEN :startDate AND :endDate
+        WHERE habit_id = :habitId
+          AND date_key BETWEEN :startDate AND :endDate
           AND stopped_at IS NOT NULL
         ORDER BY started_at ASC
     """,
     )
-    fun getSessionStartsFlow(startDate: String, endDate: String): Flow<List<Long>>
+    fun getSessionStartsFlow(habitId: Long, startDate: String, endDate: String): Flow<List<Long>>
 
     /**
-     * The day of the earliest session, or null when there are none — the day tracking began.
+     * The day of the habit's earliest session, or null when it has none — the day its tracking began.
      *
      * `date_key` is ISO, so its lexicographic minimum is its chronological one. Deliberately *not*
      * filtered to completed sessions: a first check-in that is still running is still the day
      * tracking began.
      */
-    @Query("SELECT MIN(date_key) FROM sessions")
-    suspend fun getFirstDateKey(): String?
+    @Query("SELECT MIN(date_key) FROM sessions WHERE habit_id = :habitId")
+    suspend fun getFirstDateKey(habitId: Long): String?
 
-    @Query("SELECT MIN(date_key) FROM sessions")
-    fun getFirstDateKeyFlow(): Flow<String?>
+    @Query("SELECT MIN(date_key) FROM sessions WHERE habit_id = :habitId")
+    fun getFirstDateKeyFlow(habitId: Long): Flow<String?>
 }

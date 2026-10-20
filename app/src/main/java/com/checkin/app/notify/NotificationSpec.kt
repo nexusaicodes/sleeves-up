@@ -11,6 +11,12 @@ data class NotificationSpec(
     val body: String,
     /** Extra flipped to true on the launch intent, so the Activity knows what the tap meant. */
     val launchExtra: String? = null,
+    /**
+     * The habit a tap is about, carried as [LaunchExtras.HABIT_UUID] and as the intent's data URI.
+     * Set by a nudge alone: the timer and the session reminder are about the one open session, which
+     * the Activity reads off the database.
+     */
+    val launchHabitUuid: String? = null,
     val actions: List<NotificationAction> = emptyList(),
     /**
      * A live status line rather than a message. From Android 14 the user can swipe one away even

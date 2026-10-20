@@ -1,6 +1,8 @@
 package com.checkin.app
 
 import android.app.Application
+import android.content.res.Configuration
+import android.os.LocaleList
 import com.checkin.app.di.AppContainer
 import com.checkin.app.di.DefaultAppContainer
 import com.checkin.app.notify.NotificationChannels
@@ -20,20 +22,29 @@ class CheckInApplication : Application() {
         // post to it — the hourly pass can run without the service ever having started.
         NotificationChannels.ensureAll(this)
         NudgeWorker.schedule(this)
-        // Alarms do not survive a force stop or a package replace, and every process start is a free
-        // chance to put this one back. Idempotent — it always resolves to the same next checkpoint.
-        //
-        // Wrapped because this runs on the main thread of every cold start with nothing above it to
-        // catch: `setAndAllowWhileIdle` throws past the platform's 500-alarm cap, and a missing nudge
-        // must not be a crash on launch. Nothing reads back whether a checkpoint is armed, so what
-        // bounds the cost is the other arming sites — the receiver's own re-arm, the worker's repair
-        // and the boot/package-replace receiver — any of which puts it back.
-        runCatching { container.nudgeAlarms.armNext(container.timeSource.nowMillis()) }
-        // Off the main thread: it is filesystem work, and every path that reaches the ledger reaches
-        // it during the first frame. Guarded for the same reason as the arming above — a file that
-        // will not delete must not be a crash on launch.
+        // Alarms do not survive a force stop, a package replace or a reboot, and every one of those is
+        // followed by a process start — the receivers for boot and replace run in one — so the habits
+        // collector's first emission is the single site that puts the nudge alarm back. It runs off
+        // the main thread and never throws; see AppContainer.launchHabitSync.
+        container.launchHabitSync()
+        // Off the main thread: blocking filesystem work nothing waits on, and every path that reaches
+        // the ledger reaches it during the first frame. Guarded so a file that will not delete is not
+        // a crash on launch.
         container.applicationScope.launch {
             runCatching { NudgeSendDatabase.deleteRetiredFile(this@CheckInApplication) }
         }
+        languages = resources.configuration.locales
+    }
+
+    // The languages every notification string was last written in. Channel names live in the system,
+    // not in this process, so a language change has to rewrite them rather than just re-read them.
+    private var languages: LocaleList = LocaleList.getEmptyLocaleList()
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (newConfig.locales == languages) return
+        languages = newConfig.locales
+        NotificationChannels.ensureAll(this)
+        container.launchLanguageRefresh()
     }
 }

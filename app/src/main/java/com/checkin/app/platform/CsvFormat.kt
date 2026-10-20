@@ -1,7 +1,9 @@
 package com.checkin.app.platform
 
 import com.checkin.app.data.local.DailyAggregate
-import com.checkin.app.util.TimeFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /*
@@ -15,6 +17,13 @@ import java.util.Locale
  * `ReportScope.resolve`, so the file and the screen it was exported from cannot describe different
  * days.
  */
+
+/**
+ * The clock columns' own formatter, pinned to [Locale.US] and kept out of `TimeFormat`: the screens'
+ * clock follows the reader's language, and this file is machine-read, so it must read the same bytes
+ * ("09:05 AM") whatever language the app is in when it is exported.
+ */
+private val CSV_CLOCK = DateTimeFormatter.ofPattern("hh:mm a", Locale.US)
 
 /** Decimal hours is the CSV's unit, so the divisor is a Double. */
 private const val MILLIS_PER_HOUR = 3_600_000.0
@@ -40,15 +49,10 @@ private const val CSV_HEADER = "Date,First Check In,Last Check Out,Total Hours,S
     "Day Boundary Check Outs,In App Check Outs,Timer Notification Check Outs," +
     "Reminder Notification Check Outs\n"
 
-/**
- * One day's row, or a gap-filled day of zeros when [summary] is null.
- *
- * Top-level and pure so the column order can be pinned by a JVM test — [DefaultCsvExporter] needs a
- * `Context` and cannot be, which is how a header could otherwise be reordered with nothing failing.
- */
+/** One day's row, or a gap-filled day of zeros when [summary] is null. */
 internal fun csvRow(key: String, summary: DailyAggregate?): String {
-    val firstIn = summary?.firstCheckIn?.let { TimeFormat.clock(it) } ?: ""
-    val lastOut = summary?.lastCheckOut?.let { TimeFormat.clock(it) } ?: ""
+    val firstIn = summary?.firstCheckIn?.let(::csvClock) ?: ""
+    val lastOut = summary?.lastCheckOut?.let(::csvClock) ?: ""
     val totalHrs = summary
         ?.let { String.format(Locale.US, "%.2f", it.totalDurationMs / MILLIS_PER_HOUR) }
         ?: "0.00"
@@ -60,8 +64,30 @@ internal fun csvRow(key: String, summary: DailyAggregate?): String {
     return "$key,$firstIn,$lastOut,$totalHrs,$count,$dayBoundary,$inApp,$fromTimer,$fromReminder\n"
 }
 
+private fun csvClock(epochMillis: Long): String =
+    Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).format(CSV_CLOCK)
+
 /**
  * The header line. The one way to read [CSV_HEADER] — the exporter writes through this too, so the
  * bytes a test pins and the bytes a file gets are the same expression.
  */
 internal fun csvHeader(): String = CSV_HEADER
+
+/**
+ * The exported file's name: `checkin_<habit>_<start>_<end>.csv`, the habit reduced to letters, their
+ * combining marks, digits, `-` and `_` so no name can put a path separator, or a character a share
+ * target rejects, into it. A habit still owed a name, or one with nothing left after the reduction,
+ * is `habit` — the file is still that habit's alone, it just cannot say so.
+ */
+internal fun exportFileName(habitName: String?, startKey: String, endKey: String): String {
+    val slug = habitName.orEmpty()
+        .replace(FILE_NAME_UNSAFE, "_")
+        .trim('_')
+        .lowercase(Locale.ROOT)
+        .ifEmpty { "habit" }
+    return "checkin_${slug}_${startKey}_$endKey.csv"
+}
+
+// `\p{M}` keeps a letter's combining marks with it: Arabic harakat and decomposed Latin accents are
+// marks rather than letters, and without it each one would split a name into `_`-joined pieces.
+private val FILE_NAME_UNSAFE = Regex("[^\\p{L}\\p{M}\\p{N}_-]+")

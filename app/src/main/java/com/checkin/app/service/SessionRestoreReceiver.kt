@@ -22,15 +22,15 @@ import kotlinx.coroutines.launch
  *
  * The repair is [SessionWatchdog.reviveIfNeeded], the same call the other two callers make; this
  * receiver deliberately arms nothing itself. That call re-arms from the instants the alarms were
- * *already* set for rather than deriving fresh ones, which is what stops a reboot resetting the
- * "only the first reminder of a session alerts" ladder — resetting it alerts at full volume in the
- * small hours over a session the user left running on purpose.
+ * *already* set for rather than deriving fresh ones, so a reboot does not reset the reminder count
+ * and alert at full volume in the small hours over a session left running on purpose. The nudge
+ * checkpoint, which both events also cancel, is re-armed by `CheckInApplication.onCreate`, which
+ * runs in the process this broadcast starts.
  */
 class SessionRestoreReceiver : BroadcastReceiver() {
 
-    /** [SessionWatchdog.reviveIfNeeded] never throws; the `finally` below is for the re-arm. */
+    /** [SessionWatchdog.reviveIfNeeded] never throws; the `finally` releases the broadcast regardless. */
     override fun onReceive(context: Context, intent: Intent?) {
-        // Both actions get the identical repair; the receiver only needs to know it was one of them.
         val action = intent?.action
         if (action != Intent.ACTION_BOOT_COMPLETED && action != Intent.ACTION_MY_PACKAGE_REPLACED) return
         val app = context.applicationContext as? CheckInApplication ?: return
@@ -41,10 +41,6 @@ class SessionRestoreReceiver : BroadcastReceiver() {
             try {
                 container.sessionWatchdog.reviveIfNeeded()
             } finally {
-                // In the `finally`, exactly as in NudgeAlarmReceiver: both actions that reach here
-                // cancel the package's alarms, and on a device the user is not opening this is the
-                // checkpoint's only prompt repair. A throw upstream must not take it down with it.
-                runCatching { container.nudgeAlarms.armNext(container.timeSource.nowMillis()) }
                 pending.finish()
             }
         }

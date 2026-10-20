@@ -10,9 +10,12 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
 /**
@@ -34,8 +37,14 @@ fun LineChart(
     referenceColor: Color = Color.Unspecified,
     strokeWidth: Dp = 2.dp,
 ) {
+    // A Canvas does not mirror, but the axis labels under it are a Row, which does. Under a
+    // right-to-left language time therefore runs right to left here too — the first point at the start
+    // edge, as the calendar and the label beneath it already are.
+    val mirror = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
     Canvas(
-        modifier = modifier.semantics { this.contentDescription = contentDescription },
+        modifier = modifier
+            .graphicsLayer { scaleX = mirror }
+            .semantics { this.contentDescription = contentDescription },
     ) {
         if (values.isEmpty()) return@Canvas
 

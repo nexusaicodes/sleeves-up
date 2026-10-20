@@ -6,7 +6,8 @@
 # Enable once per clone:
 #     git config core.hooksPath githooks
 #
-# Skips entirely when no Kotlin is staged, so a docs- or resource-only commit costs nothing.
+# Skips static analysis when no Kotlin is staged, so a docs- or resource-only commit costs nothing;
+# the credential check below runs on every commit.
 # Tests are deliberately not run here — they belong in CI, not in the commit path.
 
 set -e

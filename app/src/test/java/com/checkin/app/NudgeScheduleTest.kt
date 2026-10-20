@@ -2,7 +2,7 @@ package com.checkin.app
 
 import com.checkin.app.notify.nudge.NudgeSchedule
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -17,139 +17,141 @@ class NudgeScheduleTest {
 
     private val utc: ZoneId = ZoneId.of("UTC")
     private val day: LocalDate = LocalDate.of(2026, 6, 15)
+    private val hour = 8
+
+    /** [hour] o'clock as the minute of the day the schedule takes. */
+    private val minute = hour * 60
 
     private fun at(zone: ZoneId, date: LocalDate, hour: Int, minute: Int = 0): Long =
         date.atTime(hour, minute).atZone(zone).toInstant().toEpochMilli()
 
-    // --- checkpointAt ---
+    // --- inBand ---
 
+    /** One band, from the chosen hour to the end of the day. */
     @Test
-    fun `each checkpoint hour maps to itself`() {
-        NudgeSchedule.Checkpoint.entries.forEach { checkpoint ->
-            assertEquals(checkpoint, NudgeSchedule.checkpointAt(checkpoint.hour))
-        }
+    fun `the band runs from the chosen hour to midnight`() {
+        for (h in hour..23) assertTrue("hour $h", NudgeSchedule.inBand(h * 60, minute))
     }
 
     /**
-     * Bands, not thresholds. If this ever returned the *first* matching checkpoint instead of the
-     * last, every hour past the morning one would resolve to MORNING and two thirds of the copy would
-     * become unreachable — silently, since nothing else would change.
+     * The hours before the chosen one are what keep a nudge out of the small hours, and they do it
+     * without a separate quiet-hours mechanism — the app deliberately has none.
      */
     @Test
-    fun `an hour inside a band maps to that band's checkpoint`() {
-        val afternoon = NudgeSchedule.Checkpoint.AFTERNOON
-        val evening = NudgeSchedule.Checkpoint.EVENING
-
-        assertEquals(NudgeSchedule.Checkpoint.MORNING, NudgeSchedule.checkpointAt(afternoon.hour - 1))
-        assertEquals(afternoon, NudgeSchedule.checkpointAt(evening.hour - 1))
-        assertEquals(evening, NudgeSchedule.checkpointAt(23))
+    fun `hours before the chosen hour are outside it`() {
+        for (h in 0 until hour) assertFalse("hour $h", NudgeSchedule.inBand(h * 60, minute))
     }
 
     /**
-     * The hours before the first checkpoint are what keep a nudge out of the small hours, and they do
-     * it without a separate quiet-hours mechanism — the app deliberately has none.
+     * The latest choosable time still leaves three hours before midnight: an inexact alarm may land
+     * up to an hour late, and a habit held back behind another's reminder by the ninety-minute gap
+     * later still, so a narrower band could close before either delivery.
      */
     @Test
-    fun `hours before the first checkpoint map to nothing`() {
-        for (hour in 0 until NudgeSchedule.Checkpoint.MORNING.hour) {
-            assertNull("hour $hour should be outside every band", NudgeSchedule.checkpointAt(hour))
-        }
+    fun `every choosable band keeps three hours before midnight`() {
+        NudgeSchedule.minuteRange.forEach { chosen -> assertTrue("chosen minute $chosen", 24 * 60 - chosen >= 3 * 60) }
     }
 
-    /**
-     * Both lookups walk [NudgeSchedule.Checkpoint.entries] in declaration order and assume it ascends
-     * — `checkpointAt` takes the last match, `nextCheckpointAfter` the first instant still ahead. A
-     * reordered enum would break both silently, so the invariant is pinned rather than assumed.
-     */
+    /** A stored value from outside the range is read as the nearest valid time, never used as-is. */
     @Test
-    fun `checkpoints are declared in ascending hour order`() {
-        val hours = NudgeSchedule.Checkpoint.entries.map { it.hour }
-        assertEquals(hours.sorted(), hours)
-        assertEquals(hours.size, hours.toSet().size)
-    }
-
-    /** Every band is reachable, so no declared nudge can be orphaned by the mapping. */
-    @Test
-    fun `every checkpoint is reachable from some hour`() {
-        val reached = (0..23).mapNotNull { NudgeSchedule.checkpointAt(it) }.toSet()
-        assertEquals(NudgeSchedule.Checkpoint.entries.toSet(), reached)
-    }
-
-    // --- nextCheckpointAfter ---
-
-    @Test
-    fun `before the first checkpoint the next one is today's first`() {
-        val from = at(utc, day, NudgeSchedule.Checkpoint.MORNING.hour - 2)
-        assertEquals(at(utc, day, NudgeSchedule.Checkpoint.MORNING.hour), NudgeSchedule.nextCheckpointAfter(from, utc))
+    fun `an out-of-range time is clamped`() {
+        assertEquals(NudgeSchedule.minuteRange.first, NudgeSchedule.clampMinute(0))
+        assertEquals(NudgeSchedule.minuteRange.last, NudgeSchedule.clampMinute(23 * 60 + 59))
     }
 
     @Test
-    fun `between two checkpoints the next one is the later of them`() {
-        val from = at(utc, day, NudgeSchedule.Checkpoint.MORNING.hour, minute = 30)
+    fun `the range runs from 05 00 to 21 00 inclusive`() {
+        assertEquals(5 * 60, NudgeSchedule.minuteRange.first)
+        assertEquals(21 * 60, NudgeSchedule.minuteRange.last)
+    }
+
+    @Test
+    fun `the default time is choosable`() {
+        assertTrue(NudgeSchedule.DEFAULT_MINUTE in NudgeSchedule.minuteRange)
+    }
+
+    /** Reminders are chosen to the minute, and the band opens on that minute rather than its hour. */
+    @Test
+    fun `a time off the hour opens the band on its minute`() {
+        val quarterPast = minute + 15
+
+        assertFalse(NudgeSchedule.inBand(quarterPast - 1, quarterPast))
+        assertTrue(NudgeSchedule.inBand(quarterPast, quarterPast))
         assertEquals(
-            at(utc, day, NudgeSchedule.Checkpoint.AFTERNOON.hour),
-            NudgeSchedule.nextCheckpointAfter(from, utc),
+            at(utc, day, hour, 15) until at(utc, day.plusDays(1), 0),
+            NudgeSchedule.bandOn(day, utc, quarterPast),
         )
+        assertEquals(at(utc, day, hour, 15), NudgeSchedule.nextBandAfter(at(utc, day, hour), utc, quarterPast))
+    }
+
+    // --- nextBandAfter ---
+
+    @Test
+    fun `before the chosen hour the next band is today's`() {
+        assertEquals(at(utc, day, hour), NudgeSchedule.nextBandAfter(at(utc, day, hour - 2), utc, minute))
     }
 
     /**
-     * Strictly after, and that is load-bearing: [com.checkin.app.notify.nudge.NudgeAlarmReceiver]
-     * re-arms from inside the pass the checkpoint just triggered, so an inclusive comparison would
-     * schedule the instant that had only just fired and spin on it.
+     * Strictly after, and that is load-bearing: the fallback can be armed from inside the pass the
+     * alarm just triggered (see [com.checkin.app.notify.nudge.armFallback]), so an inclusive
+     * comparison would schedule the instant that had only just fired and spin on it.
      */
     @Test
-    fun `an instant exactly on a checkpoint yields the following one`() {
-        val from = at(utc, day, NudgeSchedule.Checkpoint.MORNING.hour)
-        assertEquals(
-            at(utc, day, NudgeSchedule.Checkpoint.AFTERNOON.hour),
-            NudgeSchedule.nextCheckpointAfter(from, utc),
-        )
+    fun `an instant exactly on the band's opening yields tomorrow's`() {
+        assertEquals(at(utc, day.plusDays(1), hour), NudgeSchedule.nextBandAfter(at(utc, day, hour), utc, minute))
     }
 
     @Test
-    fun `after the last checkpoint it rolls to tomorrow's first`() {
-        val from = at(utc, day, 23, minute = 59)
-        assertEquals(
-            at(utc, day.plusDays(1), NudgeSchedule.Checkpoint.MORNING.hour),
-            NudgeSchedule.nextCheckpointAfter(from, utc),
-        )
+    fun `inside or after the band it rolls to tomorrow's`() {
+        assertEquals(at(utc, day.plusDays(1), hour), NudgeSchedule.nextBandAfter(at(utc, day, 23, 59), utc, minute))
+    }
+
+    /** Changing the time moves the next alarm with it — the reason every chooser re-arms at once. */
+    @Test
+    fun `a different chosen hour arms a different instant`() {
+        assertEquals(at(utc, day, 15), NudgeSchedule.nextBandAfter(at(utc, day, 6), utc, 15 * 60))
     }
 
     /** The alarm is armed in local wall time, so the zone has to reach the calculation. */
     @Test
-    fun `the zone decides which instant a checkpoint is`() {
+    fun `the zone decides which instant the band opens at`() {
         val kolkata = ZoneId.of("Asia/Kolkata")
-        val from = at(kolkata, day, NudgeSchedule.Checkpoint.MORNING.hour - 1)
-
-        assertEquals(
-            at(kolkata, day, NudgeSchedule.Checkpoint.MORNING.hour),
-            NudgeSchedule.nextCheckpointAfter(from, kolkata),
-        )
+        assertEquals(at(kolkata, day, hour), NudgeSchedule.nextBandAfter(at(kolkata, day, hour - 1), kolkata, minute))
     }
 
     /**
      * Through the calendar, not by adding hours to an epoch: on a spring-forward day the wall clock
-     * loses an hour, so arithmetic on millis would drift every checkpoint after the transition.
+     * loses an hour, so arithmetic on millis would drift the band's opening after the transition.
      */
     @Test
-    fun `a DST day still puts each checkpoint at its stated local hour`() {
+    fun `a DST day still opens the band at its stated local hour`() {
         val newYork = ZoneId.of("America/New_York")
         val springForward = LocalDate.of(2026, 3, 8)
-        val from = at(newYork, springForward, NudgeSchedule.Checkpoint.MORNING.hour - 1)
 
-        val next = NudgeSchedule.nextCheckpointAfter(from, newYork)
+        assertEquals(
+            at(newYork, springForward, hour),
+            NudgeSchedule.nextBandAfter(at(newYork, springForward, 1), newYork, minute),
+        )
+        assertEquals(
+            at(newYork, springForward, hour) until at(newYork, springForward.plusDays(1), 0),
+            NudgeSchedule.bandOn(springForward, newYork, minute),
+        )
+    }
 
-        assertEquals(at(newYork, springForward, NudgeSchedule.Checkpoint.MORNING.hour), next)
+    // --- bandOn ---
+
+    /** The same band [NudgeSchedule.inBand] reads by minute, so the alarm and the rule mean the same span. */
+    @Test
+    fun `the band's instants run from the chosen hour to midnight`() {
+        assertEquals(at(utc, day, hour) until at(utc, day.plusDays(1), 0), NudgeSchedule.bandOn(day, utc, minute))
     }
 
     /** Re-arming repeatedly must converge rather than walk the alarm forward a day at a time. */
     @Test
     fun `re-arming from the result is stable within the day`() {
-        val from = at(utc, day, 8)
-        val first = NudgeSchedule.nextCheckpointAfter(from, utc)
-        val second = NudgeSchedule.nextCheckpointAfter(first - 1, utc)
+        val next = NudgeSchedule.nextBandAfter(at(utc, day, 6), utc, minute)
 
-        assertEquals(first, second)
-        assertTrue(NudgeSchedule.nextCheckpointAfter(first, utc) > first)
+        assertEquals(next, NudgeSchedule.nextBandAfter(next - 1, utc, minute))
+        assertTrue(NudgeSchedule.nextBandAfter(next, utc, minute) > next)
     }
 }

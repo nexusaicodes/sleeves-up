@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.ui.components.BrandGridGauge
 import com.checkin.app.ui.theme.CheckInAppTheme
+import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.tabularFigures
 import com.checkin.app.util.TimeFormat
 
@@ -57,27 +58,24 @@ private const val READOUT_SHRINK_SCALE = 1.5f
  *
  * It shows the session rather than the day's total, and that is the whole reason it needs no label.
  * A clock starting from zero and counting up is unambiguous by convention; one resuming from the
- * day's accumulated total read as a stopwatch that had been paused — implying a mechanic the app
- * deliberately does not have — and left a user mid-session doing arithmetic to answer "how long
- * have I been sitting here". The day's total is stated directly below, by `TodaySessions`.
+ * day's accumulated total reads as a paused stopwatch — a mechanic the app deliberately does not
+ * have — and leaves a user mid-session doing arithmetic to answer "how long have I been sitting
+ * here". The day's total is stated directly below, by `TodaySessions`.
  *
- * **The lattice is motion, not measurement, and it says only whether a session is open.** A wave of
- * brightness travels the seven cells while one is; the grid sits at track alpha while none is. No
- * cell's brightness is a figure and no cell's place in the pass means anything — see
- * [BrandGridGauge], which is where that rule is enforced. The description states the elapsed time
- * and nothing about the mark.
+ * **The lattice is motion, not measurement**: it says only whether a session is open (see
+ * [BrandGridGauge]). The description states the elapsed time and nothing about the mark.
  *
  * **The readout sits below the mark rather than inside it, and it gives up size before it gives up
- * a line.** Enclosing it — in a ring's hole or a lattice's centre — bounds `sp` text by a `dp` box,
- * so a raised font scale clips or wraps it with nothing reporting that. Stacking removes that bound
- * but not the screen's: the clock is the app's largest type and at a large scale it is wider than a
- * narrow phone. So it is `maxLines = 1` and steps down a style past [READOUT_SHRINK_SCALE] — the
- * same sacrifice-the-size-first order `SessionIntervalRow`'s duration column makes, and for the same
- * reason, since a wrapped clock is a wrong number on screen rather than a small one.
+ * a line.** Enclosing it in the mark would bound `sp` text by a `dp` box, so a raised font scale
+ * would clip or wrap it with nothing reporting that. Stacking removes that bound but not the
+ * screen's: the clock is the app's largest type and at a large scale it is wider than a narrow
+ * phone. So it is `maxLines = 1` and steps down a style past [READOUT_SHRINK_SCALE], since a wrapped
+ * clock is a wrong number on screen rather than a small one.
  */
 @Composable
 internal fun TimerGauge(elapsedMs: Long, running: Boolean, markSize: Dp = MARK_MAX) {
-    val description = stringResource(R.string.cd_timer_gauge, TimeFormat.durationShort(elapsedMs))
+    val patterns = LocalTimePatterns.current
+    val description = stringResource(R.string.cd_timer_gauge, TimeFormat.durationShort(elapsedMs, patterns))
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -93,7 +91,7 @@ internal fun TimerGauge(elapsedMs: Long, running: Boolean, markSize: Dp = MARK_M
             modifier = Modifier.size(markSize),
         )
         Text(
-            text = TimeFormat.durationLive(elapsedMs),
+            text = TimeFormat.durationLive(elapsedMs, patterns),
             // Two reasons to step down, and only the second is an overflow: a short viewport, where
             // the screen scrolls anyway and the smaller style simply buys room; and a font scale at
             // which the larger one no longer fits a narrow phone on one line.

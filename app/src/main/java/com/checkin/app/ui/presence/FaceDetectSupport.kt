@@ -73,16 +73,15 @@ object FaceDetectSupport {
      * `@IntRange(from = SCORE_MIN, to = SCORE_MAX)` with `SCORE_MIN = 1`, and the `SIMPLE` contract
      * spells out precisely what that mode does not support — the face id is `ID_UNSUPPORTED` and the
      * eye and mouth positions are null — while requiring nothing whatever of the score. A HAL that
-     * does not grade is therefore free to return the legal minimum forever, and that is exactly what
-     * a MediaTek front camera was measured doing: every genuine face, squarely framed and well lit
-     * with bounds tracking the user as they moved, came back scored **1**. A floor of 50 rejected
-     * all of it, which is what made the gate look like it could not see a face at all — and a floor
-     * of 20 rejects the very same frames, so lowering it is not a fix either.
+     * does not grade is therefore free to return the legal minimum forever, and a MediaTek front
+     * camera was measured doing exactly that: every genuine face, squarely framed and well lit, came
+     * back scored **1**. Any floor above the minimum rejects those frames, so lowering one is not a
+     * fix either.
      *
      * What is left is the rectangle, and it is the honest signal: the HAL emits one only where it
      * already believes a face is. The same probe showed empty frames reported as zero faces and the
-     * user's arrival reported the very next second, so the detector discriminates perfectly well —
-     * it is only the grade that is uninformative. A wall was never going to pass this; a user was.
+     * user's arrival reported the very next second — the detector discriminates; only the grade is
+     * uninformative.
      */
     fun someonePresent(facesReported: Int): Boolean = facesReported > 0
 }

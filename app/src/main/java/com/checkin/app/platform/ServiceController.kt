@@ -12,16 +12,14 @@ interface ServiceController {
      * [revive] for one already running; the two take their timing from different places and are not
      * interchangeable. Returns false when the platform refused the start, since background
      * foreground-service starts are restricted. Neither writer inspects it — the row is written
-     * either way, and [SessionWatchdog] is what repairs a session left with no service.
+     * either way, and [com.checkin.app.service.SessionWatchdog] is what repairs a session left with no service.
      */
     fun startTimer(sessionId: Long, startedAt: Long): Boolean
 
     /**
      * Restores the notification for a session that is **already** running, after its service was
-     * killed. Separate from [startTimer] because that path takes the session's timing from the intent
-     * and writes it into the service's render mirror — correct for a session that has not begun, wrong
-     * for one already running, whose timing must come from the DB row. Returns false when the platform
-     * refused the start.
+     * killed; the service takes its timing from the DB row rather than from the intent (see
+     * `CheckInService.handleRevive`). Returns false when the platform refused the start.
      */
     fun revive(sessionId: Long, startedAt: Long): Boolean
 

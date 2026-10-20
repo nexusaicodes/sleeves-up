@@ -24,6 +24,12 @@
           reminder and every nudge silently dead.
         -->
         <exclude domain="sharedpref" path="prompt_prefs.xml" />
+        <!--
+          `reminder_prefs` holds each habit's reminder minute, keyed by the habit's uuid, and the
+          habits live in `_app`. A cloud restore brings no `_app`, so the new device seeds a habit
+          with a fresh uuid and no restored time could ever be read.
+        -->
+        <exclude domain="sharedpref" path="reminder_prefs.xml" />
     </cloud-backup>
     <device-transfer>
         <!--

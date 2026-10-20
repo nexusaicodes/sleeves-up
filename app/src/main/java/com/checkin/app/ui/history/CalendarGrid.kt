@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.ui.theme.CheckInAppTheme
+import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.dayColor
 import com.checkin.app.util.TimeFormat
 import java.time.LocalDate
@@ -42,11 +43,11 @@ import java.util.Locale
 /**
  * A month of cells, each either a day the user showed up or a day they did not.
  *
- * **The shade is binary and must stay that way.** A cell used to be drawn at a strength proportional
- * to its hours against the user's longest day; that made every ordinary day render as a partial
- * version of their best one, and a single nine-hour day re-graded the whole history behind it. A
- * 45-minute day and a nine-hour day are now the same mark, which is what "a day counts because it
- * has a session" looks like on a calendar.
+ * **The shade is binary and must stay that way.** A strength proportional to a day's hours against
+ * the user's longest day renders every ordinary day as a partial version of their best one, and a
+ * single nine-hour day re-grades the whole history behind it (see `dayColor`). A 45-minute day and a
+ * nine-hour day are the same mark, which is what "a day counts because it has a session" looks like
+ * on a calendar.
  *
  * @param trackingStartDate the day of the first session, or null when there are none yet — in which
  *   case no day is inside the tracked window, so the whole month draws as days the record does not
@@ -70,9 +71,9 @@ fun CalendarGrid(
     cellHeight: Dp = 48.dp,
 ) {
     val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
-    val locale = Locale.getDefault()
+    val locale = LocalTimePatterns.current.locale
     val firstDayOfWeek = WeekFields.of(locale).firstDayOfWeek
-    val startOffset = startOffsetIn(yearMonth)
+    val startOffset = startOffsetIn(yearMonth, locale)
     val weekDays = (0L..6L).map { firstDayOfWeek.plus(it) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -89,7 +90,7 @@ fun CalendarGrid(
         }
 
         val totalDays = yearMonth.lengthOfMonth()
-        val rows = weekRowsIn(yearMonth)
+        val rows = weekRowsIn(yearMonth, locale)
 
         for (row in 0 until rows) {
             Row(
@@ -170,6 +171,7 @@ private fun DayCell(
     cellHeight: Dp = 48.dp,
     onClick: () -> Unit,
 ) {
+    val patterns = LocalTimePatterns.current
     // A day with no sessions gets no shade at all: an empty cell, not a coloured failure.
     val dayShade = dayColor().copy(alpha = RECORDED_DAY_ALPHA)
 
@@ -189,7 +191,7 @@ private fun DayCell(
     // The shade says only that the day has a session, so the hours are stated here rather than left
     // to a mark that does not carry them.
     val cellDescription = summary?.let {
-        stringResource(R.string.cd_day_worked, day, TimeFormat.durationShort(it.totalDurationMs))
+        stringResource(R.string.cd_day_worked, day, TimeFormat.durationShort(it.totalDurationMs, patterns))
     } ?: day.toString()
 
     Box(
@@ -249,17 +251,18 @@ private fun CalendarGridPreview() {
 private const val DAYS_PER_WEEK = 7
 
 /**
- * The column [month]'s first day falls into, under the device locale's week start.
+ * The column [month]'s first day falls into, under [locale]'s week start — the theme's resolved
+ * locale, so the grid and the dates around it agree on which language they are in.
  *
  * Shared with `HistoryScreen`, which needs the row count below to size a cell *before* this grid is
  * composed. Two derivations of the same geometry is how the height gets computed for a different
  * number of rows than the grid then draws.
  */
-internal fun startOffsetIn(month: YearMonth): Int {
-    val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+internal fun startOffsetIn(month: YearMonth, locale: Locale): Int {
+    val firstDayOfWeek = WeekFields.of(locale).firstDayOfWeek
     return (month.atDay(1).dayOfWeek.value - firstDayOfWeek.value + DAYS_PER_WEEK) % DAYS_PER_WEEK
 }
 
 /** Week rows [month] occupies — 4 to 6. A partial trailing week still takes a row, so this rounds up. */
-internal fun weekRowsIn(month: YearMonth): Int =
-    (startOffsetIn(month) + month.lengthOfMonth() + DAYS_PER_WEEK - 1) / DAYS_PER_WEEK
+internal fun weekRowsIn(month: YearMonth, locale: Locale): Int =
+    (startOffsetIn(month, locale) + month.lengthOfMonth() + DAYS_PER_WEEK - 1) / DAYS_PER_WEEK

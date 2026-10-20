@@ -15,7 +15,7 @@ import androidx.core.content.edit
  *
  * Nothing about the record belongs here for that same reason: the day tracking began is read from
  * the sessions table (`CheckInRepository.trackingStartFlow`), never stored, so a restore cannot
- * bring it back without the rows it indexes. There is no setting to seed or read.
+ * bring it back without the rows it indexes.
  *
  * **A new one-time prompt is a new key here, never a new prefs file.** Both backup rules exclude
  * `prompt_prefs.xml` by name, so a key inherits that; a separate namespace needs the same exclusion

@@ -1,12 +1,10 @@
 package com.checkin.app.notify
 
 /**
- * The boolean extras a notification sets on its tap intent to tell [com.checkin.app.MainActivity]
- * what the user was answering. Each opens the presence gate; none is ever read by a service.
- *
- * They live here rather than in `nudge/` because all three senders already deal in this
- * package — the timer, the session reminder and every nudge — while the Activity that reads them
- * already imports from it.
+ * The extras a notification sets on its tap intent to tell [com.checkin.app.MainActivity] what the
+ * user was answering: a boolean per action, each of which opens the presence gate, and the habit a
+ * nudge was about. None is ever read by a service. Why this sits in `notify/` rather than `nudge/`:
+ * see the tree map in [Notifier].
  *
  * `MainActivity.handlePresenceIntent` consumes whichever is set and clears it, so an Activity
  * recreation cannot replay a tap the user has already answered.
@@ -27,12 +25,16 @@ object LaunchExtras {
      */
     const val CHECK_OUT_FROM_REMINDER = "check_out_from_reminder"
 
-    // The single key both of the above replaced was "check_out". It is not declared here: nothing
-    // reads it, and a private constant kept only to describe a string is the unreachable weight this
-    // repo deletes on sight. Worth knowing only if a future extra reaches for that spelling — an
-    // extra rides an already-posted notification's PendingIntent, so on the one update where a
-    // notification is live in the tray, its Check Out action still carries it.
+    // Never reuse "check_out" for a new extra: older builds posted it, and an extra rides an
+    // already-posted notification's PendingIntent across an update.
 
-    /** Set by a nudge tap. Opens a session once the gate passes. */
+    /** Set by a nudge tap. Opens a session for [HABIT_UUID]'s habit once the gate passes. */
     const val CHECK_IN = "check_in"
+
+    /**
+     * Which habit a nudge tap is about, by uuid. **Absent on a nudge posted before habits existed** —
+     * an update can land with one still in the tray — and absent means the seed habit, which is the
+     * record that nudge was about.
+     */
+    const val HABIT_UUID = "habit_uuid"
 }

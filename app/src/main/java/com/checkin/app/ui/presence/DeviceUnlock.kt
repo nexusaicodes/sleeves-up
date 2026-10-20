@@ -34,9 +34,7 @@ internal const val DEVICE_UNLOCK_OFFERED_AFTER_MS = 10_000L
  * [BiometricPrompt] and returns the function that raises it.
  *
  * Everything about the fallback is here: when it is offered
- * ([DEVICE_UNLOCK_OFFERED_AFTER_MS]), how it is raised, and what each outcome means. A reader asked
- * "what happens when the camera cannot see anyone" has one file to open, and it is not the one named
- * for the camera screen.
+ * ([DEVICE_UNLOCK_OFFERED_AFTER_MS]), how it is raised, and what each outcome means.
  *
  * **The prompt is built here, in composition, and never on the button tap.** It registers its
  * callback against the host activity and outlives a recreation of that activity beneath it, so a

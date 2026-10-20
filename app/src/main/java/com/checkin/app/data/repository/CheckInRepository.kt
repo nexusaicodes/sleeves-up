@@ -9,19 +9,43 @@ import com.checkin.app.data.local.DailyAggregate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+
+/**
+ * What [CheckInRepository.checkIn] did. Sealed rather than "the open row", because there is one open
+ * session across all habits and a check-in to one habit must never hand back another's row as
+ * though it were its own: the caller would start a timer and arm alarms for the wrong record.
+ */
+sealed interface CheckInResult {
+    /** A new session, opened for the habit asked for. */
+    data class Opened(val session: CheckInSession) : CheckInResult
+
+    /** That habit already had the open session — two gated paths resolved together. */
+    data class AlreadyOpen(val session: CheckInSession) : CheckInResult
+
+    /** Another habit holds the one open session; nothing was written. */
+    data class OtherHabitOpen(val session: CheckInSession) : CheckInResult
+}
 
 class CheckInRepository(private val dao: CheckInSessionDao, private val timeSource: TimeSource = SystemTimeSource) {
 
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE // "yyyy-MM-dd"
 
+    /** Holds [checkIn]'s read and insert together, so two writers cannot both find nothing open. */
+    private val checkInLock = Mutex()
+
     /**
-     * Opens a session, or returns the one already open. Two gated paths reach a check-in — the
-     * Check-In screen and a nudge tap — and either can resolve while the other's gate is still on
-     * screen, so the one-open-session invariant is enforced here rather than at each call site. A
-     * second open row would never be closed (`getActiveSession()` returns one) and its hours would
-     * never reach `duration`.
+     * Opens a session for [habitId], unless one is already open — for it or for any other habit.
+     * Two gated paths reach a check-in — the Check-In screen and a nudge tap — and either can resolve
+     * while the other's gate is still on screen, so the one-open-session invariant is enforced here
+     * rather than at each call site, under [checkInLock]: `AppContainer` builds one repository, and
+     * the two writers run on different dispatchers. A second open row would never be closed
+     * (`getActiveSession()` returns one) and its hours would never reach `duration`. The switcher
+     * locks while a session runs, so [CheckInResult.OtherHabitOpen] is the backstop for that lock rather than an expected
+     * outcome.
      *
      * **Writing the row is half of a check-in; the caller owns the other half.** This does not start
      * the foreground service and does not arm either session alarm — whoever writes the row arms it,
@@ -30,13 +54,20 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * a refusal silently produce a session with no day-boundary close. Both writers do it:
      * `CheckInViewModel.executeCheckIn` and `MainActivity.onRootGatePassed`. A new caller must too.
      */
-    suspend fun checkIn(): CheckInSession {
-        dao.getActiveSession()?.let { return it }
+    suspend fun checkIn(habitId: Long): CheckInResult = checkInLock.withLock {
+        dao.getActiveSession()?.let { open ->
+            return@withLock if (open.habitId == habitId) {
+                CheckInResult.AlreadyOpen(open)
+            } else {
+                CheckInResult.OtherHabitOpen(open)
+            }
+        }
         val session = CheckInSession(
             startedAt = timeSource.nowMillis(),
             dateKey = timeSource.today().format(dateFormatter),
+            habitId = habitId,
         )
-        return session.copy(id = dao.insertSession(session))
+        CheckInResult.Opened(session.copy(id = dao.insertSession(session)))
     }
 
     suspend fun checkOut(sessionId: Long, closedBy: ClosedBy): CheckInSession? =
@@ -55,10 +86,8 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * midnight alarm. It changes nothing about the row's duration or its immutability; the CSV
      * export is the only thing that ever reads it, and nothing displays it.
      *
-     * It has **no default**, deliberately. Its predecessor was a boolean defaulting to false, so a
-     * caller that never mentioned it silently asserted a value — which was harmless while there were
-     * two endings and one of them was the default, and is a wrong answer now that there are four.
-     * A new check-out path must state which one it is, or it does not compile.
+     * It has **no default**, deliberately: a new check-out path must state which of the four endings
+     * it is, or it does not compile — a default would let one silently claim to be another.
      *
      * The closed row comes back so a caller that wants to report what was recorded reads the stored
      * figure rather than recomputing it: a second subtraction at the call site would be a second
@@ -88,31 +117,33 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
 
     fun activeSessionFlow(): Flow<CheckInSession?> = dao.getActiveSessionFlow()
 
-    fun dailyAggregatesFlow(startDate: String, endDate: String): Flow<List<DailyAggregate>> =
-        dao.getDailyAggregatesFlow(startDate, endDate)
+    fun dailyAggregatesFlow(habitId: Long, startDate: String, endDate: String): Flow<List<DailyAggregate>> =
+        dao.getDailyAggregatesFlow(habitId, startDate, endDate)
 
-    suspend fun getDailySummaries(startDate: String, endDate: String): Map<String, DailyAggregate> =
-        byDateKey(dao.getDailyAggregates(startDate, endDate))
+    suspend fun getDailySummaries(habitId: Long, startDate: String, endDate: String): Map<String, DailyAggregate> =
+        byDateKey(dao.getDailyAggregates(habitId, startDate, endDate))
 
     /**
      * Keys aggregates by their day. A day present in the map is a day the user showed up; a day
-     * absent from it is one they didn't — which is the whole of what the app now decides about a day.
+     * absent from it is one they didn't — which is the whole of what the app decides about a day.
      */
     fun byDateKey(aggregates: List<DailyAggregate>): Map<String, DailyAggregate> = aggregates.associateBy { it.dateKey }
 
-    fun sessionsForDateFlow(dateKey: String): Flow<List<CheckInSession>> = dao.getSessionsByDateFlow(dateKey)
+    fun sessionsForDateFlow(habitId: Long, dateKey: String): Flow<List<CheckInSession>> =
+        dao.getSessionsByDateFlow(habitId, dateKey)
 
     /**
      * Start instants of the completed sessions in the range, for the start-time split. Scoped
      * identically to [dailyAggregatesFlow], so the two never describe different sets of sessions.
      */
-    fun sessionStartsFlow(startDate: String, endDate: String): Flow<List<Long>> =
-        dao.getSessionStartsFlow(startDate, endDate)
+    fun sessionStartsFlow(habitId: Long, startDate: String, endDate: String): Flow<List<Long>> =
+        dao.getSessionStartsFlow(habitId, startDate, endDate)
 
-    suspend fun getSessionsByDate(dateKey: String): List<CheckInSession> = dao.getSessionsByDate(dateKey)
+    suspend fun getSessionsByDate(habitId: Long, dateKey: String): List<CheckInSession> =
+        dao.getSessionsByDate(habitId, dateKey)
 
     /**
-     * The day tracking began — the day of the first session — or null when nothing is recorded yet.
+     * The day [habitId]'s tracking began — the day of its first session — or null when it has none.
      *
      * Derived rather than stored, and it must stay that way. Storing it is a second copy of a fact
      * the table already holds, and the two can disagree: a cloud restore brings the copy back
@@ -124,11 +155,12 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * `sessions` and emits whether or not the value moved, and both History and Reports
      * `flatMapLatest` their whole aggregate pipeline off this flow — so without it every check-in and
      * check-out tears that pipeline down and re-subscribes it to arrive at the same start it already
-     * had. The value only ever changes on the very first session.
+     * had. The value only ever changes on the habit's very first session.
      */
-    fun trackingStartFlow(): Flow<LocalDate?> = dao.getFirstDateKeyFlow().map(::parseDateKey).distinctUntilChanged()
+    fun trackingStartFlow(habitId: Long): Flow<LocalDate?> =
+        dao.getFirstDateKeyFlow(habitId).map(::parseDateKey).distinctUntilChanged()
 
-    suspend fun trackingStart(): LocalDate? = parseDateKey(dao.getFirstDateKey())
+    suspend fun trackingStart(habitId: Long): LocalDate? = parseDateKey(dao.getFirstDateKey(habitId))
 
     /** Null rather than a throw on a malformed key, matching how the formatters treat one. */
     private fun parseDateKey(dateKey: String?): LocalDate? =

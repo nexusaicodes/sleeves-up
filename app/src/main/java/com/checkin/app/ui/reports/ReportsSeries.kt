@@ -6,10 +6,9 @@ import java.time.YearMonth
 /*
  * What the two time-series charts plot: one point per day (a line), one per month (a bar).
  *
- * Beside ReportScope rather than in the ViewModel file, which otherwise declared three public types
- * where every other screen's declares one -- its own UiState. Both series are gap-filled by the
- * ViewModel, so a day or month with no sessions arrives here as a real zero: a hole in a line chart
- * reads as missing data rather than as an absence.
+ * Kept out of the ViewModel file so it declares its UiState alone, like every other screen's. Both
+ * series are gap-filled by the ViewModel, so a day or month with no sessions arrives here as a real
+ * zero: a hole in a line chart reads as missing data rather than as an absence.
  */
 
 /** A day's worked time, for the daily-hours chart. */

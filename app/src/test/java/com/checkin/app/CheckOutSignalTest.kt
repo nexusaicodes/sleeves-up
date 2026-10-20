@@ -1,7 +1,9 @@
 package com.checkin.app
 
 import com.checkin.app.data.local.ClosedBy
+import com.checkin.app.data.local.Habit
 import com.checkin.app.data.repository.CheckInRepository
+import com.checkin.app.data.repository.HabitRepository
 import com.checkin.app.ui.checkin.CheckOutSignal
 import com.checkin.app.ui.checkin.raiseCheckOutCelebration
 import kotlinx.coroutines.runBlocking
@@ -33,7 +35,13 @@ class CheckOutSignalTest {
 
     @Test
     fun `clearing retires the celebration`() {
-        CheckOutSignal.raise(sessionMs = 1000L, dayTotalMs = 1000L, daySessionCount = 1, nowMillis = 0L)
+        CheckOutSignal.raise(
+            sessionMs = 1000L,
+            dayTotalMs = 1000L,
+            daySessionCount = 1,
+            habitName = null,
+            nowMillis = 0L,
+        )
         assertEquals(1000L, CheckOutSignal.completed.value?.sessionMs)
 
         CheckOutSignal.clear()
@@ -47,7 +55,13 @@ class CheckOutSignalTest {
      */
     @Test
     fun `a celebration nobody saw is dropped once it is stale`() {
-        CheckOutSignal.raise(sessionMs = 1000L, dayTotalMs = 1000L, daySessionCount = 1, nowMillis = 0L)
+        CheckOutSignal.raise(
+            sessionMs = 1000L,
+            dayTotalMs = 1000L,
+            daySessionCount = 1,
+            habitName = null,
+            nowMillis = 0L,
+        )
 
         assertFalse(CheckOutSignal.expireIfStale(CheckOutSignal.EXPIRY_MS + 1))
 
@@ -57,7 +71,13 @@ class CheckOutSignalTest {
     /** The ordinary case: raised and shown in the same breath, so returning to it must not clear it. */
     @Test
     fun `a celebration inside the window survives`() {
-        CheckOutSignal.raise(sessionMs = 1000L, dayTotalMs = 1000L, daySessionCount = 1, nowMillis = 0L)
+        CheckOutSignal.raise(
+            sessionMs = 1000L,
+            dayTotalMs = 1000L,
+            daySessionCount = 1,
+            habitName = null,
+            nowMillis = 0L,
+        )
 
         assertTrue(CheckOutSignal.expireIfStale(CheckOutSignal.EXPIRY_MS))
 
@@ -67,9 +87,21 @@ class CheckOutSignalTest {
     /** Expiry is measured from the raise, so a second check-out gets its own full window. */
     @Test
     fun `re-raising restarts the window`() {
-        CheckOutSignal.raise(sessionMs = 1000L, dayTotalMs = 1000L, daySessionCount = 1, nowMillis = 0L)
+        CheckOutSignal.raise(
+            sessionMs = 1000L,
+            dayTotalMs = 1000L,
+            daySessionCount = 1,
+            habitName = null,
+            nowMillis = 0L,
+        )
         val late = CheckOutSignal.EXPIRY_MS * 10
-        CheckOutSignal.raise(sessionMs = 2000L, dayTotalMs = 3000L, daySessionCount = 2, nowMillis = late)
+        CheckOutSignal.raise(
+            sessionMs = 2000L,
+            dayTotalMs = 3000L,
+            daySessionCount = 2,
+            habitName = null,
+            nowMillis = late,
+        )
 
         assertTrue(CheckOutSignal.expireIfStale(late + 1))
 
@@ -92,10 +124,10 @@ class CheckOutSignalTest {
         val hour = 3_600_000L
         dao.seedCompleted(day.toString(), startedAt = 0L, durationMs = hour)
         val repo = CheckInRepository(dao, FakeTimeSource(5 * hour, day))
-        val session = repo.checkIn()
+        val session = repo.open()
         val closed = repo.checkOutAt(session.id, 5 * hour + 2 * hour, ClosedBy.IN_APP)
 
-        raiseCheckOutCelebration(repo, closed!!, nowMillis = 0L)
+        raiseCheckOutCelebration(repo, habitsOver(dao), closed!!, nowMillis = 0L)
 
         val completed = CheckOutSignal.completed.value!!
         assertEquals(2 * hour, completed.sessionMs)
@@ -115,16 +147,37 @@ class CheckOutSignalTest {
         val startDay = LocalDate.of(2026, 6, 15)
         val hour = 3_600_000L
         val repo = CheckInRepository(dao, FakeTimeSource(0L, startDay))
-        val session = repo.checkIn()
+        val session = repo.open()
         // Closed on the following day, while the row still carries 06-15 as its date_key.
         val closed = CheckInRepository(dao, FakeTimeSource(2 * hour, startDay.plusDays(1)))
             .checkOut(session.id, ClosedBy.IN_APP)
 
-        raiseCheckOutCelebration(repo, closed!!, nowMillis = 0L)
+        raiseCheckOutCelebration(repo, habitsOver(dao), closed!!, nowMillis = 0L)
 
         val completed = CheckOutSignal.completed.value!!
         assertEquals(2 * hour, completed.sessionMs)
         assertEquals(2 * hour, completed.dayTotalMs)
         assertEquals(1, completed.daySessionCount)
     }
+
+    /** The day figures are the closed session's habit's alone, and the celebration names it. */
+    @Test
+    fun `the day figures never fold in another habit's sessions`() = runBlocking {
+        val dao = FakeCheckInSessionDao()
+        val day = LocalDate.of(2026, 6, 15)
+        val hour = 3_600_000L
+        dao.seedCompleted(day.toString(), startedAt = 0L, durationMs = hour, habitId = 2L)
+        val repo = CheckInRepository(dao, FakeTimeSource(5 * hour, day))
+        val session = repo.open(Habit.SEED_ID)
+        val closed = repo.checkOutAt(session.id, 6 * hour, ClosedBy.IN_APP)
+
+        raiseCheckOutCelebration(repo, habitsOver(dao), closed!!, nowMillis = 0L)
+
+        val completed = CheckOutSignal.completed.value!!
+        assertEquals(hour, completed.dayTotalMs)
+        assertEquals(1, completed.daySessionCount)
+        assertEquals("Seed", completed.habitName)
+    }
+
+    private fun habitsOver(dao: FakeCheckInSessionDao) = HabitRepository(FakeHabitDao(), FakeAppStateDao(), dao)
 }

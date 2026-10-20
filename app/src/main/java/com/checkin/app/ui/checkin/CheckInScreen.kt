@@ -46,6 +46,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -56,6 +57,7 @@ import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.service.SessionClock
 import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.SessionIntervalRow
+import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.startActionColors
 import com.checkin.app.ui.theme.stopActionColors
 import com.checkin.app.util.TimeFormat
@@ -87,10 +89,8 @@ fun CheckInScreen(
     // The presence gate is rendered full-screen by AppNavScaffold, above the chrome — not here — so
     // the camera preview and the gate's own controls aren't covered by the bottom nav.
 
-    // Elapsed ticker is screen-driven, so it only runs while this screen is composed. The
-    // arithmetic itself is shared with the notification's chronometer and lives in
-    // service/SessionClock — that package rather than ui/ because the service is the other
-    // caller, and one copy is what keeps the two from disagreeing about the floor rule.
+    // Elapsed ticker is screen-driven, so it only runs while this screen is composed. The arithmetic
+    // is `SessionClock`'s, shared with the notification so the two cannot disagree about the floor.
     val startTime = uiState.currentSessionStartTime
     var elapsed by remember(startTime) { mutableStateOf(0L) }
     LaunchedEffect(uiState.isRunning, startTime) {
@@ -125,9 +125,7 @@ fun CheckInScreen(
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val shortViewport = maxHeight < COMPACT_HEIGHT_THRESHOLD
-        // The mark's side alone. The readout below it is chrome and text rather than part of this
-        // figure — see COMPACT_MARK — so this fraction buys the mark only, and the gauge block on
-        // screen is taller than what it returns.
+        // The mark's side alone; the readout below it is budgeted separately (see COMPACT_MARK).
         val markSize = if (shortViewport) COMPACT_MARK else (maxHeight * 0.26f).coerceIn(MARK_MIN, MARK_MAX)
 
         // What an expanded list may claim: whatever is left once the chrome, the gauge and the
@@ -159,7 +157,7 @@ fun CheckInScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = formatDateHeader(uiState.todayDateKey),
+                text = TimeFormat.dateKeyWithWeekday(uiState.todayDateKey, LocalTimePatterns.current).orEmpty(),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -180,11 +178,10 @@ fun CheckInScreen(
                     markSize = markSize,
                 )
 
-                // The first-run empty state, shown instead of a gauge that would only ever read
-                // 00:00 — not the welcome tour, which is a separate surface already passed by the
-                // time anyone reaches this. The brand mark rather than an action icon, and a title
-                // with no message: this is the one moment on the screen that introduces the app
-                // instead of asking for something, and the button below already states the action.
+                // The first-run empty state, shown instead of a gauge that would only ever read zero.
+                // The brand mark rather than an action icon, and a title with no message: this is the
+                // one moment on the screen that introduces the app instead of asking for something,
+                // and the button below already states the action.
                 else -> EmptyState(
                     icon = painterResource(R.drawable.ic_stat_checkin),
                     title = stringResource(R.string.empty_checkin_title),
@@ -211,6 +208,7 @@ fun CheckInScreen(
 
             CheckInOutButton(
                 isRunning = uiState.isRunning,
+                habitName = uiState.habitName,
                 onCheckIn = { viewModel.requestCheckIn() },
                 onCheckOut = { viewModel.requestCheckOut() },
             )
@@ -239,10 +237,10 @@ private val ACTION_HEIGHT = 64.dp
  * Date row + the collapsed sessions pill + its spacer + [ACTION_HEIGHT] + the gauge's readout row
  * and the gap above it, plus breathing room.
  *
- * The readout is counted here rather than in the gauge's own size because it sits *below* the mark
- * instead of inside it: one constant standing for both stops being true the moment the user raises
- * their font size, since the mark does not grow and the readout does. The mark is subtracted from
- * the budget separately, and the readout's growth is charged through [TEXT_CONTENT_HEIGHT].
+ * The readout is counted here rather than with the mark because only it grows with the font scale
+ * (see [COMPACT_MARK]): the mark is subtracted from the budget separately, and the readout's growth
+ * is charged through [TEXT_CONTENT_HEIGHT]. Anything that changes the collapsed pill's height has
+ * to move this too.
  */
 private val FIXED_CONTENT_HEIGHT = 236.dp
 
@@ -252,9 +250,9 @@ private val MIN_TOUCH_TARGET = 48.dp
 /**
  * The part of that which is text, and so scales with the user's font-size setting — the date row,
  * the pill's label, and the gauge's readout, which is the largest type on the screen and so the
- * term that moves this figure most. It errs high for the reason every text estimate here does:
- * over-stating it costs grid room the 48dp floor absorbs by scrolling, while under-stating it
- * pushes the primary action off the bottom.
+ * term that moves this figure most. It errs high because the two errors are not symmetric:
+ * over-stating it costs the expanded list a little room, while under-stating it pushes the primary
+ * action off the bottom.
  */
 private val TEXT_CONTENT_HEIGHT = 116.dp
 private val SESSION_LIST_MAX = 180.dp
@@ -266,11 +264,11 @@ private val SESSION_LIST_MIN = 96.dp
 // and live in TimerGauge.kt, beside the composable they size.
 
 @Composable
-private fun CheckInOutButton(isRunning: Boolean, onCheckIn: () -> Unit, onCheckOut: () -> Unit) {
+private fun CheckInOutButton(isRunning: Boolean, habitName: String?, onCheckIn: () -> Unit, onCheckOut: () -> Unit) {
     val start = startActionColors()
     val stop = stopActionColors()
 
-    // Start/stop, read at a glance and without the label: green to begin the day, red to end it. The
+    // Start/stop, read at a glance and without the label: green to check in, red to check out. The
     // colour animates across the switch so the change reads as one control changing state rather
     // than two buttons swapping places.
     val containerColor by animateColorAsState(
@@ -299,14 +297,21 @@ private fun CheckInOutButton(isRunning: Boolean, onCheckIn: () -> Unit, onCheckO
             modifier = Modifier.size(28.dp),
         )
         Spacer(modifier = Modifier.width(12.dp))
+        // Names the habit, because the switcher is the only other place that says which record this
+        // button writes to. One line, ellipsized: the button's height is a term in this screen's fit
+        // budget, so a long name gives way rather than growing it. Bare only for a habit still owed a
+        // name, which the first-run naming step keeps from ever reaching this screen.
         Text(
-            text = if (isRunning) {
-                stringResource(R.string.check_out)
-            } else {
-                stringResource(R.string.check_in)
+            text = when {
+                habitName == null && isRunning -> stringResource(R.string.check_out)
+                habitName == null -> stringResource(R.string.check_in)
+                isRunning -> stringResource(R.string.check_out_of, habitName)
+                else -> stringResource(R.string.check_in_to, habitName)
             },
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -326,6 +331,7 @@ private fun TodaySessions(
     onToggle: () -> Unit,
     listMaxHeight: Dp?,
 ) {
+    val patterns = LocalTimePatterns.current
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -337,9 +343,8 @@ private fun TodaySessions(
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            // The visual pill is tighter than the row it replaces, but the touch target must not be.
-            // Height goes on the Surface and the padding inside it, so shrinking the look never
-            // shrinks the target below the 48dp minimum.
+            // Height goes on the Surface and the tighter padding inside it, so the pill can look
+            // compact without its touch target dropping below the 48dp minimum.
             modifier = Modifier.heightIn(min = MIN_TOUCH_TARGET),
         ) {
             Row(
@@ -351,7 +356,7 @@ private fun TodaySessions(
                     text = stringResource(
                         R.string.todays_sessions_summary,
                         pluralStringResource(R.plurals.sessions_count, sessions.size, sessions.size),
-                        TimeFormat.durationShort(total),
+                        TimeFormat.durationShort(total, patterns),
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -384,5 +389,3 @@ private fun TodaySessions(
         }
     }
 }
-
-private fun formatDateHeader(dateKey: String): String = TimeFormat.dateKeyWithWeekday(dateKey).orEmpty()

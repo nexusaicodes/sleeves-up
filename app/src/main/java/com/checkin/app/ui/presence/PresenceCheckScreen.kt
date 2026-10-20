@@ -74,23 +74,20 @@ private const val SUCCESS_CONFIRMATION_MS = 800L
  * pipeline and the app only ever sees a count. There is no file to delete, nothing to strand if the
  * gate is dismissed mid-check, and nothing to sweep at startup.
  *
- * **There is nothing to press.** The check completes itself the moment the camera reports a face:
- * the confirm button this screen used to carry only ever asked the user to restate an answer the
- * hardware had already given, and asking for it cost a reach to the bottom of the screen at exactly
- * the moment their face was least likely to still be in frame. [onAuthSuccess] fires after a brief
- * confirmation, and that delay is composition-scoped, so a gate dismissed within it never succeeds.
+ * **There is nothing to press.** The check completes itself the moment the camera reports a face;
+ * a confirm button would only ask the user to restate the hardware's answer, at the cost of a reach
+ * to the bottom of the screen just when their face is least likely to still be in frame.
+ * [onAuthSuccess] fires after a brief confirmation, and that delay is composition-scoped, so a gate
+ * dismissed within it never succeeds.
  *
  * Device unlock is offered immediately when the camera cannot run a check at all — no face-detection
  * mode, a mode the HAL then declines to apply, an unavailable provider, or a bind that threw — and
- * otherwise once the camera has looked for [DEVICE_UNLOCK_OFFERED_AFTER_MS] without finding
- * anyone. With no tap there is no attempt to count, so time is what unlocks the fallback; without it
- * a camera that detects perfectly well but never resolves this particular user would leave the
- * screen with no exit but Dismiss. [onAuthSuccess] fires once either path passes.
+ * otherwise once the camera has looked for [DEVICE_UNLOCK_OFFERED_AFTER_MS] without finding anyone
+ * (see that constant for why time is what unlocks it). [onAuthSuccess] fires once either path passes.
  *
  * Device unlock needs a screen lock to exist, and on a device with none the fallback is a route to
- * the settings screen that creates one rather than a button that isn't there: an unusable camera and
- * an absent credential would otherwise leave this screen with no control but Dismiss, and every
- * check-in and check-out in the app comes through here.
+ * the settings screen that creates one rather than a button that isn't there: every check-in and
+ * check-out comes through here, so this screen must never be left with no control but Dismiss.
  */
 // Binding the camera fails as whatever the vendor implementation throws — an unavailable front
 // camera, a lifecycle race, a device-specific fault. There is one recovery for all of them: log it
@@ -107,7 +104,6 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     // than the remaining delay: a config change or a trip to the notification shade restarts the
     // effect, so a bare countdown would begin again from zero every time, and a phone being turned
     // over in the hand while the camera fails to find a face would reach the fallback late or never.
-    // That is the one way out of a gate every check-in and check-out routes through.
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var searchTimedOut by rememberSaveable { mutableStateOf(false) }
     val searchStartedAt = rememberSaveable { SystemClock.elapsedRealtime() }
@@ -117,17 +113,15 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     // the dialog — leaving a live prompt over a screen that has already moved on, and a second
     // onAuthSuccess behind it if they then complete it. Saved, because the prompt outlives the
     // composition that raised it: rotating with it on screen recreates this screen underneath, and a
-    // flag reset to false there passes the check under a dialog the user is still answering. That is
-    // only safe because the prompt is rebuilt below on every composition, which re-registers a
-    // callback able to clear it — the restored flag would otherwise have no writer left alive.
+    // flag reset to false there passes the check under a dialog the user is still answering. Safe
+    // only because the prompt below is rebuilt with each activity — see [rememberDeviceUnlock].
     var usingDeviceUnlock by rememberSaveable { mutableStateOf(false) }
     // Null until the camera has been asked. False means no check can run here at all — the hardware
     // reports no face-detection mode, the mode it advertised isn't the one it runs with, or the bind
     // failed — and that is the one state that skips the wait before device unlock is offered, since
-    // the answer it is waiting for is already known. Collapsing those cases into one is deliberate:
-    // the recovery is identical, and making any of them sit out the timer would leave the user
-    // watching a camera that was never going to find them. A StateFlow rather than snapshot state
-    // because the capture callback is one of the writers and it does not run on the main thread.
+    // the answer it is waiting for is already known. The cases collapse into one because the
+    // recovery is identical. A StateFlow rather than snapshot state because the capture callback is
+    // one of the writers and it does not run on the main thread.
     val cameraUsableFlow = remember { MutableStateFlow<Boolean?>(null) }
     val cameraUsable by cameraUsableFlow.collectAsState()
 
@@ -174,8 +168,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     // carries the check-in itself, so a stale one writes against state the caller has since replaced.
     val currentOnAuthSuccess by rememberUpdatedState(onAuthSuccess)
 
-    // Rebuilt whenever the activity is, so the prompt's callback is always live — see
-    // [rememberDeviceUnlock] for why that is what makes `usingDeviceUnlock` safe to save.
+    // Rebuilt whenever the activity is, so the prompt's callback is always live.
     val launchBiometric = rememberDeviceUnlock(
         activity = activity,
         promptTitle = promptTitle,
@@ -204,7 +197,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     // a saved instant rather than a fresh countdown, so what is left of the budget survives every
     // rotation and every trip out of the app, and it is measured from the gate opening rather than
     // from the camera streaming — a camera that binds and then never delivers a result would start
-    // no clock at all, leaving Dismiss as the only control on a screen check-out also routes through.
+    // no clock at all, leaving Dismiss as the only control.
     // Both ends are clamped: saved state can outlive a reboot, which resets the elapsed-time clock.
     LaunchedEffect(Unit) {
         if (searchTimedOut) return@LaunchedEffect
@@ -316,8 +309,8 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                             )
                             cameraUsableFlow.value = true
                         } catch (e: Exception) {
-                            // The user is now on a screen whose only control can never enable, so the
-                            // fallback has to be offered here rather than left to the wait before it.
+                            // A camera that failed to bind will never report a face, so the fallback
+                            // is offered now rather than after the wait.
                             Log.e(TAG, "Camera bind failed", e)
                             cameraUsableFlow.value = false
                         }
@@ -428,10 +421,9 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                     }
                 } else {
                     // The fallback the message names does not exist yet. Handing the user the screen
-                    // that creates it keeps the check gated — the alternative on an unusable camera
-                    // is a screen offering nothing but Dismiss, and check-out is as gated as
-                    // check-in, so the session would stay open until the day boundary wrote a full
-                    // day onto a row nothing can edit.
+                    // that creates it keeps the check gated without leaving only Dismiss — and since
+                    // check-out is as gated as check-in, a dead end here would leave the session open
+                    // until the day boundary wrote a full day onto a row nothing can edit.
                     OutlinedButton(
                         onClick = {
                             if (!openScreenLockSettings(context)) {

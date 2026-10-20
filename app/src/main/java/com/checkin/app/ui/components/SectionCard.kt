@@ -61,15 +61,16 @@ fun SectionCard(
 /**
  * A rule between groups of rows inside a [SectionCard], with its own spacing.
  *
- * Never a bare `HorizontalDivider`: that defaults to `outlineVariant`, which in the Material 3
- * baseline dark palette is the same value as the `surfaceVariant` this card fills with — 1.00:1, an
- * invisible line whose margins read as an unexplained gap. `outline` clears it in both themes
- * (2.96:1 dark, 3.48:1 light) while staying quieter than any text on the card.
+ * Never a bare `HorizontalDivider`: that defaults to `outlineVariant`, which in the dark brand
+ * scheme is the same value as the `surfaceVariant` this card fills with — 1.00:1, an
+ * invisible line whose margins read as an unexplained gap. `outline` at half alpha clears it in
+ * both themes (about 1.75:1 on the card) while staying a rule rather than a border; full `outline`
+ * reads heavier than the rows it separates.
  */
 @Composable
 fun SectionDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(vertical = 8.dp),
-        color = MaterialTheme.colorScheme.outline,
+        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
     )
 }

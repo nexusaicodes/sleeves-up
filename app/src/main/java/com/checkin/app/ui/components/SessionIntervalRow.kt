@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
+import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.tabularFigures
 import com.checkin.app.util.TimeFormat
 
@@ -53,17 +54,18 @@ import com.checkin.app.util.TimeFormat
  */
 @Composable
 internal fun SessionIntervalRow(session: CheckInSession) {
+    val patterns = LocalTimePatterns.current
     val running = session.stoppedAt == null
     val color = if (running) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-    val range = "${TimeFormat.clock(session.startedAt)} - " +
-        if (running) {
-            stringResource(R.string.session_in_progress)
-        } else {
-            session.stoppedAt?.let { TimeFormat.clock(it) }.orEmpty()
-        }
+    val end = if (running) {
+        stringResource(R.string.session_in_progress)
+    } else {
+        session.stoppedAt?.let { TimeFormat.clock(it, patterns) }.orEmpty()
+    }
+    val range = stringResource(R.string.session_range, TimeFormat.clock(session.startedAt, patterns), end)
     // Spoken form of the row. An open one needs no join: the pulse carries no text, and `range`
     // already ends in "ongoing".
-    val duration = session.duration?.takeUnless { running }?.let { TimeFormat.durationShort(it) }
+    val duration = session.duration?.takeUnless { running }?.let { TimeFormat.durationShort(it, patterns) }
     val rowDescription = duration?.let { stringResource(R.string.cd_session_row, range, it) } ?: range
 
     Row(
@@ -110,7 +112,8 @@ internal fun SessionIntervalRow(session: CheckInSession) {
  * The open session's mark: three dots breathing in sequence, in the duration column's place.
  *
  * Drawn rather than an emoji glyph, which would vary by device font, ignore the theme colour and sit
- * on its own baseline. It holds still when the system animation scale is off — see [animationsEnabled], which is where that reasoning lives.
+ * on its own baseline. It holds still when the system animation scale is off (see
+ * [animationsEnabled]).
  */
 @Composable
 private fun OngoingPulse(color: Color) {
@@ -142,11 +145,9 @@ private fun OngoingPulse(color: Color) {
  * The amount column: wide enough for "12h 59m", so a settled duration and the pulse share one slot
  * and the figures stack instead of ragging with the range beside them.
  *
- * **It scales with the font, and that is not polish.** The width is `dp` while the text is `sp`, so
- * a fixed column stops fitting the moment the user raises their font size — and the duration is
- * `maxLines = 1` with no ellipsis, so it does not report the cut: at 1.5x a 2h 15m session rendered
- * as a flat "2h", which is a wrong number on screen rather than a clipped one. The range column
- * absorbs the squeeze instead, which it is built for — it ellipsizes and says so.
+ * **It scales with the font, and that is not polish.** The width is `dp` while the text is `sp`, and
+ * the duration is `maxLines = 1` with no ellipsis, so a fixed column at 1.5x renders 2h 15m as a flat
+ * "2h" — a wrong number on screen rather than a clipped one.
  *
  * The cap stops the column eating the range at the largest scales; past it the range ellipsizes,
  * which is the correct order of sacrifice — a shortened clock range still reads as one, a shortened

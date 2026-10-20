@@ -46,7 +46,7 @@ class SessionWatchdogTest {
 
     @Test
     fun `an open session with no service is revived`() = runTest {
-        val session = repository.checkIn()
+        val session = repository.open()
 
         val acted = watchdog(serviceRunning = false).reviveIfNeeded()
 
@@ -62,7 +62,7 @@ class SessionWatchdogTest {
      */
     @Test
     fun `a revive never uses the check-in path`() = runTest {
-        repository.checkIn()
+        repository.open()
 
         watchdog(serviceRunning = false).reviveIfNeeded()
 
@@ -72,7 +72,7 @@ class SessionWatchdogTest {
 
     @Test
     fun `a live service is left alone`() = runTest {
-        repository.checkIn()
+        repository.open()
 
         val acted = watchdog(serviceRunning = true).reviveIfNeeded()
 
@@ -88,7 +88,7 @@ class SessionWatchdogTest {
      */
     @Test
     fun `alarms are ensured even when the service is healthy`() = runTest {
-        repository.checkIn()
+        repository.open()
 
         watchdog(serviceRunning = true).reviveIfNeeded()
 
@@ -118,7 +118,7 @@ class SessionWatchdogTest {
 
     @Test
     fun `a session already checked out is not revived`() = runTest {
-        val session = repository.checkIn()
+        val session = repository.open()
         repository.checkOut(session.id, ClosedBy.IN_APP)
 
         val acted = watchdog(serviceRunning = false).reviveIfNeeded()
@@ -134,7 +134,7 @@ class SessionWatchdogTest {
      */
     @Test
     fun `a refused start is absorbed rather than thrown`() = runTest {
-        repository.checkIn()
+        repository.open()
         controller.startAllowed = false
 
         val acted = watchdog(serviceRunning = false).reviveIfNeeded()
@@ -151,7 +151,7 @@ class SessionWatchdogTest {
      */
     @Test
     fun `a throwing revive is absorbed rather than propagated`() = runTest {
-        repository.checkIn()
+        repository.open()
         val exploding = SessionWatchdog(repository, controller, reminder, time) {
             error("service state unavailable")
         }

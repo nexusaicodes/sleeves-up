@@ -35,7 +35,7 @@ interface TimeSource {
  * whole graph of Room flows, so an emission per resume closes and reopens every DB subscription and
  * a write landing in that window loses its invalidation. And [currentDay] can be a day stale on
  * waking, so the tick reads [today] rather than passing its own value on. See the resume entry under
- * Conventions in CLAUDE.md for the failure that produced both.
+ * Conventions in CLAUDE.md for the failure in full.
  */
 fun TimeSource.dayTrigger(refresh: Flow<Int>): Flow<LocalDate> =
     combine(refresh, currentDay()) { _, day -> maxOf(day, today()) }.distinctUntilChanged()

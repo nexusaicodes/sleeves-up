@@ -102,17 +102,15 @@ fun BrandGrid(
  * whole grid at [trackColor] when nothing is running.
  *
  * **No cell has a position that means anything, and that is the point of this shape.** Every cell
- * does the same thing a beat apart, so there is no current cell, nothing to be part of the way
- * through, and nothing a later reader could be tempted to give a meaning to. Two shapes are
- * therefore closed to this gauge. **A single cell lit and advanced on a schedule** encodes how far
- * through that schedule the session is — a figure nothing here is permitted to read, and one slow
- * enough to be invisible at any period long enough to be calm. **A lattice lighting cell after cell
- * until it is full** is a completion bar, which is the deleted daily target as geometry, and it
- * would turn the mark's own two gaps into a shortfall rather than the honest part.
+ * does the same thing a beat apart, so there is no current cell and nothing to be part of the way
+ * through. Two shapes are therefore closed to this gauge: **a single cell lit and advanced on a
+ * schedule** encodes how far through that schedule the session is, a figure nothing here may read;
+ * and **a lattice lighting cell after cell until it is full** is a completion bar — a daily target
+ * as geometry, turning the mark's own two gaps into a shortfall.
  *
- * What is left is the binary, which is the whole of what this gauge says: the mark is alive while a
- * session is open and still while none is. It is the idiom [OngoingPulse] already uses for exactly
- * that claim, one file over, so the two read as the same statement at two sizes.
+ * What is left is the binary: the mark is alive while a session is open and still while none is.
+ * It is the idiom `OngoingPulse` uses for the same claim, so the two read as one statement at two
+ * sizes.
  *
  * With the system animation scale off the running state is drawn as every cell in [color] — flat,
  * but still unmistakably not the rest state, which is the one property that must survive.
@@ -272,8 +270,9 @@ internal fun waveLevel(index: Int, phase: Float): Float {
  * How narrow the crest is. A plain raised cosine (1.0) spreads the bright band over about three
  * cells and reads as a swell; raising it contracts the band and lengthens the dark stretch behind
  * it, so the pass reads as a pulse travelling the lattice instead. It changes the shape of the
- * curve every cell traces, never which cell traces which — the cells stay identical, which is the
- * property that keeps the wave from ranking them.
+ * curve every cell traces, never which cell traces which, so the cells stay identical (see
+ * [waveLevel]). A sharper crest is also a more insistent motion, so it and [WAVE_MS] must not both be
+ * pushed at once.
  */
 private const val CREST_POWER = 2.0
 

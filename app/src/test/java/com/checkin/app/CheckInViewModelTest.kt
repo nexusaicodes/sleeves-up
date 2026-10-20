@@ -1,6 +1,9 @@
 package com.checkin.app
 
+import com.checkin.app.data.local.Habit
 import com.checkin.app.data.repository.CheckInRepository
+import com.checkin.app.data.repository.HabitEdit
+import com.checkin.app.data.repository.HabitRepository
 import com.checkin.app.notify.StringResolver
 import com.checkin.app.service.SessionLifecycleRunner
 import com.checkin.app.ui.checkin.CheckInViewModel
@@ -30,8 +33,11 @@ class CheckInViewModelTest {
         time: FakeTimeSource,
         nudges: FakePostedNudges = FakePostedNudges(),
         alarms: FakeSessionAlarms = FakeSessionAlarms(),
+        habitDao: FakeHabitDao = FakeHabitDao(),
+        appState: FakeAppStateDao = FakeAppStateDao(),
     ): CheckInViewModel {
         val repo = CheckInRepository(dao, time)
+        val habits = HabitRepository(habitDao, appState, dao, time)
         // The real runner over fakes rather than a stand-in: the ViewModel owns the session's alarm
         // lifetime, and a stub would let the two drift without a test noticing.
         val reminder = SessionLifecycleRunner(
@@ -41,7 +47,7 @@ class CheckInViewModelTest {
             alarms = alarms,
             timeSource = time,
         )
-        return CheckInViewModel(repo, time, service, reminder, nudges)
+        return CheckInViewModel(repo, habits, time, service, reminder, nudges)
     }
 
     /**
@@ -179,7 +185,54 @@ class CheckInViewModelTest {
         viewModel.onAuthSuccess()
         advanceUntilIdle()
 
-        assertEquals(1, nudges.retireCount)
+        assertEquals(listOf(Habit.SEED_ID), nudges.retired)
+    }
+
+    /** The button names the habit it writes to, and the check-in lands on that habit. */
+    @Test
+    fun `a check-in is filed under the selected habit and names it`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        val habitDao = FakeHabitDao()
+        val appState = FakeAppStateDao()
+        val time = FakeTimeSource(1000L, LocalDate.of(2026, 6, 15))
+        val gym = HabitRepository(habitDao, appState, dao, time).create("Gym") as HabitEdit.Saved
+        appState.selected.value = gym.habit.id
+        val nudges = FakePostedNudges()
+        val viewModel =
+            buildViewModel(dao, FakeServiceController(), time, nudges, habitDao = habitDao, appState = appState)
+
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+        assertEquals("Gym", viewModel.uiState.value.habitName)
+
+        viewModel.requestCheckIn()
+        viewModel.onAuthSuccess()
+        advanceUntilIdle()
+
+        assertEquals(listOf(gym.habit.id), dao.sessions.map { it.habitId })
+        assertEquals(listOf(gym.habit.id), nudges.retired)
+    }
+
+    /** One habit's day is not another's: switching shows the new habit's sessions alone. */
+    @Test
+    fun `switching habits shows only the new habit's sessions`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-06-15", startedAt = 100L, durationMs = 60_000L, habitId = Habit.SEED_ID)
+        val habitDao = FakeHabitDao()
+        val appState = FakeAppStateDao()
+        val time = FakeTimeSource(1000L, LocalDate.of(2026, 6, 15))
+        val writing = HabitRepository(habitDao, appState, dao, time).create("Writing") as HabitEdit.Saved
+        val viewModel = buildViewModel(dao, FakeServiceController(), time, habitDao = habitDao, appState = appState)
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.todaySessions.size)
+
+        appState.selected.value = writing.habit.id
+        advanceUntilIdle()
+
+        assertEquals(writing.habit.id, viewModel.uiState.value.habitId)
+        assertTrue(viewModel.uiState.value.todaySessions.isEmpty())
+        assertFalse(viewModel.uiState.value.hasEverTracked)
     }
 
     /**
@@ -222,9 +275,7 @@ class CheckInViewModelTest {
     fun `a session open from a prior day keeps the screen running while today's list stays empty`() = runTest {
         val dao = FakeCheckInSessionDao()
         // Checked in yesterday, never checked out; the clock has since rolled to 06-15.
-        dao.insertSession(
-            com.checkin.app.data.local.CheckInSession(startedAt = 500L, dateKey = "2026-06-14"),
-        )
+        dao.seedOpen("2026-06-14", startedAt = 500L)
         val viewModel =
             buildViewModel(dao, FakeServiceController(), FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }

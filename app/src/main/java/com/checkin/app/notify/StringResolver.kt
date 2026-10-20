@@ -1,6 +1,8 @@
 package com.checkin.app.notify
 
 import android.content.Context
+import com.checkin.app.util.withLatinDigits
+import java.util.Locale
 
 /**
  * Resolves a string resource id to text.
@@ -14,6 +16,15 @@ import android.content.Context
  */
 fun interface StringResolver {
     fun get(resId: Int): String
+
+    /**
+     * [resId] with its format arguments filled in, in Latin digits whatever the language — the same
+     * rule `MainActivity` applies to every string on screen, so a notification cannot number
+     * differently from the app it came from. Not overridden by the Android resolver: filling the
+     * template here rather than through `getString(resId, args)` is what applies the rule.
+     */
+    fun format(resId: Int, vararg args: Any): String =
+        String.format(Locale.getDefault().withLatinDigits(), get(resId), *args)
 }
 
 class AndroidStringResolver(private val context: Context) : StringResolver {
