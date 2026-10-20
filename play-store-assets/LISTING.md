@@ -3,9 +3,9 @@
 The text of the en-GB store listing, kept in the repo so a change to the app and a change to the
 words describing it land in the same commit.
 
-The app itself also ships in Modern Standard Arabic; this listing does not yet. An Arabic listing is
-its own piece of work — the same rules below apply to it, and the vocabulary table needs an Arabic
-column before it is written.
+The app also ships in Modern Standard Arabic, and so does the listing: see **Arabic listing** below,
+written under the same two rules and the vocabulary table's Arabic column. Like the in-app Arabic
+copy, it **needs a native speaker's review before it is uploaded**.
 
 **Two rules govern every line below.**
 
@@ -81,6 +81,7 @@ WHAT YOU SEE
 • Tap any day to see the sessions it held, start to finish, and what the day came to
 • Reports with daily and monthly hours, when in the day your sessions start, and how many you run a day
 • CSV export through the system share sheet
+• In English or Arabic — choose in Settings, or follow your phone
 
 PRIVATE BY DESIGN
 • Your session data never leaves this device. There is no account, no server and no sync.
@@ -127,8 +128,107 @@ Habits: keep a separate record for each thing you show up for. Switch between th
 
 Everything you have recorded so far becomes your first habit. Give it a name when you next open the app.
 
-Each habit's reminder comes once, around the time you pick for it, on a day you haven't checked in. A restart or an update no longer costs you that day's reminder.
+Each habit's reminder comes once, around the time you pick for it, on a day you haven't checked in.
+
+Sleeves Up now also speaks Arabic — choose a language in Settings.
 ```
+
+---
+
+## Arabic listing (ar)
+
+Play's Arabic translation of the listing, entered under **Translations → Arabic** in the Console.
+Modern Standard Arabic, in the in-app copy's words: الحضور is the app's own word for showing up (the
+Check In action is تسجيل الحضور), عادة is the word for a habit and never هدف, and every figure is in
+Latin digits, as on screen. **Not yet reviewed by a native speaker** — review before uploading, under
+both rules above and the vocabulary table's Arabic column.
+
+### App title
+
+```
+Sleeves Up
+```
+
+The product name stays in Latin script, as `app_name` does in the app (`translatable="false"`).
+
+### Short description (80 max)
+
+```
+لا إذن بالإنترنت، ولا تُلتقط أي صورة. يُحتسب اليوم لأنك حضرت.
+```
+
+### Full description (4000 max)
+
+```
+الأكمام مشمّرة أو منزلة، ولا حالة ثالثة بينهما — وهذا هو التطبيق كله: يُحتسب اليوم لأنك حضرت له، لا لأن ساعاته تجاوزت حدًّا ما.
+
+Sleeves Up متتبّع خاص لتسجيل الحضور يعمل على جهازك، لروّاد الأعمال المستقلين والعاملين لحسابهم الخاص والعاملين عن بُعد — بلا حساب، وبلا تسجيل دخول، وبلا خادم.
+
+يُحتسب اليوم لأن فيه جلسة — لا حدّ عليك بلوغه، ولا نصف يوم، ولا عجز تقع فيه. اليوم الذي حضرت فيه خمسًا وأربعين دقيقة يُحتسب تمامًا كاليوم الذي حضرت فيه تسع ساعات. وتبقى ساعاتك ظاهرة في كل مكان — في المجاميع والرسوم البيانية والتقويم وملف التصدير CSV — مقدارًا، لا تقديرًا.
+
+كيف يعمل
+• سجّل حضورك لتبدأ جلسة، وسجّل انصرافك لتنهيها. وقتك في اليوم هو مجموع جلساتك المكتملة.
+• يُؤكَّد كل تسجيل حضور وانصراف بفحص للوجه يجري على جهازك دون اتصال. وإن تعذّر إتمامه، يلجأ التطبيق إلى بصمتك أو قفل شاشة جهازك.
+• يعمل مؤقّت مباشر في إشعار ما دمت مسجّلًا حضورك. ولا يُطرح شيء من أي جلسة أبدًا.
+• الجلسات ثابتة عن قصد — لا تعديل، ولا حذف، ولا إدخال يدوي.
+• إن نسيت تسجيل الانصراف، تُغلق الجلسة تلقائيًا عند منتصف الليل، في اليوم الذي بدأت فيه.
+
+ما تراه
+• تقويم يضع علامة على كل يوم حضرت فيه — علامة واحدة، هي نفسها لليوم القصير والطويل
+• انقر أي يوم لترى جلساته من بدايتها إلى نهايتها، وما بلغه ذلك اليوم
+• تقارير بالساعات اليومية والشهرية، وبالوقت الذي تبدأ فيه جلساتك من اليوم، وبعدد الجلسات في اليوم
+• تصدير CSV عبر قائمة المشاركة في النظام
+• بالعربية أو الإنجليزية — اختر من الإعدادات، أو اتبع لغة هاتفك
+
+خاص بطبيعته
+• بيانات جلساتك لا تغادر هذا الجهاز أبدًا. لا حساب، ولا خادم، ولا مزامنة.
+• لا يملك التطبيق أي إذن بالوصول إلى الإنترنت. لا يمكنه رفع أي شيء، لأنه لا يستطيع الوصول إلى الشبكة.
+• لا تُلتقط أي صورة. تُبلغ كاميرا جهازك فقط بوجود وجه في الإطار، ولا يقرأ التطبيق سوى ذلك العدد — لا تغادر الإطارات الكاميرا، فلا توجد صورة تُحفظ أو تُعرض أو تُحذف أو تتسرّب.
+• كشفٌ عن وجود وجه، لا تعرّفٌ عليه: يتأكد الفحص من وجود شخص، ولا يحدد هوية أحد ولا يطابق شيئًا.
+• لا إعلانات. لا تحليلات. لا جمع للبيانات من أي طرف ثالث.
+• سجلّك محفوظ في قاعدة بيانات محلية على هاتفك. صدّره إلى CSV متى شئت — تلك النسخة ملكك.
+
+العادات
+• احتفظ بسجل منفصل لكل شيء تحضر من أجله — النادي، أو الكتابة، أو التمرين.
+• بدّل بينها من الشريط العلوي. لكل عادة تقويمها وتقاريرها وتصديرها.
+• لا شيء يقارن عادة بأخرى. كل عادة سجلّ قائم بذاته.
+
+التذكيرات
+• إن لم تسجّل حضورك في عادة ما، يذكّرك Sleeves Up بذلك — مرة واحدة في ذلك اليوم، قرابة الوقت الذي اخترته لها.
+• لإيقاف تذكير، اضغط عليه مطوّلًا؛ يفتح ذلك قناته ويوقفها بنقرة واحدة، دون أن يمسّ غيرها.
+
+لمن هذا التطبيق
+لروّاد الأعمال المستقلين، والعاملين لحسابهم الخاص، والمستشارين، والطلاب، وكل من يعمل دون رقابة خارجية ويريد أن يبني عادة الحضور بانتظام. كل يوم يُحتسب بالقدر نفسه.
+
+Sleeves Up أداة للانضباط الذاتي، وليس بديلًا عن أي نظام لتسجيل الوقت لدى صاحب عمل أو لأغراض قانونية.
+```
+
+### What's new (500 max)
+
+```
+العادات: احتفظ بسجل منفصل لكل شيء تحضر من أجله. بدّل بينها من الشريط العلوي — لكل عادة تقويمها وتقاريرها وتصديرها وتذكيرها، ولا شيء يقارن إحداها بأخرى.
+
+كل ما سجّلته حتى الآن يصبح عادتك الأولى. سمِّها حين تفتح التطبيق في المرة القادمة.
+
+يأتي تذكير كل عادة مرة واحدة، قرابة الوقت الذي تختاره لها، في يوم لم تسجّل فيه حضورك.
+
+Sleeves Up متاح الآن بالعربية أيضًا — اختر اللغة من الإعدادات.
+```
+
+### Screenshot captions
+
+For an Arabic screenshot set, which is not shot yet: Play shows the en-GB set under the Arabic listing
+until one is uploaded. Same slots as the phone table below, same order. Kept as a list rather than a
+table, because `generate_screenshots.py` parses every table row of that shape as an en-GB caption.
+
+1. يُحتسب اليوم لأنك حضرت.
+2. سجّل حضورك بفحص للوجه لا يلتقط أي صورة.
+3. 24 يومًا من 31. الساعات رقم، لا تقدير.
+4. سجلّ لكل عادة. ولا شيء يقارن بينها.
+5. مؤقّت مباشر ما دمت حاضرًا. ولا يُطرح منه شيء.
+6. اعرف متى تبدأ فعلًا. لا توجد فترة هي الصحيحة.
+7. لا إذن بالإنترنت إطلاقًا. لا يستطيع الرفع، لأنه لا يستطيع الاتصال.
+8. صدّر كل شيء. تلك النسخة ملكك.
 
 ---
 
@@ -137,19 +237,19 @@ Each habit's reminder comes once, around the time you pick for it, on a day you 
 Each of these described a mechanism the app no longer has, and each reads as plausible copy, which
 is what makes them easy to write back in.
 
-| Never say | Because |
-|---|---|
-| daily target · half day · full-day leave · leave deficit | No day is measured against an hours bar. Rule 1. |
-| pause · paused time · net hours | Nothing is subtracted from a session; `duration` is exactly `stopped_at - started_at`. |
-| periodic presence check · re-verify | Only check-in and check-out are gated. There is no mid-session check. |
-| selfie · photo · capture | The camera reports a face count as metadata. No image is ever produced. |
-| attendance | The vocabulary was renamed out of the app; the tab is History. |
-| goal · goals · target habit | The word is **habit**. A goal is something to reach, which is a target under another name — Rule 1. |
-| most consistent habit · your best habit · compare your habits · total across habits | Each habit is its own record and nothing sets two side by side. Ranking habits is the personal-best baseline applied across habits instead of across days. |
-| streak · consecutive days · keep the chain going | A streak is a number the next day can take away. The calendar shows consecutive days visually and the app counts none of them. |
-| longest day · best day · personal best · your record | Nothing ranks one of the user's days against the others, and nothing is a baseline anything else is drawn against. |
-| roll up your sleeves · sleeves up! (as an instruction) · let's get to work | The name describes a state, not an order. Nobody has ever rolled their sleeves up for nine hours, so the metaphor carries no measurement — which is exactly what lets it sit on an app where hours grade nothing. Said *at* the user on a cadence it becomes a mascot, and a mascot is the gamification register this app has none of. Gloss it once in the listing; never in a notification, a celebration or an empty state. |
-| shaded by how long · intensity · ringed against your best | The calendar is binary, and the app fills no arc at all — the Check-In gauge is the brand mark breathing, and it says only whether a session is open. |
+| Never say | Arabic: never say | Because |
+|---|---|---|
+| daily target · half day · full-day leave · leave deficit | هدف يومي · نصف يوم · إجازة يوم كامل · عجز | No day is measured against an hours bar. Rule 1. |
+| pause · paused time · net hours | إيقاف مؤقت · وقت متوقف · الساعات الصافية | Nothing is subtracted from a session; `duration` is exactly `stopped_at - started_at`. |
+| periodic presence check · re-verify | فحص دوري للحضور · إعادة التحقق | Only check-in and check-out are gated. There is no mid-session check. |
+| selfie · photo · capture | سيلفي · التقاط صورة · تصوير (as what the check does; «لا تُلتقط أي صورة» is the denial) | The camera reports a face count as metadata. No image is ever produced. |
+| attendance | نظام حضور وانصراف · دوام · كشف الحضور (the workplace register; الحضور for showing up is the app's own word) | The vocabulary was renamed out of the app; the tab is History. |
+| goal · goals · target habit | هدف · أهداف · غاية — the word is عادة | The word is **habit**. A goal is something to reach, which is a target under another name — Rule 1. |
+| most consistent habit · your best habit · compare your habits · total across habits | أكثر عاداتك انتظامًا · أفضل عادة · قارن عاداتك · مجموع العادات | Each habit is its own record and nothing sets two side by side. Ranking habits is the personal-best baseline applied across habits instead of across days. |
+| streak · consecutive days · keep the chain going | سلسلة · أيام متتالية · لا تقطع السلسلة | A streak is a number the next day can take away. The calendar shows consecutive days visually and the app counts none of them. |
+| longest day · best day · personal best · your record | أطول يوم · أفضل يوم · أفضل أداء شخصي · رقمك القياسي | Nothing ranks one of the user's days against the others, and nothing is a baseline anything else is drawn against. |
+| roll up your sleeves · sleeves up! (as an instruction) · let's get to work | شمّر عن ساعديك · شمّر أكمامك! · هيا إلى العمل | The name describes a state, not an order. Nobody has ever rolled their sleeves up for nine hours, so the metaphor carries no measurement — which is exactly what lets it sit on an app where hours grade nothing. Said *at* the user on a cadence it becomes a mascot, and a mascot is the gamification register this app has none of. Gloss it once in the listing; never in a notification, a celebration or an empty state. |
+| shaded by how long · intensity · ringed against your best | مظلّل حسب المدة · الشدّة · حلقة تقيسك بأفضل أداء | The calendar is binary, and the app fills no arc at all — the Check-In gauge is the brand mark breathing, and it says only whether a session is open. |
 
 ## Categorisation & contact
 
@@ -166,8 +266,8 @@ is what makes them easy to write back in.
 |---|---|---|
 | App icon | 512×512 PNG | `app/src/main/ic_launcher-playstore.png` — generated by `generate_icons.py` |
 | Feature graphic | 1024×500 PNG | `feature-graphic.png` — generated by `generate_feature_graphic.py` |
-| Phone screenshots | 7 at 1080×1920 | `screenshots/phone/` — composited by `generate_screenshots.py` |
-| Tablet screenshots | 3 at 2560×1600 | `screenshots/tablet/` — captured, uncaptioned. See below |
+| Phone screenshots | 8 at 1080×1920 | `screenshots/phone/` — composited by `generate_screenshots.py` |
+| Tablet screenshots | 4 at 2560×1600 | `screenshots/tablet/` — captured, uncaptioned. See below |
 
 All three generators are deterministic, so re-running them is how you check the committed files are
 current: identical output means no drift. See `README.md` for the capture procedure.
@@ -177,11 +277,11 @@ shares only `CORNER_FRAC` with `generate_icons.py` — so regenerating the mark 
 it stale. That coupling was real while the graphic pasted the icon in, and it is gone; run both
 anyway, since they are cheap and the wordmark and the mark are the same brand decision.
 
-### The seven phone screenshots
+### The eight phone screenshots
 
 Play shows only the **first two or three** in search results and in the "you might also like" rails,
 and most people never scroll the strip. So 1–3 have to work as a standalone three-panel pitch and
-4–7 are for someone already swiping. All seven are captioned in the same position, type and band —
+4–8 are for someone already swiping. All eight are captioned in the same position, type and band —
 a raw screenshot asks a stranger to decode a UI they have never seen, so the caption sells and the
 screenshot corroborates.
 
@@ -190,24 +290,26 @@ screenshot corroborates.
 | 1 | `01-calendar.png` | A complete month, binary, weekends mostly among the gaps | A day counts because you showed up. |
 | 2 | `02-face-check.png` | The gate's disclosure, stating the mechanism in the app's words | Check in with a face check that takes no photo. |
 | 3 | `03-summary.png` | Days shown up against days tracked; hours below, plain | 24 days out of 31. Hours are a number, not a grade. |
-| 4 | `04-running.png` | The timer notification in the shade, chronometer running | A live timer while you're in. Nothing gets subtracted. |
-| 5 | `05-start-times.png` | The morning / afternoon / evening split | See when you actually start. No bucket is the right one. |
-| 6 | `06-privacy.png` | The in-app privacy screen | No internet permission at all. It cannot upload, because it cannot connect. |
-| 7 | `07-export.png` | The system share sheet mid-export | Export everything. That copy is yours. |
+| 4 | `04-habits.png` | The Habits screen: three habits, each with its reminder time and nothing else | One record per habit. Nothing compares them. |
+| 5 | `05-running.png` | The timer notification in the shade, chronometer running | A live timer while you're in. Nothing gets subtracted. |
+| 6 | `06-start-times.png` | The morning / afternoon / evening split | See when you actually start. No bucket is the right one. |
+| 7 | `07-privacy.png` | The in-app privacy screen | No internet permission at all. It cannot upload, because it cannot connect. |
+| 8 | `08-export.png` | The system share sheet mid-export | Export everything. That copy is yours. |
 
 Slot 1 is the hero and earns it mechanically rather than by taste: every habit tracker on Play uses
 an intensity ramp, so a binary calendar reads as *different* before a word is read, and what it
 reads as is density rather than depth — which is a picture of the thesis. Slot 2 is second because
 "no photo" is the objection people form on their own, and getting there first is worth more than any
-feature. Slot 5's second sentence is load-bearing: without it a viewer assumes morning is the good
+feature. Slot 4 is the release's headline, placed first after the pitch: it shows names and reminder
+times only, because a figure beside each habit would rank them, and its caption says so. Slot 6's second sentence is load-bearing: without it a viewer assumes morning is the good
 column, because every other productivity app has taught them to.
 
-Slot 6 is shot against **the app's own screen** (`ui/about/PrivacyScreen.kt`), never Android's system
+Slot 7 is shot against **the app's own screen** (`ui/about/PrivacyScreen.kt`), never Android's system
 permission page — that page is not this app's UI, it varies by OEM and version, and Play is
 inconsistent about accepting system chrome. The claim is verifiable from the APK, which is what
 makes it worth making; the screen states it and says where to check it.
 
-**What may not appear in any of the seven** — each of these described a mechanism the app no longer
+**What may not appear in any of the eight** — each of these described a mechanism the app no longer
 has, so a screenshot showing one is a screenshot of a build that does not exist:
 
 - any ring, arc or progress bar filling toward a personal best
@@ -219,8 +321,8 @@ has, so a screenshot showing one is a screenshot of a build that does not exist:
 
 ### Tablet screenshots
 
-Three shots, reshot for 3.0 against the same seeded history as the phone set: the Check-In screen at
-rest, History with a day selected, and Reports. **They are uploaded uncaptioned**, unlike the phone
+Four shots, reshot for 3.1 against the same seeded history as the phone set: the Check-In screen at
+rest, History with a day selected, Reports, and the Habits screen. **They are uploaded uncaptioned**, unlike the phone
 set, and that is a deliberate asymmetry rather than an omission. The phone strip is read in search
 results by someone who has never seen the app, which is what the caption band is for; the tablet
 strip is only ever reached from the listing page itself, by someone who has already read that copy.

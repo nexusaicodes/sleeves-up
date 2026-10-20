@@ -89,3 +89,6 @@ lint-results*.xml
 # Python bytecode from the play-store-assets generators
 __pycache__/
 *.pyc
+
+# Every screen of the last screenshot run, for review; only the listing files ship.
+play-store-assets/screenshots/all/

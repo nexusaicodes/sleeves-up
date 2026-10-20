@@ -4,7 +4,8 @@ Demo data for Play Store screenshots. Shapes it to show what the app actually do
 a handful of missed days so the split is not a flat 100%, sessions starting across
 the morning, afternoon and evening so the start-time split has all three slices,
 days of one, two and three blocks so the sessions-per-day split has all three, and
-an open session today so the gauge is running.
+an open session today so the gauge is running. Two more habits get a lighter record of
+their own, so the Habits screen and the switcher have rows; nothing on screen compares them.
 
 Day *lengths* are still varied, but nothing renders them any more — the calendar is
 one mark per day shown up, whether it held 45 minutes or nine hours. They vary here
@@ -28,6 +29,14 @@ START = (TODAY.replace(day=1) - timedelta(days=1)).replace(day=1)
 MISS_CHANCE = {5: 0.55, 6: 0.65}           # Sat/Sun are the days most often skipped
 WEEKDAY_MISS = 0.10
 DEMO_HABIT = "Writing"                     # the seed habit's name: the switcher and the button show it
+
+# (uuid, name, days a week it is usually done, session start range, length range), in minutes. The
+# uuids are fixed so a re-run writes the same rows; the channel id follows Habit.CHANNEL_PREFIX.
+OTHER_HABITS = (
+    ("5c0d1e2f-0000-4000-8000-00000000a002", "Gym", (0, 2, 4), (18 * 60, 19 * 60), (50, 80)),
+    ("5c0d1e2f-0000-4000-8000-00000000a003", "Guitar", (1, 3, 5, 6), (20 * 60, 21 * 60 + 30), (20, 45)),
+)
+CHANNEL_PREFIX = "nudge_h_"
 
 # Reproducible: same screenshots on a re-run. The value is *searched*, not arbitrary — it is
 # the seed for which July lands on exactly 24 days shown up of 31, which is what the summary
@@ -110,14 +119,43 @@ def main(db_path: str) -> None:
     # until the first-run naming step asks — and a screenshot run that opens on that step shows none
     # of the above. Named here so the app opens straight onto the record.
     conn.execute("UPDATE habits SET name = ? WHERE id = 1", (DEMO_HABIT,))
+    other_rows = other_habits(conn)
     conn.commit()
     conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
     days = len({r[3] for r in rows})
     closed = [r for r in rows if r[2] is not None]
-    print(f"{len(rows)} sessions across {days} days "
+    print(f"{len(rows)} sessions across {days} days, plus {other_rows} for {len(OTHER_HABITS)} other habits "
           f"({START} .. {TODAY}), longest day "
           f"{max(sum(x[2] for x in closed if x[3] == k) for k in {r[3] for r in closed}) / 3_600_000:.1f}h")
     conn.close()
+
+
+def other_habits(conn) -> int:
+    """The extra habits and their closed sessions, from a Random of their own: drawing from the
+    module's generator would shift the sequence the searched seed above depends on."""
+    rng = random.Random(20261020)
+    count = 0
+    conn.execute("DELETE FROM habits WHERE id <> 1")
+    conn.execute("DELETE FROM sessions WHERE habit_id <> 1")
+    for uuid, name, weekdays, (start_lo, start_hi), (len_lo, len_hi) in OTHER_HABITS:
+        cur = conn.execute(
+            "INSERT INTO habits (uuid, name, archived, created_at, channel_id) VALUES (?, ?, 0, ?, ?)",
+            (uuid, name, millis(START, 8, 0), CHANNEL_PREFIX + uuid),
+        )
+        d = START
+        while d < TODAY:
+            if d.weekday() in weekdays and rng.random() < 0.8:
+                start = rng.randint(start_lo, start_hi)
+                started = millis(d, 0, 0) + start * 60_000
+                stopped = started + rng.randint(len_lo, len_hi) * 60_000
+                conn.execute(
+                    "INSERT INTO sessions (started_at, stopped_at, duration, date_key, habit_id) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (started, stopped, stopped - started, d.isoformat(), cur.lastrowid),
+                )
+                count += 1
+            d += timedelta(days=1)
+    return count
 
 
 if __name__ == "__main__":
