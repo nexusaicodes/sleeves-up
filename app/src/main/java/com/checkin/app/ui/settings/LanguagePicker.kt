@@ -21,14 +21,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import com.checkin.app.CheckInApplication
 import com.checkin.app.R
+import com.checkin.app.platform.LanguageSettings
 import com.checkin.app.platform.choose
 import com.checkin.app.ui.components.ActionRow
 import com.checkin.app.ui.theme.typographyFor
@@ -46,9 +45,7 @@ import java.util.Locale
  * `CheckInApplication.onConfigurationChanged` rewrites the notification text.
  */
 @Composable
-internal fun LanguageRow() {
-    val context = LocalContext.current
-    val settings = remember(context) { (context.applicationContext as CheckInApplication).container.languageSettings }
+internal fun LanguageRow(settings: LanguageSettings) {
     // Null until the first resume reads it: one binder call per visit, not one per composition too.
     var stored by remember(settings) { mutableStateOf<List<Locale>?>(null) }
     var choosing by rememberSaveable { mutableStateOf(false) }

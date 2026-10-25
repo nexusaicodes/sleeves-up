@@ -1,6 +1,7 @@
 package com.checkin.app.di
 
 import android.content.Context
+import android.os.Build
 import com.checkin.app.data.SystemTimeSource
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.AppDatabase
@@ -53,7 +54,7 @@ interface AppContainer {
     val habitRepository: HabitRepository
     val settings: PromptSettings
     val reminderSettings: ReminderSettings
-    val languageSettings: LanguageSettings
+    val languageSettings: LanguageSettings?
     val serviceController: ServiceController
     val csvExporter: CsvExporter
     val timeSource: TimeSource
@@ -177,7 +178,9 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val reminderSettings: ReminderSettings = SharedPrefsReminderSettings.create(appContext)
 
-    override val languageSettings: LanguageSettings = LocaleManagerLanguageSettings(appContext)
+    // Null below API 33, which has no per-app locale for it to read or write.
+    override val languageSettings: LanguageSettings? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) LocaleManagerLanguageSettings(appContext) else null
 
     override val repository: CheckInRepository by lazy {
         CheckInRepository(AppDatabase.getDatabase(appContext).checkInSessionDao(), timeSource)

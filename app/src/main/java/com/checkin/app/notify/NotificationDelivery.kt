@@ -20,6 +20,16 @@ object NotificationDelivery {
     /** `NotificationManagerCompat.IMPORTANCE_NONE`, restated so this file needs no Android imports. */
     const val IMPORTANCE_NONE = 0
 
+    /** `Build.VERSION_CODES.TIRAMISU`, the first release where `POST_NOTIFICATIONS` exists. */
+    const val RUNTIME_GRANT_SDK = 33
+
+    /**
+     * Whether posting needs `POST_NOTIFICATIONS` granted at runtime on [sdkInt]. Below API 33 the
+     * permission does not exist and notifications are on from install, yet `checkSelfPermission`
+     * still reports it DENIED — read as a refusal there, it would refuse every post the app makes.
+     */
+    fun needsRuntimeGrant(sdkInt: Int): Boolean = sdkInt >= RUNTIME_GRANT_SDK
+
     /**
      * [channelImportance] is null when the channel does not exist, which counts as blocked: a post to
      * a channel that was never created is discarded. Channels are created before anything posts to
