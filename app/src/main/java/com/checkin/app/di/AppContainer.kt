@@ -23,11 +23,13 @@ import com.checkin.app.notify.nudge.ReminderSettings
 import com.checkin.app.notify.nudge.RoomNudgeSendLog
 import com.checkin.app.notify.nudge.SharedPrefsReminderSettings
 import com.checkin.app.notify.nudge.armFallback
+import com.checkin.app.platform.AppUpdates
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.DefaultCsvExporter
 import com.checkin.app.platform.DefaultServiceController
 import com.checkin.app.platform.LanguageSettings
 import com.checkin.app.platform.LocaleManagerLanguageSettings
+import com.checkin.app.platform.PlayAppUpdates
 import com.checkin.app.platform.PromptSettings
 import com.checkin.app.platform.ServiceController
 import com.checkin.app.platform.SharedPrefsPromptSettings
@@ -57,6 +59,7 @@ interface AppContainer {
     val languageSettings: LanguageSettings?
     val serviceController: ServiceController
     val csvExporter: CsvExporter
+    val appUpdates: AppUpdates
     val timeSource: TimeSource
     val applicationScope: CoroutineScope
 
@@ -194,6 +197,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val serviceController: ServiceController = DefaultServiceController(appContext)
 
     override val csvExporter: CsvExporter = DefaultCsvExporter(appContext)
+
+    override val appUpdates: AppUpdates = PlayAppUpdates(appContext)
 
     override val notificationFactory = NotificationFactory(appContext)
 

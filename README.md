@@ -91,6 +91,6 @@ behaviour.
 ## License
 
 Apache License 2.0 — see [`LICENSE`](LICENSE). Third-party licences the app redistributes are listed
-in-app under **Settings → Open source licences**. The list is hand-maintained, and
+in-app under **Settings → Licences**. The list is hand-maintained, and
 `./gradlew :app:verifyLicenseCoverage` fails the build if it and the release runtime classpath
 disagree in either direction.

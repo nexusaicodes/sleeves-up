@@ -195,6 +195,8 @@
     <string name="habit_restore_duplicate">توجد عادة أخرى باسم %1$s</string>
     <string name="habit_switcher_cd">العادة: %1$s. تبديل العادة</string>
     <string name="habit_switch_locked">سجّل انصرافك من %1$s للتبديل أو لإدارة العادات</string>
+    <string name="update_downloaded">إصدار جديد جاهز للتثبيت</string>
+    <string name="update_restart">إعادة التشغيل</string>
     <string name="habit_running_check_out_first">%1$s جارية. سجّل انصرافك منها أولًا.</string>
     <string name="habit_running_check_out_first_unnamed">هناك جلسة جارية. سجّل انصرافك منها أولًا.</string>
     <string name="habit_editor_new_title">عادة جديدة</string>
@@ -236,7 +238,7 @@
     <string name="about_privacy_policy">سياسة الخصوصية</string>
     <string name="about_feedback">إرسال ملاحظات</string>
     <string name="about_rate">التقييم على Google Play</string>
-    <string name="about_licenses">تراخيص المصادر المفتوحة</string>
+    <string name="about_licenses">التراخيص</string>
     <string name="about_open_link">يُفتح خارج التطبيق</string>
     <string name="about_no_email_app">لم يُعثر على تطبيق بريد. نُسخ العنوان: %1$s</string>
     <string name="about_no_browser">لم يُعثر على متصفح. نُسخ الرابط إلى الحافظة.</string>
@@ -251,13 +253,15 @@
     <string name="privacy_no_photo_title">لا تُلتقط أي صورة</string>
     <string name="privacy_no_photo_body">تُبلغ الكاميرا فقط بوجود وجه في الإطار أو عدمه، ولا يقرأ التطبيق سوى ذلك العدد.</string>
     <string name="privacy_no_analytics_title">لا تحليلات، ولا إعلانات</string>
-    <string name="privacy_no_analytics_body">لا شيء هنا يقيس طريقة استخدامك للتطبيق، ولا توجد شيفرة من طرف ثالث تجمع أي شيء.</string>
+    <string name="privacy_no_analytics_body">لا شيء هنا يقيس طريقة استخدامك للتطبيق. السؤال الوحيد الموجَّه إلى جهة أخرى هو سؤال Google Play عن وجود إصدار أحدث.</string>
     <string name="privacy_check_title">كيف تتحقق</string>
     <string name="privacy_check_body">لست مضطرًا إلى أخذ هذا على الثقة. يعرض Android كل إذن يصرّح به التطبيق ضمن «معلومات التطبيق»، ويعرضها Google Play في صفحة المتجر. ليس لهذا التطبيق أي إذن شبكة ليُعرض.</string>
 
-    <!-- Open source licences. Library names, copyrights and licence names stay as written. -->
+    <!-- Licences. Library names, copyrights and licence names stay as written. -->
     <string name="licenses_note_androidx">Core وCompose وMaterial 3 وLifecycle وNavigation وRoom وWorkManager وBiometric والمكتبات التي تعتمد عليها.</string>
     <string name="licenses_note_camerax">تتضمّن camera-core مكتبة libyuv، ولها ترخيص BSD خاص بها.</string>
+    <string name="licenses_note_play">يسأل Google Play عن وجود إصدار أحدث من التطبيق.</string>
+    <string name="licenses_note_play_services">مكوّنا basement وtasks من خدمات Play فقط، وتتطلبهما تحديثات Play داخل التطبيق.</string>
     <string name="licenses_note_outfit">أحجام العرض والعناوين.</string>
     <string name="licenses_note_manrope">أحجام النصوص والتسميات.</string>
     <string name="licenses_note_plex_arabic">جميع النصوص حين يكون التطبيق بالعربية.</string>

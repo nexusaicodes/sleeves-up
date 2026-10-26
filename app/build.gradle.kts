@@ -184,6 +184,12 @@ dependencies {
     // prune all hang off it (see notify/nudge/NudgeWorker). Nudges are delivered by an alarm.
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
+    // Flexible in-app update prompt (platform/AppUpdates). It asks the Play Store app over IPC and
+    // declares no permission; it brings core-common and gms basement/tasks, all proprietary terms
+    // listed in OpenSourceLibraries. Not the -ktx artifact, whose old fragment/coroutines floors and
+    // Flow wrapper this needs none of.
+    implementation("com.google.android.play:app-update:2.1.0")
+
     // Testing
     // JUnit plus the coroutines test dispatcher, and nothing else: the suite is pure JVM and mocks
     // nothing, standing every seam up with a hand-written fake instead (app/src/test/.../Fakes.kt).

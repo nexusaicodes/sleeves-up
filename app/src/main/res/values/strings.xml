@@ -287,6 +287,8 @@
     <!-- The switcher in the top bar. While a session runs it is locked to that habit on every tab. -->
     <string name="habit_switcher_cd">Habit: %1$s. Switch habit</string>
     <string name="habit_switch_locked">Check out of %1$s to switch or manage habits</string>
+    <string name="update_downloaded">A new version is ready to install</string>
+    <string name="update_restart">Restart</string>
     <!-- A nudge for one habit tapped while another habit's session is running. No gate opens. -->
     <string name="habit_running_check_out_first">%1$s is running. Check out of it first.</string>
     <string name="habit_running_check_out_first_unnamed">A session is running. Check out of it first.</string>
@@ -335,7 +337,7 @@
     <string name="about_privacy_policy">Privacy policy</string>
     <string name="about_feedback">Send feedback</string>
     <string name="about_rate">Rate on Google Play</string>
-    <string name="about_licenses">Open source licences</string>
+    <string name="about_licenses">Licences</string>
     <string name="about_open_link">Opens outside the app</string>
     <string name="about_no_email_app">No email app found. Address copied: %1$s</string>
     <string name="about_no_browser">No browser found. Link copied to the clipboard.</string>
@@ -353,14 +355,16 @@
     <string name="privacy_no_photo_title">No photo is taken</string>
     <string name="privacy_no_photo_body">Your camera reports whether a face is in frame. The app reads that count and nothing else.</string>
     <string name="privacy_no_analytics_title">No analytics, no ads</string>
-    <string name="privacy_no_analytics_body">Nothing here measures how you use the app, and no third-party code collects anything.</string>
+    <string name="privacy_no_analytics_body">Nothing here measures how you use the app. The only question asked of anyone else is whether Google Play has a newer version.</string>
     <string name="privacy_check_title">How to Check</string>
     <string name="privacy_check_body">You don\'t have to take this on trust. Android lists every permission an app declares under App info, and Google Play lists them on the store page. This app has no network permission to list.</string>
 
-    <!-- Open source licences. The library names, copyrights and licence names on that screen are
+    <!-- Licences. The library names, copyrights and licence names on that screen are
          proper nouns and legal text and stay as written; only these notes are prose. -->
     <string name="licenses_note_androidx">Core, Compose, Material 3, Lifecycle, Navigation, Room, WorkManager, Biometric and their dependencies.</string>
     <string name="licenses_note_camerax">camera-core embeds libyuv, which carries its own BSD licence.</string>
+    <string name="licenses_note_play">Asks Google Play whether a newer version of the app exists.</string>
+    <string name="licenses_note_play_services">Play services basement and tasks only, which Play In-App Updates requires.</string>
     <string name="licenses_note_outfit">Display, headline and title sizes.</string>
     <string name="licenses_note_manrope">Body and label sizes.</string>
     <string name="licenses_note_plex_arabic">All text when the app is in Arabic.</string>

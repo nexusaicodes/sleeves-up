@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.checkin.app.R
+import com.checkin.app.ui.AppUpdateOffer
 import com.checkin.app.ui.checkin.CheckInViewModel
 import com.checkin.app.ui.components.LocalSnackbarHostState
 import com.checkin.app.ui.habits.HabitsViewModel
@@ -34,9 +35,10 @@ import kotlinx.coroutines.launch
  * Top-level chrome: a start-aligned title bar and the bottom nav around the nav host. The title names the
  * active section, so a screen never has to draw its own heading; screens receive the combined inset
  * through the Scaffold's padding. The bar's actions hold the [HabitSwitcher] on every tab.
+ * [offerUpdates] composes [AppUpdateOffer] inside the snackbar host it posts to.
  */
 @Composable
-fun AppNavScaffold(navController: NavHostController) {
+fun AppNavScaffold(navController: NavHostController, offerUpdates: Boolean) {
     // Hoisted here (shared with the Check-In tab) so its presence gate can render full-screen above
     // the chrome — the camera preview and the gate's own controls must not sit under the bottom nav.
     val checkInViewModel: CheckInViewModel = viewModel(factory = CheckInViewModel.Factory)
@@ -98,6 +100,7 @@ fun AppNavScaffold(navController: NavHostController) {
     ) { innerPadding ->
         CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
             NavigationGraph(navController, innerPadding, checkInViewModel, runningName)
+            if (offerUpdates) AppUpdateOffer(sessionOpen = habitsState.running != null)
         }
     }
 }

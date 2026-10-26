@@ -47,6 +47,12 @@ interface PromptSettings {
 
     /** Records that it has, so it runs once rather than on every launch. */
     fun markWelcomeSeen()
+
+    /** The newest version code whose in-app update dialog has been shown; 0 when none has. */
+    fun updateOfferedVersionCode(): Int
+
+    /** Records that [versionCode]'s update dialog has been shown, so it is offered once. */
+    fun markUpdateOffered(versionCode: Int)
 }
 
 class SharedPrefsPromptSettings(private val prefs: SharedPreferences) : PromptSettings {
@@ -57,6 +63,7 @@ class SharedPrefsPromptSettings(private val prefs: SharedPreferences) : PromptSe
         private const val KEY_CAMERA_DISCLOSURE_SEEN = "camera_disclosure_seen"
         private const val KEY_NOTIFICATIONS_ASKED = "notifications_asked"
         private const val KEY_WELCOME_SEEN = "welcome_seen"
+        private const val KEY_UPDATE_OFFERED_VERSION_CODE = "update_offered_version_code"
 
         fun create(context: Context) = SharedPrefsPromptSettings(
             context.applicationContext.getSharedPreferences(NAME, Context.MODE_PRIVATE),
@@ -85,5 +92,11 @@ class SharedPrefsPromptSettings(private val prefs: SharedPreferences) : PromptSe
 
     override fun markWelcomeSeen() {
         prefs.edit { putBoolean(KEY_WELCOME_SEEN, true) }
+    }
+
+    override fun updateOfferedVersionCode(): Int = prefs.getInt(KEY_UPDATE_OFFERED_VERSION_CODE, 0)
+
+    override fun markUpdateOffered(versionCode: Int) {
+        prefs.edit { putInt(KEY_UPDATE_OFFERED_VERSION_CODE, versionCode) }
     }
 }

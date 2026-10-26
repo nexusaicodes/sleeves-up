@@ -137,8 +137,10 @@ fun AppRoot(onGatePassed: () -> Unit) {
             // reason the welcome exists, and enforced by branch position it is a rule no test
             // can see. Outside the gate too: PresenceGate raises its own request, and two stacked
             // system dialogs is a dialog the user can't answer.
-            if (step == FirstRun.Step.ASK_NOTIFICATIONS) NotificationPermissionOnFirstOpen(settings)
-            AppNavScaffold(navController)
+            val askingNotifications = step == FirstRun.Step.ASK_NOTIFICATIONS
+            if (askingNotifications) NotificationPermissionOnFirstOpen(settings)
+            // Never in the same launch as that ask, so Play's dialog cannot land on top of it.
+            AppNavScaffold(navController, offerUpdates = !askingNotifications)
         }
     }
 
