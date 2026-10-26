@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
+import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 
@@ -62,8 +64,7 @@ class AndroidNotifier(
         val manager = NotificationManagerCompat.from(context)
         val channel = manager.getNotificationChannelCompat(channelId)
         return NotificationDelivery.canDeliver(
-            permissionGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED,
+            permissionGranted = context.holdsNotificationPermission(),
             appEnabled = manager.areNotificationsEnabled(),
             channelImportance = channel?.importance,
             groupBlocked = channel?.group?.let { manager.getNotificationChannelGroupCompat(it)?.isBlocked } == true,
@@ -74,3 +75,14 @@ class AndroidNotifier(
         context.getSystemService(NotificationManager::class.java)?.cancel(id)
     }
 }
+
+/** Whether this device asks for `POST_NOTIFICATIONS` at runtime; see [NotificationDelivery.needsRuntimeGrant]. */
+@ChecksSdkIntAtLeast(api = NotificationDelivery.RUNTIME_GRANT_SDK)
+fun notificationsNeedRuntimeGrant(): Boolean = NotificationDelivery.needsRuntimeGrant(Build.VERSION.SDK_INT)
+
+/**
+ * The app's one reading of the notification grant — true below API 33, where there is no grant to
+ * hold. It says nothing about whether a post would be seen; [NotificationDelivery.canDeliver] does.
+ */
+fun Context.holdsNotificationPermission(): Boolean = !notificationsNeedRuntimeGrant() ||
+    ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED

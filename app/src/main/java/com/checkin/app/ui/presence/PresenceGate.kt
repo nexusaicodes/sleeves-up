@@ -28,12 +28,18 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.checkin.app.CheckInApplication
 import com.checkin.app.R
+import com.checkin.app.notify.holdsNotificationPermission
+import com.checkin.app.notify.notificationsNeedRuntimeGrant
 
-/** Camera drives the presence check; notifications carry the running timer and its reminder. */
-private val PRESENCE_PERMISSIONS = arrayOf(
-    Manifest.permission.CAMERA,
-    Manifest.permission.POST_NOTIFICATIONS,
-)
+/**
+ * Camera drives the presence check; notifications carry the running timer and its reminder, and are
+ * asked for only where they are a runtime permission (API 33 up).
+ */
+private fun presencePermissions(): Array<String> = if (notificationsNeedRuntimeGrant()) {
+    arrayOf(Manifest.permission.CAMERA, Manifest.permission.POST_NOTIFICATIONS)
+} else {
+    arrayOf(Manifest.permission.CAMERA)
+}
 
 /**
  * The one entry point to a presence check, and the only place the camera permission is asked for
@@ -57,7 +63,7 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
 
     var disclosureSeen by rememberSaveable { mutableStateOf(settings.hasSeenCameraDisclosure()) }
     var cameraGranted by rememberSaveable { mutableStateOf(context.hasCameraPermission()) }
-    var notificationsGranted by rememberSaveable { mutableStateOf(context.hasNotificationPermission()) }
+    var notificationsGranted by rememberSaveable { mutableStateOf(context.holdsNotificationPermission()) }
     // Separates "not asked yet" from "asked and refused" — only the latter earns the recovery screen.
     var cameraRefused by rememberSaveable { mutableStateOf(false) }
     // Saveable, or a rotation on the recovery screen re-fires the system dialog the user just
@@ -79,7 +85,7 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
         // timer notification, the session reminder and every nudge, all of which Notifier guards.
         requestInFlight = false
         cameraGranted = context.hasCameraPermission()
-        notificationsGranted = context.hasNotificationPermission()
+        notificationsGranted = context.holdsNotificationPermission()
         cameraRefused = !cameraGranted
     }
 
@@ -94,7 +100,7 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
         if (disclosureSeen && !allGranted && !requested) {
             requested = true
             requestInFlight = true
-            permissionLauncher.launch(PRESENCE_PERMISSIONS)
+            permissionLauncher.launch(presencePermissions())
         }
     }
 
@@ -104,7 +110,7 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
             cameraGranted = true
             cameraRefused = false
         }
-        notificationsGranted = context.hasNotificationPermission()
+        notificationsGranted = context.holdsNotificationPermission()
         onPauseOrDispose {}
     }
 
@@ -132,7 +138,7 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                 // route left is system settings.
                 if (activity != null && activity.shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
                     requestInFlight = true
-                    permissionLauncher.launch(PRESENCE_PERMISSIONS)
+                    permissionLauncher.launch(presencePermissions())
                 } else {
                     context.startActivity(
                         Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -152,9 +158,6 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
 
 private fun Context.hasCameraPermission(): Boolean =
     ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-
-private fun Context.hasNotificationPermission(): Boolean =
-    ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
 /** Unwraps the theming/base-context wrappers Compose may hand out to reach the hosting Activity. */
 private tailrec fun Context.findActivity(): Activity? = when (this) {

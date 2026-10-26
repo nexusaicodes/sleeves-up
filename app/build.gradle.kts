@@ -22,7 +22,8 @@ android {
 
     defaultConfig {
         applicationId = "com.nexusai.checkin.app"
-        minSdk = 33
+        // Android 12. CLAUDE.md (Toolchain) has what breaks below it and what branches above it.
+        minSdk = 31
         targetSdk = 36
         // Sourced from gradle.properties (VERSION_CODE / VERSION_NAME) — the single source of
         // truth. Override per-build with -PVERSION_CODE / -PVERSION_NAME. Fallbacks keep a fresh

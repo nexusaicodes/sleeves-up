@@ -1,8 +1,6 @@
 package com.checkin.app.ui
 
 import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,11 +13,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.checkin.app.CheckInApplication
+import com.checkin.app.notify.holdsNotificationPermission
+import com.checkin.app.notify.notificationsNeedRuntimeGrant
 import com.checkin.app.platform.PromptSettings
 import com.checkin.app.ui.checkin.CheckOutCelebration
 import com.checkin.app.ui.checkin.CheckOutSignal
@@ -169,7 +168,8 @@ fun AppRoot(onGatePassed: () -> Unit) {
  * Asked once, tracked in prefs rather than inferred from the grant, because a refusal and a
  * never-asked look the same through `PackageManager` — and Android drops the dialog silently
  * after two refusals, so re-asking every cold start would be invisible noise. Declining costs
- * only notifications; every post is already guarded by `Notifier`.
+ * only notifications; every post is already guarded by `Notifier`. Below API 33 the permission
+ * does not exist, so the flag is written and nothing is asked.
  */
 @Composable
 private fun NotificationPermissionOnFirstOpen(settings: PromptSettings) {
@@ -182,10 +182,8 @@ private fun NotificationPermissionOnFirstOpen(settings: PromptSettings) {
     LaunchedEffect(Unit) {
         if (settings.hasAskedNotifications()) return@LaunchedEffect
         settings.markNotificationsAsked()
-        if (!hasNotificationPermission(context)) launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        if (notificationsNeedRuntimeGrant() && !context.holdsNotificationPermission()) {
+            launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 }
-
-private fun hasNotificationPermission(context: Context): Boolean =
-    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-        PackageManager.PERMISSION_GRANTED

@@ -44,7 +44,7 @@ grade: a day counts because you turned up for it, not because its hours cleared 
 ## Requirements
 
 - Android Studio (ships the JetBrains JDK 21 the Gradle daemon needs)
-- A device or emulator on **Android 13+** (min SDK 33; compile/target SDK 36)
+- A device or emulator on **Android 12+** (min SDK 31; compile/target SDK 36)
 - **Notifications** permission, asked after the first-run tour; **Camera**, asked at the first check-in
 
 ## Build & run

@@ -8,10 +8,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.checkin.app.CheckInApplication
 import com.checkin.app.R
 import com.checkin.app.ui.about.AboutCard
 import com.checkin.app.ui.components.ActionRow
@@ -29,7 +32,8 @@ import kotlinx.coroutines.launch
  * due — and it lives on the Habits screen beside the habit it belongs to, so this screen holds no
  * state of its own; [runningHabitName] is passed in only to lock the Habits link while a session
  * runs. The language is the platform's per-app setting: [LanguageRow] reads and writes it
- * through `LocaleManager`, so its short list and Android's own screen cannot disagree.
+ * through `LocaleManager`, so its short list and Android's own screen cannot disagree. Below API 33
+ * there is no per-app setting, so the section is absent and the app follows the system language.
  */
 @Composable
 fun SettingsScreen(
@@ -43,6 +47,10 @@ fun SettingsScreen(
     // scope remembered inside it is cancelled the moment the card scrolls away.
     val snackbarHostState = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val languageSettings = remember(context) {
+        (context.applicationContext as CheckInApplication).container.languageSettings
+    }
     val showMessage: (String) -> Unit = { message ->
         scope.launch { snackbarHostState.showSnackbar(message) }
     }
@@ -77,9 +85,11 @@ fun SettingsScreen(
                 )
             }
         }
-        item {
-            SectionCard(title = stringResource(R.string.language_section)) {
-                LanguageRow()
+        languageSettings?.let { settings ->
+            item {
+                SectionCard(title = stringResource(R.string.language_section)) {
+                    LanguageRow(settings)
+                }
             }
         }
         item {

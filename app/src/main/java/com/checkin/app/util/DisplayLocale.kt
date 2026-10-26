@@ -17,7 +17,8 @@ import java.util.Locale
  * **A preference with no region is passed over.** The configuration's list is the stored per-app
  * locale followed by the live system list (AOSP `PackageConfigPersister.updateConfigIfNeeded`), and
  * the app stores a bare language (see [AppLanguage]), so the region and any regional preferences
- * (`-u-fw-`, `-u-mu-`) come from the system list as it stands rather than a copy of it.
+ * (`-u-fw-`, `-u-mu-`) come from the system list as it stands rather than a copy of it. Below API
+ * 33 there is no stored locale and the list is the system's alone, which this reads the same way.
  */
 fun displayLocale(preferred: List<Locale>, resourceLanguage: String): Locale =
     preferred.firstOrNull { it.language == resourceLanguage && it.country.isNotEmpty() }

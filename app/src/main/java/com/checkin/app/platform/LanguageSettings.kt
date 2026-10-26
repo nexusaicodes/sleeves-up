@@ -2,7 +2,9 @@ package com.checkin.app.platform
 
 import android.app.LocaleManager
 import android.content.Context
+import android.os.Build
 import android.os.LocaleList
+import androidx.annotation.RequiresApi
 import com.checkin.app.util.AppLanguage
 import java.util.Locale
 
@@ -25,8 +27,9 @@ interface LanguageSettings {
  */
 fun LanguageSettings.choose(choice: AppLanguage) = store(choice.locale)
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class LocaleManagerLanguageSettings(context: Context) : LanguageSettings {
-    // API 33, the minSdk, so the service is always there.
+    // Present from API 33, which this class requires.
     private val manager = requireNotNull(context.getSystemService(LocaleManager::class.java))
 
     override fun stored(): List<Locale> = manager.applicationLocales.let { list -> List(list.size()) { list[it] } }
