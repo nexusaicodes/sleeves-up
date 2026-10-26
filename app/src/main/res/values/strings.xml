@@ -20,7 +20,7 @@
     <string name="nav_history">History</string>
     <string name="nav_reports">Reports</string>
     <string name="nav_settings">Settings</string>
-    <string name="nav_licenses">Open Source</string>
+    <string name="nav_licenses">Licences</string>
     <string name="nav_privacy">Privacy</string>
 
     <!-- Shared by every dialog's dismiss button. -->
@@ -349,7 +349,7 @@
          release — a new dependency can make it false without a word here changing. -->
     <string name="privacy_cannot_title">What This App Does Not Do</string>
     <string name="privacy_no_internet_title">No internet permission</string>
-    <string name="privacy_no_internet_body">It cannot upload anything, because it cannot reach the network at all.</string>
+    <string name="privacy_no_internet_body">It holds no permission to reach the network, so it cannot upload anything.</string>
     <string name="privacy_no_account_title">No account, no server</string>
     <string name="privacy_no_account_body">There is nothing to sign in to. Your sessions live in a database on this phone.</string>
     <string name="privacy_no_photo_title">No photo is taken</string>

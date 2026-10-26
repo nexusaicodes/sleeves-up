@@ -39,7 +39,7 @@ grade: a day counts because you turned up for it, not because its hours cleared 
 | **Check In** | Live timer and the check-in/out button, with today's sessions a tap away |
 | **History** | Monthly calendar marking every day you showed up; tap a day for its sessions |
 | **Reports** | A month or all time: the numbers, days split, daily hours, hours by month, start times, sessions per day, and CSV export of that span |
-| **Settings** | Manage habits (names, reminder times, archive, restore), app language, and About: privacy, feedback, open-source licences |
+| **Settings** | Manage habits (names, reminder times, archive, restore), app language, and About: privacy, feedback, licences |
 
 ## Requirements
 

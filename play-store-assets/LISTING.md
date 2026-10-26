@@ -92,7 +92,7 @@ WHAT YOU SEE
 
 PRIVATE BY DESIGN
 • Your session data never leaves this device. There is no account, no server and no sync.
-• The app holds no internet permission at all. It cannot upload anything, because it cannot reach the network.
+• The app holds no internet permission at all, so it cannot upload anything.
 • No photo is ever taken. Your camera hardware reports whether a face is in frame and the app reads only that count — frames never leave the camera, so there is no image to store, show, delete or leak.
 • Face detection, not face recognition: the check confirms someone is there. It identifies no one and matches nothing.
 • No ads. No analytics. The only question asked of anyone else is whether Google Play has a newer version.
@@ -189,7 +189,7 @@ Sleeves Up متتبّع خاص لتسجيل الحضور يعمل على جها�
 
 خاص بطبيعته
 • بيانات جلساتك لا تغادر هذا الجهاز أبدًا. لا حساب، ولا خادم، ولا مزامنة.
-• لا يملك التطبيق أي إذن بالوصول إلى الإنترنت. لا يمكنه رفع أي شيء، لأنه لا يستطيع الوصول إلى الشبكة.
+• لا يملك التطبيق أي إذن بالوصول إلى الإنترنت، فلا يمكنه رفع أي شيء.
 • لا تُلتقط أي صورة. تُبلغ كاميرا جهازك فقط بوجود وجه في الإطار، ولا يقرأ التطبيق سوى ذلك العدد — لا تغادر الإطارات الكاميرا، فلا توجد صورة تُحفظ أو تُعرض أو تُحذف أو تتسرّب.
 • كشفٌ عن وجود وجه، لا تعرّفٌ عليه: يتأكد الفحص من وجود شخص، ولا يحدد هوية أحد ولا يطابق شيئًا.
 • لا إعلانات. لا تحليلات. السؤال الوحيد الموجَّه إلى جهة أخرى هو سؤال Google Play عن وجود إصدار أحدث.
@@ -300,7 +300,7 @@ screenshot corroborates.
 | 4 | `04-habits.png` | The Habits screen: three habits, each with its reminder time and nothing else | One record per habit. Nothing compares them. |
 | 5 | `05-running.png` | The timer notification in the shade, chronometer running | A live timer while you're in. Nothing gets subtracted. |
 | 6 | `06-start-times.png` | The morning / afternoon / evening split | See when you actually start. No bucket is the right one. |
-| 7 | `07-privacy.png` | The in-app privacy screen | No internet permission at all. It cannot upload, because it cannot connect. |
+| 7 | `07-privacy.png` | The in-app privacy screen | No internet permission at all, so it cannot upload. |
 | 8 | `08-export.png` | The system share sheet mid-export | Export everything. That copy is yours. |
 
 Slot 1 is the hero and earns it mechanically rather than by taste: every habit tracker on Play uses

@@ -17,7 +17,7 @@
     <string name="nav_history">السجل</string>
     <string name="nav_reports">التقارير</string>
     <string name="nav_settings">الإعدادات</string>
-    <string name="nav_licenses">المصادر المفتوحة</string>
+    <string name="nav_licenses">التراخيص</string>
     <string name="nav_privacy">الخصوصية</string>
 
     <!-- Shared by every dialog's dismiss button. -->
@@ -247,7 +247,7 @@
     <!-- Privacy. Every line is a claim about a mechanism, not a promise about conduct. -->
     <string name="privacy_cannot_title">ما لا يفعله هذا التطبيق</string>
     <string name="privacy_no_internet_title">لا إذن بالوصول إلى الإنترنت</string>
-    <string name="privacy_no_internet_body">لا يمكنه رفع أي شيء، لأنه لا يستطيع الوصول إلى الشبكة أصلًا.</string>
+    <string name="privacy_no_internet_body">لا يملك أي إذن بالوصول إلى الشبكة، فلا يمكنه رفع أي شيء.</string>
     <string name="privacy_no_account_title">لا حساب، ولا خادم</string>
     <string name="privacy_no_account_body">لا يوجد ما تسجّل الدخول إليه. جلساتك محفوظة في قاعدة بيانات على هذا الهاتف.</string>
     <string name="privacy_no_photo_title">لا تُلتقط أي صورة</string>
