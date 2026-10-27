@@ -52,9 +52,10 @@ object PresenceCheckSignal {
         /**
          * A check-in whose habit is not chosen yet: the root draws the picker rather than the gate.
          * The same request rather than a second flag beside it, so the stage and the reason cannot be
-         * read from two moments, and one stamp covers both stages — a picker abandoned on the home
-         * screen expires exactly as a gate does, and a pick re-raises with the habit, restamping it.
-         * Nothing can check in from this stage: a passed gate with no habit writes nothing.
+         * read from two moments. A picker abandoned on the home screen expires exactly as a gate does;
+         * a pick is a fresh answer from someone present, so it re-raises with the habit and restamps,
+         * giving the gate its own [EXPIRY_MS]. Nothing can check in from this stage: a passed gate
+         * with no habit writes nothing.
          */
         val choosingHabit: Boolean get() = reason == Reason.CHECK_IN && habitId == null
 

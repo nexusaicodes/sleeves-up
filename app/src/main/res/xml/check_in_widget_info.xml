@@ -3,7 +3,7 @@
     One size: a short strip, three cells by one, resizable sideways only — a longer habit name gets
     more room, and there is nothing a taller widget would add. updatePeriodMillis is 0: the widget
     changes only when the habits or the open session do, and the app pushes those itself
-    (AppContainer.launchWidgetSync), so a periodic wake would redraw nothing.
+    (WidgetSync), so a periodic wake would redraw nothing.
 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_description"

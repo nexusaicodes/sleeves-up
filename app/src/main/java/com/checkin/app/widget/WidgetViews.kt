@@ -26,7 +26,7 @@ object WidgetViews {
         RemoteViews(context.packageName, R.layout.widget_check_in).apply {
             setOnClickPendingIntent(android.R.id.background, tapIntent(context))
             // A stable description rather than the cycling text, which a screen reader cannot follow.
-            setContentDescription(android.R.id.background, description(context, face))
+            setContentDescription(android.R.id.background, label(context, face))
             val running = face is WidgetFace.Running
             setViewVisibility(R.id.widget_mark_running, if (running) View.VISIBLE else View.GONE)
             setViewVisibility(R.id.widget_mark_rest, if (running) View.GONE else View.VISIBLE)
@@ -42,21 +42,20 @@ object WidgetViews {
                 setViewVisibility(R.id.widget_flipper, View.VISIBLE)
                 setViewVisibility(R.id.widget_label, View.GONE)
             } else {
-                setTextViewText(R.id.widget_label, staticLabel(context, face))
+                setTextViewText(R.id.widget_label, label(context, face))
                 setViewVisibility(R.id.widget_flipper, View.GONE)
                 setViewVisibility(R.id.widget_label, View.VISIBLE)
             }
         }
 
-    private fun staticLabel(context: Context, face: WidgetFace): String = when (face) {
+    /**
+     * The face in one line: the static label, and the description of every face. A cycling face's
+     * line is the plain "Check In", which a screen reader reads in place of the names going by.
+     */
+    private fun label(context: Context, face: WidgetFace): String = when (face) {
         is WidgetFace.Running -> checkOutLabel(context, face.name)
         is WidgetFace.Single -> checkInLabel(context, face.name)
         is WidgetFace.Cycling, WidgetFace.Plain -> context.getString(R.string.check_in)
-    }
-
-    private fun description(context: Context, face: WidgetFace): String = when (face) {
-        is WidgetFace.Cycling -> context.getString(R.string.check_in)
-        else -> staticLabel(context, face)
     }
 
     private fun checkInLabel(context: Context, name: String?): String =

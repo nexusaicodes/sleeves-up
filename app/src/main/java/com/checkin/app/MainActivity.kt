@@ -97,7 +97,7 @@ class MainActivity : FragmentActivity() {
         // The animation setting has no change signal and is changed in system settings, so a return
         // from there is the first moment the widget's cycling can follow it.
         container.applicationScope.launch {
-            container.refreshWidgets()
+            container.widgetSync.redraw(force = false)
         }
     }
 
@@ -236,7 +236,7 @@ class MainActivity : FragmentActivity() {
         PresenceCheckSignal.raise(reason, container.timeSource.nowMillis())
     }
 
-    /** Resolves the root gate: a check-out request closes the session, and a nudge tap opens one. */
+    /** Resolves the root gate: a check-out request closes the session, and a check-in request opens one. */
     private fun onRootGatePassed() {
         val request = PresenceCheckSignal.request.value
         // Exhaustive, so a new Reason does not compile until it is given a meaning here.

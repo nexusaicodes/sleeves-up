@@ -27,8 +27,8 @@ class CheckInApplication : Application() {
         // collector's first emission is the single site that puts the nudge alarm back. It runs off
         // the main thread and never throws; see AppContainer.launchHabitSync.
         container.launchHabitSync()
-        // Same pattern, same reason: the widget follows the tables from the process start onward.
-        container.launchWidgetSync()
+        // Same pattern, same reason: a placed widget follows the tables from the process start onward.
+        container.widgetSync.start()
         // Off the main thread: blocking filesystem work nothing waits on, and every path that reaches
         // the ledger reaches it during the first frame. Guarded so a file that will not delete is not
         // a crash on launch.
