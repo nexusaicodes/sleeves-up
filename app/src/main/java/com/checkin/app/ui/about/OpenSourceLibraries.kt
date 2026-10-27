@@ -31,6 +31,20 @@ enum class LibraryLicense(val displayName: String, val url: String, val bundled:
         url = "https://scripts.sil.org/OFL",
         bundled = true,
     ),
+
+    /** Play In-App Updates and its core-common. Proprietary; linked, since nothing obliges a copy. */
+    PLAY_CORE_TOS(
+        displayName = "Play Core Software Development Kit Terms of Service",
+        url = "https://developer.android.com/guide/playcore/license",
+        bundled = false,
+    ),
+
+    /** The two Play services artifacts In-App Updates depends on. Proprietary; linked. */
+    ANDROID_SDK_LICENSE(
+        displayName = "Android Software Development Kit License",
+        url = "https://developer.android.com/studio/terms",
+        bundled = false,
+    ),
 }
 
 /**
@@ -51,7 +65,7 @@ data class OpenSourceLibrary(
 /**
  * Everything redistributed inside the app, grouped by project rather than by artifact.
  *
- * The release runtime classpath resolves to 52 group ids, which collapse into the projects below.
+ * The release runtime classpath resolves to 54 group ids, which collapse into the projects below.
  * Grouping is only sound because the license is uniform within each group — where it isn't, the
  * group carries both, as CameraX does: its camera-core POM declares BSD alongside Apache-2.0 for the
  * libyuv it embeds.
@@ -60,10 +74,11 @@ data class OpenSourceLibrary(
  * AutoValue's annotations and JSpecify are all redistributed in the APK without
  * appearing in `app/build.gradle.kts`, so a list built from that file alone would omit them.
  *
- * Every entry is Apache-2.0, the OFL, or the BSD that rides along with CameraX — no proprietary
- * terms. Presence detection runs on the camera hardware, so no ML library (and none of the Play
- * services stack that would bring proprietary terms with it) is on the classpath;
- * `OpenSourceLibrariesTest` fails if one returns.
+ * Every entry is Apache-2.0, the OFL, or the BSD that rides along with CameraX, except the in-app
+ * update stack: Play In-App Updates (Play Core terms) and the two Play services artifacts it needs,
+ * basement and tasks (Android SDK License). Presence detection runs on the camera hardware, so no
+ * ML library is on the classpath, and no other Play services artifact; `OpenSourceLibrariesTest`
+ * fails if either returns. The type keeps its name though not every entry is open source.
  *
  * Keeping this by hand means it can drift when a dependency is added, so drift detection is
  * automated while the wording stays human. Two checks cover it: `OpenSourceLibrariesTest` guards the
@@ -126,6 +141,20 @@ val OPEN_SOURCE_LIBRARIES: List<OpenSourceLibrary> = listOf(
         coordinates = "org.jspecify:jspecify",
         copyright = "Copyright © The JSpecify Authors",
         licenses = listOf(LibraryLicense.APACHE_2_0),
+    ),
+    OpenSourceLibrary(
+        name = "Play In-App Updates",
+        coordinates = "com.google.android.play:*",
+        copyright = "Copyright © Google LLC",
+        licenses = listOf(LibraryLicense.PLAY_CORE_TOS),
+        note = R.string.licenses_note_play,
+    ),
+    OpenSourceLibrary(
+        name = "Google Play services",
+        coordinates = "com.google.android.gms:play-services-basement,play-services-tasks",
+        copyright = "Copyright © Google LLC",
+        licenses = listOf(LibraryLicense.ANDROID_SDK_LICENSE),
+        note = R.string.licenses_note_play_services,
     ),
     // The bundled typefaces. Not Maven artifacts, so their `coordinates` names the resource
     // instead — `verifyLicenseCoverage` matches these against res/font/ rather than the classpath.

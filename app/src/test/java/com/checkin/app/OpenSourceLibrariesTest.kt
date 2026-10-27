@@ -31,21 +31,35 @@ class OpenSourceLibrariesTest {
     }
 
     /**
-     * Presence detection moved to the camera HAL, which is the platform rather than a dependency, so
-     * the whole ML Kit stack left the classpath with it — and with that stack went the only two
-     * non-open-source licences the app ever redistributed. A re-add would bring both back.
+     * Presence detection runs on the camera HAL, which is the platform rather than a dependency, so
+     * no ML stack is on the classpath. Re-adding one would bring its proprietary terms and, with
+     * datatransport, a network path.
      */
     @Test
-    fun `nothing on the list ships under proprietary terms`() {
+    fun `no ml or telemetry stack is on the list`() {
         listOf(
             "com.google.mlkit",
-            "com.google.android.gms",
             "com.google.android.odml",
             "com.google.android.datatransport",
             "com.google.firebase",
         ).forEach { group ->
             assertFalse(group, OPEN_SOURCE_LIBRARIES.any { it.coordinates.startsWith(group) })
         }
+    }
+
+    /**
+     * The in-app update stack is the only proprietary code shipped, and it needs exactly two Play
+     * services artifacts. `verifyLicenseCoverage` matches by group, so it would let a third gms
+     * artifact through under this entry; this pins the entry to the two it names.
+     */
+    @Test
+    fun `play services is limited to what in-app updates needs`() {
+        val proprietary = setOf(LibraryLicense.PLAY_CORE_TOS, LibraryLicense.ANDROID_SDK_LICENSE)
+        assertEquals(
+            setOf("com.google.android.play:*", "com.google.android.gms:play-services-basement,play-services-tasks"),
+            OPEN_SOURCE_LIBRARIES.filter { library -> library.licenses.any { it in proprietary } }
+                .map { it.coordinates }.toSet(),
+        )
     }
 
     @Test

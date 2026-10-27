@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
@@ -96,6 +97,13 @@ fun AppRoot(onGatePassed: () -> Unit) {
     // Hoisted above the switch so entering and leaving the presence gate never destroys the nav
     // controller — the active tab and back stack survive re-auth.
     val navController = rememberNavController()
+    // Each start owes one update check, settled by whichever surface it lands on.
+    val updateTurn = remember { UpdateCheckTurn() }
+    LifecycleStartEffect(updateTurn) {
+        updateTurn.onStart()
+        onStopOrDispose { }
+    }
+    var showingScaffold = false
     when {
         step == FirstRun.Step.WELCOME -> {
             // No BackHandler by design: the branches around it map back to dismiss, which
@@ -137,10 +145,19 @@ fun AppRoot(onGatePassed: () -> Unit) {
             // reason the welcome exists, and enforced by branch position it is a rule no test
             // can see. Outside the gate too: PresenceGate raises its own request, and two stacked
             // system dialogs is a dialog the user can't answer.
-            if (step == FirstRun.Step.ASK_NOTIFICATIONS) NotificationPermissionOnFirstOpen(settings)
-            AppNavScaffold(navController)
+            val askingNotifications = step == FirstRun.Step.ASK_NOTIFICATIONS
+            if (askingNotifications) NotificationPermissionOnFirstOpen(settings)
+            // Never in the same launch as that ask, so Play's dialog cannot land on top of it, and
+            // never under the celebration.
+            showingScaffold = true
+            AppNavScaffold(
+                navController,
+                offerUpdates = !askingNotifications && completed == null,
+                updateTurn = updateTurn,
+            )
         }
     }
+    if (!showingScaffold) ForfeitUpdateCheck(updateTurn)
 
     // Drawn over whatever is showing rather than replacing it: the celebration is a brief
     // acknowledgement, and tearing the host down for it would lose the tab the user was on. It
