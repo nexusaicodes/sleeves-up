@@ -15,6 +15,7 @@ import com.checkin.app.notify.NotificationFactory
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.nudge.AndroidNudgeAlarms
 import com.checkin.app.notify.nudge.NudgeAlarms
+import com.checkin.app.notify.nudge.NudgeCoordinator
 import com.checkin.app.notify.nudge.NudgeDispatcher
 import com.checkin.app.notify.nudge.NudgeSendDatabase
 import com.checkin.app.notify.nudge.NudgeSendLog
@@ -80,51 +81,8 @@ interface AppContainer {
     val postedNudges: PostedNudges
     val nudgeAlarms: NudgeAlarms
 
-    /**
-     * [NudgeDispatcher.runOnce] for a fire-and-forget caller — the checkpoint receiver and the hourly
-     * worker. Never throws except to cancel; see [armNudgeFallback] for what a failure arms.
-     */
-    suspend fun runNudgePass() {
-        guardNudgeArm { nudgeDispatcher.runOnce() }
-    }
-
-    /**
-     * [NudgeDispatcher.rearm] for a fire-and-forget caller: the habits collector and every
-     * reminder-time chooser. Never throws except to cancel, because it runs on [applicationScope],
-     * which has no exception handler — a throw there kills the process.
-     */
-    suspend fun rearmNudges() {
-        guardNudgeArm { nudgeDispatcher.rearm() }
-    }
-
-    /**
-     * Launches [rearmNudges] on [applicationScope]: the one re-arm every reminder-time chooser hands
-     * to `chooseReminderTime`, so no two of them can launch it differently.
-     */
-    fun launchNudgeRearm() {
-        applicationScope.launch { rearmNudges() }
-    }
-
-    /**
-     * Both dispatcher calls already absorb their own failures, so what this guards is reaching them:
-     * the dispatcher is built lazily over both databases, and a failure there falls back to the plain
-     * fallback band from the members it is built without. Losing the retry costs at most a nudge;
-     * losing the arm ends the chain the checkpoint alarm exists to keep alive.
-     */
-    @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    private suspend fun guardNudgeArm(call: suspend () -> Unit) {
-        try {
-            call()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            armNudgeFallback()
-        }
-    }
-
-    private fun armNudgeFallback() {
-        runCatching { nudgeAlarms.armFallback(timeSource.nowMillis(), timeSource.zone(), reminderSettings) }
-    }
+    // The fire-and-forget entry points to the dispatcher, guarded; see NudgeCoordinator.
+    val nudges: NudgeCoordinator
 
     /**
      * Keeps every habit's notification channel and the reminder fallback's active set in step with
@@ -144,7 +102,7 @@ interface AppContainer {
             habitRepository.allHabitsFlow()
                 .retryWhen { cause, _ ->
                     if (cause is CancellationException) return@retryWhen false
-                    armNudgeFallback()
+                    nudges.armFallback()
                     delay(HABIT_SYNC_RETRY_MS)
                     true
                 }
@@ -152,7 +110,7 @@ interface AppContainer {
                     runCatching { habitChannels.sync(habits) }
                     val active = habits.filterNot { it.archived }.mapTo(mutableSetOf()) { it.uuid }
                     runCatching { reminderSettings.rememberActive(active) }
-                    rearmNudges()
+                    nudges.rearmNow()
                 }
         }
     }
@@ -244,6 +202,17 @@ class DefaultAppContainer(context: Context) : AppContainer {
     // Stateless — the next instant is derivable from now — and eager, unlike the dispatcher that
     // decides the instant: it is the fallback arm when the dispatcher cannot be built.
     override val nudgeAlarms: NudgeAlarms = AndroidNudgeAlarms(appContext)
+
+    override val nudges: NudgeCoordinator by lazy {
+        NudgeCoordinator(
+            runOnce = { nudgeDispatcher.runOnce() },
+            rearm = { nudgeDispatcher.rearm() },
+            alarms = nudgeAlarms,
+            reminderSettings = reminderSettings,
+            timeSource = timeSource,
+            scope = applicationScope,
+        )
+    }
 
     // Held by the runner alone; the watchdog repairs alarms through the runner, not through this.
     private val sessionAlarms: SessionAlarms = AndroidSessionAlarms(appContext)

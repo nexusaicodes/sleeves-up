@@ -28,7 +28,7 @@ import java.time.ZoneId
  * **This seam only sets an instant; [NudgeDispatcher] decides it.** The alarm is one `PendingIntent`,
  * so whatever arms last wins, and a caller arming a plain band opening would replace a retry the gap
  * was holding or skip a band that is open but unsent. Arming sites therefore go through
- * [NudgeDispatcher] — via `AppContainer.runNudgePass` and `AppContainer.rearmNudges`, which fall back
+ * [NudgeDispatcher] — via `NudgeCoordinator.runPass` and `NudgeCoordinator.rearmNow`, which fall back
  * to [armFallback] when the dispatcher cannot be built — never through [arm] directly.
  */
 interface NudgeAlarms {

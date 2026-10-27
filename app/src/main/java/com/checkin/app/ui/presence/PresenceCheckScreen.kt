@@ -55,10 +55,8 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.checkin.app.R
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 
 private const val TAG = "PresenceCheckScreen"
 
@@ -116,25 +114,11 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     // flag reset to false there passes the check under a dialog the user is still answering. Safe
     // only because the prompt below is rebuilt with each activity — see [rememberDeviceUnlock].
     var usingDeviceUnlock by rememberSaveable { mutableStateOf(false) }
-    // Null until the camera has been asked. False means no check can run here at all — the hardware
-    // reports no face-detection mode, the mode it advertised isn't the one it runs with, or the bind
-    // failed — and that is the one state that skips the wait before device unlock is offered, since
-    // the answer it is waiting for is already known. The cases collapse into one because the
-    // recovery is identical. A StateFlow rather than snapshot state because the capture callback is
-    // one of the writers and it does not run on the main thread.
-    val cameraUsableFlow = remember { MutableStateFlow<Boolean?>(null) }
-    val cameraUsable by cameraUsableFlow.collectAsState()
-
-    // Whether the latest capture result held a face. This is the whole check: the first frame that
-    // sets it true passes the gate. Written every frame from a camera thread, but a StateFlow drops
-    // a write equal to what it holds, so a steady face or a steady empty frame recomposes nothing.
-    val facePresentFlow = remember { MutableStateFlow(false) }
-    val facePresent by facePresentFlow.collectAsState()
-
-    // Consecutive results showing no detection at all. Counted rather than acted on at the first,
-    // because the results either side of session configuration can carry OFF on a camera that then
-    // detects perfectly well.
-    val nonDetectingResults = remember { AtomicInteger(0) }
+    // What the camera has said, folded from its capture results off the main thread; the rules live
+    // in CameraReadings, where they are unit-tested.
+    val readings = remember { CameraReadings() }
+    val cameraUsable by readings.cameraUsable.collectAsState()
+    val facePresent by readings.facePresent.collectAsState()
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     // Tracks disposal so the async provider callback can release the camera if the gate is gone
     // before the provider resolves (onDispose would otherwise see a null provider and skip unbind).
@@ -185,7 +169,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     // would do, since a LaunchedEffect's coroutine dies with its key. It stays composition-scoped
     // on purpose: a gate dismissed inside the confirmation must not go on to succeed.
     LaunchedEffect(Unit) {
-        snapshotFlow { facePresent && !usingDeviceUnlock }.first { it }
+        snapshotFlow { PresenceCheckRules.passes(facePresent, usingDeviceUnlock) }.first { it }
         // Whatever the camera or an abandoned prompt said before this frame is now answered.
         errorMessage = null
         successMessage = faceDetectedMessage
@@ -198,11 +182,9 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     // rotation and every trip out of the app, and it is measured from the gate opening rather than
     // from the camera streaming — a camera that binds and then never delivers a result would start
     // no clock at all, leaving Dismiss as the only control.
-    // Both ends are clamped: saved state can outlive a reboot, which resets the elapsed-time clock.
     LaunchedEffect(Unit) {
         if (searchTimedOut) return@LaunchedEffect
-        val spent = SystemClock.elapsedRealtime() - searchStartedAt
-        delay((DEVICE_UNLOCK_OFFERED_AFTER_MS - spent).coerceIn(0L, DEVICE_UNLOCK_OFFERED_AFTER_MS))
+        delay(PresenceCheckRules.remainingWaitMs(searchStartedAt, SystemClock.elapsedRealtime()))
         searchTimedOut = true
     }
 
@@ -216,17 +198,9 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     }
 
     DisposableEffect(lifecycleOwner) {
-        // CameraX unbinds at ON_STOP and capture results stop arriving, but these values survive it —
-        // they are remembered, and a stop is not a config change. A stale `facePresent` is the one
-        // that matters: it is reachable while the device-unlock prompt holds the check back, so a
-        // gate backgrounded with a face in frame and the prompt then cancelled would pass on a frame
-        // from before the camera was even reopened. Clearing them re-imposes the wait for a real
-        // result.
+        // See CameraReadings.onStop: a face from before the stop must not pass the check after it.
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                facePresentFlow.value = false
-                nonDetectingResults.set(0)
-            }
+            if (event == Lifecycle.Event.ON_STOP) readings.onStop()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
@@ -250,7 +224,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                             cameraProviderFuture.get()
                         } catch (e: Exception) {
                             Log.e(TAG, "Camera provider unavailable", e)
-                            cameraUsableFlow.value = false
+                            readings.onUnusable()
                             return@addListener
                         }
                         if (gateDisposed.get()) {
@@ -265,38 +239,15 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                         // session is created with.
                         val mode = frontCameraDetectMode(provider)
                         if (mode == null) {
-                            cameraUsableFlow.value = false
+                            readings.onUnusable()
                             return@addListener
                         }
 
                         val preview = faceDetectingPreview(mode) { result ->
-                            val faces = result.get(CaptureResult.STATISTICS_FACES).orEmpty()
-                            val appliedMode = result.get(CaptureResult.STATISTICS_FACE_DETECT_MODE)
-                            // What the camera advertised was read before the bind; this is what it
-                            // actually runs with. A HAL that lists a mode and then reports OFF
-                            // returns no faces however long the user waits, so it takes the same
-                            // route as one that never offered detection — but only once it has said
-                            // so consistently, since the results around session configuration can
-                            // carry OFF on a camera that then works perfectly well.
-                            if (!FaceDetectSupport.resultIsDetecting(appliedMode, faces.size)) {
-                                // A non-detecting result reports nobody by definition, and writing
-                                // that is load-bearing: without it a `true` from before the user
-                                // walked away survives a run of empty frames, which the device-unlock
-                                // prompt holds back long enough to be acted on stale.
-                                facePresentFlow.value = false
-                                if (nonDetectingResults.incrementAndGet() >=
-                                    FaceDetectSupport.NON_DETECTING_RESULTS
-                                ) {
-                                    cameraUsableFlow.value = false
-                                }
-                                return@faceDetectingPreview
-                            }
-                            nonDetectingResults.set(0)
-                            // Detection is running after all, so a camera written off by an earlier
-                            // run of OFF results is taken back rather than left on the fallback.
-                            cameraUsableFlow.value = true
-
-                            facePresentFlow.value = FaceDetectSupport.someonePresent(faces.size)
+                            readings.onResult(
+                                appliedMode = result.get(CaptureResult.STATISTICS_FACE_DETECT_MODE),
+                                facesReported = result.get(CaptureResult.STATISTICS_FACES).orEmpty().size,
+                            )
                         }.also {
                             it.surfaceProvider = previewView.surfaceProvider
                         }
@@ -307,12 +258,12 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                                 CameraSelector.DEFAULT_FRONT_CAMERA,
                                 preview,
                             )
-                            cameraUsableFlow.value = true
+                            readings.onBound()
                         } catch (e: Exception) {
                             // A camera that failed to bind will never report a face, so the fallback
                             // is offered now rather than after the wait.
                             Log.e(TAG, "Camera bind failed", e)
-                            cameraUsableFlow.value = false
+                            readings.onUnusable()
                         }
                     }, ContextCompat.getMainExecutor(ctx))
                 }
@@ -401,13 +352,11 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Withdrawn once the check has passed and while a prompt is outstanding, both to stop a
-            // second authentication being raised against a gate that is already leaving — a success
-            // never clears `usingDeviceUnlock`, so that half also covers the gap before the caller's
-            // state reaches the screen.
-            val offerBiometric = successMessage == null &&
-                !usingDeviceUnlock &&
-                (cameraUsable == false || searchTimedOut)
+            val offerBiometric = PresenceCheckRules.offersFallback(
+                passed = successMessage != null,
+                usingDeviceUnlock = usingDeviceUnlock,
+                searchTimedOut = PresenceCheckRules.searchEnded(searchTimedOut, cameraUsable),
+            )
             if (offerBiometric) {
                 if (canUseBiometric) {
                     OutlinedButton(onClick = { launchBiometric() }) {

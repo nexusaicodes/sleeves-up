@@ -166,7 +166,7 @@ class HabitsViewModel(
                     container.habitRepository,
                     container.repository,
                     container.reminderSettings,
-                    container::launchNudgeRearm,
+                    container.nudges::launchRearm,
                 )
             }
         }
