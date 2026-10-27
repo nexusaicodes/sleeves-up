@@ -116,18 +116,10 @@ class ReportsViewModel(
     }
         .flatMapLatest { (today, habit) -> repository.trackingStartFlow(habit).map { Triple(today, habit, it) } }
         .flatMapLatest { (today, habit, start) ->
-            // A **one-day** query answers the only all-record question the window needs: has today
-            // been checked out of yet. `countedThrough` is exactly "today's key is present", so the
-            // whole record is never read just to find where counting stops.
-            val todayKey = today.format(dateFormatter)
-            val countedThroughFlow = repository.dailyAggregatesFlow(habit, todayKey, todayKey)
-                .map { ConsistencyStats.countedThrough(repository.byDateKey(it), today) }
-
-            // Room invalidates per *table*, so the one-day query re-emits on every write to
-            // `sessions` — including the ones that leave `countedThrough` exactly where it was.
-            // Without this the `flatMapLatest` below tears down and re-subscribes both window
-            // queries on each check-in and check-out, which under all time is the whole record.
-            combine(scope, countedThroughFlow) { activeScope, countedThrough ->
+            // The resolved window is deduplicated too, so an emission that resolves to the window
+            // already shown does not make the `flatMapLatest` below tear down and re-subscribe both
+            // window queries — under all time, the whole record.
+            combine(scope, repository.countedThroughFlow(habit, today)) { activeScope, countedThrough ->
                 activeScope to activeScope.resolve(start, countedThrough)
             }.distinctUntilChanged().flatMapLatest { (activeScope, window) ->
                 if (window == null) {
@@ -302,11 +294,7 @@ class ReportsViewModel(
                 exportChannel.send(ExportResult.Nothing)
                 return@launch
             }
-            val todayKey = today.format(dateFormatter)
-            val countedThrough = ConsistencyStats.countedThrough(
-                repository.getDailySummaries(habit.id, todayKey, todayKey),
-                today,
-            )
+            val countedThrough = repository.countedThrough(habit.id, today)
             // Tracking that began today, or a scope holding no counted day, leaves nothing to write.
             val window = scope.value.resolve(trackingStart, countedThrough) ?: run {
                 exportChannel.send(ExportResult.Nothing)

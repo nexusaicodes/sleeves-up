@@ -44,8 +44,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 
 /**
@@ -135,11 +136,18 @@ interface AppContainer {
      * process start itself, which is what puts the alarm back after a boot, a package replace or a
      * force stop. Never throws: a database that will not open still arms the fallback, and a failed
      * channel write costs that emission's channels, which the dispatcher re-ensures before it posts.
+     * A failed read re-subscribes after [HABIT_SYNC_RETRY_MS] rather than ending the sync, since
+     * nothing else would restart it for the life of the process.
      */
     fun launchHabitSync() {
         applicationScope.launch {
             habitRepository.allHabitsFlow()
-                .catch { armNudgeFallback() }
+                .retryWhen { cause, _ ->
+                    if (cause is CancellationException) return@retryWhen false
+                    armNudgeFallback()
+                    delay(HABIT_SYNC_RETRY_MS)
+                    true
+                }
                 .collect { habits ->
                     runCatching { habitChannels.sync(habits) }
                     val active = habits.filterNot { it.archived }.mapTo(mutableSetOf()) { it.uuid }
@@ -267,3 +275,6 @@ class DefaultAppContainer(context: Context) : AppContainer {
         SessionWatchdog(repository, serviceController, sessionLifecycleRunner, timeSource)
     }
 }
+
+/** How long the habits collector waits before re-subscribing after a failed read. */
+private const val HABIT_SYNC_RETRY_MS = 30_000L

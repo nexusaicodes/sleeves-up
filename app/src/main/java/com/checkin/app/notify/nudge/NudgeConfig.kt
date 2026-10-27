@@ -1,5 +1,7 @@
 package com.checkin.app.notify.nudge
 
+import com.checkin.app.util.MILLIS_PER_MINUTE
+
 /**
  * How often a nudge may be sent. Its own file because this is what anyone tuning nudge cadence is
  * looking for, and the three files they would try first — [NudgeEligibility], which reads these
@@ -41,8 +43,7 @@ data class NudgeConfig(
     val dueNowDelayMs: Long = DEFAULT_DUE_NOW_DELAY_MS,
 ) {
     companion object {
-        private const val MINUTE_MS = 60L * 1_000L
-        const val DEFAULT_MIN_GAP_MS = 90L * MINUTE_MS
-        const val DEFAULT_DUE_NOW_DELAY_MS = 30L * MINUTE_MS
+        const val DEFAULT_MIN_GAP_MS = 90L * MILLIS_PER_MINUTE
+        const val DEFAULT_DUE_NOW_DELAY_MS = 30L * MILLIS_PER_MINUTE
     }
 }

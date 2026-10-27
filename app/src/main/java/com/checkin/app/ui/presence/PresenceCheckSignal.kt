@@ -1,7 +1,10 @@
 package com.checkin.app.ui.presence
 
 import com.checkin.app.data.local.ClosedBy
+import com.checkin.app.util.MILLIS_PER_MINUTE
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Bridges a notification tap to the full-screen presence gate shown at the UI root. Whatever posted
@@ -52,9 +55,15 @@ object PresenceCheckSignal {
      * short of the gap that makes a request meaningless. Anything the user abandoned and returned to
      * hours later is a different intention than the one they tapped.
      */
-    const val EXPIRY_MS = 10 * 60 * 1000L
+    const val EXPIRY_MS = 10 * MILLIS_PER_MINUTE
 
-    val request = MutableStateFlow(Request.NONE)
+    private val mutableRequest = MutableStateFlow(Request.NONE)
+
+    /**
+     * The live request. Read-only: [raise] is the one way in, so no request can be set without the
+     * stamp [expireIfStale] reads.
+     */
+    val request: StateFlow<Request> = mutableRequest.asStateFlow()
 
     /**
      * How many nudge taps are being resolved — read off the database to decide whether each opens a
@@ -65,17 +74,23 @@ object PresenceCheckSignal {
      */
     val resolvingTaps = MutableStateFlow(0)
 
+    // Written only under this object's lock, with the request: raise runs off the main thread (a
+    // nudge tap resolves on the application scope) while clear and expireIfStale run on it, and
+    // unlocked the two fields could be left from different writes — a request stamped 0 expires at
+    // the next start.
     private var raisedAtMillis = 0L
 
     /** Raises the gate, stamping when it was asked for so [expireIfStale] can retire it. */
+    @Synchronized
     fun raise(reason: Reason, nowMillis: Long, habitId: Long? = null) {
         raisedAtMillis = nowMillis
-        request.value = Request(reason, habitId)
+        mutableRequest.value = Request(reason, habitId)
     }
 
     /** Retires the request once it has been answered or dismissed. */
+    @Synchronized
     fun clear() {
-        request.value = Request.NONE
+        mutableRequest.value = Request.NONE
         raisedAtMillis = 0L
     }
 
@@ -88,6 +103,7 @@ object PresenceCheckSignal {
      * next launch and, on success, write a check-in stamped at whatever time and day it had become —
      * onto a row the app deliberately gives no way to edit or delete.
      */
+    @Synchronized
     fun expireIfStale(nowMillis: Long): Boolean {
         if (request.value.reason != Reason.NONE && nowMillis - raisedAtMillis > EXPIRY_MS) {
             clear()

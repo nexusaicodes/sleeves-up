@@ -1,5 +1,6 @@
 package com.checkin.app.service
 
+import com.checkin.app.util.MILLIS_PER_MINUTE
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -34,8 +35,6 @@ import java.time.format.DateTimeFormatter
  */
 object SessionSchedule {
 
-    private const val MINUTE_MS = 60L * 1_000L
-
     /**
      * How often an open session asks whether it is still open.
      *
@@ -43,7 +42,7 @@ object SessionSchedule {
      * afternoon, far enough apart that one deliberately left running is not harassed. Only the first
      * of a session alerts — see [SessionLifecycleRunner.onReminderFired].
      */
-    const val REMINDER_INTERVAL_MS = 120L * MINUTE_MS
+    const val REMINDER_INTERVAL_MS = 120L * MILLIS_PER_MINUTE
 
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 

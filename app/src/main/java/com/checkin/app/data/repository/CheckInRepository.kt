@@ -1,5 +1,6 @@
 package com.checkin.app.data.repository
 
+import com.checkin.app.data.ConsistencyStats
 import com.checkin.app.data.SystemTimeSource
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.CheckInSession
@@ -128,6 +129,28 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
 
     suspend fun getDailySummaries(habitId: Long, startDate: String, endDate: String): Map<String, DailyAggregate> =
         byDateKey(dao.getDailyAggregates(habitId, startDate, endDate))
+
+    /**
+     * Where every window of [habitId]'s record ends on [today]: [ConsistencyStats.countedThrough],
+     * today once it has been checked out of, otherwise yesterday. Answered by a **one-day** query —
+     * "is today's key present" is the whole question — so the record is never read to find it.
+     *
+     * Deduplicated: Room invalidates per table, so the query re-emits on every write to `sessions`,
+     * including the ones that leave the boundary where it was, and each screen rebuilds its window
+     * queries off this.
+     */
+    fun countedThroughFlow(habitId: Long, today: LocalDate): Flow<LocalDate> {
+        val todayKey = today.format(dateFormatter)
+        return dailyAggregatesFlow(habitId, todayKey, todayKey)
+            .map { ConsistencyStats.countedThrough(byDateKey(it), today) }
+            .distinctUntilChanged()
+    }
+
+    /** [countedThroughFlow], read once — for the CSV export, which reads the clock once too. */
+    suspend fun countedThrough(habitId: Long, today: LocalDate): LocalDate {
+        val todayKey = today.format(dateFormatter)
+        return ConsistencyStats.countedThrough(getDailySummaries(habitId, todayKey, todayKey), today)
+    }
 
     /**
      * Keys aggregates by their day. A day present in the map is a day the user showed up; a day
