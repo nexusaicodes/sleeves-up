@@ -96,9 +96,7 @@ interface AppContainer {
      * process start itself, which is what puts the alarm back after a boot, a package replace or a
      * force stop. Never throws: a database that will not open still arms the fallback, and a failed
      * channel write costs that emission's channels, which the dispatcher re-ensures before it posts.
-     * A failed read re-subscribes rather than ending the sync, since nothing else would restart it for
-     * the life of the process, backing off from [HABIT_SYNC_RETRY_MS] to [HABIT_SYNC_RETRY_MAX_MS] so
-     * a database that never opens is not retried, and the fallback re-armed, every few seconds.
+     * A failed read re-subscribes with backoff ([habitSyncRetryDelayMs]) rather than ending the sync.
      */
     fun launchHabitSync() {
         applicationScope.launch {
@@ -248,16 +246,13 @@ class DefaultAppContainer(context: Context) : AppContainer {
     }
 }
 
-/** How long the habits collector waits before its first re-subscribe after a failed read. */
 private const val HABIT_SYNC_RETRY_MS = 30 * MILLIS_PER_SECOND
-
-/** The longest it waits: a database that never opens is retried twice an hour. */
 private const val HABIT_SYNC_RETRY_MAX_MS = 30 * MILLIS_PER_MINUTE
 
-/** Doubles from [HABIT_SYNC_RETRY_MS] with each failed [attempt], up to [HABIT_SYNC_RETRY_MAX_MS]. */
+/** The habits collector's wait after a failed read: doubling from 30s, capped at 30min. */
 internal fun habitSyncRetryDelayMs(attempt: Long): Long =
     (HABIT_SYNC_RETRY_MS shl attempt.coerceAtMost(HABIT_SYNC_MAX_DOUBLINGS).toInt())
         .coerceAtMost(HABIT_SYNC_RETRY_MAX_MS)
 
-/** Enough doublings to pass the cap, and few enough that the shift cannot overflow. */
+/** Enough to pass the cap; few enough that the shift cannot overflow. */
 private const val HABIT_SYNC_MAX_DOUBLINGS = 6L

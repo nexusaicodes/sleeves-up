@@ -59,10 +59,7 @@ object PresenceCheckSignal {
 
     private val mutableRequest = MutableStateFlow(Request.NONE)
 
-    /**
-     * The live request. Read-only: [raise] is the one way in, so no request can be set without the
-     * stamp [expireIfStale] reads.
-     */
+    /** The live request; [raise] is the only writer, so each carries the stamp [expireIfStale] reads. */
     val request: StateFlow<Request> = mutableRequest.asStateFlow()
 
     /**
@@ -74,10 +71,8 @@ object PresenceCheckSignal {
      */
     val resolvingTaps = MutableStateFlow(0)
 
-    // Written only under this object's lock, with the request: raise runs off the main thread (a
-    // nudge tap resolves on the application scope) while clear and expireIfStale run on it, and
-    // unlocked the two fields could be left from different writes — a request stamped 0 expires at
-    // the next start.
+    // Written under this object's lock with the request: writers span two threads, and a request
+    // left stamped 0 would expire at the next start.
     private var raisedAtMillis = 0L
 
     /** Raises the gate, stamping when it was asked for so [expireIfStale] can retire it. */

@@ -17,10 +17,8 @@ interface CheckInSessionDao {
     suspend fun insertSession(session: CheckInSession): Long
 
     /**
-     * Closes [id] only while it is still open, returning the rows changed: 1 when this call closed
-     * it, 0 when it was already closed or absent. The condition is in the statement itself, so two
-     * closers resolving together — the late day-boundary alarm and a tap on Check Out — cannot both
-     * write: the second finds nothing open, and the first close stands.
+     * Closes [id] only while it is open; returns the rows changed, 0 when already closed or absent.
+     * The guard is in the statement, so two closers racing cannot both write.
      */
     @Query(
         "UPDATE sessions SET stopped_at = :stoppedAt, duration = :duration, closed_by = :closedBy " +

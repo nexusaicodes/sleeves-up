@@ -6,13 +6,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * What the camera has said during one presence check, folded from its capture results. No Android
- * here, so the rules [PresenceCheckScreen] runs on are unit-tested (`PresenceCheckStateTest`); the
- * screen only binds the camera, forwards each result, and draws.
- *
- * Thread-safe: the capture callback writes from a camera thread, and the screen reads on the main
- * one. StateFlows drop a write equal to what they hold, so a steady face or a steady empty frame
- * recomposes nothing.
+ * What the camera has said during one presence check, folded from its capture results; pure, so the
+ * gate's rules are unit-tested. Thread-safe: the capture callback writes from a camera thread.
  */
 class CameraReadings {
     private val usable = MutableStateFlow<Boolean?>(null)
@@ -23,11 +18,7 @@ class CameraReadings {
     // detects perfectly well.
     private val nonDetecting = AtomicInteger(0)
 
-    /**
-     * Null until the camera has been asked. False means no check can run here at all — no
-     * face-detection mode, a mode advertised but not run, or a failed bind — the one state that
-     * skips the wait before device unlock is offered, since the answer it waits for is known.
-     */
+    /** Null until asked. False means no check can run here, so device unlock is offered at once. */
     val cameraUsable: StateFlow<Boolean?> = usable.asStateFlow()
 
     /** Whether the latest result held a face. The whole check: the first frame setting it passes. */
@@ -67,10 +58,8 @@ class CameraReadings {
     }
 
     /**
-     * The screen stopped. CameraX unbinds at ON_STOP and results stop arriving, but these readings
-     * survive it. A stale face is the one that matters: it is reachable while the device-unlock
-     * prompt holds the check back, so a gate backgrounded with a face in frame and the prompt then
-     * cancelled would pass on a frame from before the camera reopened. Clearing re-imposes the wait.
+     * The screen stopped. A face from before the stop would otherwise pass the check after it, once
+     * a device-unlock prompt holding the check back is cancelled.
      */
     fun onStop() {
         face.value = false
@@ -88,20 +77,15 @@ object PresenceCheckRules {
     fun passes(facePresent: Boolean, usingDeviceUnlock: Boolean): Boolean = facePresent && !usingDeviceUnlock
 
     /**
-     * How much of the wait before device unlock is offered is left, measured from the gate opening
-     * ([startedAtMs], saved across rotation) rather than the first result — a camera that binds and
-     * never delivers would otherwise start no clock. Clamped at both ends: saved state can outlive a
-     * reboot, which resets the elapsed-time clock [nowMs] is read from.
+     * What is left of the wait before device unlock is offered, from the gate opening ([startedAtMs],
+     * saved across rotation). Clamped at both ends: a reboot resets the clock [nowMs] reads.
      */
     fun remainingWaitMs(startedAtMs: Long, nowMs: Long): Long =
         (DEVICE_UNLOCK_OFFERED_AFTER_MS - (nowMs - startedAtMs)).coerceIn(0L, DEVICE_UNLOCK_OFFERED_AFTER_MS)
 
     /**
-     * Whether the fallback button shows, once [searchTimedOut] — the wait ran out, or the camera was
-     * written off, which the screen latches so a recovering camera cannot take back a button the user
-     * is already reaching for. Withdrawn once the check has passed and while a prompt is
-     * outstanding, so no second authentication is raised against a gate already leaving — a success
-     * never clears `usingDeviceUnlock`, so that half also covers the gap before the caller reacts.
+     * Whether the fallback button shows: once [searchTimedOut] (latched by the screen), and not after
+     * the check passed or while a prompt is up, so no second authentication is raised.
      */
     fun offersFallback(passed: Boolean, usingDeviceUnlock: Boolean, searchTimedOut: Boolean): Boolean =
         !passed && !usingDeviceUnlock && searchTimedOut

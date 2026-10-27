@@ -58,11 +58,10 @@ object CheckOutSignal {
     /** The session to celebrate, or null when there is nothing to show. */
     private val mutableCompleted = MutableStateFlow<Completed?>(null)
 
-    /** The live celebration. Read-only: [raise] is the one way in, so none is set without its stamp. */
+    /** The live celebration; [raise] is the only writer, so each carries its stamp. */
     val completed: StateFlow<Completed?> = mutableCompleted.asStateFlow()
 
-    // Written only under this object's lock, with the celebration: raise runs on the application
-    // scope while clear and expireIfStale run on the main thread.
+    // Written under this object's lock with the celebration: writers span two threads.
     private var raisedAtMillis = 0L
 
     /** Raises the celebration, stamping when so [expireIfStale] can retire an unseen one. */

@@ -94,11 +94,8 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * figure rather than recomputing it: a second subtraction at the call site would be a second
      * copy of the flooring rule, free to disagree with the row it describes.
      *
-     * **Only an open row is closed**, and null comes back otherwise: a session is closed once, by
-     * whichever closer lands first, and a second must not restamp it — the day boundary would
-     * replace a user's real stop with midnight, or a late tap the midnight close with its own time,
-     * on a row nothing can edit. `CheckInSessionDao.closeIfOpen` carries the condition, so it holds
-     * even when both closers read the row as open.
+     * **Only an open row is closed**; null otherwise. `CheckInSessionDao.closeIfOpen` holds the
+     * guard, so the late day boundary and a Check Out tap cannot restamp each other's close.
      */
     suspend fun checkOutAt(sessionId: Long, atMillis: Long, closedBy: ClosedBy): CheckInSession? =
         dao.getSessionById(sessionId)?.let { close(it, atMillis, closedBy) }
@@ -110,11 +107,7 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
     suspend fun checkOutActiveSession(closedBy: ClosedBy): CheckInSession? =
         dao.getActiveSession()?.let { close(it, timeSource.nowMillis(), closedBy) }
 
-    /**
-     * The one write behind every check-out: [session] as already read, closed at [atMillis]. The
-     * open-row guard is `closeIfOpen`'s alone, in the statement, so a row closed since the read is
-     * left as it is and null comes back.
-     */
+    /** The write behind every check-out, on [session] as already read; null if it closed since. */
     private suspend fun close(session: CheckInSession, atMillis: Long, closedBy: ClosedBy): CheckInSession? {
         val duration = (atMillis - session.startedAt).coerceAtLeast(0L)
         val written = dao.closeIfOpen(session.id, atMillis, duration, closedBy)
@@ -132,13 +125,8 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
         byDateKey(dao.getDailyAggregates(habitId, startDate, endDate))
 
     /**
-     * Where every window of [habitId]'s record ends on [today]: [ConsistencyStats.countedThrough],
-     * today once it has been checked out of, otherwise yesterday. Answered by a **one-day** query —
-     * "is today's key present" is the whole question — so the record is never read to find it.
-     *
-     * Deduplicated: Room invalidates per table, so the query re-emits on every write to `sessions`,
-     * including the ones that leave the boundary where it was, and each screen rebuilds its window
-     * queries off this.
+     * Where [habitId]'s windows end on [today] ([ConsistencyStats.countedThrough]), off a one-day
+     * query. Deduplicated: Room re-emits on every `sessions` write, and screens rebuild off this.
      */
     fun countedThroughFlow(habitId: Long, today: LocalDate): Flow<LocalDate> {
         val todayKey = today.format(dateFormatter)
@@ -147,7 +135,7 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
             .distinctUntilChanged()
     }
 
-    /** [countedThroughFlow], read once — for the CSV export, which reads the clock once too. */
+    /** [countedThroughFlow], read once, for the CSV export. */
     suspend fun countedThrough(habitId: Long, today: LocalDate): LocalDate {
         val todayKey = today.format(dateFormatter)
         return ConsistencyStats.countedThrough(getDailySummaries(habitId, todayKey, todayKey), today)

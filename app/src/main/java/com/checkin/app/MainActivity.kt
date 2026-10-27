@@ -116,10 +116,8 @@ class MainActivity : FragmentActivity() {
     }
 
     /**
-     * Resolves a nudge tap off the database. [PresenceCheckSignal.resolvingTaps] is raised before the
-     * launch, so not one frame of the nav host is drawn in between. A tap whose reads or writes fail
-     * does nothing, as a tap on an archived habit does: the application scope has no exception
-     * handler, so a throw here would end the process.
+     * Resolves a nudge tap off the database, holding [PresenceCheckSignal.resolvingTaps] so no frame
+     * of the nav host draws in between. Failures are swallowed: the application scope has no handler.
      */
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
     private fun resolveNudgeTap(habitUuid: String?) {
@@ -130,8 +128,7 @@ class MainActivity : FragmentActivity() {
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                // Nothing was raised. A failed read leaves the nudge posted, to be tapped again; a
-                // failure after it was retired leaves the user in the app, with its own Check In.
+                // Nothing raised; a failed read leaves the nudge posted to tap again.
             } finally {
                 PresenceCheckSignal.resolvingTaps.update { it - 1 }
             }
@@ -152,7 +149,7 @@ class MainActivity : FragmentActivity() {
     private suspend fun onNudgeTapped(habitUuid: String?) {
         val habits = container.habitRepository
         val habit = (if (habitUuid == null) habits.byId(Habit.SEED_ID) else habits.byUuid(habitUuid)) ?: return
-        // Every read before the retire: a read that fails leaves the nudge posted to be tapped again.
+        // Reads before the retire, so a failed read leaves the nudge to tap again.
         val running = if (habit.archived) null else container.repository.getActiveSession()
         container.postedNudges.retire(habit.id)
         if (habit.archived) return

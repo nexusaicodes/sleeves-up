@@ -194,13 +194,9 @@ class CheckInService : Service() {
     }
 
     /**
-     * A check-out asks the service to end — but the row decides, as it does for every other command.
-     * A stop can land after the next check-in has started this service again (a late command from
-     * the close before it, or the day boundary racing a check-out and check-in), and tearing down
-     * then would drop a live session's notification. So it reconciles: no open row tears down, and
-     * an open one is adopted and shown. Already in the foreground, so no deadline to meet first.
-     * A row that cannot be read tears down: every stop follows a check-out, so that is the likely
-     * truth, and a timer left counting over a closed session is the visible failure.
+     * A check-out's stop, decided by the row like every other command: a stop landing after the next
+     * check-in must not drop that session's notification. An unreadable row tears down, since every
+     * stop follows a check-out.
      */
     private fun handleStop(): Int {
         reconcile(tearDownIfUnreadable = true)
@@ -255,9 +251,8 @@ class CheckInService : Service() {
     }
 
     /**
-     * Ends the service: no live session is left for it to show. Reached only from a reconcile that
-     * found no open row. The session's alarms are not touched: whoever closed the row cancelled them
-     * under the runner's lock, and an alarm that outlives its session drops itself on firing.
+     * Ends the service once a reconcile finds no open row. Alarms are left alone: the closer
+     * cancelled them, and a stale one drops itself on firing.
      */
     private fun tearDown() {
         reconcileJob?.cancel()

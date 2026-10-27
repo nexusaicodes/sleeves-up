@@ -31,10 +31,8 @@ import java.time.ZoneId
  * Every decision reads the **database**, never the service's in-memory mirror, because the process
  * this runs in may have been created by the alarm broadcast moments earlier.
  *
- * **Every entry point holds one lock** across its read of the open session and its alarm writes. The
- * callers are concurrent in practice — `MainActivity.onStart` repairs through [ensureArmed] while a
- * check-in that the same start resumed is arming — and unlocked, a repair that read "nothing open"
- * just before the insert could cancel the new session's alarms just after [arm] set them.
+ * **Every entry point holds one lock** across its session read and alarm writes: `onStart`'s
+ * [ensureArmed] runs beside a check-in's [arm], and unlocked could cancel the alarms just set.
  */
 class SessionLifecycleRunner(
     private val repository: CheckInRepository,
@@ -64,11 +62,7 @@ class SessionLifecycleRunner(
         /** The day boundary closed the session, stamped at [atMillis]. */
         data class Closed(val atMillis: Long) : Outcome
 
-        /**
-         * The session was closed by someone else between the read and the write, so this alarm wrote
-         * nothing and cancels nothing: that closer cancelled, and what is armed now may belong to a
-         * session opened since.
-         */
+        /** Closed by another closer first: nothing written or cancelled, as what is armed may be newer. */
         data object AlreadyClosed : Outcome
     }
 
@@ -138,10 +132,8 @@ class SessionLifecycleRunner(
     }
 
     /**
-     * Closes the open session with [closedBy] and stops both alarms, as one step under the lock — so
-     * a check-in landing between the write and the cancel cannot have its fresh alarms cancelled. A
-     * close that changed nothing (nothing open, or another closer first) cancels nothing. Returns the
-     * closed row.
+     * Closes the open session and cancels both alarms in one locked step, so a check-in landing in
+     * between keeps its alarms. Cancels nothing if nothing was closed. Returns the closed row.
      */
     suspend fun close(closedBy: ClosedBy): CheckInSession? = lock.withLock {
         repository.checkOutActiveSession(closedBy)?.also { alarms.cancelAll() }

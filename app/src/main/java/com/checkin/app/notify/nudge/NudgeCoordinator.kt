@@ -6,15 +6,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * The fire-and-forget entry points to the nudge layer: the checkpoint receiver and the hourly worker
- * run a pass, and the habits collector and every reminder-time chooser re-arm. Each **never throws
- * except to cancel**, because its callers launch on the application scope, which has no exception
- * handler — a throw there kills the process.
+ * The fire-and-forget entry points to the nudge layer: the receiver and worker run a pass, the
+ * habits collector and time choosers re-arm. Each **never throws except to cancel** — callers launch
+ * on the application scope, which has no handler.
  *
- * [runOnce] and [rearm] are `NudgeDispatcher`'s, deferred: both already absorb their own failures,
- * so what this guards is reaching them — the dispatcher is built lazily over both databases, and a
- * failure there arms the plain fallback band instead (see [armFallback]). Losing the retry costs at
- * most a nudge; losing the arm ends the chain the checkpoint alarm exists to keep alive.
+ * [runOnce] and [rearm] are `NudgeDispatcher`'s, deferred because building it over both databases
+ * can throw; then [armFallback] runs instead, so the checkpoint alarm's chain never ends.
  */
 class NudgeCoordinator(
     private val runOnce: suspend () -> Unit,
@@ -31,18 +28,12 @@ class NudgeCoordinator(
     /** Re-arms the checkpoint alarm from the current habits, times and sends. */
     suspend fun rearmNow() = guarded(rearm)
 
-    /**
-     * Launches [rearmNow]: the one re-arm every reminder-time chooser hands to `chooseReminderTime`,
-     * so no two of them can launch it differently.
-     */
+    /** Launches [rearmNow]; what every time chooser hands to `chooseReminderTime`. */
     fun launchRearm() {
         scope.launch { rearmNow() }
     }
 
-    /**
-     * Arms the next opening of the earliest band any habit could have, readable without a database.
-     * For when the habits or the day's sends cannot be read.
-     */
+    /** Arms the earliest band any habit could have, which needs no database. */
     fun armFallback() {
         runCatching { alarms.armFallback(timeSource.nowMillis(), timeSource.zone(), reminderSettings) }
     }

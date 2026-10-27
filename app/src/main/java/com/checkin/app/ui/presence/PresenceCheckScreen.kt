@@ -114,8 +114,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     // flag reset to false there passes the check under a dialog the user is still answering. Safe
     // only because the prompt below is rebuilt with each activity — see [rememberDeviceUnlock].
     var usingDeviceUnlock by rememberSaveable { mutableStateOf(false) }
-    // What the camera has said, folded from its capture results off the main thread; the rules live
-    // in CameraReadings, where they are unit-tested.
+    // Fed by the capture callback off the main thread; the rules are in CameraReadings.
     val readings = remember { CameraReadings() }
     val cameraUsable by readings.cameraUsable.collectAsState()
     val facePresent by readings.facePresent.collectAsState()

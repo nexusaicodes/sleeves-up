@@ -116,9 +116,7 @@ class ReportsViewModel(
     }
         .flatMapLatest { (today, habit) -> repository.trackingStartFlow(habit).map { Triple(today, habit, it) } }
         .flatMapLatest { (today, habit, start) ->
-            // The resolved window is deduplicated too, so an emission that resolves to the window
-            // already shown does not make the `flatMapLatest` below tear down and re-subscribe both
-            // window queries — under all time, the whole record.
+            // Deduplicated so the same window does not re-subscribe both window queries below.
             combine(scope, repository.countedThroughFlow(habit, today)) { activeScope, countedThrough ->
                 activeScope to activeScope.resolve(start, countedThrough)
             }.distinctUntilChanged().flatMapLatest { (activeScope, window) ->

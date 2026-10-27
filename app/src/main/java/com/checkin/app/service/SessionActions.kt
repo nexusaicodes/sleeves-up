@@ -11,18 +11,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * The gated check-in and check-out, with every side effect each one owes, in the order it owes them.
- * Both gated writers — the Check-In screen and the root gate `MainActivity` raises for a notification
- * or nudge tap — call this, so the ordering rules below live in one place.
+ * The gated check-in and check-out with their side effects in order, shared by the Check-In screen
+ * and `MainActivity`'s root gate.
  *
- * Each runs on the application [scope], not the caller's: leaving the screen the moment the gate
- * passes must not cancel the work between the row's write and its alarms. And each **never throws**,
- * since that scope has no exception handler. A failure part-way leaves what the next app open
- * repairs — `SessionWatchdog` re-arms an open session's alarms and revives its service, and the
- * service's reconcile tears down a timer over a closed row.
- *
- * The day-boundary close is not here: it is the one un-gated check-out, and it lives in
- * [SessionLifecycleRunner.onDayBoundaryFired], under the runner's lock.
+ * Runs on the application [scope], so leaving the screen cannot cancel the work between the write
+ * and its alarms, and **never throws** (that scope has no handler); what a failure leaves half-done,
+ * `SessionWatchdog` repairs at the next start. The un-gated day-boundary close lives in
+ * [SessionLifecycleRunner.onDayBoundaryFired].
  */
 class SessionActions(
     private val repository: CheckInRepository,
@@ -30,18 +25,14 @@ class SessionActions(
     private val lifecycle: SessionLifecycleRunner,
     private val postedNudges: PostedNudges,
     private val scope: CoroutineScope,
-    /** Raised for a check-out a person made — the closed row, for the celebration's figures. */
+    /** Called with the row a person closed, for the celebration. */
     private val onCheckedOut: suspend (CheckInSession) -> Unit,
 ) {
 
     /** Starts a session for [habitId] in the background; see [open]. */
     fun checkIn(habitId: Long) = checkIn { habitId }
 
-    /**
-     * Starts a session in the background for the habit [resolveHabit] reads — on the application
-     * scope like the rest, so a caller resolving its habit off the database cannot lose the check-in
-     * by leaving the screen while it reads.
-     */
+    /** As [checkIn], resolving the habit on the application scope too. */
     fun checkIn(resolveHabit: suspend () -> Long) {
         launchGuarded { open(resolveHabit()) }
     }
@@ -52,35 +43,25 @@ class SessionActions(
     }
 
     /**
-     * Opens a session for [habitId] and arms it. Only a new session is started: one already open for
-     * this habit — two gated paths resolving together — keeps its alarms, since re-arming would reset
-     * its reminder count, and another habit's open session means writing nothing is the only safe
-     * answer. The repository re-checks under its own lock, so this holds whatever the caller read.
+     * Opens a session for [habitId] and arms it. A session already open (this habit's or another's)
+     * is left alone: re-arming would reset its reminder count.
      */
     suspend fun open(habitId: Long): CheckInResult {
         val result = repository.checkIn(habitId)
         if (result !is CheckInResult.Opened) return result
         val session = result.session
         serviceController.startTimer(session.id, session.startedAt)
-        // Armed by the writer, not the service: `startTimer` can be refused — a restricted standby
-        // bucket, an OEM that declines the foreground start — and a session with no day-boundary
-        // close runs until the user notices, writing a multi-day duration onto a row nothing can edit.
+        // Armed here, not in the service: `startTimer` can be refused, and an unarmed session has no
+        // day-boundary close.
         lifecycle.arm(session.startedAt)
-        // A nudge asking for a check-in is stale whichever way the check-in was made, and one left
-        // posted sends the user back through the gate to reach a session already open.
+        // A nudge asking for a check-in is stale however the check-in was made.
         postedNudges.retire(habitId)
         return result
     }
 
-    /**
-     * Closes the open session, whichever habit holds it, and returns the closed row — or null when
-     * nothing was open, or another closer got there first. Only the call that closed the row cancels
-     * and stops: whoever else closed it did both.
-     */
+    /** Closes the open session and returns it; null when nothing was open or another closer won. */
     suspend fun close(closedBy: ClosedBy): CheckInSession? {
-        // The write and the alarm cancel are one locked step in the runner, and not left to `stop()`:
-        // that command is a no-op when the service has already been killed, which would leave both
-        // alarms standing over a closed session.
+        // The runner cancels the alarms with the write; `stop()` is a no-op on a dead service.
         val closed = lifecycle.close(closedBy) ?: return null
         serviceController.stop()
         onCheckedOut(closed)
@@ -95,7 +76,7 @@ class SessionActions(
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                // See the class KDoc: what is left half-done, the next app open repairs.
+                // See the class KDoc.
             }
         }
     }
