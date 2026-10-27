@@ -60,7 +60,7 @@ class MainActivity : FragmentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    AppRoot(onGatePassed = ::onRootGatePassed)
+                    AppRoot(onGatePassed = ::onRootGatePassed, onHabitPicked = ::onHabitPicked)
                 }
             }
         }
@@ -157,6 +157,23 @@ class MainActivity : FragmentActivity() {
         return TapRouting.forHabit(habit, runningHabitId)
     }
 
+    /**
+     * A habit was picked in the picker: routed exactly as a nudge for that habit would be, so the
+     * same checks run against the rows as they are now. The picker's request is dropped first — the
+     * root draws nothing while the pick resolves — so an outcome that opens no gate lands in the app
+     * rather than leaving the picker up.
+     */
+    private fun onHabitPicked(habitId: Long) {
+        val container = (application as CheckInApplication).container
+        resolveTap {
+            PresenceCheckSignal.clear()
+            TapRouting.forHabit(
+                container.habitRepository.byId(habitId),
+                container.repository.getActiveSession()?.habitId,
+            )
+        }
+    }
+
     private suspend fun applyTap(outcome: TapOutcome) {
         when (outcome) {
             TapOutcome.NoAction -> Unit
@@ -172,8 +189,9 @@ class MainActivity : FragmentActivity() {
                     PresenceCheckSignal.raise(Reason.CHECK_IN, container.timeSource.nowMillis(), outcome.habitId)
                 }
             }
-            // Wired by the callers that can produce them; a nudge never does.
-            TapOutcome.CheckOut, TapOutcome.ChooseHabit -> Unit
+            TapOutcome.CheckOut ->
+                PresenceCheckSignal.raise(Reason.CHECK_OUT_FROM_WIDGET, container.timeSource.nowMillis())
+            TapOutcome.ChooseHabit -> PresenceCheckSignal.choose(container.timeSource.nowMillis())
         }
     }
 

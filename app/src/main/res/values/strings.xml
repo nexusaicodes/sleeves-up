@@ -309,6 +309,9 @@
     <string name="name_habit_title">What are you showing up for?</string>
     <string name="name_habit_body">Add more in the app when you want.</string>
     <string name="name_habit_continue">Continue</string>
+    <!-- The picker the home-screen widget opens when there is more than one habit: names only, and a
+         pick goes straight on to the presence gate. A line, so sentence case. -->
+    <string name="habit_picker_title">Check in to…</string>
     <!-- Cycled as the name field's placeholder beside a matching icon. Activities, never targets:
          a number in an example would suggest a habit is a bar to clear. -->
     <string name="habit_example_running">Running</string>

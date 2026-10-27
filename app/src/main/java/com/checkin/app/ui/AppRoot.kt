@@ -23,6 +23,7 @@ import com.checkin.app.notify.notificationsNeedRuntimeGrant
 import com.checkin.app.platform.PromptSettings
 import com.checkin.app.ui.checkin.CheckOutCelebration
 import com.checkin.app.ui.checkin.CheckOutSignal
+import com.checkin.app.ui.habits.HabitPickerScreen
 import com.checkin.app.ui.habits.HabitsViewModel
 import com.checkin.app.ui.habits.NameHabitScreen
 import com.checkin.app.ui.navigation.AppNavScaffold
@@ -34,8 +35,8 @@ import com.checkin.app.ui.welcome.WelcomeScreen
 
 /**
  * The four surfaces that can occupy the whole window, in the order they outrank each other:
- * the first-run welcome, the naming step for a habit with no name, the presence gate, then the
- * app — with the celebration over whichever is showing.
+ * the first-run welcome, the naming step for a habit with no name, the presence gate (with the habit
+ * picker that can precede it), then the app — with the celebration over whichever is showing.
  *
  * **The welcome outranks the gate**, because an introduction the app owes is worth more than the
  * few seconds it delays an action, and the reverse ordering delivers the tour *after* the user
@@ -60,7 +61,7 @@ import com.checkin.app.ui.welcome.WelcomeScreen
  * identities, and a step change would discard the NavHost and reset the active tab.
  */
 @Composable
-fun AppRoot(onGatePassed: () -> Unit) {
+fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
     val context = LocalContext.current
     val container = remember(context) { (context.applicationContext as CheckInApplication).container }
     val settings = container.settings
@@ -128,6 +129,17 @@ fun AppRoot(onGatePassed: () -> Unit) {
         // A nudge tap still deciding whether it opens the gate: nothing is drawn, for the PENDING
         // step's reason — the nav host drawn and then replaced could be tapped in between.
         resolvingTaps > 0 -> Unit
+
+        // A check-in whose habit is still the user's to say: the picker stands where the gate will,
+        // and a pick replaces it with the gate for that habit. Back drops the request, as on the gate.
+        gateRequest.choosingHabit -> {
+            BackHandler { PresenceCheckSignal.clear() }
+            HabitPickerScreen(
+                active = habits.active,
+                onPick = onHabitPicked,
+                onDismiss = { PresenceCheckSignal.clear() },
+            )
+        }
 
         gateRequest.reason != Reason.NONE -> {
             // Full-screen modal gate: the nav host is not composed underneath, so nothing behind

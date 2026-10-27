@@ -1,14 +1,11 @@
 package com.checkin.app.ui.habits
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -181,13 +178,13 @@ private fun HabitRow(
     onArchive: () -> Unit,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        // The check and the text are the select target, with the 48dp floor reached through padding.
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .clickable(onClickLabel = stringResource(R.string.habit_select), onClick = onSelect)
-                .padding(vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        // The check and the text are the select target.
+        HabitNameRow(
+            habit = habit,
+            onClick = onSelect,
+            onClickLabel = stringResource(R.string.habit_select),
+            modifier = Modifier.weight(1f),
+            detail = detail,
         ) {
             // Every row reserves the check's width, so the names line up.
             Box(modifier = Modifier.size(CHECK_SLOT), contentAlignment = Alignment.CenterStart) {
@@ -198,17 +195,6 @@ private fun HabitRow(
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
-            }
-            Column {
-                Text(
-                    text = habit.name ?: stringResource(R.string.habit_unnamed),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Text(
-                    text = detail,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
         // Edit and Archive behind one overflow, so the row keeps a single trailing control and the
