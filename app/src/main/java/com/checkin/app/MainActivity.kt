@@ -170,13 +170,10 @@ class MainActivity : FragmentActivity() {
      * The home-screen widget's button, which names no habit: the open session's check-out, the gate
      * for the only habit, or the picker — read off the rows now, whatever the widget was showing.
      */
-    private suspend fun onWidgetTapped(): TapOutcome {
-        val container = (application as CheckInApplication).container
-        return TapRouting.forWidget(
-            container.habitRepository.activeHabits(),
-            container.repository.getActiveSession()?.habitId,
-        )
-    }
+    private suspend fun onWidgetTapped(): TapOutcome = TapRouting.forWidget(
+        container.habitRepository.activeHabits(),
+        container.repository.getActiveSession()?.habitId,
+    )
 
     /**
      * A habit was picked in the picker: routed exactly as a nudge for that habit would be, so the
@@ -185,7 +182,6 @@ class MainActivity : FragmentActivity() {
      * rather than leaving the picker up.
      */
     private fun onHabitPicked(habitId: Long) {
-        val container = (application as CheckInApplication).container
         resolveTap {
             PresenceCheckSignal.clear()
             TapRouting.forHabit(
