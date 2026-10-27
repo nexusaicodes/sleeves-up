@@ -21,6 +21,8 @@ import com.checkin.app.ui.checkin.CheckOutSignal
 import com.checkin.app.ui.presence.PresenceCheckSignal
 import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import com.checkin.app.ui.presence.PresenceGate
+import com.checkin.app.ui.presence.TapOutcome
+import com.checkin.app.ui.presence.TapRouting
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.util.latinDigitsOverride
 import kotlinx.coroutines.CancellationException
@@ -110,21 +112,26 @@ class MainActivity : FragmentActivity() {
                 intent.removeExtra(LaunchExtras.CHECK_IN)
                 val habitUuid = intent.getStringExtra(LaunchExtras.HABIT_UUID)
                 intent.removeExtra(LaunchExtras.HABIT_UUID)
-                resolveNudgeTap(habitUuid)
+                resolveTap { onNudgeTapped(habitUuid) }
             }
         }
     }
 
     /**
-     * Resolves a nudge tap off the database, holding [PresenceCheckSignal.resolvingTaps] so no frame
-     * of the nav host draws in between. Failures are swallowed: the application scope has no handler.
+     * Reads the database to decide what a tap from outside the app opens, then applies it. Every such
+     * tap is decided here, at the moment of the tap, by [TapRouting] — never by what the tapped surface
+     * showed, which can be hours stale.
+     *
+     * [PresenceCheckSignal.resolvingTaps] is raised before the launch, so not one frame of the nav host
+     * is drawn in between (and the splash screen stays up on a cold start). Failures are swallowed:
+     * the application scope has no handler.
      */
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    private fun resolveNudgeTap(habitUuid: String?) {
+    private fun resolveTap(decide: suspend () -> TapOutcome) {
         PresenceCheckSignal.resolvingTaps.update { it + 1 }
         container.applicationScope.launch {
             try {
-                onNudgeTapped(habitUuid)
+                applyTap(decide())
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -136,36 +143,37 @@ class MainActivity : FragmentActivity() {
     }
 
     /**
-     * A nudge was tapped: open the gate for that habit's check-in, unless another habit's session is
-     * running — then say so and open nothing, since there is one open session across all habits and
-     * the gate would end in a check-in the repository refuses.
-     *
-     * The nudge is retired on the tap rather than after the gate resolves: it has served its purpose
-     * the moment it is tapped, whether or not the check-in that follows completes. Nothing the app
-     * posts is autoCancel, so this cancel is the app's job. A nudge posted before habits existed
-     * carries no habit and is about the seed habit; one for a habit since archived opens nothing, and
-     * so does one whose habit is not in the database at all — it is about no habit there is.
+     * A nudge was tapped, about one habit. The nudge is retired on the tap rather than after the gate
+     * resolves: it has served its purpose the moment it is tapped, whether or not the check-in that
+     * follows completes, and nothing the app posts is autoCancel. A nudge posted before habits existed
+     * carries no habit and is about the seed habit.
      */
-    private suspend fun onNudgeTapped(habitUuid: String?) {
+    private suspend fun onNudgeTapped(habitUuid: String?): TapOutcome {
         val habits = container.habitRepository
-        val habit = (if (habitUuid == null) habits.byId(Habit.SEED_ID) else habits.byUuid(habitUuid)) ?: return
+        val habit = if (habitUuid == null) habits.byId(Habit.SEED_ID) else habits.byUuid(habitUuid)
         // Reads before the retire, so a failed read leaves the nudge to tap again.
-        val running = if (habit.archived) null else container.repository.getActiveSession()
-        container.postedNudges.retire(habit.id)
-        if (habit.archived) return
-        when {
-            // Already checked in since the nudge was posted: the tap has nothing left to ask for.
-            running?.habitId == habit.id -> Unit
-            running != null -> {
-                val runningName = habits.byId(running.habitId)?.name
+        val runningHabitId = container.repository.getActiveSession()?.habitId
+        habit?.let { container.postedNudges.retire(it.id) }
+        return TapRouting.forHabit(habit, runningHabitId)
+    }
+
+    private suspend fun applyTap(outcome: TapOutcome) {
+        when (outcome) {
+            TapOutcome.NoAction -> Unit
+            is TapOutcome.RunningElsewhere -> {
+                val runningName = container.habitRepository.byId(outcome.runningHabitId)?.name
                 withContext(Dispatchers.Main) { showRunningElsewhere(runningName) }
             }
-            else -> {
-                // Selected before the gate opens, so the screen behind it — and the one the user
-                // lands on after it — is the habit the nudge was about.
-                habits.select(habit.id)
-                PresenceCheckSignal.raise(Reason.CHECK_IN, container.timeSource.nowMillis(), habit.id)
+            is TapOutcome.CheckIn -> {
+                // Selected before the gate opens, so the screen behind it — and the one the user lands
+                // on after it — is the habit the tap was about. A refusal means a session opened since
+                // the routing read; the repository's own check would refuse the check-in anyway.
+                if (container.habitRepository.select(outcome.habitId)) {
+                    PresenceCheckSignal.raise(Reason.CHECK_IN, container.timeSource.nowMillis(), outcome.habitId)
+                }
             }
+            // Wired by the callers that can produce them; a nudge never does.
+            TapOutcome.CheckOut, TapOutcome.ChooseHabit -> Unit
         }
     }
 
