@@ -70,7 +70,8 @@ interface CheckInSessionDao {
                COALESCE(SUM(CASE WHEN closed_by = 'timer_notification' THEN 1 ELSE 0 END), 0)
                    AS timerNotificationCheckOuts,
                COALESCE(SUM(CASE WHEN closed_by = 'reminder_notification' THEN 1 ELSE 0 END), 0)
-                   AS reminderNotificationCheckOuts
+                   AS reminderNotificationCheckOuts,
+               COALESCE(SUM(CASE WHEN closed_by = 'widget' THEN 1 ELSE 0 END), 0) AS widgetCheckOuts
         FROM sessions
         WHERE habit_id = :habitId
           AND date_key BETWEEN :startDate AND :endDate
@@ -93,7 +94,8 @@ interface CheckInSessionDao {
                COALESCE(SUM(CASE WHEN closed_by = 'timer_notification' THEN 1 ELSE 0 END), 0)
                    AS timerNotificationCheckOuts,
                COALESCE(SUM(CASE WHEN closed_by = 'reminder_notification' THEN 1 ELSE 0 END), 0)
-                   AS reminderNotificationCheckOuts
+                   AS reminderNotificationCheckOuts,
+               COALESCE(SUM(CASE WHEN closed_by = 'widget' THEN 1 ELSE 0 END), 0) AS widgetCheckOuts
         FROM sessions
         WHERE habit_id = :habitId
           AND date_key BETWEEN :startDate AND :endDate

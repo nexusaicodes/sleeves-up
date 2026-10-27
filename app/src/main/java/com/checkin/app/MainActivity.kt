@@ -202,9 +202,9 @@ class MainActivity : FragmentActivity() {
         val request = PresenceCheckSignal.request.value
         // Exhaustive, so a new Reason does not compile until it is given a meaning here.
         when (val reason = request.reason) {
-            // Both check-out reasons differ only in the ending the row records, which the Reason
+            // Every check-out reason differs only in the ending the row records, which the Reason
             // itself carries.
-            Reason.CHECK_OUT_FROM_TIMER, Reason.CHECK_OUT_FROM_REMINDER ->
+            Reason.CHECK_OUT_FROM_TIMER, Reason.CHECK_OUT_FROM_REMINDER, Reason.CHECK_OUT_FROM_WIDGET ->
                 container.sessionActions.checkOut(requireNotNull(reason.closedBy) { "$reason carries no ending" })
             // The repository re-checks for an open session: the user may have checked in — to this
             // habit or another — between the gate opening and passing.

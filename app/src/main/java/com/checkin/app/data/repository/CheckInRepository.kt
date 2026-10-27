@@ -87,7 +87,7 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * midnight alarm. It changes nothing about the row's duration or its immutability; the CSV
      * export is the only thing that ever reads it, and nothing displays it.
      *
-     * It has **no default**, deliberately: a new check-out path must state which of the four endings
+     * It has **no default**, deliberately: a new check-out path must state which of the endings
      * it is, or it does not compile — a default would let one silently claim to be another.
      *
      * The closed row comes back so a caller that wants to report what was recorded reads the stored

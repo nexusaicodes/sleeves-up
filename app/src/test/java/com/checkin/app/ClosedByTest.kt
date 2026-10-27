@@ -16,7 +16,7 @@ class ClosedByTest {
     @Test
     fun `the stored values are frozen`() {
         assertEquals(
-            listOf("in_app", "timer_notification", "reminder_notification", "day_boundary"),
+            listOf("in_app", "timer_notification", "reminder_notification", "day_boundary", "widget"),
             ClosedBy.entries.map { it.storedValue },
         )
     }
@@ -29,7 +29,7 @@ class ClosedByTest {
     @Test
     fun `an open session and an unknown string read as no ending`() {
         assertNull(ClosedBy.fromStored(null))
-        assertNull(ClosedBy.fromStored("widget"))
+        assertNull(ClosedBy.fromStored("pause"))
     }
 
     /** Both aggregate queries count every ending, so each value appears in the DAO once per query. */

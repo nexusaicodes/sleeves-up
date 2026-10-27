@@ -25,4 +25,5 @@ data class DailyAggregate(
     val inAppCheckOuts: Int,
     val timerNotificationCheckOuts: Int,
     val reminderNotificationCheckOuts: Int,
+    val widgetCheckOuts: Int,
 )

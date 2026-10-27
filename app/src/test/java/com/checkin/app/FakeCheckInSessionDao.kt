@@ -112,6 +112,7 @@ class FakeCheckInSessionDao : CheckInSessionDao {
                 inAppCheckOuts = list.count { it.closedBy == ClosedBy.IN_APP },
                 timerNotificationCheckOuts = list.count { it.closedBy == ClosedBy.TIMER_NOTIFICATION },
                 reminderNotificationCheckOuts = list.count { it.closedBy == ClosedBy.REMINDER_NOTIFICATION },
+                widgetCheckOuts = list.count { it.closedBy == ClosedBy.WIDGET },
             )
         }
         .sortedBy { it.dateKey }

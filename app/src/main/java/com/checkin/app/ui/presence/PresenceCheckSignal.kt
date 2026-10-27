@@ -16,8 +16,8 @@ object PresenceCheckSignal {
     /**
      * Why the root gate is showing — decides what a successful auth does.
      *
-     * The two check-out reasons differ only in the [ClosedBy] they carry: both close the active
-     * session, and the gate itself renders identically for either. They are separate values rather
+     * The check-out reasons differ only in the [ClosedBy] they carry: each closes the active session,
+     * and the gate itself renders identically for every one. They are separate values rather
      * than one value plus a payload because the set of endings is closed and small, so an enum
      * value apiece costs nothing. The habit a check-in is for is the opposite — an open set the user
      * grows — which is why it rides on [Request] beside the reason rather than in it.
@@ -31,6 +31,9 @@ object PresenceCheckSignal {
 
         /** Session reminder's "Check Out" action: success checks the active session out. */
         CHECK_OUT_FROM_REMINDER(ClosedBy.REMINDER_NOTIFICATION),
+
+        /** The home-screen widget's button while a session is open: success checks it out. */
+        CHECK_OUT_FROM_WIDGET(ClosedBy.WIDGET),
 
         /** Nudge tap: success starts a session for [Request.habitId]. */
         CHECK_IN,
