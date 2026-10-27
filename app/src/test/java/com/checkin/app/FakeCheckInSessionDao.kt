@@ -64,6 +64,9 @@ class FakeCheckInSessionDao : CheckInSessionDao {
 
     override suspend fun getActiveSession(): CheckInSession? = store.value.firstOrNull { it.stoppedAt == null }
 
+    override suspend fun countDaysWithSession(habitId: Long): Int =
+        store.value.filter { it.habitId == habitId && it.stoppedAt != null }.map { it.dateKey }.distinct().size
+
     override fun getActiveSessionFlow(): Flow<CheckInSession?> =
         store.map { list -> list.firstOrNull { it.stoppedAt == null } }
 

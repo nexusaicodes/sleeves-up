@@ -25,6 +25,15 @@ interface HomeWidgets {
 
     /** Draws [face] on every placed widget; false when none is placed, so nothing was drawn. */
     fun show(face: WidgetFace): Boolean
+
+    /** Whether the launcher can place a widget at the app's request, with the user confirming it. */
+    fun canRequestPin(): Boolean
+
+    /**
+     * Asks the launcher to place a widget; it shows its own confirmation, and the answer is not
+     * reported back. False when the request was not made.
+     */
+    fun requestPin(): Boolean
 }
 
 class AndroidHomeWidgets(private val context: Context) : HomeWidgets {
@@ -51,6 +60,11 @@ class AndroidHomeWidgets(private val context: Context) : HomeWidgets {
         manager.updateAppWidget(ids, WidgetViews.build(context, face))
         return true
     }
+
+    override fun canRequestPin(): Boolean = manager()?.isRequestPinAppWidgetSupported == true
+
+    override fun requestPin(): Boolean =
+        manager()?.requestPinAppWidget(ComponentName(context, CheckInWidgetProvider::class.java), null, null) == true
 
     private fun manager(): AppWidgetManager? = AppWidgetManager.getInstance(context)
 

@@ -53,4 +53,20 @@ object FirstRun {
      * user no notifications: the presence gate still asks at the first check-in, beside the camera.
      */
     fun asksNotificationsAfter(exit: Exit): Boolean = exit == Exit.FINISHED
+
+    /**
+     * Whether the widget page is owed to someone who finished the tour before it had one, decided
+     * once per activity start so it never replaces a screen in use.
+     *
+     * The tour carries the page, and ending the tour either way marks it seen: a fresh install meets
+     * it there. Anyone else meets it once, after [WIDGET_PAGE_AFTER_DAYS] days holding a session —
+     * once the habit has started, when a shorter way in is worth something. With a widget already
+     * placed there is nothing to tell. [daysWithSession] counts the selected habit's days only, as
+     * every record read does, and is never shown.
+     */
+    fun widgetPageOwed(seenWelcome: Boolean, seenWidgetPage: Boolean, daysWithSession: Int, widgetPlaced: Boolean) =
+        seenWelcome && !seenWidgetPage && !widgetPlaced && daysWithSession >= WIDGET_PAGE_AFTER_DAYS
+
+    /** The second day with a session: one day is a try, two is the start of a habit. */
+    const val WIDGET_PAGE_AFTER_DAYS = 2
 }

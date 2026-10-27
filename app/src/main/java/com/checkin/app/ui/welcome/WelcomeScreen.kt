@@ -23,7 +23,9 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Face
+import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,6 +36,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.checkin.app.R
@@ -41,6 +44,7 @@ import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.FullScreenAction
 import com.checkin.app.ui.components.FullScreenMessage
 import com.checkin.app.ui.components.HabitExampleIcon
+import com.checkin.app.ui.components.MESSAGE_BODY_TO_ACTION_GAP
 import com.checkin.app.ui.components.MESSAGE_PADDING
 import com.checkin.app.ui.components.MessageIcon
 import com.checkin.app.ui.components.animationsEnabled
@@ -49,15 +53,16 @@ import com.checkin.app.ui.theme.CheckInAppTheme
 import kotlinx.coroutines.launch
 
 /**
- * The first-run tour: three pages, shown once, ahead of the naming step and the `POST_NOTIFICATIONS`
+ * The first-run tour: four pages, shown once, ahead of the naming step and the `POST_NOTIFICATIONS`
  * request rather than beside them. It names nothing itself: the one path through is the pager and
  * its button, and naming the first habit, with its reminder time, is the step [onFinished] leads to.
  *
  * [onSkipped] retires the tour for good as finishing does, but does not release the notification
- * request — see [FirstRun.asksNotificationsAfter].
+ * request — see [FirstRun.asksNotificationsAfter]. [onAddWidget] asks the launcher to place the
+ * widget, null where it cannot, and the widget page says how to place one by hand instead.
  */
 @Composable
-fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit) {
+fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit, onAddWidget: (() -> Unit)?) {
     val pages = WelcomePages.all
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
@@ -116,7 +121,7 @@ fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit) {
             ) { page ->
                 // No horizontal padding above this: each page brings MESSAGE_PADDING of its own, so
                 // the shared message layout owns its insets exactly as it does behind the gate.
-                WelcomePageContent(pages[page])
+                WelcomePageContent(pages[page], onAddWidget, inlineAdd = true)
             }
 
             PageDots(pageCount = pages.size, current = pagerState.currentPage)
@@ -137,14 +142,76 @@ fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit) {
     }
 }
 
-/** Drawn through the shared full-screen message, so the tour and the gate cannot drift apart. */
+/**
+ * The widget page on its own, once, for an install that finished the tour before it had one — see
+ * [FirstRun.widgetPageOwed]. Its own action row stands where the tour's Next button does. [onDone]
+ * ends it whichever way it is left, an added widget included.
+ */
 @Composable
-private fun WelcomePageContent(page: WelcomePage) {
+fun WidgetPageScreen(onAddWidget: (() -> Unit)?, onDone: () -> Unit) {
+    ConstrainedContent {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding(),
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                WelcomePageContent(WelcomePages.widget, onAddWidget, inlineAdd = false)
+            }
+            if (onAddWidget != null) {
+                TextButton(
+                    onClick = onDone,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                ) { Text(stringResource(R.string.presence_gate_cancel)) }
+                Spacer(modifier = Modifier.height(DOTS_TO_ACTION_GAP))
+            }
+            FullScreenAction(
+                text = stringResource(
+                    if (onAddWidget !=
+                        null
+                    ) {
+                        R.string.welcome_widget_add
+                    } else {
+                        R.string.widget_page_done
+                    },
+                ),
+                onClick = {
+                    onAddWidget?.invoke()
+                    onDone()
+                },
+            )
+        }
+    }
+}
+
+/**
+ * Drawn through the shared full-screen message, so the tour and the gate cannot drift apart. A page
+ * that [adds the widget][WelcomePage.addsWidget] carries the request as a button when [inlineAdd]
+ * (the tour, whose own button is Next), and where the launcher cannot take the request, says how to
+ * place one by hand.
+ */
+@Composable
+private fun WelcomePageContent(page: WelcomePage, onAddWidget: (() -> Unit)?, inlineAdd: Boolean) {
     FullScreenMessage(
         icon = { PageIcon(page.icon) },
         title = stringResource(page.titleRes),
         message = stringResource(page.bodyRes),
-    )
+    ) {
+        if (page.addsWidget) {
+            Spacer(modifier = Modifier.height(MESSAGE_BODY_TO_ACTION_GAP))
+            when {
+                onAddWidget == null -> Text(
+                    text = stringResource(R.string.welcome_widget_manual),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                inlineAdd -> OutlinedButton(onClick = onAddWidget) {
+                    Text(stringResource(R.string.welcome_widget_add))
+                }
+            }
+        }
+    }
 }
 
 /** An expression, so adding a [WelcomeIcon] fails to compile rather than falling through to a bell. */
@@ -154,6 +221,7 @@ private fun PageIcon(icon: WelcomeIcon) = when (icon) {
     // The camera disclosure's own icon, so the screen met at the first check-in reads as a
     // continuation of this one.
     WelcomeIcon.FACE -> MessageIcon(Icons.Rounded.Face)
+    WelcomeIcon.WIDGET -> MessageIcon(Icons.Rounded.Widgets)
     // The habits being cycled through, the same carousel the naming step that follows opens on.
     WelcomeIcon.HABITS -> HabitExampleIcon(cyclingHabitExample())
 }
@@ -213,6 +281,7 @@ private fun WelcomeScreenPreview() {
         WelcomeScreen(
             onFinished = {},
             onSkipped = {},
+            onAddWidget = {},
         )
     }
 }

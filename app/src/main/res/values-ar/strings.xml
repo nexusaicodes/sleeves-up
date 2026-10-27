@@ -84,6 +84,11 @@
     <string name="welcome_showing_up_body">سجّل حضورك بنظرة إلى الكاميرا، وانصرافك بالطريقة نفسها. يُسجَّل وقتك، لكن الحضور هو ما يُحتسب.</string>
     <string name="welcome_habits_title">عادة واحدة في كل مرة</string>
     <string name="welcome_habits_body">ابدأ بعادة واحدة تريد بناءها، وأضف المزيد لاحقًا — لكل عادة سجلّها الخاص.</string>
+    <string name="welcome_widget_title">على شاشتك الرئيسية</string>
+    <string name="welcome_widget_body">أضف التطبيق المصغّر لتسجيل الحضور أو الانصراف دون فتح التطبيق أولًا. ويجري التحقق من الحضور نفسه.</string>
+    <string name="welcome_widget_add">إضافة التطبيق المصغّر</string>
+    <string name="welcome_widget_manual">المس مكانًا فارغًا في الشاشة الرئيسية مع الاستمرار، ثم اختر «التطبيقات المصغّرة».</string>
+    <string name="widget_page_done">تم</string>
     <string name="welcome_page_position">الصفحة %1$d من %2$d</string>
     <string name="welcome_skip">تخطٍّ</string>
     <string name="welcome_next">التالي</string>

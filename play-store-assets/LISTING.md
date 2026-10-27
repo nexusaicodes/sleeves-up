@@ -117,27 +117,25 @@ Sleeves Up is a self-discipline tool, not a substitute for any employer or legal
 
 ## What's new (500 max, per release)
 
-Play keeps these per version code, so the text below is 3.1's and is replaced wholesale at the next
+Play keeps these per version code, so the text below is 3.2's and is replaced wholesale at the next
 release rather than appended to. **500 is a hard limit and this section has been over it**, which
 Play rejects at submission rather than truncating — count the block before pasting it, em dash and
 blank lines included.
 
-**3.1 is the first release since 3.0**, which is what Play serves. Write each note against the
+**3.2 follows 3.1**, which is what Play serves (a Play install read on 2026-10-27). Write each note against the
 version actually live, not the last tag: a tag can precede its upload, and a release prepared but
 never uploaded leaves everything it meant to say still unsaid.
 
 It is subject to both rules at the top of this file, and the vocabulary table below applies in full —
 it binds a *denial* as much as a boast. It is written for someone updating, who has already been
-through the welcome tour and will meet the naming step instead, so it says what that step is for.
+through the welcome tour and so meets the widget's page alone, later, rather than in the tour.
 
 ```
-Habits: keep a separate record for each thing you show up for. Switch between them from the top bar — each has its own calendar, reports, export and reminder, and nothing compares one with another.
+Check in from your home screen: add the Sleeves Up widget, and a tap takes you straight to the presence check. With more than one habit, it asks which.
 
-Everything you have recorded so far becomes your first habit. Give it a name when you next open the app.
+Sleeves Up now runs on Android 12 and 12L.
 
-Each habit's reminder comes once, around the time you pick for it, on a day you haven't checked in.
-
-Sleeves Up now also speaks Arabic — choose a language in Settings.
+When Google Play has a newer version, the app can offer it to you without leaving.
 ```
 
 ---
@@ -213,13 +211,11 @@ Sleeves Up أداة للانضباط الذاتي، وليس بديلًا عن �
 ### What's new (500 max)
 
 ```
-العادات: احتفظ بسجل منفصل لكل شيء تحضر من أجله. بدّل بينها من الشريط العلوي — لكل عادة تقويمها وتقاريرها وتصديرها وتذكيرها، ولا شيء يقارن إحداها بأخرى.
+سجّل حضورك من الشاشة الرئيسية: أضف التطبيق المصغّر لـ Sleeves Up، وبلمسة واحدة تصل مباشرة إلى التحقق من الحضور. وإن كانت لديك أكثر من عادة، يسألك أيّها.
 
-كل ما سجّلته حتى الآن يصبح عادتك الأولى. سمِّها حين تفتح التطبيق في المرة القادمة.
+يعمل Sleeves Up الآن على Android 12 و12L.
 
-يأتي تذكير كل عادة مرة واحدة، قرابة الوقت الذي تختاره لها، في يوم لم تسجّل فيه حضورك.
-
-Sleeves Up متاح الآن بالعربية أيضًا — اختر اللغة من الإعدادات.
+حين يتوفر إصدار أحدث على Google Play، يمكن للتطبيق أن يعرضه عليك دون مغادرته.
 ```
 
 ### Screenshot captions

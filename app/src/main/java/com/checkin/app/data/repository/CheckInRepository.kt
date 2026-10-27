@@ -180,6 +180,9 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
 
     suspend fun trackingStart(habitId: Long): LocalDate? = parseDateKey(dao.getFirstDateKey(habitId))
 
+    /** Days holding a completed session of [habitId]'s. Never displayed: it times a one-time page. */
+    suspend fun daysWithSession(habitId: Long): Int = dao.countDaysWithSession(habitId)
+
     /** Null rather than a throw on a malformed key, matching how the formatters treat one. */
     private fun parseDateKey(dateKey: String?): LocalDate? =
         dateKey?.let { runCatching { LocalDate.parse(it, dateFormatter) }.getOrNull() }

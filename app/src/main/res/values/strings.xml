@@ -135,6 +135,11 @@
          has none. -->
     <string name="welcome_habits_title">One habit at a time</string>
     <string name="welcome_habits_body">Start with one habit you want to build, and add more later — each keeps its own record.</string>
+    <string name="welcome_widget_title">On your home screen</string>
+    <string name="welcome_widget_body">Add the widget to check in or out without opening the app first. The same presence check runs.</string>
+    <string name="welcome_widget_add">Add widget</string>
+    <string name="welcome_widget_manual">Touch and hold an empty part of your home screen, then choose Widgets.</string>
+    <string name="widget_page_done">Done</string>
     <!-- Spoken by the dot row. HorizontalPager publishes a scroll range and no page count, so
          without this a screen reader is never told where in the tour it is. -->
     <string name="welcome_page_position">Page %1$d of %2$d</string>

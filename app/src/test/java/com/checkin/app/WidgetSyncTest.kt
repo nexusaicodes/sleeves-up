@@ -39,6 +39,10 @@ class WidgetSyncTest {
             shown += face
             return true
         }
+
+        override fun canRequestPin() = false
+
+        override fun requestPin() = false
     }
 
     private val single = WidgetFace.Single("Writing")
