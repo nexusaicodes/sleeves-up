@@ -24,12 +24,10 @@ import com.checkin.app.notify.nudge.ReminderSettings
 import com.checkin.app.notify.nudge.RoomNudgeSendLog
 import com.checkin.app.notify.nudge.SharedPrefsReminderSettings
 import com.checkin.app.notify.nudge.armFallback
-import com.checkin.app.platform.AndroidHomeWidgets
 import com.checkin.app.platform.AppUpdates
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.DefaultCsvExporter
 import com.checkin.app.platform.DefaultServiceController
-import com.checkin.app.platform.HomeWidgets
 import com.checkin.app.platform.LanguageSettings
 import com.checkin.app.platform.LocaleManagerLanguageSettings
 import com.checkin.app.platform.PlayAppUpdates
@@ -45,6 +43,8 @@ import com.checkin.app.service.SessionWatchdog
 import com.checkin.app.ui.checkin.raiseCheckOutCelebration
 import com.checkin.app.util.MILLIS_PER_MINUTE
 import com.checkin.app.util.MILLIS_PER_SECOND
+import com.checkin.app.widget.AndroidHomeWidgets
+import com.checkin.app.widget.HomeWidgets
 import com.checkin.app.widget.WidgetFace
 import com.checkin.app.widget.WidgetSync
 import kotlinx.coroutines.CancellationException

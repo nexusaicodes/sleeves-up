@@ -1,12 +1,9 @@
-package com.checkin.app.platform
+package com.checkin.app.widget
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
-import com.checkin.app.ui.components.animationScaleOn
-import com.checkin.app.widget.CheckInWidgetProvider
-import com.checkin.app.widget.WidgetFace
-import com.checkin.app.widget.WidgetViews
+import com.checkin.app.util.animationScaleOn
 
 /** The home-screen widgets placed on this device: what they show, pushed from the app's side. */
 interface HomeWidgets {

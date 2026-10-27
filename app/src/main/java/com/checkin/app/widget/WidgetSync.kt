@@ -1,6 +1,5 @@
 package com.checkin.app.widget
 
-import com.checkin.app.platform.HomeWidgets
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job

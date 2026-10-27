@@ -1,6 +1,6 @@
 package com.checkin.app
 
-import com.checkin.app.platform.HomeWidgets
+import com.checkin.app.widget.HomeWidgets
 import com.checkin.app.widget.WidgetFace
 import com.checkin.app.widget.WidgetSync
 import kotlinx.coroutines.ExperimentalCoroutinesApi

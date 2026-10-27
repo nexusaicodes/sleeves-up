@@ -1,7 +1,5 @@
 package com.checkin.app.ui.components
 
-import android.content.Context
-import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -9,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.checkin.app.util.animationScaleOn
 
 /**
  * Whether the system's animation scale is on — false when the user has chosen "remove animations".
@@ -32,10 +31,3 @@ fun animationsEnabled(): Boolean {
 
     return enabled
 }
-
-/**
- * The setting itself, for what is not a composable: the home-screen widget, which decides whether its
- * names cycle when it is drawn. One reading of it, so the app and the widget cannot disagree.
- */
-internal fun Context.animationScaleOn(): Boolean =
-    Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
