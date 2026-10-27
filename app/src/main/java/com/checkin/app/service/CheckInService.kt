@@ -64,7 +64,6 @@ class CheckInService : Service() {
     private val repository by lazy { container.repository }
     private val notifier: Notifier by lazy { container.notifier }
     private val notificationFactory: NotificationFactory by lazy { container.notificationFactory }
-    private val sessionLifecycleRunner: SessionLifecycleRunner by lazy { container.sessionLifecycleRunner }
 
     /** The same injectable clock the rest of the app reads, rather than a direct platform call. */
     private val timeSource: TimeSource by lazy { container.timeSource }
@@ -228,12 +227,16 @@ class CheckInService : Service() {
         startTime = result.startTime
     }
 
-    /** Ends the service: no live session is left for it to show. */
+    /**
+     * Ends the service: no live session is left for it to show. The session's alarms are not touched:
+     * whoever closed the row cancelled them, and a teardown that also cancelled could land after the
+     * next check-in had armed its own — a late `ACTION_STOP`, or a reconcile that read the gap
+     * between a check-out and a check-in. An alarm that outlives its session drops itself on firing.
+     */
     private fun tearDown() {
         reconcileJob?.cancel()
         reconcileJob = null
         isRunning = false
-        sessionLifecycleRunner.cancel()
         clearState()
         cancelReminderNotification()
         stopForeground(STOP_FOREGROUND_REMOVE)

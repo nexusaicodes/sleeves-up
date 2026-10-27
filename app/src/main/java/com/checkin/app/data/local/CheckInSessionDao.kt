@@ -3,7 +3,6 @@ package com.checkin.app.data.local
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
-import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -17,8 +16,17 @@ interface CheckInSessionDao {
     @Insert
     suspend fun insertSession(session: CheckInSession): Long
 
-    @Update
-    suspend fun updateSession(session: CheckInSession)
+    /**
+     * Closes [id] only while it is still open, returning the rows changed: 1 when this call closed
+     * it, 0 when it was already closed or absent. The condition is in the statement itself, so two
+     * closers resolving together — the late day-boundary alarm and a tap on Check Out — cannot both
+     * write: the second finds nothing open, and the first close stands.
+     */
+    @Query(
+        "UPDATE sessions SET stopped_at = :stoppedAt, duration = :duration, closed_by = :closedBy " +
+            "WHERE id = :id AND stopped_at IS NULL",
+    )
+    suspend fun closeIfOpen(id: Long, stoppedAt: Long, duration: Long, closedBy: ClosedBy): Int
 
     @Query("SELECT * FROM sessions WHERE stopped_at IS NULL LIMIT 1")
     suspend fun getActiveSession(): CheckInSession?

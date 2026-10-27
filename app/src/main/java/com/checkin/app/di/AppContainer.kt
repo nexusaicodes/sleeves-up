@@ -35,9 +35,11 @@ import com.checkin.app.platform.ServiceController
 import com.checkin.app.platform.SharedPrefsPromptSettings
 import com.checkin.app.service.AndroidSessionAlarms
 import com.checkin.app.service.CheckInService
+import com.checkin.app.service.SessionActions
 import com.checkin.app.service.SessionAlarms
 import com.checkin.app.service.SessionLifecycleRunner
 import com.checkin.app.service.SessionWatchdog
+import com.checkin.app.ui.checkin.raiseCheckOutCelebration
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -166,6 +168,9 @@ interface AppContainer {
     // alarm seam itself is not exposed — everything goes through the runner, which owns the ordering.
     val sessionLifecycleRunner: SessionLifecycleRunner
     val sessionWatchdog: SessionWatchdog
+
+    // The gated check-in and check-out, shared by the Check-In screen and the root gate.
+    val sessionActions: SessionActions
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -242,6 +247,19 @@ class DefaultAppContainer(context: Context) : AppContainer {
             strings = AndroidStringResolver(appContext),
             alarms = sessionAlarms,
             timeSource = timeSource,
+        )
+    }
+
+    override val sessionActions: SessionActions by lazy {
+        SessionActions(
+            repository = repository,
+            serviceController = serviceController,
+            lifecycle = sessionLifecycleRunner,
+            postedNudges = postedNudges,
+            scope = applicationScope,
+            onCheckedOut = { closed ->
+                raiseCheckOutCelebration(repository, habitRepository, closed, timeSource.nowMillis())
+            },
         )
     }
 

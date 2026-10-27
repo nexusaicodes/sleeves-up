@@ -92,16 +92,22 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * The closed row comes back so a caller that wants to report what was recorded reads the stored
      * figure rather than recomputing it: a second subtraction at the call site would be a second
      * copy of the flooring rule, free to disagree with the row it describes.
+     *
+     * **Only an open row is closed**, and null comes back otherwise: a session is closed once, by
+     * whichever closer lands first, and a second must not restamp it — the day boundary would
+     * replace a user's real stop with midnight, or a late tap the midnight close with its own time,
+     * on a row nothing can edit. `CheckInSessionDao.closeIfOpen` carries the condition, so it holds
+     * even when both closers read the row as open.
      */
     suspend fun checkOutAt(sessionId: Long, atMillis: Long, closedBy: ClosedBy): CheckInSession? {
-        val session = dao.getSessionById(sessionId) ?: return null
+        val session = dao.getSessionById(sessionId)?.takeIf { it.stoppedAt == null } ?: return null
         val closed = session.copy(
             stoppedAt = atMillis,
             duration = (atMillis - session.startedAt).coerceAtLeast(0L),
             closedBy = closedBy,
         )
-        dao.updateSession(closed)
-        return closed
+        val written = dao.closeIfOpen(closed.id, atMillis, checkNotNull(closed.duration), closedBy)
+        return closed.takeIf { written > 0 }
     }
 
     /**

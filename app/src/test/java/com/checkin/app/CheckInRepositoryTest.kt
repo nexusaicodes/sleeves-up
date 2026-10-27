@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -136,13 +137,47 @@ class CheckInRepositoryTest {
     fun `each gated surface records its own ending`() = runBlocking {
         val dao = FakeCheckInSessionDao()
         val repo = CheckInRepository(dao, FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
-        val session = repo.open()
+        val first = repo.open()
+        assertEquals(ClosedBy.TIMER_NOTIFICATION, repo.checkOut(first.id, ClosedBy.TIMER_NOTIFICATION)!!.closedBy)
 
-        assertEquals(ClosedBy.TIMER_NOTIFICATION, repo.checkOut(session.id, ClosedBy.TIMER_NOTIFICATION)!!.closedBy)
+        val second = repo.open()
         assertEquals(
             ClosedBy.REMINDER_NOTIFICATION,
-            repo.checkOutAt(session.id, 9000L, ClosedBy.REMINDER_NOTIFICATION)!!.closedBy,
+            repo.checkOutAt(second.id, 9000L, ClosedBy.REMINDER_NOTIFICATION)!!.closedBy,
         )
+    }
+
+    /**
+     * A session is closed once. The late day-boundary alarm and a tap on Check Out can both read the
+     * row as open; the second write must not restamp the first, on a row nothing can edit.
+     */
+    @Test
+    fun `a second close leaves the first standing`() = runBlocking {
+        val dao = FakeCheckInSessionDao()
+        val repo = CheckInRepository(dao, FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
+        val session = repo.open()
+
+        val first = repo.checkOutAt(session.id, 5000L, ClosedBy.DAY_BOUNDARY)
+        val second = repo.checkOutAt(session.id, 9000L, ClosedBy.IN_APP)
+
+        assertNotNull(first)
+        assertNull(second)
+        val stored = dao.getSessionById(session.id)!!
+        assertEquals(5000L, stored.stoppedAt)
+        assertEquals(4000L, stored.duration)
+        assertEquals(ClosedBy.DAY_BOUNDARY, stored.closedBy)
+    }
+
+    /** The guard is in the write, so it holds even for a caller that read the row while it was open. */
+    @Test
+    fun `the conditional write refuses a row already closed`() = runBlocking {
+        val dao = FakeCheckInSessionDao()
+        val repo = CheckInRepository(dao, FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
+        val session = repo.open()
+        repo.checkOutAt(session.id, 5000L, ClosedBy.DAY_BOUNDARY)
+
+        assertEquals(0, dao.closeIfOpen(session.id, 9000L, 8000L, ClosedBy.IN_APP))
+        assertEquals(5000L, dao.getSessionById(session.id)!!.stoppedAt)
     }
 
     /**
