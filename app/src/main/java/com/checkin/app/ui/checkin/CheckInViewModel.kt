@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 
 /**
@@ -165,11 +164,7 @@ class CheckInViewModel(
         // rather than re-resolved after the gate, so the check-in lands on the habit they chose. The
         // live selection only when nothing has rendered yet, which no tap can precede.
         val shown = uiState.value.habitId
-        if (shown != null) {
-            sessionActions.checkIn(shown)
-            return
-        }
-        viewModelScope.launch { sessionActions.checkIn(habits.selectedHabitIdFlow().first()) }
+        sessionActions.checkIn { shown ?: habits.selectedHabitIdFlow().first() }
     }
 
     private fun executeCheckOut() {

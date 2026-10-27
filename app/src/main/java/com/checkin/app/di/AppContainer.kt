@@ -41,6 +41,8 @@ import com.checkin.app.service.SessionAlarms
 import com.checkin.app.service.SessionLifecycleRunner
 import com.checkin.app.service.SessionWatchdog
 import com.checkin.app.ui.checkin.raiseCheckOutCelebration
+import com.checkin.app.util.MILLIS_PER_MINUTE
+import com.checkin.app.util.MILLIS_PER_SECOND
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -94,16 +96,17 @@ interface AppContainer {
      * process start itself, which is what puts the alarm back after a boot, a package replace or a
      * force stop. Never throws: a database that will not open still arms the fallback, and a failed
      * channel write costs that emission's channels, which the dispatcher re-ensures before it posts.
-     * A failed read re-subscribes after [HABIT_SYNC_RETRY_MS] rather than ending the sync, since
-     * nothing else would restart it for the life of the process.
+     * A failed read re-subscribes rather than ending the sync, since nothing else would restart it for
+     * the life of the process, backing off from [HABIT_SYNC_RETRY_MS] to [HABIT_SYNC_RETRY_MAX_MS] so
+     * a database that never opens is not retried, and the fallback re-armed, every few seconds.
      */
     fun launchHabitSync() {
         applicationScope.launch {
             habitRepository.allHabitsFlow()
-                .retryWhen { cause, _ ->
+                .retryWhen { cause, attempt ->
                     if (cause is CancellationException) return@retryWhen false
                     nudges.armFallback()
-                    delay(HABIT_SYNC_RETRY_MS)
+                    delay(habitSyncRetryDelayMs(attempt))
                     true
                 }
                 .collect { habits ->
@@ -245,5 +248,16 @@ class DefaultAppContainer(context: Context) : AppContainer {
     }
 }
 
-/** How long the habits collector waits before re-subscribing after a failed read. */
-private const val HABIT_SYNC_RETRY_MS = 30_000L
+/** How long the habits collector waits before its first re-subscribe after a failed read. */
+private const val HABIT_SYNC_RETRY_MS = 30 * MILLIS_PER_SECOND
+
+/** The longest it waits: a database that never opens is retried twice an hour. */
+private const val HABIT_SYNC_RETRY_MAX_MS = 30 * MILLIS_PER_MINUTE
+
+/** Doubles from [HABIT_SYNC_RETRY_MS] with each failed [attempt], up to [HABIT_SYNC_RETRY_MAX_MS]. */
+internal fun habitSyncRetryDelayMs(attempt: Long): Long =
+    (HABIT_SYNC_RETRY_MS shl attempt.coerceAtMost(HABIT_SYNC_MAX_DOUBLINGS).toInt())
+        .coerceAtMost(HABIT_SYNC_RETRY_MAX_MS)
+
+/** Enough doublings to pass the cap, and few enough that the shift cannot overflow. */
+private const val HABIT_SYNC_MAX_DOUBLINGS = 6L

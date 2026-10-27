@@ -130,7 +130,8 @@ class MainActivity : FragmentActivity() {
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                // Nothing was raised; the user lands in the app and can tap again.
+                // Nothing was raised. A failed read leaves the nudge posted, to be tapped again; a
+                // failure after it was retired leaves the user in the app, with its own Check In.
             } finally {
                 PresenceCheckSignal.resolvingTaps.update { it - 1 }
             }
@@ -151,9 +152,10 @@ class MainActivity : FragmentActivity() {
     private suspend fun onNudgeTapped(habitUuid: String?) {
         val habits = container.habitRepository
         val habit = (if (habitUuid == null) habits.byId(Habit.SEED_ID) else habits.byUuid(habitUuid)) ?: return
+        // Every read before the retire: a read that fails leaves the nudge posted to be tapped again.
+        val running = if (habit.archived) null else container.repository.getActiveSession()
         container.postedNudges.retire(habit.id)
         if (habit.archived) return
-        val running = container.repository.getActiveSession()
         when {
             // Already checked in since the nudge was posted: the tap has nothing left to ask for.
             running?.habitId == habit.id -> Unit

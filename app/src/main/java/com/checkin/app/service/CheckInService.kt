@@ -15,6 +15,7 @@ import com.checkin.app.notify.NotificationFactory
 import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -120,10 +121,7 @@ class CheckInService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = when (intent?.action) {
         ACTION_START -> handleStart(intent)
-        ACTION_STOP -> {
-            tearDown()
-            START_NOT_STICKY
-        }
+        ACTION_STOP -> handleStop()
         ACTION_REVIVE -> handleRevive(intent)
         ACTION_REFRESH -> reconcileAndPost()
         else -> handleStickyRestart()
@@ -191,9 +189,39 @@ class CheckInService : Service() {
         // epoch. The DB read below overwrites whatever it said.
         if (startTime == 0L) restoreState()
         enterForeground()
+        reconcile()
+        return START_STICKY
+    }
+
+    /**
+     * A check-out asks the service to end — but the row decides, as it does for every other command.
+     * A stop can land after the next check-in has started this service again (a late command from
+     * the close before it, or the day boundary racing a check-out and check-in), and tearing down
+     * then would drop a live session's notification. So it reconciles: no open row tears down, and
+     * an open one is adopted and shown. Already in the foreground, so no deadline to meet first.
+     * A row that cannot be read tears down: every stop follows a check-out, so that is the likely
+     * truth, and a timer left counting over a closed session is the visible failure.
+     */
+    private fun handleStop(): Int {
+        reconcile(tearDownIfUnreadable = true)
+        return START_STICKY
+    }
+
+    /** Reads the active row and either tears down or adopts and posts it, replacing any read in flight. */
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    private fun reconcile(tearDownIfUnreadable: Boolean = false) {
         reconcileJob?.cancel()
         reconcileJob = serviceScope.launch {
-            when (val result = ServiceReconciler.reconcile(repository.getActiveSession())) {
+            val active = try {
+                repository.getActiveSession()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Otherwise rethrown to serviceScope's handler: the next command reconciles.
+                if (tearDownIfUnreadable) tearDown() else throw e
+                return@launch
+            }
+            when (val result = ServiceReconciler.reconcile(active)) {
                 ServiceReconciler.Result.Stop -> tearDown()
                 is ServiceReconciler.Result.Adopt -> {
                     adopt(result)
@@ -203,7 +231,6 @@ class CheckInService : Service() {
                 }
             }
         }
-        return START_STICKY
     }
 
     /**
@@ -228,10 +255,9 @@ class CheckInService : Service() {
     }
 
     /**
-     * Ends the service: no live session is left for it to show. The session's alarms are not touched:
-     * whoever closed the row cancelled them, and a teardown that also cancelled could land after the
-     * next check-in had armed its own — a late `ACTION_STOP`, or a reconcile that read the gap
-     * between a check-out and a check-in. An alarm that outlives its session drops itself on firing.
+     * Ends the service: no live session is left for it to show. Reached only from a reconcile that
+     * found no open row. The session's alarms are not touched: whoever closed the row cancelled them
+     * under the runner's lock, and an alarm that outlives its session drops itself on firing.
      */
     private fun tearDown() {
         reconcileJob?.cancel()
@@ -305,7 +331,7 @@ class CheckInService : Service() {
         }
     }
 
-    /** Clears the render mirror but leaves the alarm state to [SessionLifecycleRunner.cancel]. */
+    /** Clears the render mirror but leaves the alarm state to [SessionLifecycleRunner.close]. */
     private fun clearState() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit {
             remove(KEY_SESSION_ID)

@@ -1,5 +1,7 @@
 package com.checkin.app
 
+import com.checkin.app.data.local.CheckInSession
+import com.checkin.app.data.local.CheckInSessionDao
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.NotificationIds
@@ -314,5 +316,58 @@ class SessionLifecycleRunnerTest {
 
         assertEquals(SessionLifecycleRunner.Outcome.NoSession, outcome)
         assertTrue(dao.sessions.isEmpty())
+    }
+
+    // --- Closing ---
+
+    /**
+     * The boundary read the row as open, and another closer got there before its write. It wrote
+     * nothing, so it must cancel nothing (the armed alarms may be a fresh session's) and must not
+     * report Closed, which is what makes the receiver stop the service.
+     */
+    @Test
+    fun `a boundary that finds its row already closed writes and cancels nothing`() = runTest {
+        val session = repository.open()
+        val racing = object : CheckInSessionDao by dao {
+            override suspend fun getActiveSession(): CheckInSession? = dao.getActiveSession().also {
+                // Another closer lands between this read and the boundary's write.
+                dao.closeIfOpen(session.id, now, now - session.startedAt, ClosedBy.IN_APP)
+            }
+        }
+        val runner = SessionLifecycleRunner(
+            repository = CheckInRepository(racing, time),
+            notifier = notifier,
+            strings = StringResolver { "copy-$it" },
+            alarms = alarms,
+            timeSource = time,
+            zone = { zone },
+        )
+        val cancelsBefore = alarms.cancelCount
+
+        val outcome = runner.onDayBoundaryFired()
+
+        assertEquals(SessionLifecycleRunner.Outcome.AlreadyClosed, outcome)
+        assertEquals(cancelsBefore, alarms.cancelCount)
+        assertEquals(ClosedBy.IN_APP, dao.getSessionById(session.id)!!.closedBy)
+    }
+
+    @Test
+    fun `close writes the row and cancels both alarms`() = runTest {
+        repository.open()
+        runner().arm(now)
+        val cancelsBefore = alarms.cancelCount
+
+        val closed = runner().close(ClosedBy.IN_APP)
+
+        assertEquals(ClosedBy.IN_APP, closed!!.closedBy)
+        assertEquals(cancelsBefore + 1, alarms.cancelCount)
+    }
+
+    @Test
+    fun `a close with nothing open cancels nothing`() = runTest {
+        val cancelsBefore = alarms.cancelCount
+
+        assertNull(runner().close(ClosedBy.IN_APP))
+        assertEquals(cancelsBefore, alarms.cancelCount)
     }
 }

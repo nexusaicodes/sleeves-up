@@ -100,24 +100,25 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * on a row nothing can edit. `CheckInSessionDao.closeIfOpen` carries the condition, so it holds
      * even when both closers read the row as open.
      */
-    suspend fun checkOutAt(sessionId: Long, atMillis: Long, closedBy: ClosedBy): CheckInSession? {
-        val session = dao.getSessionById(sessionId)?.takeIf { it.stoppedAt == null } ?: return null
-        val closed = session.copy(
-            stoppedAt = atMillis,
-            duration = (atMillis - session.startedAt).coerceAtLeast(0L),
-            closedBy = closedBy,
-        )
-        val written = dao.closeIfOpen(closed.id, atMillis, checkNotNull(closed.duration), closedBy)
-        return closed.takeIf { written > 0 }
-    }
+    suspend fun checkOutAt(sessionId: Long, atMillis: Long, closedBy: ClosedBy): CheckInSession? =
+        dao.getSessionById(sessionId)?.let { close(it, atMillis, closedBy) }
 
     /**
      * Checks out whatever session is open, for callers that don't hold its id. Returns the closed
      * row, or null when nothing was open.
      */
-    suspend fun checkOutActiveSession(closedBy: ClosedBy): CheckInSession? {
-        val active = dao.getActiveSession() ?: return null
-        return checkOut(active.id, closedBy)
+    suspend fun checkOutActiveSession(closedBy: ClosedBy): CheckInSession? =
+        dao.getActiveSession()?.let { close(it, timeSource.nowMillis(), closedBy) }
+
+    /**
+     * The one write behind every check-out: [session] as already read, closed at [atMillis]. The
+     * open-row guard is `closeIfOpen`'s alone, in the statement, so a row closed since the read is
+     * left as it is and null comes back.
+     */
+    private suspend fun close(session: CheckInSession, atMillis: Long, closedBy: ClosedBy): CheckInSession? {
+        val duration = (atMillis - session.startedAt).coerceAtLeast(0L)
+        val written = dao.closeIfOpen(session.id, atMillis, duration, closedBy)
+        return session.copy(stoppedAt = atMillis, duration = duration, closedBy = closedBy).takeIf { written > 0 }
     }
 
     suspend fun getActiveSession(): CheckInSession? = dao.getActiveSession()

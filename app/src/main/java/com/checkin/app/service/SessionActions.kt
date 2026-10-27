@@ -12,8 +12,8 @@ import kotlinx.coroutines.launch
 
 /**
  * The gated check-in and check-out, with every side effect each one owes, in the order it owes them.
- * Both gated writers — the Check-In screen and the root gate `MainActivity` raises for a notification,
- * nudge or widget tap — call this, so the ordering rules below live in one place.
+ * Both gated writers — the Check-In screen and the root gate `MainActivity` raises for a notification
+ * or nudge tap — call this, so the ordering rules below live in one place.
  *
  * Each runs on the application [scope], not the caller's: leaving the screen the moment the gate
  * passes must not cancel the work between the row's write and its alarms. And each **never throws**,
@@ -35,8 +35,15 @@ class SessionActions(
 ) {
 
     /** Starts a session for [habitId] in the background; see [open]. */
-    fun checkIn(habitId: Long) {
-        launchGuarded { open(habitId) }
+    fun checkIn(habitId: Long) = checkIn { habitId }
+
+    /**
+     * Starts a session in the background for the habit [resolveHabit] reads — on the application
+     * scope like the rest, so a caller resolving its habit off the database cannot lose the check-in
+     * by leaving the screen while it reads.
+     */
+    fun checkIn(resolveHabit: suspend () -> Long) {
+        launchGuarded { open(resolveHabit()) }
     }
 
     /** Closes the open session in the background, recording [closedBy]; see [close]. */
@@ -68,14 +75,13 @@ class SessionActions(
     /**
      * Closes the open session, whichever habit holds it, and returns the closed row — or null when
      * nothing was open, or another closer got there first. Only the call that closed the row cancels
-     * and stops: whoever else closed it did both, and a cancel with nothing closed here could land on
-     * the alarms of a session opened since.
+     * and stops: whoever else closed it did both.
      */
     suspend fun close(closedBy: ClosedBy): CheckInSession? {
-        val closed = repository.checkOutActiveSession(closedBy) ?: return null
-        // Before `stop()`, and not left to it: that command is a no-op when the service has already
-        // been killed, which would leave both alarms standing over a closed session.
-        lifecycle.cancel()
+        // The write and the alarm cancel are one locked step in the runner, and not left to `stop()`:
+        // that command is a no-op when the service has already been killed, which would leave both
+        // alarms standing over a closed session.
+        val closed = lifecycle.close(closedBy) ?: return null
         serviceController.stop()
         onCheckedOut(closed)
         return closed

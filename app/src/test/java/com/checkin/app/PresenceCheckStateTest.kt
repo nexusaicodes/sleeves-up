@@ -129,14 +129,6 @@ class PresenceCheckStateTest {
     }
 
     @Test
-    fun `the search ends when the wait runs out or the camera is written off`() {
-        assertFalse(PresenceCheckRules.searchEnded(waitRanOut = false, cameraUsable = null))
-        assertFalse(PresenceCheckRules.searchEnded(waitRanOut = false, cameraUsable = true))
-        assertTrue(PresenceCheckRules.searchEnded(waitRanOut = false, cameraUsable = false))
-        assertTrue(PresenceCheckRules.searchEnded(waitRanOut = true, cameraUsable = true))
-    }
-
-    @Test
     fun `the fallback is withdrawn once passed or while a prompt is up`() {
         assertTrue(PresenceCheckRules.offersFallback(passed = false, usingDeviceUnlock = false, searchTimedOut = true))
         assertFalse(PresenceCheckRules.offersFallback(passed = true, usingDeviceUnlock = false, searchTimedOut = true))

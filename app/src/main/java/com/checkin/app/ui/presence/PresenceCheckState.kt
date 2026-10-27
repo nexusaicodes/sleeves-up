@@ -97,13 +97,9 @@ object PresenceCheckRules {
         (DEVICE_UNLOCK_OFFERED_AFTER_MS - (nowMs - startedAtMs)).coerceIn(0L, DEVICE_UNLOCK_OFFERED_AFTER_MS)
 
     /**
-     * Whether the wait is over: it ran out, or the camera was written off — latched by the caller, so
-     * a camera that recovers cannot take back a button the user is already reaching for.
-     */
-    fun searchEnded(waitRanOut: Boolean, cameraUsable: Boolean?): Boolean = waitRanOut || cameraUsable == false
-
-    /**
-     * Whether the fallback button shows. Withdrawn once the check has passed and while a prompt is
+     * Whether the fallback button shows, once [searchTimedOut] — the wait ran out, or the camera was
+     * written off, which the screen latches so a recovering camera cannot take back a button the user
+     * is already reaching for. Withdrawn once the check has passed and while a prompt is
      * outstanding, so no second authentication is raised against a gate already leaving — a success
      * never clears `usingDeviceUnlock`, so that half also covers the gap before the caller reacts.
      */

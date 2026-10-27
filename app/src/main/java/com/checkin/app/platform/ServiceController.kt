@@ -23,6 +23,10 @@ interface ServiceController {
      */
     fun revive(sessionId: Long, startedAt: Long): Boolean
 
+    /**
+     * Asks a running service to end after a check-out. The service checks the row first and ends only
+     * if no session is open, so a stop that lands after the next check-in leaves that session shown.
+     */
     fun stop()
 
     /** Tells a running service the session row changed underneath it, so it redraws from the DB. */

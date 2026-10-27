@@ -355,7 +355,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
             val offerBiometric = PresenceCheckRules.offersFallback(
                 passed = successMessage != null,
                 usingDeviceUnlock = usingDeviceUnlock,
-                searchTimedOut = PresenceCheckRules.searchEnded(searchTimedOut, cameraUsable),
+                searchTimedOut = searchTimedOut,
             )
             if (offerBiometric) {
                 if (canUseBiometric) {

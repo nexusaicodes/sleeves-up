@@ -63,6 +63,13 @@ class SessionLifecycleRunner(
 
         /** The day boundary closed the session, stamped at [atMillis]. */
         data class Closed(val atMillis: Long) : Outcome
+
+        /**
+         * The session was closed by someone else between the read and the write, so this alarm wrote
+         * nothing and cancels nothing: that closer cancelled, and what is armed now may belong to a
+         * session opened since.
+         */
+        data object AlreadyClosed : Outcome
     }
 
     /**
@@ -130,8 +137,15 @@ class SessionLifecycleRunner(
         true
     }
 
-    /** Stops both alarms, for whoever closed the session. */
-    suspend fun cancel() = lock.withLock { alarms.cancelAll() }
+    /**
+     * Closes the open session with [closedBy] and stops both alarms, as one step under the lock — so
+     * a check-in landing between the write and the cancel cannot have its fresh alarms cancelled. A
+     * close that changed nothing (nothing open, or another closer first) cancels nothing. Returns the
+     * closed row.
+     */
+    suspend fun close(closedBy: ClosedBy): CheckInSession? = lock.withLock {
+        repository.checkOutActiveSession(closedBy)?.also { alarms.cancelAll() }
+    }
 
     /** Handles a fired reminder alarm. Safe to call in a process with no running service. */
     suspend fun onReminderFired(): Outcome = lock.withLock {
@@ -182,6 +196,7 @@ class SessionLifecycleRunner(
 
         // The only writer of ClosedBy.DAY_BOUNDARY.
         repository.checkOutAt(active.id, closeAt, ClosedBy.DAY_BOUNDARY)
+            ?: return@withLock Outcome.AlreadyClosed
         alarms.cancelAll()
         notifier.cancel(NotificationIds.SESSION_REMINDER)
         Outcome.Closed(closeAt)
