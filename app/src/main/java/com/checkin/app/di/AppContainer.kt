@@ -24,10 +24,12 @@ import com.checkin.app.notify.nudge.ReminderSettings
 import com.checkin.app.notify.nudge.RoomNudgeSendLog
 import com.checkin.app.notify.nudge.SharedPrefsReminderSettings
 import com.checkin.app.notify.nudge.armFallback
+import com.checkin.app.platform.AndroidHomeWidgets
 import com.checkin.app.platform.AppUpdates
 import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.DefaultCsvExporter
 import com.checkin.app.platform.DefaultServiceController
+import com.checkin.app.platform.HomeWidgets
 import com.checkin.app.platform.LanguageSettings
 import com.checkin.app.platform.LocaleManagerLanguageSettings
 import com.checkin.app.platform.PlayAppUpdates
@@ -43,18 +45,22 @@ import com.checkin.app.service.SessionWatchdog
 import com.checkin.app.ui.checkin.raiseCheckOutCelebration
 import com.checkin.app.util.MILLIS_PER_MINUTE
 import com.checkin.app.util.MILLIS_PER_SECOND
+import com.checkin.app.widget.WidgetFace
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 
 /**
  * Minimal manual DI: the single place that builds the repositories, the side-effect seams
- * ([PromptSettings], [LanguageSettings], [ServiceController], [CsvExporter]), and the app-wide coroutine scope.
+ * ([PromptSettings], [LanguageSettings], [ServiceController], [CsvExporter], [HomeWidgets]), and the
+ * app-wide coroutine scope.
  * ViewModels receive these via their factories, so they stay pure and unit-testable with fakes.
  */
 interface AppContainer {
@@ -66,6 +72,7 @@ interface AppContainer {
     val serviceController: ServiceController
     val csvExporter: CsvExporter
     val appUpdates: AppUpdates
+    val homeWidgets: HomeWidgets
     val timeSource: TimeSource
     val applicationScope: CoroutineScope
 
@@ -117,15 +124,58 @@ interface AppContainer {
     }
 
     /**
-     * Re-names every habit's channel and re-posts a running timer in the app's current language.
-     * A per-app language change recreates the activity but not the process, so nothing else that
-     * writes those strings runs again: the habits collector only emits on a table change, and the
-     * timer is posted on state changes alone. Never throws, for the same reason as [launchHabitSync].
+     * Keeps every placed home-screen widget showing the habits and whether a session is open, for the
+     * life of the process, from its start — the [launchHabitSync] pattern, for the same reason: driven
+     * off the tables, no check-in, check-out, archive or day-boundary close has to remember the widget.
+     * The first emission is the process start, so a process a broadcast creates (the day-boundary
+     * alarm, a boot) reconciles the widget too. Never throws: a failed render costs that one emission.
+     */
+    fun launchWidgetSync() {
+        applicationScope.launch {
+            WidgetFace.faces(
+                activeHabits = habitRepository.activeHabitsFlow(),
+                runningHabitId = repository.activeSessionFlow().map { it?.habitId },
+                animationsOn = homeWidgets::animationsOn,
+            )
+                .catch { }
+                .collect { face -> runCatching { homeWidgets.show(face) } }
+        }
+    }
+
+    /**
+     * Draws the widgets once, from a fresh read: for a widget the system asks about (placed, after a
+     * reboot, a launcher restart), for a language change, and from `MainActivity.onStart` — which is
+     * when an animation-setting change made in system settings can first be seen, and the most
+     * reliable point to repair anything the sync missed. Never throws except to cancel.
+     */
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    suspend fun refreshWidgets() {
+        try {
+            val face = WidgetFace.of(
+                habitRepository.activeHabits(),
+                repository.getActiveSession()?.habitId,
+                homeWidgets.animationsOn(),
+            )
+            homeWidgets.show(face)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // The next table change, start or system update draws it again.
+        }
+    }
+
+    /**
+     * Re-names every habit's channel, re-posts a running timer and redraws the widgets in the app's
+     * current language. A per-app language change recreates the activity but not the process, so
+     * nothing else that writes those strings runs again: the habits collector only emits on a table
+     * change, and the timer is posted on state changes alone. Never throws, for the same reason as
+     * [launchHabitSync].
      */
     fun launchLanguageRefresh() {
         applicationScope.launch {
             runCatching { habitChannels.sync(habitRepository.allHabitsFlow().first()) }
             if (CheckInService.isRunning) runCatching { serviceController.refreshFromDb() }
+            refreshWidgets()
         }
     }
 
@@ -171,6 +221,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val csvExporter: CsvExporter = DefaultCsvExporter(appContext)
 
     override val appUpdates: AppUpdates = PlayAppUpdates(appContext)
+
+    override val homeWidgets: HomeWidgets = AndroidHomeWidgets(appContext)
 
     override val notificationFactory = NotificationFactory(appContext)
 

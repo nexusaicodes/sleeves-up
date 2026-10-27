@@ -126,8 +126,8 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
             key(entry.habit.id) { NameHabitScreen(entry = entry, viewModel = habitsViewModel) }
         }
 
-        // A nudge tap still deciding whether it opens the gate: nothing is drawn, for the PENDING
-        // step's reason — the nav host drawn and then replaced could be tapped in between.
+        // A tap — a nudge, the widget, a pick — still deciding what it opens: nothing is drawn, for the
+        // PENDING step's reason — the nav host drawn and then replaced could be tapped in between.
         resolvingTaps > 0 -> Unit
 
         // A check-in whose habit is still the user's to say: the picker stands where the gate will,

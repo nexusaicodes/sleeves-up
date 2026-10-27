@@ -1,9 +1,9 @@
 package com.checkin.app.notify
 
 /**
- * The extras a notification sets on its tap intent to tell [com.checkin.app.MainActivity] what the
- * user was answering: a boolean per action, each of which opens the presence gate, and the habit a
- * nudge was about. None is ever read by a service. Why this sits in `notify/` rather than `nudge/`:
+ * The extras a notification or the home-screen widget sets on its tap intent to tell
+ * [com.checkin.app.MainActivity] what the user was answering: a boolean per action, each of which opens
+ * the presence gate, and the habit a nudge was about. None is ever read by a service. Why this sits in `notify/` rather than `nudge/`:
  * see the tree map in [Notifier].
  *
  * `MainActivity.handlePresenceIntent` consumes whichever is set and clears it, so an Activity
@@ -37,4 +37,11 @@ object LaunchExtras {
      * record that nudge was about.
      */
     const val HABIT_UUID = "habit_uuid"
+
+    /**
+     * Set by the home-screen widget's button, and the only thing it carries: what the tap opens — the
+     * open session's check-out, the gate for the one habit, or the picker — is decided from the rows
+     * at the tap, never from what the widget was showing.
+     */
+    const val WIDGET_TAP = "widget_tap"
 }

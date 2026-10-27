@@ -217,6 +217,7 @@
     <string name="name_habit_body">أضف المزيد من داخل التطبيق متى شئت.</string>
     <string name="name_habit_continue">متابعة</string>
     <string name="habit_picker_title">تسجيل الحضور في…</string>
+    <string name="widget_description">سجّل حضورك من الشاشة الرئيسية</string>
     <string name="habit_example_running">الجري</string>
     <string name="habit_example_reading">القراءة</string>
     <string name="habit_example_meditation">التأمل</string>

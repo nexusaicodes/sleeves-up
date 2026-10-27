@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One name in the widget's cycle, added to its flipper once per habit by WidgetViews. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_label_text"
+    style="@style/WidgetLabel"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" />

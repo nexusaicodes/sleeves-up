@@ -94,11 +94,16 @@ class MainActivity : FragmentActivity() {
         container.applicationScope.launch {
             container.sessionWatchdog.reviveIfNeeded()
         }
+        // The animation setting has no change signal and is changed in system settings, so a return
+        // from there is the first moment the widget's cycling can follow it.
+        container.applicationScope.launch {
+            container.refreshWidgets()
+        }
     }
 
     private fun handlePresenceIntent(intent: Intent?) {
         // One-shot: consume the extra so an Activity recreation (rotation, theme change) doesn't
-        // replay the notification tap and re-open a gate the user already handled.
+        // replay the tap and re-open a gate the user already handled.
         when {
             intent?.getBooleanExtra(LaunchExtras.CHECK_OUT_FROM_TIMER, false) == true -> {
                 intent.removeExtra(LaunchExtras.CHECK_OUT_FROM_TIMER)
@@ -113,6 +118,10 @@ class MainActivity : FragmentActivity() {
                 val habitUuid = intent.getStringExtra(LaunchExtras.HABIT_UUID)
                 intent.removeExtra(LaunchExtras.HABIT_UUID)
                 resolveTap { onNudgeTapped(habitUuid) }
+            }
+            intent?.getBooleanExtra(LaunchExtras.WIDGET_TAP, false) == true -> {
+                intent.removeExtra(LaunchExtras.WIDGET_TAP)
+                resolveTap { onWidgetTapped() }
             }
         }
     }
@@ -155,6 +164,18 @@ class MainActivity : FragmentActivity() {
         val runningHabitId = container.repository.getActiveSession()?.habitId
         habit?.let { container.postedNudges.retire(it.id) }
         return TapRouting.forHabit(habit, runningHabitId)
+    }
+
+    /**
+     * The home-screen widget's button, which names no habit: the open session's check-out, the gate
+     * for the only habit, or the picker — read off the rows now, whatever the widget was showing.
+     */
+    private suspend fun onWidgetTapped(): TapOutcome {
+        val container = (application as CheckInApplication).container
+        return TapRouting.forWidget(
+            container.habitRepository.activeHabits(),
+            container.repository.getActiveSession()?.habitId,
+        )
     }
 
     /**

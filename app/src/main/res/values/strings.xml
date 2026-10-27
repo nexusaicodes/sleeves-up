@@ -312,6 +312,8 @@
     <!-- The picker the home-screen widget opens when there is more than one habit: names only, and a
          pick goes straight on to the presence gate. A line, so sentence case. -->
     <string name="habit_picker_title">Check in to…</string>
+    <!-- The widget picker's line under the home-screen widget. Says what it does; no exhortation. -->
+    <string name="widget_description">Check in from your home screen</string>
     <!-- Cycled as the name field's placeholder beside a matching icon. Activities, never targets:
          a number in an example would suggest a habit is a bar to clear. -->
     <string name="habit_example_running">Running</string>

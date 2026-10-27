@@ -33,5 +33,9 @@ fun animationsEnabled(): Boolean {
     return enabled
 }
 
-private fun Context.animationScaleOn(): Boolean =
+/**
+ * The setting itself, for what is not a composable: the home-screen widget, which decides whether its
+ * names cycle when it is drawn. One reading of it, so the app and the widget cannot disagree.
+ */
+internal fun Context.animationScaleOn(): Boolean =
     Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f

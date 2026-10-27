@@ -20,4 +20,16 @@
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowBackground">@color/brand_window_background</item>
     </style>
+
+    <!-- The home-screen widget's one line, in both its static and cycling forms. The system's
+         sans-serif rather than the bundled faces: a widget is drawn by the launcher, and a bundled
+         font in a remote layout is not something every launcher honours. One line, ellipsized —
+         a wrapped label would change the strip's height under the user's finger. -->
+    <style name="WidgetLabel">
+        <item name="android:textColor">@color/widget_text</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
 </resources>
