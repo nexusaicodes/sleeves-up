@@ -238,6 +238,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
             reminderSettings = reminderSettings,
             timeSource = timeSource,
             scope = applicationScope,
+            firstRunPending = { !settings.hasAskedNotifications() },
         )
     }
 

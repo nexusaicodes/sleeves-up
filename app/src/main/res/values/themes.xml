@@ -29,7 +29,9 @@
         <item name="android:textColor">@color/widget_text</item>
         <item name="android:textSize">15sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:maxLines">1</item>
+        <!-- Two lines: the name is what the widget says, and a verb that is longer in another
+             language (Arabic's runs about twice the English) must wrap it, not ellipsize it. -->
+        <item name="android:maxLines">2</item>
         <item name="android:ellipsize">end</item>
     </style>
 </resources>

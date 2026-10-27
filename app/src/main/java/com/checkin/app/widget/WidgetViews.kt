@@ -25,6 +25,9 @@ object WidgetViews {
     fun build(context: Context, face: WidgetFace): RemoteViews =
         RemoteViews(context.packageName, R.layout.widget_check_in).apply {
             setOnClickPendingIntent(android.R.id.background, tapIntent(context))
+            // The launcher lays the views out in its own configuration, and a per-app language is
+            // not part of it: the app's direction is set here so the mark leads the line it labels.
+            setInt(android.R.id.background, "setLayoutDirection", context.resources.configuration.layoutDirection)
             // A stable description rather than the cycling text, which a screen reader cannot follow.
             setContentDescription(android.R.id.background, label(context, face))
             val running = face is WidgetFace.Running

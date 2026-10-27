@@ -29,7 +29,8 @@ class NudgeCoordinatorTest {
         scope: CoroutineScope,
         runOnce: suspend () -> Unit = {},
         rearm: suspend () -> Unit = {},
-    ) = NudgeCoordinator(runOnce, rearm, alarms, settings, time, scope)
+        firstRunPending: Boolean = false,
+    ) = NudgeCoordinator(runOnce, rearm, alarms, settings, time, scope) { firstRunPending }
 
     @Test
     fun `a pass that reaches the dispatcher arms nothing of its own`() = runTest(UnconfinedTestDispatcher()) {
@@ -84,4 +85,41 @@ class NudgeCoordinatorTest {
 
         assertEquals(listOf(fallbackAt), alarms.armed)
     }
+
+    @Test
+    fun `before first run ends no pass runs and nothing is armed`() = runTest(UnconfinedTestDispatcher()) {
+        val alarms = FakeNudgeAlarms()
+        var calls = 0
+        val pending = coordinator(
+            alarms,
+            backgroundScope,
+            runOnce = { calls++ },
+            rearm = { calls++ },
+            firstRunPending = true,
+        )
+
+        pending.runPass()
+        pending.rearmNow()
+        pending.launchRearm()
+        pending.armFallback()
+
+        assertEquals(0, calls)
+        assertTrue(alarms.armed.isEmpty())
+    }
+
+    @Test
+    fun `the gate is read at each call, so first run's end lets the next re-arm through`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val alarms = FakeNudgeAlarms()
+            var pending = true
+            var rearms = 0
+            val coordinator =
+                NudgeCoordinator({}, { rearms++ }, alarms, settings, time, backgroundScope) { pending }
+
+            coordinator.rearmNow()
+            pending = false
+            coordinator.rearmNow()
+
+            assertEquals(1, rearms)
+        }
 }

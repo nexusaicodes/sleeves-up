@@ -13,7 +13,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 /** The home-screen widgets placed on this device: what they show, pushed from the app's side. */
 interface HomeWidgets {
-    /** Whether the system's animation scale is on, which decides whether the names cycle; now, then on each change. */
+    /**
+     * Whether the system's animation scale is on, which decides whether the names cycle; now, then on
+     * each change. Only while the process lives: no broadcast announces a change, so one made while it
+     * is dead shows at the next process start.
+     */
     fun animationsOn(): Flow<Boolean>
 
     /** Whether any widget is placed. */

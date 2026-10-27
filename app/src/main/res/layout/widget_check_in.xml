@@ -60,13 +60,15 @@
 
     <!-- Every name holds the same interval, in the order given, so no habit's place in the cycle
          says anything. Slow and a fade rather than a slide: a ticker on the home screen draws the eye
-         even when the user is not thinking about the habit. -->
+         even when the user is not thinking about the habit. measureAllChildren sizes it to the
+         tallest name, so a name that wraps to a second line does not move the others. -->
     <ViewFlipper
         android:id="@+id/widget_flipper"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:layout_weight="1"
+        android:measureAllChildren="true"
         android:autoStart="true"
         android:flipInterval="3500"
         android:importantForAccessibility="noHideDescendants"

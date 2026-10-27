@@ -92,6 +92,7 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
             // dialog from appearing twice, and a skip has decided it should not appear at all.
             settings.markNotificationsAsked()
             askedNotifications = true
+            container.nudges.launchRearm()
         }
     }
 
@@ -158,7 +159,12 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
             // can see. Outside the gate too: PresenceGate raises its own request, and two stacked
             // system dialogs is a dialog the user can't answer.
             val askingNotifications = step == FirstRun.Step.ASK_NOTIFICATIONS
-            if (askingNotifications) NotificationPermissionOnFirstOpen(settings)
+            if (askingNotifications) {
+                NotificationPermissionOnFirstOpen(
+                    settings,
+                    onAsked = container.nudges::launchRearm,
+                )
+            }
             // Never in the same launch as that ask, so Play's dialog cannot land on top of it, and
             // never under the celebration.
             showingScaffold = true
@@ -199,9 +205,11 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
  * after two refusals, so re-asking every cold start would be invisible noise. Declining costs
  * only notifications; every post is already guarded by `Notifier`. Below API 33 the permission
  * does not exist, so the flag is written and nothing is asked.
+ *
+ * [onAsked] runs once the flag is written: it ends first run, which is what the nudge layer waits on.
  */
 @Composable
-private fun NotificationPermissionOnFirstOpen(settings: PromptSettings) {
+private fun NotificationPermissionOnFirstOpen(settings: PromptSettings, onAsked: () -> Unit) {
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         // The outcome is deliberately unused: the grant is re-read wherever it matters, and a
@@ -211,6 +219,7 @@ private fun NotificationPermissionOnFirstOpen(settings: PromptSettings) {
     LaunchedEffect(Unit) {
         if (settings.hasAskedNotifications()) return@LaunchedEffect
         settings.markNotificationsAsked()
+        onAsked()
         if (notificationsNeedRuntimeGrant() && !context.holdsNotificationPermission()) {
             launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
