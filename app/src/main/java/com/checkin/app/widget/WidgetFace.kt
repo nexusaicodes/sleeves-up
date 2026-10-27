@@ -3,7 +3,6 @@ package com.checkin.app.widget
 import com.checkin.app.data.local.Habit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * What the home-screen widget shows — and, as importantly, all it ever shows: the habits' names and
@@ -42,16 +41,16 @@ sealed interface WidgetFace {
         }
 
         /**
-         * The face for every change to the habits or the open session, **deduplicated**: Room
-         * re-emits on every write to either table, and each re-render restarts the widget's flipper,
-         * so only a change the widget would show is let through.
+         * The face for every change to the habits, the open session or the animation setting. Not
+         * deduplicated here: `WidgetSync` skips a face identical to the one on screen, which a dedupe
+         * against this flow's own last emission cannot know.
          */
         fun faces(
             activeHabits: Flow<List<Habit>>,
             runningHabitId: Flow<Long?>,
-            animationsOn: () -> Boolean,
-        ): Flow<WidgetFace> = combine(activeHabits, runningHabitId) { habits, running ->
-            of(habits, running, animationsOn())
-        }.distinctUntilChanged()
+            animationsOn: Flow<Boolean>,
+        ): Flow<WidgetFace> = combine(activeHabits, runningHabitId, animationsOn) { habits, running, animations ->
+            of(habits, running, animations)
+        }
     }
 }

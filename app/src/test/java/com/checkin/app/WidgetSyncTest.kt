@@ -5,8 +5,10 @@ import com.checkin.app.widget.WidgetFace
 import com.checkin.app.widget.WidgetSync
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -24,16 +26,18 @@ class WidgetSyncTest {
         val shown = mutableListOf<WidgetFace>()
         var failNextShow = false
 
-        override fun animationsOn() = true
+        override fun animationsOn() = flowOf(true)
 
         override fun placed() = isPlaced
 
-        override fun show(face: WidgetFace) {
+        override fun show(face: WidgetFace): Boolean {
             if (failNextShow) {
                 failNextShow = false
                 error("launcher unavailable")
             }
+            if (!isPlaced) return false
             shown += face
+            return true
         }
     }
 
@@ -159,6 +163,38 @@ class WidgetSyncTest {
         sync.redraw(force = true)
 
         assertTrue(widgets.shown.isEmpty())
+    }
+
+    @Test
+    fun `a forced redraw with no widget placed reads nothing`() = runTest(UnconfinedTestDispatcher()) {
+        val widgets = FakeHomeWidgets(isPlaced = false)
+        var subscriptions = 0
+        val sync = syncOver(widgets) {
+            subscriptions++
+            MutableStateFlow(single)
+        }
+
+        sync.redraw(force = true)
+
+        assertEquals(0, subscriptions)
+        assertTrue(widgets.shown.isEmpty())
+    }
+
+    @Test
+    fun `the collector can put back a face a redraw replaced`() = runTest(UnconfinedTestDispatcher()) {
+        val widgets = FakeHomeWidgets()
+        val faces = MutableSharedFlow<WidgetFace>(replay = 1)
+        var reads = 0
+        val sync = syncOver(widgets) {
+            if (reads++ == 1) flowOf(running) else faces
+        }
+
+        faces.emit(single)
+        sync.start()
+        sync.redraw(force = false)
+        faces.emit(single)
+
+        assertEquals(listOf(single, running, single), widgets.shown)
     }
 
     @Test

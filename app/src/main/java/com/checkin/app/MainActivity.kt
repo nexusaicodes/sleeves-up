@@ -94,11 +94,6 @@ class MainActivity : FragmentActivity() {
         container.applicationScope.launch {
             container.sessionWatchdog.reviveIfNeeded()
         }
-        // The animation setting has no change signal and is changed in system settings, so a return
-        // from there is the first moment the widget's cycling can follow it.
-        container.applicationScope.launch {
-            container.widgetSync.redraw(force = false)
-        }
     }
 
     private fun handlePresenceIntent(intent: Intent?) {
@@ -145,6 +140,7 @@ class MainActivity : FragmentActivity() {
                 throw e
             } catch (_: Exception) {
                 // Nothing raised; a failed read leaves the nudge posted to tap again.
+                withContext(Dispatchers.Main) { showTapNotResolved() }
             } finally {
                 PresenceCheckSignal.resolvingTaps.update { it - 1 }
             }
@@ -204,6 +200,8 @@ class MainActivity : FragmentActivity() {
                 // the routing read; the repository's own check would refuse the check-in anyway.
                 if (container.habitRepository.select(outcome.habitId)) {
                     PresenceCheckSignal.raise(Reason.CHECK_IN, container.timeSource.nowMillis(), outcome.habitId)
+                } else {
+                    withContext(Dispatchers.Main) { showTapNotResolved() }
                 }
             }
             TapOutcome.CheckOut ->
@@ -220,6 +218,10 @@ class MainActivity : FragmentActivity() {
         val message = runningName?.let { getString(R.string.habit_running_check_out_first, it) }
             ?: getString(R.string.habit_running_check_out_first_unnamed)
         Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show()
+    }
+
+    private fun showTapNotResolved() {
+        Toast.makeText(applicationContext, R.string.tap_not_resolved, Toast.LENGTH_LONG).show()
     }
 
     /**

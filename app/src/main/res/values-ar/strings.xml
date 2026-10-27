@@ -199,6 +199,7 @@
     <string name="update_restart">إعادة التشغيل</string>
     <string name="habit_running_check_out_first">%1$s جارية. سجّل انصرافك منها أولًا.</string>
     <string name="habit_running_check_out_first_unnamed">هناك جلسة جارية. سجّل انصرافك منها أولًا.</string>
+    <string name="tap_not_resolved">تعذّر فتح ذلك. حاول مرة أخرى.</string>
     <string name="habit_editor_new_title">عادة جديدة</string>
     <string name="habit_editor_edit_title">تعديل العادة</string>
     <string name="habit_name_label">الاسم</string>

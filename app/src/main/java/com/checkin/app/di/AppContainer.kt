@@ -191,7 +191,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
                 WidgetFace.faces(
                     activeHabits = habitRepository.activeHabitsFlow(),
                     runningHabitId = repository.activeSessionFlow().map { it?.habitId },
-                    animationsOn = homeWidgets::animationsOn,
+                    animationsOn = homeWidgets.animationsOn(),
                 )
             },
             scope = applicationScope,

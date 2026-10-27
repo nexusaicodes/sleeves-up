@@ -292,6 +292,7 @@
     <!-- A nudge for one habit tapped while another habit's session is running. No gate opens. -->
     <string name="habit_running_check_out_first">%1$s is running. Check out of it first.</string>
     <string name="habit_running_check_out_first_unnamed">A session is running. Check out of it first.</string>
+    <string name="tap_not_resolved">Couldn\'t open that. Try again.</string>
     <!-- The editor dialog shared by every place a habit is created or edited. -->
     <string name="habit_editor_new_title">New Habit</string>
     <string name="habit_editor_edit_title">Edit Habit</string>

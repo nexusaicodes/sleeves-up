@@ -3,8 +3,8 @@ package com.checkin.app.notify
 /**
  * The extras a notification or the home-screen widget sets on its tap intent to tell
  * [com.checkin.app.MainActivity] what the user was answering: a boolean per action, each of which opens
- * the presence gate, and the habit a nudge was about. None is ever read by a service. Why this sits in `notify/` rather than `nudge/`:
- * see the tree map in [Notifier].
+ * the presence gate, and the habit a nudge was about. None is ever read by a service. Why this sits in
+ * `notify/` rather than `nudge/`: see the tree map in [Notifier].
  *
  * `MainActivity.handlePresenceIntent` consumes whichever is set and clears it, so an Activity
  * recreation cannot replay a tap the user has already answered.

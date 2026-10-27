@@ -16,9 +16,8 @@ import kotlinx.coroutines.sync.withLock
  * check-in, check-out, archive or day-boundary close has to remember the widget.
  *
  * [faces] is the one description of the face, used by both paths: the collector [start] runs for as
- * long as a widget is placed, and the one-off [redraw] (the provider's `onUpdate`, a language change,
- * `MainActivity.onStart`). Every draw goes through one lock and skips a face identical to the last one
- * drawn, so:
+ * long as a widget is placed, and the one-off [redraw] (the provider's `onUpdate`, a language change).
+ * Every draw goes through one lock and skips a face identical to the last one drawn, so:
  * - a redraw cannot land a face read before a change after the collector has drawn that change — its
  *   read and its draw happen under the lock, and the collector's newer face waits behind it;
  * - an unchanged face costs no `updateAppWidget`, which would restart the names' cycle.
@@ -49,9 +48,7 @@ class WidgetSync(
         synchronized(this) {
             if (collector?.isActive == true) return
             collector = scope.launch {
-                // Unknown counts as placed: following the tables for nothing is cheaper than a widget
-                // left stale.
-                if (!runCatching { widgets.placed() }.getOrDefault(true)) return@launch
+                if (!placed()) return@launch
                 faces()
                     // A transient read failure must not end the sync for the life of the process: in
                     // one a broadcast created, no activity start would ever redraw the widget.
@@ -76,11 +73,11 @@ class WidgetSync(
     /**
      * Draws once from a fresh read. [force] draws even an unchanged face — the system asking for a
      * widget's views (placement, a launcher restart) or a language change, where the face is the same
-     * and the words are not. Unforced, it does nothing while the collector is not running, since then
-     * no widget is placed.
+     * and the words are not. Unforced, it does nothing while the collector is not running, and forced,
+     * nothing while no widget is placed.
      */
     suspend fun redraw(force: Boolean) {
-        if (!force && !isSyncing) return
+        if (if (force) !placed() else !isSyncing) return
         drawGuarded(face = null, force = force)
     }
 
@@ -95,10 +92,7 @@ class WidgetSync(
         try {
             lock.withLock {
                 val next = face ?: faces().first()
-                if (force || next != drawn) {
-                    widgets.show(next)
-                    drawn = next
-                }
+                if ((force || next != drawn) && widgets.show(next)) drawn = next
             }
         } catch (e: CancellationException) {
             throw e
@@ -106,6 +100,9 @@ class WidgetSync(
             // The face already shown stands; the next table change or start draws it again.
         }
     }
+
+    // Unknown counts as placed: following the tables for nothing is cheaper than a widget left stale.
+    private fun placed(): Boolean = runCatching { widgets.placed() }.getOrDefault(true)
 
     companion object {
         /** How long the collector waits before re-subscribing after a failed read. */

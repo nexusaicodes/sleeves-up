@@ -4,7 +4,6 @@ import com.checkin.app.data.local.Habit
 import com.checkin.app.widget.WidgetFace
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -82,42 +81,25 @@ class WidgetFaceTest {
         assertEquals(WidgetFace.Plain, WidgetFace.of(emptyList(), runningHabitId = null, animationsOn = true))
     }
 
-    /**
-     * Room re-emits on every write to either table, and each redraw restarts the widget's cycle — so a
-     * write the widget would not show (a row it does not draw, a copy of an unchanged habit) must not reach it.
-     */
     @Test
-    fun `only a change the widget would show is let through`() = runTest {
-        val habits = MutableStateFlow(listOf(reading, running))
-        val runningId = MutableStateFlow<Long?>(null)
+    fun `a change to the animation setting is a new face`() = runTest {
+        val animations = MutableStateFlow(true)
         val seen = mutableListOf<WidgetFace>()
         val job = launch(UnconfinedTestDispatcher(testScheduler)) {
-            WidgetFace.faces(habits, runningId) { true }.toList(seen)
+            WidgetFace.faces(flowOf(listOf(reading, running)), flowOf(null), animations).toList(seen)
         }
 
-        habits.value = listOf(reading.copy(), running.copy()) // a write that changed nothing shown
-        runningId.value = running.id
-        runningId.value = running.id
-        habits.value = listOf(reading, running.copy(name = "Run"))
+        animations.value = false
+        animations.value = true
         job.cancel()
 
         assertEquals(
             listOf(
                 WidgetFace.Cycling(listOf("Reading", "Running")),
-                WidgetFace.Running("Running"),
-                WidgetFace.Running("Run"),
+                WidgetFace.Plain,
+                WidgetFace.Cycling(listOf("Reading", "Running")),
             ),
             seen,
         )
-    }
-
-    @Test
-    fun `the animation setting is read with each change`() = runTest {
-        var animations = true
-        val faces = WidgetFace.faces(flowOf(listOf(reading, running)), flowOf(null)) { animations }
-        assertEquals(listOf(WidgetFace.Cycling(listOf("Reading", "Running"))), faces.take(1).toList())
-
-        animations = false
-        assertEquals(listOf(WidgetFace.Plain), faces.take(1).toList())
     }
 }
