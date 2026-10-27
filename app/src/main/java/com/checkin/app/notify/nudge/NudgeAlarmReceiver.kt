@@ -22,11 +22,11 @@ import kotlinx.coroutines.launch
 class NudgeAlarmReceiver : BroadcastReceiver() {
 
     /**
-     * Goes through `AppContainer.runNudgePass` rather than the dispatcher directly, and that is
+     * Goes through `NudgeCoordinator.runPass` rather than the dispatcher directly, and that is
      * load-bearing, exactly as the `catch` in [com.checkin.app.service.SessionAlarmReceiver] is — a
      * throw here would take down any running session's notification, which has nothing to do with
      * nudges. [NudgeDispatcher.runOnce] arms on every path it reaches, a throwing pass included, so
-     * what can still throw is building the dispatcher itself, and `runNudgePass` arms the plain
+     * what can still throw is building the dispatcher itself, and `runPass` arms the plain
      * checkpoint without it: the chain must not end because one pass could not start, or this
      * reproduces the silence the whole mechanism exists to fix. `finish` sits in the `finally`, so
      * the broadcast is released whatever happened above it.
@@ -40,7 +40,7 @@ class NudgeAlarmReceiver : BroadcastReceiver() {
         val pending = goAsync()
         container.applicationScope.launch {
             try {
-                container.runNudgePass()
+                container.nudges.runPass()
             } finally {
                 pending.finish()
             }

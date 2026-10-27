@@ -15,22 +15,23 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import com.checkin.app.data.local.Habit
-import com.checkin.app.data.repository.CheckInResult
 import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.ui.AppRoot
 import com.checkin.app.ui.checkin.CheckOutSignal
-import com.checkin.app.ui.checkin.raiseCheckOutCelebration
 import com.checkin.app.ui.presence.PresenceCheckSignal
 import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import com.checkin.app.ui.presence.PresenceGate
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.util.latinDigitsOverride
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : FragmentActivity() {
+
+    private val container by lazy { (application as CheckInApplication).container }
 
     /**
      * Every string this activity formats numbers in Latin digits, whatever the language — see
@@ -80,7 +81,6 @@ class MainActivity : FragmentActivity() {
      */
     override fun onStart() {
         super.onStart()
-        val container = (application as CheckInApplication).container
         val now = container.timeSource.nowMillis()
         PresenceCheckSignal.expireIfStale(now)
         // Same hazard, shorter fuse: nothing dismisses the celebration on a timer, so one raised as
@@ -110,16 +110,27 @@ class MainActivity : FragmentActivity() {
                 intent.removeExtra(LaunchExtras.CHECK_IN)
                 val habitUuid = intent.getStringExtra(LaunchExtras.HABIT_UUID)
                 intent.removeExtra(LaunchExtras.HABIT_UUID)
-                val container = (application as CheckInApplication).container
-                // Set before the launch, so not one frame of the nav host is drawn in between.
-                PresenceCheckSignal.resolvingTaps.update { it + 1 }
-                container.applicationScope.launch {
-                    try {
-                        onNudgeTapped(habitUuid)
-                    } finally {
-                        PresenceCheckSignal.resolvingTaps.update { it - 1 }
-                    }
-                }
+                resolveNudgeTap(habitUuid)
+            }
+        }
+    }
+
+    /**
+     * Resolves a nudge tap off the database, holding [PresenceCheckSignal.resolvingTaps] so no frame
+     * of the nav host draws in between. Failures are swallowed: the application scope has no handler.
+     */
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    private fun resolveNudgeTap(habitUuid: String?) {
+        PresenceCheckSignal.resolvingTaps.update { it + 1 }
+        container.applicationScope.launch {
+            try {
+                onNudgeTapped(habitUuid)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Nothing raised; a failed read leaves the nudge posted to tap again.
+            } finally {
+                PresenceCheckSignal.resolvingTaps.update { it - 1 }
             }
         }
     }
@@ -136,12 +147,12 @@ class MainActivity : FragmentActivity() {
      * so does one whose habit is not in the database at all — it is about no habit there is.
      */
     private suspend fun onNudgeTapped(habitUuid: String?) {
-        val container = (application as CheckInApplication).container
         val habits = container.habitRepository
         val habit = (if (habitUuid == null) habits.byId(Habit.SEED_ID) else habits.byUuid(habitUuid)) ?: return
+        // Reads before the retire, so a failed read leaves the nudge to tap again.
+        val running = if (habit.archived) null else container.repository.getActiveSession()
         container.postedNudges.retire(habit.id)
         if (habit.archived) return
-        val running = container.repository.getActiveSession()
         when {
             // Already checked in since the nudge was posted: the tap has nothing left to ask for.
             running?.habitId == habit.id -> Unit
@@ -175,52 +186,21 @@ class MainActivity : FragmentActivity() {
      * timestamp is for; [onStart] retires anything stale before it can reopen.
      */
     private fun requestPresenceCheck(reason: Reason) {
-        val container = (application as CheckInApplication).container
         PresenceCheckSignal.raise(reason, container.timeSource.nowMillis())
     }
 
     /** Resolves the root gate: a check-out request closes the session, and a nudge tap opens one. */
     private fun onRootGatePassed() {
-        val container = (application as CheckInApplication).container
         val request = PresenceCheckSignal.request.value
+        // Exhaustive, so a new Reason does not compile until it is given a meaning here.
         when (val reason = request.reason) {
-            // Both check-out reasons take the same path and differ only in the ending the row
-            // records, which the Reason itself carries.
-            Reason.CHECK_OUT_FROM_TIMER, Reason.CHECK_OUT_FROM_REMINDER -> container.applicationScope.launch {
-                val closed = container.repository.checkOutActiveSession(reason.closedBy!!)
-                // Before stop(), which is a no-op when the service has already been killed and
-                // would otherwise leave both alarms standing over a closed session.
-                container.sessionLifecycleRunner.cancel()
-                container.serviceController.stop()
-                // The Check-In screen's button raises this too: a check-out from the notification
-                // earned the same acknowledgement as one made from inside the app.
-                closed?.let {
-                    raiseCheckOutCelebration(
-                        container.repository,
-                        container.habitRepository,
-                        it,
-                        container.timeSource.nowMillis(),
-                    )
-                }
-            }
-            Reason.CHECK_IN -> request.habitId?.let { habitId ->
-                container.applicationScope.launch {
-                    // The repository re-checks for an open session: the user may have checked in —
-                    // to this habit or another — between the gate opening and passing. Only a new
-                    // session is started and armed.
-                    val result = container.repository.checkIn(habitId)
-                    if (result is CheckInResult.Opened) {
-                        val session = result.session
-                        container.serviceController.startTimer(session.id, session.startedAt)
-                        // Armed by the writer, not the service: a refused foreground start must not
-                        // cost the session its day-boundary close.
-                        container.sessionLifecycleRunner.arm(session.startedAt)
-                        // A nudge asking for a check-in is stale the moment one happens. Left posted,
-                        // tapping it later runs the full presence gate and resolves to nothing.
-                        container.postedNudges.retire(habitId)
-                    }
-                }
-            }
+            // Both check-out reasons differ only in the ending the row records, which the Reason
+            // itself carries.
+            Reason.CHECK_OUT_FROM_TIMER, Reason.CHECK_OUT_FROM_REMINDER ->
+                container.sessionActions.checkOut(requireNotNull(reason.closedBy) { "$reason carries no ending" })
+            // The repository re-checks for an open session: the user may have checked in — to this
+            // habit or another — between the gate opening and passing.
+            Reason.CHECK_IN -> request.habitId?.let(container.sessionActions::checkIn)
             Reason.NONE -> {}
         }
         PresenceCheckSignal.clear()

@@ -3,7 +3,6 @@ package com.checkin.app.data.local
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
-import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -17,8 +16,15 @@ interface CheckInSessionDao {
     @Insert
     suspend fun insertSession(session: CheckInSession): Long
 
-    @Update
-    suspend fun updateSession(session: CheckInSession)
+    /**
+     * Closes [id] only while it is open; returns the rows changed, 0 when already closed or absent.
+     * The guard is in the statement, so two closers racing cannot both write.
+     */
+    @Query(
+        "UPDATE sessions SET stopped_at = :stoppedAt, duration = :duration, closed_by = :closedBy " +
+            "WHERE id = :id AND stopped_at IS NULL",
+    )
+    suspend fun closeIfOpen(id: Long, stoppedAt: Long, duration: Long, closedBy: ClosedBy): Int
 
     @Query("SELECT * FROM sessions WHERE stopped_at IS NULL LIMIT 1")
     suspend fun getActiveSession(): CheckInSession?

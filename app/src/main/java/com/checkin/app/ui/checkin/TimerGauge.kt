@@ -24,6 +24,8 @@ import com.checkin.app.ui.components.BrandGridGauge
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.tabularFigures
+import com.checkin.app.util.MILLIS_PER_HOUR
+import com.checkin.app.util.MILLIS_PER_MINUTE
 import com.checkin.app.util.TimeFormat
 
 /**
@@ -115,7 +117,7 @@ private const val TRACK_ALPHA = 0.15f
 private fun TimerGaugeRunningPreview() {
     CheckInAppTheme {
         Box(modifier = Modifier.padding(16.dp)) {
-            TimerGauge(elapsedMs = 5 * 3_600_000L + 45 * 60_000L, running = true)
+            TimerGauge(elapsedMs = 5 * MILLIS_PER_HOUR + 45 * MILLIS_PER_MINUTE, running = true)
         }
     }
 }

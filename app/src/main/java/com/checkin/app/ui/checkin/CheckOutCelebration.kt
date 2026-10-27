@@ -27,6 +27,8 @@ import com.checkin.app.ui.components.BrandGrid
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.tabularFigures
+import com.checkin.app.util.MILLIS_PER_HOUR
+import com.checkin.app.util.MILLIS_PER_MINUTE
 import com.checkin.app.util.TimeFormat
 
 /**
@@ -137,8 +139,8 @@ private fun CheckOutCelebrationPreview() {
     CheckInAppTheme {
         CheckOutCelebration(
             completed = CheckOutSignal.Completed(
-                sessionMs = 2 * 3_600_000L + 14 * 60_000L,
-                dayTotalMs = 6 * 3_600_000L + 12 * 60_000L,
+                sessionMs = 2 * MILLIS_PER_HOUR + 14 * MILLIS_PER_MINUTE,
+                dayTotalMs = 6 * MILLIS_PER_HOUR + 12 * MILLIS_PER_MINUTE,
                 daySessionCount = 2,
                 habitName = "Writing",
             ),
@@ -154,8 +156,8 @@ private fun CheckOutCelebrationShortPreview() {
     CheckInAppTheme {
         CheckOutCelebration(
             completed = CheckOutSignal.Completed(
-                sessionMs = 20 * 60_000L,
-                dayTotalMs = 20 * 60_000L,
+                sessionMs = 20 * MILLIS_PER_MINUTE,
+                dayTotalMs = 20 * MILLIS_PER_MINUTE,
                 daySessionCount = 1,
                 habitName = "Gym",
             ),
