@@ -2,6 +2,7 @@ package com.checkin.app
 
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.dayTrigger
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -18,6 +19,7 @@ import java.time.LocalDate
  * subscriptions are torn down and rebuilt — see the KDoc on `dayTrigger` for the write that gets
  * lost in that window.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class DayTriggerTest {
 
     private val day1 = LocalDate.of(2026, 8, 27)

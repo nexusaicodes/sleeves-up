@@ -24,7 +24,7 @@ internal fun BottomNavigationBar(navController: NavController, currentScreen: Sc
                     // under Settings, or Habits (pushed from any tab's switcher, so often above a tab
                     // that is not its parent) reopening under that tab.
                     if (currentScreen is Screen.Detail) {
-                        while (navController.currentScreen() is Screen.Detail && navController.popBackStack()) Unit
+                        while (navController.currentScreen() is Screen.Detail && navController.popBackStack()) continue
                         // Popping already landed on the tapped tab; navigating again would re-save it.
                         if (navController.currentScreen() == screen) return@NavigationBarItem
                     }

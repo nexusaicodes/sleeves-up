@@ -60,7 +60,7 @@ internal fun SessionIntervalRow(session: CheckInSession) {
     val end = if (running) {
         stringResource(R.string.session_in_progress)
     } else {
-        session.stoppedAt?.let { TimeFormat.clock(it, patterns) }.orEmpty()
+        TimeFormat.clock(session.stoppedAt, patterns)
     }
     val range = stringResource(R.string.session_range, TimeFormat.clock(session.startedAt, patterns), end)
     // Spoken form of the row. An open one needs no join: the pulse carries no text, and `range`
