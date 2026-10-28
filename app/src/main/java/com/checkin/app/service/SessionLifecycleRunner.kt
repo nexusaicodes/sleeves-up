@@ -12,6 +12,8 @@ import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.StringResolver
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.ZoneId
 
 /**
@@ -28,15 +30,20 @@ import java.time.ZoneId
  *
  * Every decision reads the **database**, never the service's in-memory mirror, because the process
  * this runs in may have been created by the alarm broadcast moments earlier.
+ *
+ * **Every entry point holds one lock** across its session read and alarm writes: `onStart`'s
+ * [ensureArmed] runs beside a check-in's [arm], and unlocked could cancel the alarms just set.
  */
 class SessionLifecycleRunner(
     private val repository: CheckInRepository,
     private val notifier: Notifier,
     private val strings: StringResolver,
     private val alarms: SessionAlarms,
+    private val zones: SessionZones,
     private val timeSource: TimeSource,
     private val zone: () -> ZoneId = { ZoneId.systemDefault() },
 ) {
+    private val lock = Mutex()
 
     /** What a fired alarm turned out to mean. Returned so the caller and the tests can assert on it. */
     sealed interface Outcome {
@@ -55,6 +62,9 @@ class SessionLifecycleRunner(
 
         /** The day boundary closed the session, stamped at [atMillis]. */
         data class Closed(val atMillis: Long) : Outcome
+
+        /** Closed by another closer first: nothing written or cancelled, as what is armed may be newer. */
+        data object AlreadyClosed : Outcome
     }
 
     /**
@@ -68,10 +78,14 @@ class SessionLifecycleRunner(
      * The boundary comes from the session's own `date_key`, not from [anchorMs], and an instant
      * already in the past is left as-is — the platform delivers a past-due alarm immediately, which
      * is exactly the wanted behaviour for a session that outlived its boundary.
+     *
+     * Records the zone the session began in ([SessionZones]), so a restore elsewhere still finds
+     * the midnight its `date_key` means.
      */
-    suspend fun arm(anchorMs: Long) {
+    suspend fun arm(anchorMs: Long) = lock.withLock {
         alarms.cancelAll()
-        val active = repository.getActiveSession() ?: return
+        val active = repository.getActiveSession() ?: return@withLock
+        zones.record(active.id, zone())
 
         val reminderAt = SessionSchedule.nextReminderAt(anchorMs)
         alarms.scheduleReminderAt(reminderAt)
@@ -98,12 +112,13 @@ class SessionLifecycleRunner(
      *
      * Safe to call on every app open, which is what its callers do (see [SessionWatchdog]).
      */
-    suspend fun ensureArmed(nowMs: Long): Boolean {
+    suspend fun ensureArmed(nowMs: Long): Boolean = lock.withLock {
         val active = repository.getActiveSession() ?: run {
             // Alarms outliving their session: they would drop themselves on firing, but only after
             // waking the device to find that out.
-            cancel()
-            return false
+            alarms.cancelAll()
+            zones.clear()
+            return@withLock false
         }
 
         // A stored instant still in the future is re-armed exactly as it was. A past one has already
@@ -119,15 +134,23 @@ class SessionLifecycleRunner(
         val storedBoundary = alarms.dayBoundaryAt
         val boundaryAt = storedBoundary.takeIf { it > 0L } ?: dayBoundaryFor(active)
         alarms.scheduleDayBoundaryAt(boundaryAt)
-        return true
+        true
     }
 
-    /** Stops both alarms: check-out, or a session that turned out not to exist. */
-    fun cancel() = alarms.cancelAll()
+    /**
+     * Closes the open session and cancels both alarms in one locked step, so a check-in landing in
+     * between keeps its alarms. Cancels nothing if nothing was closed. Returns the closed row.
+     */
+    suspend fun close(closedBy: ClosedBy): CheckInSession? = lock.withLock {
+        repository.checkOutActiveSession(closedBy)?.also {
+            alarms.cancelAll()
+            zones.clear()
+        }
+    }
 
     /** Handles a fired reminder alarm. Safe to call in a process with no running service. */
-    suspend fun onReminderFired(): Outcome {
-        repository.getActiveSession() ?: return stale()
+    suspend fun onReminderFired(): Outcome = lock.withLock {
+        repository.getActiveSession() ?: return@withLock stale()
 
         val count = alarms.remindersSent + 1
         // Only the first reminder of a session alerts. A two-hour cadence that buzzes every time
@@ -135,12 +158,12 @@ class SessionLifecycleRunner(
         val silent = count > 1
         val firedAt = timeSource.nowMillis()
 
-        if (!notifier.show(reminderSpec(silent))) return refused(firedAt)
+        if (!notifier.show(reminderSpec(silent))) return@withLock refused(firedAt)
 
         alarms.remindersSent = count
 
         alarms.scheduleReminderAt(SessionSchedule.nextReminderAt(firedAt))
-        return Outcome.Reminded
+        Outcome.Reminded
     }
 
     /**
@@ -163,20 +186,29 @@ class SessionLifecycleRunner(
      * change in between would otherwise be stamped hours into the future travelling west, or hours
      * short travelling east, and stamping short silently deletes worked hours.
      */
-    suspend fun onDayBoundaryFired(): Outcome {
-        val active = repository.getActiveSession() ?: return stale()
+    suspend fun onDayBoundaryFired(): Outcome = lock.withLock {
+        val active = repository.getActiveSession() ?: return@withLock stale()
 
-        // Clamped to now as a last guard: a stop instant in the future is never right, whatever
-        // produced it. It can only bite the zone-travel case — a genuinely late alarm still
-        // back-stamps to its own midnight, which is the entire point of deriving the instant.
+        // Clamped at both ends as a last guard: a stop in the future is never right, and one
+        // before the check-in would put the row's stop ahead of its start. Neither is reachable
+        // through a stored instant or a recorded zone; both guard a fallback read in a zone other
+        // than the session's (a session opened by a build that recorded no zone, then restored or
+        // carried across zones). That fallback errs in both directions and only one is clamped: a
+        // late-evening check-in read further east lands before its start and is held there, while
+        // one read further west lands hours past its true midnight and passes, since nothing in
+        // the row distinguishes it from a session that really ran that long. A genuinely late
+        // alarm still back-stamps to its own midnight, which is the point of deriving the instant.
         val closeAt = (alarms.dayBoundaryAt.takeIf { it > 0L } ?: dayBoundaryFor(active))
+            .coerceAtLeast(active.startedAt)
             .coerceAtMost(timeSource.nowMillis())
 
         // The only writer of ClosedBy.DAY_BOUNDARY.
         repository.checkOutAt(active.id, closeAt, ClosedBy.DAY_BOUNDARY)
+            ?: return@withLock Outcome.AlreadyClosed
         alarms.cancelAll()
+        zones.clear()
         notifier.cancel(NotificationIds.SESSION_REMINDER)
-        return Outcome.Closed(closeAt)
+        Outcome.Closed(closeAt)
     }
 
     /**
@@ -185,12 +217,20 @@ class SessionLifecycleRunner(
      * A malformed `date_key` falls back to the boundary of the day the session *started* in, so a
      * corrupt row cannot strand a session open forever: wrong by at most a day beats unbounded.
      */
-    private fun dayBoundaryFor(session: CheckInSession): Long = SessionSchedule.dayBoundaryOf(session.dateKey, zone())
-        ?: SessionSchedule.nextDayBoundaryAfter(session.startedAt, zone())
+    /**
+     * The midnight ending [session]'s day, read in the zone it was checked in under when that was
+     * recorded, else the device's current zone.
+     */
+    private fun dayBoundaryFor(session: CheckInSession): Long {
+        val sessionZone = zones.zoneOf(session.id) ?: zone()
+        return SessionSchedule.dayBoundaryOf(session.dateKey, sessionZone)
+            ?: SessionSchedule.nextDayBoundaryAfter(session.startedAt, sessionZone)
+    }
 
-    /** An alarm with nothing left to act on. Dropped rather than left to fire again. */
+    /** An alarm with nothing left to act on. Dropped rather than left to fire again. Called under [lock]. */
     private fun stale(): Outcome {
-        cancel()
+        alarms.cancelAll()
+        zones.clear()
         return Outcome.NoSession
     }
 

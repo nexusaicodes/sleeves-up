@@ -32,6 +32,8 @@ import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.dayColor
+import com.checkin.app.util.MILLIS_PER_HOUR
+import com.checkin.app.util.MILLIS_PER_MINUTE
 import com.checkin.app.util.TimeFormat
 import java.time.LocalDate
 import java.time.YearMonth
@@ -232,9 +234,9 @@ private fun CalendarGridPreview() {
     CheckInAppTheme {
         val month = YearMonth.of(2026, 6)
         val summaries = mapOf(
-            "2026-06-02" to DailyAggregate("2026-06-02", 8 * 3_600_000L, 1, 0L, 0L, 0, 1, 0, 0),
-            "2026-06-04" to DailyAggregate("2026-06-04", 4 * 3_600_000L, 1, 0L, 0L, 0, 1, 0, 0),
-            "2026-06-05" to DailyAggregate("2026-06-05", 45 * 60_000L, 1, 0L, 0L, 0, 1, 0, 0),
+            "2026-06-02" to DailyAggregate("2026-06-02", 8 * MILLIS_PER_HOUR, 1, 0L, 0L, 0, 1, 0, 0, 0),
+            "2026-06-04" to DailyAggregate("2026-06-04", 4 * MILLIS_PER_HOUR, 1, 0L, 0L, 0, 1, 0, 0, 0),
+            "2026-06-05" to DailyAggregate("2026-06-05", 45 * MILLIS_PER_MINUTE, 1, 0L, 0L, 0, 1, 0, 0, 0),
         )
         CalendarGrid(
             yearMonth = month,

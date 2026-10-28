@@ -55,11 +55,17 @@ class FakeCheckInSessionDao : CheckInSessionDao {
         return stored.id
     }
 
-    override suspend fun updateSession(session: CheckInSession) {
-        store.value = store.value.map { if (it.id == session.id) session else it }
+    override suspend fun closeIfOpen(id: Long, stoppedAt: Long, duration: Long, closedBy: ClosedBy): Int {
+        val open = store.value.firstOrNull { it.id == id && it.stoppedAt == null } ?: return 0
+        val closed = open.copy(stoppedAt = stoppedAt, duration = duration, closedBy = closedBy)
+        store.value = store.value.map { if (it.id == id) closed else it }
+        return 1
     }
 
     override suspend fun getActiveSession(): CheckInSession? = store.value.firstOrNull { it.stoppedAt == null }
+
+    override suspend fun countDaysWithSession(habitId: Long): Int =
+        store.value.filter { it.habitId == habitId && it.stoppedAt != null }.map { it.dateKey }.distinct().size
 
     override fun getActiveSessionFlow(): Flow<CheckInSession?> =
         store.map { list -> list.firstOrNull { it.stoppedAt == null } }
@@ -109,6 +115,7 @@ class FakeCheckInSessionDao : CheckInSessionDao {
                 inAppCheckOuts = list.count { it.closedBy == ClosedBy.IN_APP },
                 timerNotificationCheckOuts = list.count { it.closedBy == ClosedBy.TIMER_NOTIFICATION },
                 reminderNotificationCheckOuts = list.count { it.closedBy == ClosedBy.REMINDER_NOTIFICATION },
+                widgetCheckOuts = list.count { it.closedBy == ClosedBy.WIDGET },
             )
         }
         .sortedBy { it.dateKey }

@@ -23,7 +23,7 @@ class SessionRhythmTest {
         LocalDate.of(2026, 6, 15).atTime(LocalTime.of(hour, minute)).atZone(zone).toInstant().toEpochMilli()
 
     private fun day(key: String, sessions: Int) =
-        key to DailyAggregate(key, 3_600_000L, sessions, 0L, 0L, 0, sessions, 0, 0)
+        key to DailyAggregate(key, 3_600_000L, sessions, 0L, 0L, 0, sessions, 0, 0, 0)
 
     // --- Start buckets ---
 

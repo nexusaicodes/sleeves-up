@@ -105,6 +105,21 @@
             </intent-filter>
         </receiver>
 
+        <!-- The home-screen widget. Exported because the system delivers APPWIDGET_UPDATE to it; all
+             an update can do is redraw the widget from the database. Its tap is an explicit intent to
+             MainActivity, never a deep link, so nothing else can open the gate through it. The class
+             path is frozen: a placed widget names it, and a move takes it off every home screen. -->
+        <receiver
+            android:name=".widget.CheckInWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/check_in_widget_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

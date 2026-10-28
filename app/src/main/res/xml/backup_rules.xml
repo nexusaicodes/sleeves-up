@@ -1,13 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <!-- Excludes the sessions DB from cloud backup, along with the prefs that describe rows or
-         prompts a restore does not carry. Applies below API 31 only; the app's minSdk is 33, so
-         data_extraction_rules.xml is authoritative — mirrored here for hygiene, and it carries the
-         reasoning. -->
-    <exclude domain="database" path="_app" />
-    <exclude domain="database" path="_app-shm" />
-    <exclude domain="database" path="_app-wal" />
+    <!-- Read below API 31 only, and the app's minSdk is 31, so data_extraction_rules.xml is
+         authoritative and carries the reasoning. Its cloud-backup exclusions are mirrored here so the
+         two cannot describe different policies. -->
     <exclude domain="sharedpref" path="checkin_timer_prefs.xml" />
     <exclude domain="sharedpref" path="prompt_prefs.xml" />
-    <exclude domain="sharedpref" path="reminder_prefs.xml" />
 </full-backup-content>

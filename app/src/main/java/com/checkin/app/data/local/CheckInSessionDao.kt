@@ -3,7 +3,6 @@ package com.checkin.app.data.local
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
-import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -17,11 +16,25 @@ interface CheckInSessionDao {
     @Insert
     suspend fun insertSession(session: CheckInSession): Long
 
-    @Update
-    suspend fun updateSession(session: CheckInSession)
+    /**
+     * Closes [id] only while it is open; returns the rows changed, 0 when already closed or absent.
+     * The guard is in the statement, so two closers racing cannot both write.
+     */
+    @Query(
+        "UPDATE sessions SET stopped_at = :stoppedAt, duration = :duration, closed_by = :closedBy " +
+            "WHERE id = :id AND stopped_at IS NULL",
+    )
+    suspend fun closeIfOpen(id: Long, stoppedAt: Long, duration: Long, closedBy: ClosedBy): Int
 
     @Query("SELECT * FROM sessions WHERE stopped_at IS NULL LIMIT 1")
     suspend fun getActiveSession(): CheckInSession?
+
+    /**
+     * How many days hold a completed session of [habitId]'s, read by the widget page's rule at each
+     * start until the page is settled.
+     */
+    @Query("SELECT COUNT(DISTINCT date_key) FROM sessions WHERE habit_id = :habitId AND stopped_at IS NOT NULL")
+    suspend fun countDaysWithSession(habitId: Long): Int
 
     @Query("SELECT * FROM sessions WHERE stopped_at IS NULL LIMIT 1")
     fun getActiveSessionFlow(): Flow<CheckInSession?>
@@ -64,7 +77,8 @@ interface CheckInSessionDao {
                COALESCE(SUM(CASE WHEN closed_by = 'timer_notification' THEN 1 ELSE 0 END), 0)
                    AS timerNotificationCheckOuts,
                COALESCE(SUM(CASE WHEN closed_by = 'reminder_notification' THEN 1 ELSE 0 END), 0)
-                   AS reminderNotificationCheckOuts
+                   AS reminderNotificationCheckOuts,
+               COALESCE(SUM(CASE WHEN closed_by = 'widget' THEN 1 ELSE 0 END), 0) AS widgetCheckOuts
         FROM sessions
         WHERE habit_id = :habitId
           AND date_key BETWEEN :startDate AND :endDate
@@ -87,7 +101,8 @@ interface CheckInSessionDao {
                COALESCE(SUM(CASE WHEN closed_by = 'timer_notification' THEN 1 ELSE 0 END), 0)
                    AS timerNotificationCheckOuts,
                COALESCE(SUM(CASE WHEN closed_by = 'reminder_notification' THEN 1 ELSE 0 END), 0)
-                   AS reminderNotificationCheckOuts
+                   AS reminderNotificationCheckOuts,
+               COALESCE(SUM(CASE WHEN closed_by = 'widget' THEN 1 ELSE 0 END), 0) AS widgetCheckOuts
         FROM sessions
         WHERE habit_id = :habitId
           AND date_key BETWEEN :startDate AND :endDate

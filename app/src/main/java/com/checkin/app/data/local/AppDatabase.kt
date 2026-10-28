@@ -21,7 +21,7 @@ import java.util.UUID
  * Two things to know before writing the next one:
  *
  * - **`ALTER TABLE ... DROP COLUMN` is not available.** SQLite learned it in 3.35, which shipped in
- *   Android 14; `minSdk` is 33, and API 33 ships **3.32.2**, where it is a bare syntax error.
+ *   Android 14; `minSdk` is 31, and APIs 31–33 ship **3.32.2**, where it is a bare syntax error.
  *   Rebuild the table instead: create, `INSERT …
  *   SELECT`, drop, rename, with the new table spelled to match what Room generates for the entity
  *   exactly, since Room validates the schema on the next open and a stray `NOT NULL` or a missing

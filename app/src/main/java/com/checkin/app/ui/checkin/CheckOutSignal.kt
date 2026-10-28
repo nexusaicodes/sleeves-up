@@ -3,7 +3,10 @@ package com.checkin.app.ui.checkin
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.HabitRepository
+import com.checkin.app.util.MILLIS_PER_MINUTE
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Bridges a completed check-out to the celebration shown at the UI root.
@@ -50,22 +53,28 @@ object CheckOutSignal {
      * user *just* did, and nothing about it survives the moment: a congratulation for a session
      * closed hours ago is a non sequitur landing on whatever screen they opened next.
      */
-    const val EXPIRY_MS = 2 * 60 * 1000L
+    const val EXPIRY_MS = 2 * MILLIS_PER_MINUTE
 
     /** The session to celebrate, or null when there is nothing to show. */
-    val completed = MutableStateFlow<Completed?>(null)
+    private val mutableCompleted = MutableStateFlow<Completed?>(null)
 
+    /** The live celebration; [raise] is the only writer, so each carries its stamp. */
+    val completed: StateFlow<Completed?> = mutableCompleted.asStateFlow()
+
+    // Written under this object's lock with the celebration: writers span two threads.
     private var raisedAtMillis = 0L
 
     /** Raises the celebration, stamping when so [expireIfStale] can retire an unseen one. */
+    @Synchronized
     fun raise(sessionMs: Long, dayTotalMs: Long, daySessionCount: Int, habitName: String?, nowMillis: Long) {
         raisedAtMillis = nowMillis
-        completed.value = Completed(sessionMs, dayTotalMs, daySessionCount, habitName)
+        mutableCompleted.value = Completed(sessionMs, dayTotalMs, daySessionCount, habitName)
     }
 
     /** Retires the celebration once it has been dismissed. */
+    @Synchronized
     fun clear() {
-        completed.value = null
+        mutableCompleted.value = null
         raisedAtMillis = 0L
     }
 
@@ -78,6 +87,7 @@ object CheckOutSignal {
      * after a check-out leaves the flow set on a process-global object that nothing else clears, and
      * the next launch would open on a full-screen celebration for a session closed long ago.
      */
+    @Synchronized
     fun expireIfStale(nowMillis: Long): Boolean {
         if (completed.value != null && nowMillis - raisedAtMillis > EXPIRY_MS) {
             clear()

@@ -1,8 +1,6 @@
 package com.checkin.app.ui
 
 import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,19 +8,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.checkin.app.CheckInApplication
+import com.checkin.app.notify.holdsNotificationPermission
+import com.checkin.app.notify.notificationsNeedRuntimeGrant
 import com.checkin.app.platform.PromptSettings
 import com.checkin.app.ui.checkin.CheckOutCelebration
 import com.checkin.app.ui.checkin.CheckOutSignal
+import com.checkin.app.ui.habits.HabitPickerScreen
 import com.checkin.app.ui.habits.HabitsViewModel
 import com.checkin.app.ui.habits.NameHabitScreen
 import com.checkin.app.ui.navigation.AppNavScaffold
@@ -31,11 +33,16 @@ import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import com.checkin.app.ui.presence.PresenceGate
 import com.checkin.app.ui.welcome.FirstRun
 import com.checkin.app.ui.welcome.WelcomeScreen
+import com.checkin.app.ui.welcome.WidgetPageScreen
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 /**
  * The four surfaces that can occupy the whole window, in the order they outrank each other:
- * the first-run welcome, the naming step for a habit with no name, the presence gate, then the
- * app — with the celebration over whichever is showing.
+ * the first-run welcome, the naming step for a habit with no name, the presence gate (with the habit
+ * picker that can precede it), then the app — with the celebration over whichever is showing.
  *
  * **The welcome outranks the gate**, because an introduction the app owes is worth more than the
  * few seconds it delays an action, and the reverse ordering delivers the tour *after* the user
@@ -60,7 +67,7 @@ import com.checkin.app.ui.welcome.WelcomeScreen
  * identities, and a step change would discard the NavHost and reset the active tab.
  */
 @Composable
-fun AppRoot(onGatePassed: () -> Unit) {
+fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
     val context = LocalContext.current
     val container = remember(context) { (context.applicationContext as CheckInApplication).container }
     val settings = container.settings
@@ -83,20 +90,83 @@ fun AppRoot(onGatePassed: () -> Unit) {
         askedNotifications = askedNotifications,
     )
 
+    // The tour carries the widget page, so ending it either way has shown or passed it.
+    var seenWidgetPage by rememberSaveable { mutableStateOf(settings.hasSeenWidgetPage()) }
     val endWelcome = { exit: FirstRun.Exit ->
         settings.markWelcomeSeen()
         seenWelcome = true
+        settings.markWidgetPageSeen()
+        seenWidgetPage = true
         if (!FirstRun.asksNotificationsAfter(exit)) {
             // Recorded as raised without raising it: the flag's job is to keep the launch-time
             // dialog from appearing twice, and a skip has decided it should not appear at all.
             settings.markNotificationsAsked()
             askedNotifications = true
+            container.nudges.launchRearm()
         }
     }
 
     // Hoisted above the switch so entering and leaving the presence gate never destroys the nav
     // controller — the active tab and back stack survive re-auth.
     val navController = rememberNavController()
+    // Each start owes one update check, settled by whichever surface it lands on.
+    val updateTurn = remember { UpdateCheckTurn() }
+    LifecycleStartEffect(updateTurn) {
+        updateTurn.onStart()
+        onStopOrDispose { }
+    }
+    val widgets = container.homeWidgets
+    // Every question to the widget service is a binder call, so each is asked off the main thread.
+    // Null until answered; the widget page waits for it.
+    var canPin by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(widgets) {
+        canPin = withContext(Dispatchers.IO) { runCatching { widgets.canRequestPin() }.getOrDefault(false) }
+    }
+    // Null where the launcher cannot place a widget for the app; the page then says how to by hand.
+    val onAddWidget: (() -> Unit)? = remember(canPin) {
+        if (canPin == true) {
+            { runCatching { widgets.requestPin() } }
+        } else {
+            null
+        }
+    }
+    // Decided at each start, never mid-use: a check-out that brings the second day would otherwise
+    // swap the page in over the screen the user is on.
+    var starts by remember { mutableIntStateOf(0) }
+    LifecycleStartEffect(Unit) {
+        starts++
+        onStopOrDispose { }
+    }
+    var widgetPageDue by remember { mutableStateOf(false) }
+    LaunchedEffect(starts, step) {
+        if (step != FirstRun.Step.NONE || seenWidgetPage) return@LaunchedEffect
+        val placed = withContext(Dispatchers.IO) { runCatching { widgets.placed() }.getOrNull() }
+        // Unknown counts as placed for this start: a page about a widget the user may already have
+        // is the worse miss.
+        if (placed != false) {
+            // A widget seen placed settles the page for good, so no later start asks again.
+            if (placed == true) {
+                settings.markWidgetPageSeen()
+                seenWidgetPage = true
+            }
+            return@LaunchedEffect
+        }
+        val days = try {
+            container.repository.daysWithSession(container.habitRepository.selectedHabitIdFlow().first())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") _: Exception) {
+            // Not owed this start; the next one asks again.
+            0
+        }
+        widgetPageDue = FirstRun.widgetPageOwed(seenWelcome, seenWidgetPage, days, widgetPlaced = false)
+    }
+    val endWidgetPage = {
+        settings.markWidgetPageSeen()
+        seenWidgetPage = true
+        widgetPageDue = false
+    }
+    var showingScaffold = false
     when {
         step == FirstRun.Step.WELCOME -> {
             // No BackHandler by design: the branches around it map back to dismiss, which
@@ -105,6 +175,7 @@ fun AppRoot(onGatePassed: () -> Unit) {
             WelcomeScreen(
                 onFinished = { endWelcome(FirstRun.Exit.FINISHED) },
                 onSkipped = { endWelcome(FirstRun.Exit.SKIPPED) },
+                onAddWidget = onAddWidget,
             )
         }
 
@@ -118,9 +189,20 @@ fun AppRoot(onGatePassed: () -> Unit) {
             key(entry.habit.id) { NameHabitScreen(entry = entry, viewModel = habitsViewModel) }
         }
 
-        // A nudge tap still deciding whether it opens the gate: nothing is drawn, for the PENDING
-        // step's reason — the nav host drawn and then replaced could be tapped in between.
+        // A tap (a nudge, the widget, a pick) still deciding what it opens draws nothing, for the
+        // PENDING step's reason: a nav host drawn and then replaced could be tapped in between.
         resolvingTaps > 0 -> Unit
+
+        // A check-in whose habit is still the user's to say: the picker stands where the gate will,
+        // and a pick replaces it with the gate for that habit. Back drops the request, as on the gate.
+        gateRequest.choosingHabit -> {
+            BackHandler { PresenceCheckSignal.clear() }
+            HabitPickerScreen(
+                active = habits.active,
+                onPick = onHabitPicked,
+                onDismiss = { PresenceCheckSignal.clear() },
+            )
+        }
 
         gateRequest.reason != Reason.NONE -> {
             // Full-screen modal gate: the nav host is not composed underneath, so nothing behind
@@ -133,15 +215,35 @@ fun AppRoot(onGatePassed: () -> Unit) {
             )
         }
 
+        // Below the gate, which answers a tap the user just made, and never under the celebration.
+        widgetPageDue && canPin != null && completed == null -> {
+            BackHandler(onBack = endWidgetPage)
+            WidgetPageScreen(onAddWidget = onAddWidget, onDone = endWidgetPage)
+        }
+
         else -> {
             // Gated on the step, not on sitting below the welcome branch: the ordering is the
             // reason the welcome exists, and enforced by branch position it is a rule no test
             // can see. Outside the gate too: PresenceGate raises its own request, and two stacked
             // system dialogs is a dialog the user can't answer.
-            if (step == FirstRun.Step.ASK_NOTIFICATIONS) NotificationPermissionOnFirstOpen(settings)
-            AppNavScaffold(navController)
+            val askingNotifications = step == FirstRun.Step.ASK_NOTIFICATIONS
+            if (askingNotifications) {
+                NotificationPermissionOnFirstOpen(
+                    settings,
+                    onAsked = container.nudges::launchRearm,
+                )
+            }
+            // Never in the same launch as that ask, so Play's dialog cannot land on top of it, and
+            // never under the celebration.
+            showingScaffold = true
+            AppNavScaffold(
+                navController,
+                offerUpdates = !askingNotifications && completed == null,
+                updateTurn = updateTurn,
+            )
         }
     }
+    if (!showingScaffold) ForfeitUpdateCheck(updateTurn)
 
     // Drawn over whatever is showing rather than replacing it: the celebration is a brief
     // acknowledgement, and tearing the host down for it would lose the tab the user was on. It
@@ -169,10 +271,13 @@ fun AppRoot(onGatePassed: () -> Unit) {
  * Asked once, tracked in prefs rather than inferred from the grant, because a refusal and a
  * never-asked look the same through `PackageManager` — and Android drops the dialog silently
  * after two refusals, so re-asking every cold start would be invisible noise. Declining costs
- * only notifications; every post is already guarded by `Notifier`.
+ * only notifications; every post is already guarded by `Notifier`. Below API 33 the permission
+ * does not exist, so the flag is written and nothing is asked.
+ *
+ * [onAsked] runs once the flag is written: first run has ended, so the nudge chain it held can start.
  */
 @Composable
-private fun NotificationPermissionOnFirstOpen(settings: PromptSettings) {
+private fun NotificationPermissionOnFirstOpen(settings: PromptSettings, onAsked: () -> Unit) {
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         // The outcome is deliberately unused: the grant is re-read wherever it matters, and a
@@ -182,10 +287,9 @@ private fun NotificationPermissionOnFirstOpen(settings: PromptSettings) {
     LaunchedEffect(Unit) {
         if (settings.hasAskedNotifications()) return@LaunchedEffect
         settings.markNotificationsAsked()
-        if (!hasNotificationPermission(context)) launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        onAsked()
+        if (notificationsNeedRuntimeGrant() && !context.holdsNotificationPermission()) {
+            launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 }
-
-private fun hasNotificationPermission(context: Context): Boolean =
-    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-        PackageManager.PERMISSION_GRANTED

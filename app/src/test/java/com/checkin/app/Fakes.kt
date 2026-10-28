@@ -33,6 +33,7 @@ import com.checkin.app.platform.CsvExporter
 import com.checkin.app.platform.ExportResult
 import com.checkin.app.platform.ServiceController
 import com.checkin.app.service.SessionAlarms
+import com.checkin.app.service.SessionZones
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -229,5 +230,25 @@ class FakeNudgeAlarms(var throwOnArm: Boolean = false) : NudgeAlarms {
     override fun arm(atMs: Long) {
         armed += atMs
         if (throwOnArm) error("alarm cap")
+    }
+}
+
+/** Holds one recorded zone in memory, with the real seam's id check. */
+class FakeSessionZones : SessionZones {
+    var sessionId: Long? = null
+        private set
+    var zone: ZoneId? = null
+        private set
+
+    override fun record(sessionId: Long, zone: ZoneId) {
+        this.sessionId = sessionId
+        this.zone = zone
+    }
+
+    override fun zoneOf(sessionId: Long): ZoneId? = zone.takeIf { this.sessionId == sessionId }
+
+    override fun clear() {
+        sessionId = null
+        zone = null
     }
 }

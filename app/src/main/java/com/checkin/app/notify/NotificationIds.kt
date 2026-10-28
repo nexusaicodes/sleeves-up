@@ -11,10 +11,10 @@ package com.checkin.app.notify
  * ### PendingIntent request codes — the whole allocation
  *
  * A separate namespace from the ids above, shared process-wide **and with previously installed
- * versions**, whose notifications and alarms survive an update. `PendingIntent` equality ignores
- * extras, so two senders on one code means one silently rewrites the other's target. Three files
- * allocate out of it, so the bands are listed here — the ids file — rather than being discoverable
- * only by opening all three and hoping:
+ * versions**, whose notifications, alarms and placed widgets survive an update. `PendingIntent`
+ * equality ignores extras, so two senders on one code means one silently rewrites the other's target.
+ * Four files allocate out of it, so the bands are listed here — the ids file — rather than being
+ * discoverable only by opening all four and hoping:
  *
  * | Band | Owner | Use |
  * |---|---|---|
@@ -23,6 +23,7 @@ package com.checkin.app.notify
  * | 20_000, 20_001 | `service.SessionAlarms` | the session reminder and the day boundary |
  * | 20_010 | `notify.nudge.NudgeAlarms` | the nudge checkpoint |
  * | 30_000 | `NotificationFactory.NUDGE_TAP_REQUEST_CODE` | every habit's nudge tap target |
+ * | 40_000 | `widget.WidgetViews.TAP_REQUEST_CODE` | the home-screen widget's button, every face |
  *
  * The nudge tap is one code for every habit, told apart by its intent's data URI
  * (`checkin://nudge/<uuid>`) rather than by a code apiece: `PendingIntent` equality ignores extras

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.checkin.app
 
 import com.checkin.app.data.local.CheckInSession
@@ -6,12 +8,18 @@ import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.local.Habit
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.CheckInResult
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -136,14 +144,71 @@ class CheckInRepositoryTest {
     fun `each gated surface records its own ending`() = runBlocking {
         val dao = FakeCheckInSessionDao()
         val repo = CheckInRepository(dao, FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
-        val session = repo.open()
+        val first = repo.open()
+        assertEquals(ClosedBy.TIMER_NOTIFICATION, repo.checkOut(first.id, ClosedBy.TIMER_NOTIFICATION)!!.closedBy)
 
-        assertEquals(ClosedBy.TIMER_NOTIFICATION, repo.checkOut(session.id, ClosedBy.TIMER_NOTIFICATION)!!.closedBy)
+        val second = repo.open()
         assertEquals(
             ClosedBy.REMINDER_NOTIFICATION,
-            repo.checkOutAt(session.id, 9000L, ClosedBy.REMINDER_NOTIFICATION)!!.closedBy,
+            repo.checkOutAt(second.id, 9000L, ClosedBy.REMINDER_NOTIFICATION)!!.closedBy,
         )
     }
+
+    /**
+     * A session is closed once. The late day-boundary alarm and a tap on Check Out can both read the
+     * row as open; the second write must not restamp the first, on a row nothing can edit.
+     */
+    @Test
+    fun `a second close leaves the first standing`() = runBlocking {
+        val dao = FakeCheckInSessionDao()
+        val repo = CheckInRepository(dao, FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
+        val session = repo.open()
+
+        val first = repo.checkOutAt(session.id, 5000L, ClosedBy.DAY_BOUNDARY)
+        val second = repo.checkOutAt(session.id, 9000L, ClosedBy.IN_APP)
+
+        assertNotNull(first)
+        assertNull(second)
+        val stored = dao.getSessionById(session.id)!!
+        assertEquals(5000L, stored.stoppedAt)
+        assertEquals(4000L, stored.duration)
+        assertEquals(ClosedBy.DAY_BOUNDARY, stored.closedBy)
+    }
+
+    /** The guard is in the write, so it holds even for a caller that read the row while it was open. */
+    @Test
+    fun `the conditional write refuses a row already closed`() = runBlocking {
+        val dao = FakeCheckInSessionDao()
+        val repo = CheckInRepository(dao, FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
+        val session = repo.open()
+        repo.checkOutAt(session.id, 5000L, ClosedBy.DAY_BOUNDARY)
+
+        assertEquals(0, dao.closeIfOpen(session.id, 9000L, 8000L, ClosedBy.IN_APP))
+        assertEquals(5000L, dao.getSessionById(session.id)!!.stoppedAt)
+    }
+
+    /**
+     * Every window ends at today only once today has been checked out of. The flow is the one
+     * History and Reports both read, and it emits only when the boundary moves: a check-in, or a
+     * second check-out, writes to `sessions` without moving it.
+     */
+    @Test
+    fun `the counted-through boundary moves to today at the first check-out and only then`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val today = LocalDate.of(2026, 6, 15)
+            val dao = FakeCheckInSessionDao()
+            val repo = CheckInRepository(dao, FakeTimeSource(1000L, today))
+            val seen = mutableListOf<LocalDate>()
+            backgroundScope.launch { repo.countedThroughFlow(Habit.SEED_ID, today).toList(seen) }
+
+            val first = repo.open()
+            repo.checkOutAt(first.id, 2000L, ClosedBy.IN_APP)
+            val second = repo.open()
+            repo.checkOutAt(second.id, 3000L, ClosedBy.IN_APP)
+
+            assertEquals(listOf(today.minusDays(1), today), seen)
+            assertEquals(today, repo.countedThrough(Habit.SEED_ID, today))
+        }
 
     /**
      * Nullable rather than defaulted: an open session has been ended by nothing, and any value here

@@ -12,7 +12,7 @@ package com.checkin.app.data.local
  * against the export, and the string is also what a migration back-fills against. Rename the
  * constant if you must; never the value.
  *
- * The four are the app's four ways a session can end, and each has exactly one writer — see
+ * The five are the app's five ways a session can end, and each has exactly one writer — see
  * [com.checkin.app.data.repository.CheckInRepository.checkOutAt], which takes this with no default.
  */
 enum class ClosedBy(val storedValue: String) {
@@ -37,6 +37,16 @@ enum class ClosedBy(val storedValue: String) {
      * time nobody chose, and nothing else in the file distinguishes it from one the user did.
      */
     DAY_BOUNDARY("day_boundary"),
+
+    /**
+     * The home-screen widget's button, through the root presence gate, while a session is open.
+     *
+     * Its own value rather than [IN_APP], though the gate it opens is inside the app: the widget is
+     * reached without opening the app first, so a check-out from it is the same kind of fact as one
+     * from a notification — which surface caught the session — and claiming another surface's value
+     * would make the export say something that did not happen.
+     */
+    WIDGET("widget"),
     ;
 
     companion object {

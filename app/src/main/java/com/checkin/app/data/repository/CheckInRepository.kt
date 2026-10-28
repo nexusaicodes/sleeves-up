@@ -1,5 +1,6 @@
 package com.checkin.app.data.repository
 
+import com.checkin.app.data.ConsistencyStats
 import com.checkin.app.data.SystemTimeSource
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.CheckInSession
@@ -86,31 +87,31 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * midnight alarm. It changes nothing about the row's duration or its immutability; the CSV
      * export is the only thing that ever reads it, and nothing displays it.
      *
-     * It has **no default**, deliberately: a new check-out path must state which of the four endings
+     * It has **no default**, deliberately: a new check-out path must state which of the endings
      * it is, or it does not compile — a default would let one silently claim to be another.
      *
      * The closed row comes back so a caller that wants to report what was recorded reads the stored
      * figure rather than recomputing it: a second subtraction at the call site would be a second
      * copy of the flooring rule, free to disagree with the row it describes.
+     *
+     * **Only an open row is closed**; null otherwise. `CheckInSessionDao.closeIfOpen` holds the
+     * guard, so the late day boundary and a Check Out tap cannot restamp each other's close.
      */
-    suspend fun checkOutAt(sessionId: Long, atMillis: Long, closedBy: ClosedBy): CheckInSession? {
-        val session = dao.getSessionById(sessionId) ?: return null
-        val closed = session.copy(
-            stoppedAt = atMillis,
-            duration = (atMillis - session.startedAt).coerceAtLeast(0L),
-            closedBy = closedBy,
-        )
-        dao.updateSession(closed)
-        return closed
-    }
+    suspend fun checkOutAt(sessionId: Long, atMillis: Long, closedBy: ClosedBy): CheckInSession? =
+        dao.getSessionById(sessionId)?.let { close(it, atMillis, closedBy) }
 
     /**
      * Checks out whatever session is open, for callers that don't hold its id. Returns the closed
      * row, or null when nothing was open.
      */
-    suspend fun checkOutActiveSession(closedBy: ClosedBy): CheckInSession? {
-        val active = dao.getActiveSession() ?: return null
-        return checkOut(active.id, closedBy)
+    suspend fun checkOutActiveSession(closedBy: ClosedBy): CheckInSession? =
+        dao.getActiveSession()?.let { close(it, timeSource.nowMillis(), closedBy) }
+
+    /** The write behind every check-out, on [session] as already read; null if it closed since. */
+    private suspend fun close(session: CheckInSession, atMillis: Long, closedBy: ClosedBy): CheckInSession? {
+        val duration = (atMillis - session.startedAt).coerceAtLeast(0L)
+        val written = dao.closeIfOpen(session.id, atMillis, duration, closedBy)
+        return session.copy(stoppedAt = atMillis, duration = duration, closedBy = closedBy).takeIf { written > 0 }
     }
 
     suspend fun getActiveSession(): CheckInSession? = dao.getActiveSession()
@@ -122,6 +123,23 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
 
     suspend fun getDailySummaries(habitId: Long, startDate: String, endDate: String): Map<String, DailyAggregate> =
         byDateKey(dao.getDailyAggregates(habitId, startDate, endDate))
+
+    /**
+     * Where [habitId]'s windows end on [today] ([ConsistencyStats.countedThrough]), off a one-day
+     * query. Deduplicated: Room re-emits on every `sessions` write, and screens rebuild off this.
+     */
+    fun countedThroughFlow(habitId: Long, today: LocalDate): Flow<LocalDate> {
+        val todayKey = today.format(dateFormatter)
+        return dailyAggregatesFlow(habitId, todayKey, todayKey)
+            .map { ConsistencyStats.countedThrough(byDateKey(it), today) }
+            .distinctUntilChanged()
+    }
+
+    /** [countedThroughFlow], read once, for the CSV export. */
+    suspend fun countedThrough(habitId: Long, today: LocalDate): LocalDate {
+        val todayKey = today.format(dateFormatter)
+        return ConsistencyStats.countedThrough(getDailySummaries(habitId, todayKey, todayKey), today)
+    }
 
     /**
      * Keys aggregates by their day. A day present in the map is a day the user showed up; a day
@@ -146,9 +164,9 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * The day [habitId]'s tracking began — the day of its first session — or null when it has none.
      *
      * Derived rather than stored, and it must stay that way. Storing it is a second copy of a fact
-     * the table already holds, and the two can disagree: a cloud restore brings the copy back
-     * without the rows it indexes, and every day since reads as a day the user did not show up for,
-     * on the one screen they check their consistency in. Read off the sessions it describes, that
+     * the table already holds, and the two can disagree: a restore that brings the copy back
+     * without the rows it indexes reads every day since as a day the user did not show up for, on
+     * the one screen they check their consistency in. Read off the sessions it describes, that
      * disagreement is unrepresentable.
      *
      * `distinctUntilChanged` is load-bearing, not tidiness. Room re-runs the query on any write to
@@ -161,6 +179,9 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
         dao.getFirstDateKeyFlow(habitId).map(::parseDateKey).distinctUntilChanged()
 
     suspend fun trackingStart(habitId: Long): LocalDate? = parseDateKey(dao.getFirstDateKey(habitId))
+
+    /** Days holding a completed session of [habitId]'s. Never displayed: it times a one-time page. */
+    suspend fun daysWithSession(habitId: Long): Int = dao.countDaysWithSession(habitId)
 
     /** Null rather than a throw on a malformed key, matching how the formatters treat one. */
     private fun parseDateKey(dateKey: String?): LocalDate? =

@@ -35,19 +35,19 @@ private const val MILLIS_PER_HOUR = 3_600_000.0
  * a new one goes on the end or it does not go in at all.
  *
  * There is deliberately no Status column. Any wording for one would be a verdict on the day, and this
- * is the one artifact that leaves the device — zero hours and zero sessions already say a day held
- * nothing, without grading it. The last four columns are not that column and must not become it:
+ * is the one artifact the user hands to someone else — zero hours and zero sessions already say a day held
+ * nothing, without grading it. The last five columns are not that column and must not become it:
  * they count what ended each of the day's sessions, which is a fact about what happened to a
  * *session*, not an assessment of the *day*. They are per-day counts because these rows are days; a
  * day worked in three blocks, two of which the user closed themselves, reports 1 and 2.
  *
  * There is one column per [ClosedBy][com.checkin.app.data.local.ClosedBy] value and each is named
- * for the value it counts, so a fifth ending means a tenth column rather than a re-reading of these.
- * The four sum to `Session Count`.
+ * for the value it counts, so a sixth ending means an eleventh column rather than a re-reading of
+ * these. The five sum to `Session Count`.
  */
 private const val CSV_HEADER = "Date,First Check In,Last Check Out,Total Hours,Session Count," +
     "Day Boundary Check Outs,In App Check Outs,Timer Notification Check Outs," +
-    "Reminder Notification Check Outs\n"
+    "Reminder Notification Check Outs,Widget Check Outs\n"
 
 /** One day's row, or a gap-filled day of zeros when [summary] is null. */
 internal fun csvRow(key: String, summary: DailyAggregate?): String {
@@ -61,7 +61,8 @@ internal fun csvRow(key: String, summary: DailyAggregate?): String {
     val inApp = summary?.inAppCheckOuts?.toString() ?: "0"
     val fromTimer = summary?.timerNotificationCheckOuts?.toString() ?: "0"
     val fromReminder = summary?.reminderNotificationCheckOuts?.toString() ?: "0"
-    return "$key,$firstIn,$lastOut,$totalHrs,$count,$dayBoundary,$inApp,$fromTimer,$fromReminder\n"
+    val fromWidget = summary?.widgetCheckOuts?.toString() ?: "0"
+    return "$key,$firstIn,$lastOut,$totalHrs,$count,$dayBoundary,$inApp,$fromTimer,$fromReminder,$fromWidget\n"
 }
 
 private fun csvClock(epochMillis: Long): String =

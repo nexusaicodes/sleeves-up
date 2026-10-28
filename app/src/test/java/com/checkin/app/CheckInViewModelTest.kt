@@ -5,9 +5,13 @@ import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.HabitEdit
 import com.checkin.app.data.repository.HabitRepository
 import com.checkin.app.notify.StringResolver
+import com.checkin.app.service.SessionActions
 import com.checkin.app.service.SessionLifecycleRunner
 import com.checkin.app.ui.checkin.CheckInViewModel
 import com.checkin.app.ui.checkin.CheckOutSignal
+import com.checkin.app.ui.checkin.raiseCheckOutCelebration
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -38,23 +42,33 @@ class CheckInViewModelTest {
     ): CheckInViewModel {
         val repo = CheckInRepository(dao, time)
         val habits = HabitRepository(habitDao, appState, dao, time)
-        // The real runner over fakes rather than a stand-in: the ViewModel owns the session's alarm
-        // lifetime, and a stub would let the two drift without a test noticing.
+        // The real runner over fakes rather than a stand-in: the check-in writer owns the session's
+        // alarm lifetime, and a stub would let the two drift without a test noticing.
         val reminder = SessionLifecycleRunner(
             repository = repo,
             notifier = FakeNotifier(),
             strings = StringResolver { "copy-$it" },
             alarms = alarms,
+            zones = FakeSessionZones(),
             timeSource = time,
         )
-        return CheckInViewModel(repo, habits, time, service, reminder, nudges)
+        // The real SessionActions on the test dispatcher, so advanceUntilIdle drives its launches.
+        val actions = SessionActions(
+            repository = repo,
+            serviceController = service,
+            lifecycle = reminder,
+            postedNudges = nudges,
+            scope = CoroutineScope(Dispatchers.Main),
+            onCheckedOut = { raiseCheckOutCelebration(repo, habits, it, time.nowMillis()) },
+        )
+        return CheckInViewModel(repo, habits, time, actions)
     }
 
     /**
-     * Arming is the ViewModel's job, not the service's. `startTimer` can be refused — a restricted
-     * standby bucket, an OEM that declines the foreground start — and a session that lost its
-     * day-boundary close runs until the user notices, writing a multi-day duration onto a row the
-     * app gives no way to edit.
+     * Arming is the check-in writer's job (`SessionActions`), not the service's. `startTimer` can be
+     * refused — a restricted standby bucket, an OEM that declines the foreground start — and a
+     * session that lost its day-boundary close runs until the user notices, writing a multi-day
+     * duration onto a row the app gives no way to edit.
      */
     @Test
     fun `check-in arms both session alarms even when the service start is refused`() = runTest {

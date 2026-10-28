@@ -24,6 +24,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.checkin.app.R
+import com.checkin.app.ui.AppUpdateOffer
+import com.checkin.app.ui.ForfeitUpdateCheck
+import com.checkin.app.ui.UpdateCheckTurn
 import com.checkin.app.ui.checkin.CheckInViewModel
 import com.checkin.app.ui.components.LocalSnackbarHostState
 import com.checkin.app.ui.habits.HabitsViewModel
@@ -34,9 +37,11 @@ import kotlinx.coroutines.launch
  * Top-level chrome: a start-aligned title bar and the bottom nav around the nav host. The title names the
  * active section, so a screen never has to draw its own heading; screens receive the combined inset
  * through the Scaffold's padding. The bar's actions hold the [HabitSwitcher] on every tab.
+ * With [offerUpdates] it composes [AppUpdateOffer] inside the snackbar host it posts to; otherwise, and
+ * while its presence gate is up, it forfeits the [updateTurn].
  */
 @Composable
-fun AppNavScaffold(navController: NavHostController) {
+internal fun AppNavScaffold(navController: NavHostController, offerUpdates: Boolean, updateTurn: UpdateCheckTurn) {
     // Hoisted here (shared with the Check-In tab) so its presence gate can render full-screen above
     // the chrome — the camera preview and the gate's own controls must not sit under the bottom nav.
     val checkInViewModel: CheckInViewModel = viewModel(factory = CheckInViewModel.Factory)
@@ -53,6 +58,7 @@ fun AppNavScaffold(navController: NavHostController) {
             onAuthSuccess = { checkInViewModel.onAuthSuccess() },
             onDismiss = { checkInViewModel.dismissPresenceGate() },
         )
+        ForfeitUpdateCheck(updateTurn)
         return
     }
 
@@ -98,6 +104,11 @@ fun AppNavScaffold(navController: NavHostController) {
     ) { innerPadding ->
         CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
             NavigationGraph(navController, innerPadding, checkInViewModel, runningName)
+            if (offerUpdates) {
+                AppUpdateOffer(turn = updateTurn, sessionOpen = habitsState.running != null)
+            } else {
+                ForfeitUpdateCheck(updateTurn)
+            }
         }
     }
 }

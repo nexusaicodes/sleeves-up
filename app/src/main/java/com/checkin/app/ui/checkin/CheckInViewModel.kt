@@ -11,11 +11,8 @@ import com.checkin.app.data.dayTrigger
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
-import com.checkin.app.data.repository.CheckInResult
 import com.checkin.app.data.repository.HabitRepository
-import com.checkin.app.notify.nudge.PostedNudges
-import com.checkin.app.platform.ServiceController
-import com.checkin.app.service.SessionLifecycleRunner
+import com.checkin.app.service.SessionActions
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,7 +24,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 
 /**
@@ -62,9 +58,7 @@ class CheckInViewModel(
     private val repository: CheckInRepository,
     private val habits: HabitRepository,
     private val timeSource: TimeSource,
-    private val serviceController: ServiceController,
-    private val sessionLifecycleRunner: SessionLifecycleRunner,
-    private val postedNudges: PostedNudges,
+    private val sessionActions: SessionActions,
 ) : ViewModel() {
 
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
@@ -170,41 +164,11 @@ class CheckInViewModel(
         // rather than re-resolved after the gate, so the check-in lands on the habit they chose. The
         // live selection only when nothing has rendered yet, which no tap can precede.
         val shown = uiState.value.habitId
-        viewModelScope.launch {
-            val habitId = shown ?: habits.selectedHabitIdFlow().first()
-            // Only a new session is started and armed. One already open for this habit — two gated
-            // paths resolving together — keeps its alarms, since re-arming would reset its reminder
-            // ladder; another habit's open session means the switcher lock was bypassed somehow, and
-            // writing nothing is the only safe answer.
-            val session = when (val result = repository.checkIn(habitId)) {
-                is CheckInResult.Opened -> result.session
-                is CheckInResult.AlreadyOpen, is CheckInResult.OtherHabitOpen -> return@launch
-            }
-            serviceController.startTimer(session.id, session.startedAt)
-            // Armed here rather than inside the service, because `startTimer` can be refused — a
-            // restricted standby bucket, an OEM that declines the foreground start — and a session
-            // with no day-boundary close runs until the user notices, then writes a multi-day
-            // duration onto a row the app gives no way to edit. Writing the row cannot be refused.
-            sessionLifecycleRunner.arm(session.startedAt)
-            // Cleared on every check-in, not just the one a notification tap opened: a nudge asking
-            // for a check-in is stale whichever way the check-in was made, and one left in the tray
-            // sends the user back through the presence gate to reach a session already open.
-            postedNudges.retire(habitId)
-        }
+        sessionActions.checkIn { shown ?: habits.selectedHabitIdFlow().first() }
     }
 
     private fun executeCheckOut() {
-        viewModelScope.launch {
-            val active = repository.getActiveSession() ?: return@launch
-            val closed = repository.checkOut(active.id, ClosedBy.IN_APP)
-            // Before `stop()`, and not left to it: that command is a no-op when the service has
-            // already been killed, which would leave both alarms standing over a closed session.
-            sessionLifecycleRunner.cancel()
-            serviceController.stop()
-            // The other writer, MainActivity.onRootGatePassed, raises this too — a check-out from
-            // the notification earned the same acknowledgement as one from the button.
-            closed?.let { raiseCheckOutCelebration(repository, habits, it, timeSource.nowMillis()) }
-        }
+        sessionActions.checkOut(ClosedBy.IN_APP)
     }
 
     companion object {
@@ -215,9 +179,7 @@ class CheckInViewModel(
                     container.repository,
                     container.habitRepository,
                     container.timeSource,
-                    container.serviceController,
-                    container.sessionLifecycleRunner,
-                    container.postedNudges,
+                    container.sessionActions,
                 )
             }
         }

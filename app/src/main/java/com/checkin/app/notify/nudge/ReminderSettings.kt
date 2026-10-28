@@ -19,14 +19,13 @@ import kotlinx.coroutines.flow.callbackFlow
  * channel's question — see [NudgeEligibility] — so this holds when they arrive and nothing about
  * whether.
  *
- * **Keyed by the habit's uuid, never its row id, and excluded from cloud backup with `_app`.** Every
- * time belongs to a habit `_app` holds, and a cloud restore brings no `_app`: the restored database
- * seeds a habit with a fresh uuid, so a restored time could never be read — only counted by
- * [earliestMinute]. A device-to-device transfer carries both files and keeps every time with its
- * habit. The uuid key holds whatever travels: a row id restarts at 1 on a rebuilt database and would
- * hand one habit's time to whichever new habit took its number; a uuid can only match the habit it
- * was chosen for. Its own namespace rather than a key in `prompt_prefs`, which records prompts
- * already raised.
+ * **Keyed by the habit's uuid, never its row id, and backed up with `_app`.** Every time belongs to a
+ * habit `_app` holds, and a cloud restore or a device-to-device transfer carries both files, so each
+ * time lands beside its habit. The uuid key holds when only one survives: a row id restarts at 1 on
+ * a rebuilt database (the destructive fallback) and would hand one habit's time to whichever new
+ * habit took its number; a uuid can only match the habit it was chosen for, and an orphaned one is
+ * only ever counted by [earliestMinute]. Its own namespace rather than a key in `prompt_prefs`,
+ * which records prompts already raised.
  *
  * **This is where the range is enforced, and the only place.** Both accessors clamp into
  * [NudgeSchedule.minuteRange], so everything downstream — the schedule maths, the rules, the copy —
@@ -131,7 +130,7 @@ class SharedPrefsReminderSettings(private val prefs: SharedPreferences) : Remind
  *
  * The one path every chooser takes — the naming step and the Habits screen — so none can
  * store a new time and leave the alarm armed for the old one, which would deliver the next reminder
- * at a time the user just moved away from. [rearm] is expected to be `AppContainer.launchNudgeRearm`,
+ * at a time the user just moved away from. [rearm] is expected to be `NudgeCoordinator.launchRearm`,
  * which runs [NudgeDispatcher.rearm] off the main thread: that call reads the day's sends, so the
  * re-arm keeps a reminder the gap is holding and arms a band the new time has just opened (put off
  * by [NudgeConfig.dueNowDelayMs], so it does not post over the screen the time was chosen on), and it

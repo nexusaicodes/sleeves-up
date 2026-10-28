@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.checkin.app.CheckInApplication
-import com.checkin.app.data.ConsistencyStats
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.dayTrigger
 import com.checkin.app.data.local.CheckInSession
@@ -94,15 +93,10 @@ class HistoryViewModel(
     }
         .flatMapLatest { (today, habit) -> repository.trackingStartFlow(habit).map { Triple(today, habit, it) } }
         .flatMapLatest { (today, habit, start) ->
-            // A **one-day** query answers whether today has been checked out of yet: `countedThrough`
-            // is exactly "today's key is present", so the whole record never needs reading.
-            val todayKey = today.format(dateFormatter)
-            val countedThroughFlow = repository.dailyAggregatesFlow(habit, todayKey, todayKey)
-                .map { ConsistencyStats.countedThrough(repository.byDateKey(it), today) }
             combine(
                 monthData,
                 selectedSessions,
-                countedThroughFlow,
+                repository.countedThroughFlow(habit, today),
             ) { monthPair, selection, countedThrough ->
                 val (month, summaries) = monthPair
                 val (selectedKey, sessions) = selection

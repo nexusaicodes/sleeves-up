@@ -22,7 +22,8 @@ android {
 
     defaultConfig {
         applicationId = "com.nexusai.checkin.app"
-        minSdk = 33
+        // Android 12. CLAUDE.md (Toolchain) has what breaks below it and what branches above it.
+        minSdk = 31
         targetSdk = 36
         // Sourced from gradle.properties (VERSION_CODE / VERSION_NAME) — the single source of
         // truth. Override per-build with -PVERSION_CODE / -PVERSION_NAME. Fallbacks keep a fresh
@@ -182,6 +183,12 @@ dependencies {
     // Hourly backstop pass: the session-service revive, the nudge re-arm and the send-ledger
     // prune all hang off it (see notify/nudge/NudgeWorker). Nudges are delivered by an alarm.
     implementation("androidx.work:work-runtime-ktx:2.9.1")
+
+    // Flexible in-app update prompt (platform/AppUpdates). It asks the Play Store app over IPC and
+    // declares no permission; it brings core-common and gms basement/tasks, all proprietary terms
+    // listed in OpenSourceLibraries. Not the -ktx artifact, whose old fragment/coroutines floors and
+    // Flow wrapper this needs none of.
+    implementation("com.google.android.play:app-update:2.1.0")
 
     // Testing
     // JUnit plus the coroutines test dispatcher, and nothing else: the suite is pure JVM and mocks

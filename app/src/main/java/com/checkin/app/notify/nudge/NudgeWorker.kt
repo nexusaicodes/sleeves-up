@@ -36,7 +36,7 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             // here even on a pass that finds nothing to send — and through the container, so a
             // dispatcher that cannot be built still arms the plain checkpoint. It never throws, so a
             // refused arm cannot skip the prune below.
-            container.runNudgePass()
+            container.nudges.runPass()
             container.nudgeSendLog.prune(
                 container.timeSource.nowMillis() - RETENTION_MS,
             )

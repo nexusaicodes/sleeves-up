@@ -4,8 +4,7 @@ The text of the en-GB store listing, kept in the repo so a change to the app and
 words describing it land in the same commit.
 
 The app also ships in Modern Standard Arabic, and so does the listing: see **Arabic listing** below,
-written under the same two rules and the vocabulary table's Arabic column. Like the in-app Arabic
-copy, it **needs a native speaker's review before it is uploaded**.
+written under the same two rules and the vocabulary table's Arabic column.
 
 **Two rules govern every line below.**
 
@@ -30,6 +29,29 @@ copy, it **needs a native speaker's review before it is uploaded**.
    Expect eleven lines: the app's own six, `USE_FINGERPRINT` / `WAKE_LOCK` / `ACCESS_NETWORK_STATE`, and
    the app-scoped `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` (which appears twice, once
    `${applicationId}`-templated and once resolved). Anything else is new and unexplained.
+   **The in-app update prompt is the one outside question, and it is the Play Store's.**
+   `com.google.android.play:app-update` binds to the Play Store app over IPC and declares nothing;
+   its merge adds only the non-exported `PlayCoreDialogWrapperActivity` and the
+   `com.google.android.gms.version` meta-data. Play's docs say the check sends Google the device
+   metadata, app version and installed modules, so neither the listing nor the Privacy screen may
+   claim nothing at all leaves the device about the app. **The record is in Android's own backup**
+   (`data_extraction_rules.xml`): the app sends nothing, but the copy names that backup as the
+   second way the record leaves the phone, beside the CSV, and never says it stays or never leaves.
+   **Data safety: "No data collected, no data shared", re-checked for 3.2.** Play defines collection
+   as data "transmitted from your app off a user's device", including by its libraries
+   (support.google.com/googleplay/android-developer/answer/10787469). Neither new path is the app's:
+   - *In-app updates.* The Play Store app sends Google the device metadata, app version and installed
+     modules (developer.android.com/guide/playcore/in-app-updates, its Data safety table), under
+     Play's terms, and the app never reads any of it. That is the shape of Play's own exemption for a
+     payment service such as Play billing ("your app never accesses this information" and the
+     collection "is governed by that service's terms").
+   - *Backup.* Android uploads the files to the user's own Google account; the app holds no network
+     permission and cannot read the copy. Play's FAQ exempts uploads to "Google Drive or Dropbox for
+     backup" governed by that provider's terms where the app "never collects or accesses the data",
+     and separately data end-to-end encrypted so the developer cannot read it.
+   Neither exemption names OS-initiated backup or the update check outright, so this is a reading of
+   the closest text, not a quoted ruling. Re-check it whenever the form is resubmitted, and at once
+   if the app ever gains a network path of its own.
 
 ---
 
@@ -84,11 +106,11 @@ WHAT YOU SEE
 • In English or Arabic — choose in Settings, or follow your phone
 
 PRIVATE BY DESIGN
-• Your session data never leaves this device. There is no account, no server and no sync.
-• The app holds no internet permission at all. It cannot upload anything, because it cannot reach the network.
+• Your session data lives on your phone. There is no account, no server and no sync. It leaves only in a CSV you export, or in Android's own backup to your Google account if you have that turned on, end-to-end encrypted when your phone has a screen lock.
+• The app holds no internet permission at all, so it cannot upload anything.
 • No photo is ever taken. Your camera hardware reports whether a face is in frame and the app reads only that count — frames never leave the camera, so there is no image to store, show, delete or leak.
 • Face detection, not face recognition: the check confirms someone is there. It identifies no one and matches nothing.
-• No ads. No analytics. No third-party data collection.
+• No ads. No analytics. The only question asked of anyone else is whether Google Play has a newer version.
 • Your history lives in a local database on your phone. Export it to CSV whenever you like — that copy is yours.
 
 HABITS
@@ -110,27 +132,27 @@ Sleeves Up is a self-discipline tool, not a substitute for any employer or legal
 
 ## What's new (500 max, per release)
 
-Play keeps these per version code, so the text below is 3.1's and is replaced wholesale at the next
+Play keeps these per version code, so the text below is 3.2's and is replaced wholesale at the next
 release rather than appended to. **500 is a hard limit and this section has been over it**, which
 Play rejects at submission rather than truncating — count the block before pasting it, em dash and
 blank lines included.
 
-**3.1 is the first release since 3.0**, which is what Play serves. Write each note against the
+**3.2 follows 3.1**, which is what Play serves (a Play install read on 2026-10-27). Write each note against the
 version actually live, not the last tag: a tag can precede its upload, and a release prepared but
 never uploaded leaves everything it meant to say still unsaid.
 
 It is subject to both rules at the top of this file, and the vocabulary table below applies in full —
 it binds a *denial* as much as a boast. It is written for someone updating, who has already been
-through the welcome tour and will meet the naming step instead, so it says what that step is for.
+through the welcome tour and so meets the widget's page alone, later, rather than in the tour.
 
 ```
-Habits: keep a separate record for each thing you show up for. Switch between them from the top bar — each has its own calendar, reports, export and reminder, and nothing compares one with another.
+Check in from your home screen: add the Sleeves Up widget, and a tap takes you straight to the presence check. With more than one habit, it asks which.
 
-Everything you have recorded so far becomes your first habit. Give it a name when you next open the app.
+Your sessions and habits now come with you to a new phone, through Android's own backup when you have it turned on.
 
-Each habit's reminder comes once, around the time you pick for it, on a day you haven't checked in.
+Sleeves Up now runs on Android 12 and 12L.
 
-Sleeves Up now also speaks Arabic — choose a language in Settings.
+When Google Play has a newer version, the app can offer it to you without leaving.
 ```
 
 ---
@@ -140,8 +162,8 @@ Sleeves Up now also speaks Arabic — choose a language in Settings.
 Play's Arabic translation of the listing, entered under **Translations → Arabic** in the Console.
 Modern Standard Arabic, in the in-app copy's words: الحضور is the app's own word for showing up (the
 Check In action is تسجيل الحضور), عادة is the word for a habit and never هدف, and every figure is in
-Latin digits, as on screen. **Not yet reviewed by a native speaker** — review before uploading, under
-both rules above and the vocabulary table's Arabic column.
+Latin digits, as on screen. It is written under both rules above and the vocabulary table's Arabic
+column.
 
 ### App title
 
@@ -181,11 +203,11 @@ Sleeves Up متتبّع خاص لتسجيل الحضور يعمل على جها�
 • بالعربية أو الإنجليزية — اختر من الإعدادات، أو اتبع لغة هاتفك
 
 خاص بطبيعته
-• بيانات جلساتك لا تغادر هذا الجهاز أبدًا. لا حساب، ولا خادم، ولا مزامنة.
-• لا يملك التطبيق أي إذن بالوصول إلى الإنترنت. لا يمكنه رفع أي شيء، لأنه لا يستطيع الوصول إلى الشبكة.
+• بيانات جلساتك محفوظة على هاتفك. لا حساب، ولا خادم، ولا مزامنة. ولا تغادره إلا في ملف CSV تصدّره بنفسك، أو في النسخ الاحتياطي الخاص بـ Android إلى حسابك على Google إن كان مفعّلًا، مشفّرةً تشفيرًا تامًّا بين الطرفين متى كان لهاتفك قفل شاشة.
+• لا يملك التطبيق أي إذن بالوصول إلى الإنترنت، فلا يمكنه رفع أي شيء.
 • لا تُلتقط أي صورة. تُبلغ كاميرا جهازك فقط بوجود وجه في الإطار، ولا يقرأ التطبيق سوى ذلك العدد — لا تغادر الإطارات الكاميرا، فلا توجد صورة تُحفظ أو تُعرض أو تُحذف أو تتسرّب.
 • كشفٌ عن وجود وجه، لا تعرّفٌ عليه: يتأكد الفحص من وجود شخص، ولا يحدد هوية أحد ولا يطابق شيئًا.
-• لا إعلانات. لا تحليلات. لا جمع للبيانات من أي طرف ثالث.
+• لا إعلانات. لا تحليلات. السؤال الوحيد الموجَّه إلى جهة أخرى هو سؤال Google Play عن وجود إصدار أحدث.
 • سجلّك محفوظ في قاعدة بيانات محلية على هاتفك. صدّره إلى CSV متى شئت — تلك النسخة ملكك.
 
 العادات
@@ -206,13 +228,13 @@ Sleeves Up أداة للانضباط الذاتي، وليس بديلًا عن �
 ### What's new (500 max)
 
 ```
-العادات: احتفظ بسجل منفصل لكل شيء تحضر من أجله. بدّل بينها من الشريط العلوي — لكل عادة تقويمها وتقاريرها وتصديرها وتذكيرها، ولا شيء يقارن إحداها بأخرى.
+سجّل حضورك من الشاشة الرئيسية: أضف التطبيق المصغّر لـ Sleeves Up، وبلمسة واحدة تصل مباشرة إلى التحقق من الحضور. وإن كانت لديك أكثر من عادة، يسألك أيّها.
 
-كل ما سجّلته حتى الآن يصبح عادتك الأولى. سمِّها حين تفتح التطبيق في المرة القادمة.
+تنتقل جلساتك وعاداتك الآن معك إلى هاتف جديد، عبر النسخ الاحتياطي الخاص بـ Android متى كان مفعّلًا.
 
-يأتي تذكير كل عادة مرة واحدة، قرابة الوقت الذي تختاره لها، في يوم لم تسجّل فيه حضورك.
+يعمل Sleeves Up الآن على Android 12 و12L.
 
-Sleeves Up متاح الآن بالعربية أيضًا — اختر اللغة من الإعدادات.
+حين يتوفر إصدار أحدث على Google Play، يمكن للتطبيق أن يعرضه عليك دون مغادرته.
 ```
 
 ### Screenshot captions
@@ -293,7 +315,7 @@ screenshot corroborates.
 | 4 | `04-habits.png` | The Habits screen: three habits, each with its reminder time and nothing else | One record per habit. Nothing compares them. |
 | 5 | `05-running.png` | The timer notification in the shade, chronometer running | A live timer while you're in. Nothing gets subtracted. |
 | 6 | `06-start-times.png` | The morning / afternoon / evening split | See when you actually start. No bucket is the right one. |
-| 7 | `07-privacy.png` | The in-app privacy screen | No internet permission at all. It cannot upload, because it cannot connect. |
+| 7 | `07-privacy.png` | The in-app privacy screen | No internet permission at all, so it cannot upload. |
 | 8 | `08-export.png` | The system share sheet mid-export | Export everything. That copy is yours. |
 
 Slot 1 is the hero and earns it mechanically rather than by taste: every habit tracker on Play uses

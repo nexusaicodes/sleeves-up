@@ -1,5 +1,7 @@
 package com.checkin.app
 
+import com.checkin.app.data.local.CheckInSession
+import com.checkin.app.data.local.CheckInSessionDao
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.NotificationIds
@@ -38,12 +40,14 @@ class SessionLifecycleRunnerTest {
     private val repository = CheckInRepository(dao, time)
     private val notifier = FakeNotifier()
     private val alarms = FakeSessionAlarms()
+    private val zones = FakeSessionZones()
 
     private fun runner() = SessionLifecycleRunner(
         repository = repository,
         notifier = notifier,
         strings = StringResolver { "copy-$it" },
         alarms = alarms,
+        zones = zones,
         timeSource = time,
         zone = { zone },
     )
@@ -237,6 +241,7 @@ class SessionLifecycleRunnerTest {
             notifier = notifier,
             strings = StringResolver { "copy-$it" },
             alarms = alarms,
+            zones = zones,
             timeSource = late,
             zone = { zone },
         )
@@ -278,6 +283,7 @@ class SessionLifecycleRunnerTest {
             notifier = notifier,
             strings = StringResolver { "copy-$it" },
             alarms = alarms,
+            zones = zones,
             timeSource = FakeTimeSource(boundary + 60_000L, today.plusDays(1)),
             zone = { ZoneId.of("Asia/Karachi") },
         )
@@ -298,6 +304,7 @@ class SessionLifecycleRunnerTest {
             notifier = notifier,
             strings = StringResolver { "copy-$it" },
             alarms = alarms,
+            zones = zones,
             timeSource = FakeTimeSource(fireAt, today),
             zone = { zone },
         )
@@ -307,6 +314,136 @@ class SessionLifecycleRunnerTest {
         assertEquals(fireAt, dao.getSessionById(session.id)!!.stoppedAt)
     }
 
+    /**
+     * A cloud restore brings the sessions table but not `checkin_timer_prefs`, so a session open when
+     * the backup was taken arrives days later with no armed instant. The first app open must close
+     * it at its own midnight, as the day boundary, not leave it running or stamp the open's time.
+     */
+    @Test
+    fun `a session restored open with no stored instants closes at its own midnight`() = runTest {
+        val session = repository.open()
+        val restoredAt = boundary + 3 * 24 * 60 * 60 * 1000L
+        val later = FakeTimeSource(restoredAt, today.plusDays(3))
+        val restored = SessionLifecycleRunner(
+            repository = CheckInRepository(dao, later),
+            notifier = notifier,
+            strings = StringResolver { "copy-$it" },
+            alarms = alarms,
+            zones = zones,
+            timeSource = later,
+            zone = { zone },
+        )
+
+        assertTrue(restored.ensureArmed(restoredAt))
+        assertEquals(boundary, alarms.lastDayBoundary)
+
+        restored.onDayBoundaryFired()
+
+        val closed = dao.getSessionById(session.id)!!
+        assertEquals(boundary, closed.stoppedAt)
+        assertEquals(ClosedBy.DAY_BOUNDARY, closed.closedBy)
+    }
+
+    /**
+     * A session with no recorded zone (opened by a build that kept none) restored far to the east
+     * reads its fallback midnight in the new zone, which can fall before a late-evening check-in.
+     * The stop is held at the start.
+     */
+    @Test
+    fun `the boundary never stamps a stop before the check-in`() = runTest {
+        val evening = LocalDateTime.of(2026, 6, 15, 22, 0).atZone(zone).toInstant().toEpochMilli()
+        val session = CheckInRepository(dao, FakeTimeSource(evening, today)).open()
+        val east = SessionLifecycleRunner(
+            repository = repository,
+            notifier = notifier,
+            strings = StringResolver { "copy-$it" },
+            alarms = alarms,
+            zones = zones,
+            timeSource = FakeTimeSource(boundary + 24 * 60 * 60 * 1000L, today.plusDays(1)),
+            // The midnight ending 15 June here is 15:00 UTC, seven hours before the check-in.
+            zone = { ZoneId.of("Asia/Tokyo") },
+        )
+
+        east.onDayBoundaryFired()
+
+        val closed = dao.getSessionById(session.id)!!
+        assertEquals(evening, closed.stoppedAt)
+        assertEquals(0L, closed.duration)
+    }
+
+    @Test
+    fun `arming records the zone the session began in`() = runTest {
+        val session = repository.open()
+
+        runner().arm(now)
+
+        assertEquals(zone, zones.zoneOf(session.id))
+    }
+
+    /**
+     * A restore carries the row and its recorded zone but no armed instant. A 23:00 check-in in
+     * Tokyo is 07:00 the same date in Los Angeles, so LA's midnight would close it 17 hours on;
+     * the recorded zone closes it at Tokyo's, one hour on.
+     */
+    @Test
+    fun `a session restored further west closes at the midnight of the zone it began in`() = runTest {
+        val tokyo = ZoneId.of("Asia/Tokyo")
+        val checkIn = LocalDateTime.of(2026, 6, 15, 23, 0).atZone(tokyo).toInstant().toEpochMilli()
+        val tokyoTime = FakeTimeSource(checkIn, today)
+        val session = CheckInRepository(dao, tokyoTime).open()
+        SessionLifecycleRunner(
+            repository = CheckInRepository(dao, tokyoTime),
+            notifier = notifier,
+            strings = StringResolver { "copy-$it" },
+            alarms = FakeSessionAlarms(),
+            zones = zones,
+            timeSource = tokyoTime,
+            zone = { tokyo },
+        ).arm(checkIn)
+
+        val restoredAt = checkIn + 3 * 24 * 60 * 60 * 1000L
+        val laTime = FakeTimeSource(restoredAt, today.plusDays(3))
+        val restored = SessionLifecycleRunner(
+            repository = CheckInRepository(dao, laTime),
+            notifier = notifier,
+            strings = StringResolver { "copy-$it" },
+            alarms = alarms,
+            zones = zones,
+            timeSource = laTime,
+            zone = { ZoneId.of("America/Los_Angeles") },
+        )
+
+        assertTrue(restored.ensureArmed(restoredAt))
+        restored.onDayBoundaryFired()
+
+        val tokyoMidnight = LocalDateTime.of(2026, 6, 16, 0, 0).atZone(tokyo).toInstant().toEpochMilli()
+        val closed = dao.getSessionById(session.id)!!
+        assertEquals(tokyoMidnight, closed.stoppedAt)
+        assertEquals(60 * 60 * 1000L, closed.duration)
+        assertEquals(null, zones.zoneOf(session.id))
+    }
+
+    /** A zone recorded for an earlier session says nothing about this one. */
+    @Test
+    fun `a zone recorded for another session is ignored`() = runTest {
+        val session = repository.open()
+        zones.record(session.id + 1, ZoneId.of("Asia/Tokyo"))
+
+        runner().ensureArmed(now)
+
+        assertEquals(boundary, alarms.lastDayBoundary)
+    }
+
+    @Test
+    fun `closing clears the recorded zone`() = runTest {
+        val session = repository.open()
+        runner().arm(now)
+
+        runner().close(ClosedBy.IN_APP)
+
+        assertEquals(null, zones.zoneOf(session.id))
+    }
+
     /** A boundary alarm that outlived its session must not close whatever opened after it. */
     @Test
     fun `a boundary with no open session closes nothing`() = runTest {
@@ -314,5 +451,59 @@ class SessionLifecycleRunnerTest {
 
         assertEquals(SessionLifecycleRunner.Outcome.NoSession, outcome)
         assertTrue(dao.sessions.isEmpty())
+    }
+
+    // --- Closing ---
+
+    /**
+     * The boundary read the row as open, and another closer got there before its write. It wrote
+     * nothing, so it must cancel nothing (the armed alarms may be a fresh session's) and must not
+     * report Closed, which is what makes the receiver stop the service.
+     */
+    @Test
+    fun `a boundary that finds its row already closed writes and cancels nothing`() = runTest {
+        val session = repository.open()
+        val racing = object : CheckInSessionDao by dao {
+            override suspend fun getActiveSession(): CheckInSession? = dao.getActiveSession().also {
+                // Another closer lands between this read and the boundary's write.
+                dao.closeIfOpen(session.id, now, now - session.startedAt, ClosedBy.IN_APP)
+            }
+        }
+        val runner = SessionLifecycleRunner(
+            repository = CheckInRepository(racing, time),
+            notifier = notifier,
+            strings = StringResolver { "copy-$it" },
+            alarms = alarms,
+            zones = zones,
+            timeSource = time,
+            zone = { zone },
+        )
+        val cancelsBefore = alarms.cancelCount
+
+        val outcome = runner.onDayBoundaryFired()
+
+        assertEquals(SessionLifecycleRunner.Outcome.AlreadyClosed, outcome)
+        assertEquals(cancelsBefore, alarms.cancelCount)
+        assertEquals(ClosedBy.IN_APP, dao.getSessionById(session.id)!!.closedBy)
+    }
+
+    @Test
+    fun `close writes the row and cancels both alarms`() = runTest {
+        repository.open()
+        runner().arm(now)
+        val cancelsBefore = alarms.cancelCount
+
+        val closed = runner().close(ClosedBy.IN_APP)
+
+        assertEquals(ClosedBy.IN_APP, closed!!.closedBy)
+        assertEquals(cancelsBefore + 1, alarms.cancelCount)
+    }
+
+    @Test
+    fun `a close with nothing open cancels nothing`() = runTest {
+        val cancelsBefore = alarms.cancelCount
+
+        assertNull(runner().close(ClosedBy.IN_APP))
+        assertEquals(cancelsBefore, alarms.cancelCount)
     }
 }

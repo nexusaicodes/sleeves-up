@@ -15,6 +15,7 @@ import com.checkin.app.notify.NotificationFactory
 import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -64,7 +65,6 @@ class CheckInService : Service() {
     private val repository by lazy { container.repository }
     private val notifier: Notifier by lazy { container.notifier }
     private val notificationFactory: NotificationFactory by lazy { container.notificationFactory }
-    private val sessionLifecycleRunner: SessionLifecycleRunner by lazy { container.sessionLifecycleRunner }
 
     /** The same injectable clock the rest of the app reads, rather than a direct platform call. */
     private val timeSource: TimeSource by lazy { container.timeSource }
@@ -121,10 +121,7 @@ class CheckInService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = when (intent?.action) {
         ACTION_START -> handleStart(intent)
-        ACTION_STOP -> {
-            tearDown()
-            START_NOT_STICKY
-        }
+        ACTION_STOP -> handleStop()
         ACTION_REVIVE -> handleRevive(intent)
         ACTION_REFRESH -> reconcileAndPost()
         else -> handleStickyRestart()
@@ -192,9 +189,35 @@ class CheckInService : Service() {
         // epoch. The DB read below overwrites whatever it said.
         if (startTime == 0L) restoreState()
         enterForeground()
+        reconcile()
+        return START_STICKY
+    }
+
+    /**
+     * A check-out's stop, decided by the row like every other command: a stop landing after the next
+     * check-in must not drop that session's notification. An unreadable row tears down, since every
+     * stop follows a check-out.
+     */
+    private fun handleStop(): Int {
+        reconcile(tearDownIfUnreadable = true)
+        return START_STICKY
+    }
+
+    /** Reads the active row and either tears down or adopts and posts it, replacing any read in flight. */
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    private fun reconcile(tearDownIfUnreadable: Boolean = false) {
         reconcileJob?.cancel()
         reconcileJob = serviceScope.launch {
-            when (val result = ServiceReconciler.reconcile(repository.getActiveSession())) {
+            val active = try {
+                repository.getActiveSession()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Otherwise rethrown to serviceScope's handler: the next command reconciles.
+                if (tearDownIfUnreadable) tearDown() else throw e
+                return@launch
+            }
+            when (val result = ServiceReconciler.reconcile(active)) {
                 ServiceReconciler.Result.Stop -> tearDown()
                 is ServiceReconciler.Result.Adopt -> {
                     adopt(result)
@@ -204,7 +227,6 @@ class CheckInService : Service() {
                 }
             }
         }
-        return START_STICKY
     }
 
     /**
@@ -228,12 +250,14 @@ class CheckInService : Service() {
         startTime = result.startTime
     }
 
-    /** Ends the service: no live session is left for it to show. */
+    /**
+     * Ends the service once a reconcile finds no open row. Alarms are left alone: the closer
+     * cancelled them, and a stale one drops itself on firing.
+     */
     private fun tearDown() {
         reconcileJob?.cancel()
         reconcileJob = null
         isRunning = false
-        sessionLifecycleRunner.cancel()
         clearState()
         cancelReminderNotification()
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -302,7 +326,7 @@ class CheckInService : Service() {
         }
     }
 
-    /** Clears the render mirror but leaves the alarm state to [SessionLifecycleRunner.cancel]. */
+    /** Clears the render mirror but leaves the alarm state to [SessionLifecycleRunner.close]. */
     private fun clearState() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit {
             remove(KEY_SESSION_ID)

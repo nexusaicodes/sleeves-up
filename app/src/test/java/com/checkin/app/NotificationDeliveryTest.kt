@@ -96,4 +96,16 @@ class NotificationDeliveryTest {
             ),
         )
     }
+
+    @Test
+    fun `Android 12 and 12L hold no runtime grant, so reading one there would refuse every post`() {
+        assertFalse(NotificationDelivery.needsRuntimeGrant(31))
+        assertFalse(NotificationDelivery.needsRuntimeGrant(32))
+    }
+
+    @Test
+    fun `Android 13 and later need the runtime grant`() {
+        assertTrue(NotificationDelivery.needsRuntimeGrant(33))
+        assertTrue(NotificationDelivery.needsRuntimeGrant(36))
+    }
 }
