@@ -29,7 +29,7 @@ class CheckInWidgetProvider : AppWidgetProvider() {
         container.widgetSync.start()
         container.applicationScope.launch {
             try {
-                // Forced: the system is asking for these widgets' views, which may never have been drawn.
+                // The system is asking for these widgets' views, which may never have been drawn.
                 container.widgetSync.redraw()
             } finally {
                 pending.finish()

@@ -143,7 +143,7 @@ fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit, onAddWidget: ((
 }
 
 /**
- * The widget page on its own, once, for an install that finished the tour before it had one — see
+ * The widget page on its own, once, for an install that ended the tour without seeing it — see
  * [FirstRun.widgetPageOwed]. Its own action row stands where the tour's Next button does. [onDone]
  * ends it whichever way it is left, an added widget included.
  */

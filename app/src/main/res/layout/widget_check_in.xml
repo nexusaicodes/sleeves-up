@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The home-screen widget: the brand mark and one line. WidgetViews sets the words and which views
+    The home-screen widget: the brand mark and its label. WidgetViews sets the words and which views
     show; everything here is resolved by the launcher in its own configuration, which is how the
     colours follow light and dark without the app being asked.
 

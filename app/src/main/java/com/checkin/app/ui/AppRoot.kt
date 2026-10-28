@@ -189,8 +189,8 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
             key(entry.habit.id) { NameHabitScreen(entry = entry, viewModel = habitsViewModel) }
         }
 
-        // A tap — a nudge, the widget, a pick — still deciding what it opens: nothing is drawn, for the
-        // PENDING step's reason — the nav host drawn and then replaced could be tapped in between.
+        // A tap (a nudge, the widget, a pick) still deciding what it opens draws nothing, for the
+        // PENDING step's reason: a nav host drawn and then replaced could be tapped in between.
         resolvingTaps > 0 -> Unit
 
         // A check-in whose habit is still the user's to say: the picker stands where the gate will,
@@ -274,7 +274,7 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
  * only notifications; every post is already guarded by `Notifier`. Below API 33 the permission
  * does not exist, so the flag is written and nothing is asked.
  *
- * [onAsked] runs once the flag is written: it ends first run, which is what the nudge layer waits on.
+ * [onAsked] runs once the flag is written: first run has ended, so the nudge chain it held can start.
  */
 @Composable
 private fun NotificationPermissionOnFirstOpen(settings: PromptSettings, onAsked: () -> Unit) {

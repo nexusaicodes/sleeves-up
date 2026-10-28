@@ -21,7 +21,7 @@ data class WelcomePage(val titleRes: Int, val bodyRes: Int, val icon: WelcomeIco
  */
 object WelcomePages {
 
-    /** The widget's page, which also stands alone for installs that finished the tour without it. */
+    /** The widget's page, which also stands alone for an install that ended the tour without seeing it. */
     val widget: WelcomePage get() = all.single { it.addsWidget }
 
     val all: List<WelcomePage> = listOf(
@@ -40,7 +40,7 @@ object WelcomePages {
             icon = WelcomeIcon.FACE,
         ),
         // The one way in that skips opening the app; the gate behind it is the one just described.
-        // Also shown alone, once, to whoever finished the tour before this page existed.
+        // Also shown alone, once, to an install that ended the tour without seeing it.
         WelcomePage(
             titleRes = R.string.welcome_widget_title,
             bodyRes = R.string.welcome_widget_body,

@@ -55,8 +55,8 @@ object FirstRun {
     fun asksNotificationsAfter(exit: Exit): Boolean = exit == Exit.FINISHED
 
     /**
-     * Whether the widget page is owed to someone who finished the tour before it had one, decided
-     * once per activity start so it never replaces a screen in use.
+     * Whether the widget page is owed to an install that has ended the tour but never seen the page,
+     * decided once per activity start so it never replaces a screen in use.
      *
      * The tour carries the page, and ending the tour either way marks it seen: a fresh install meets
      * it there. Anyone else meets it once, after [WIDGET_PAGE_AFTER_DAYS] days holding a session —

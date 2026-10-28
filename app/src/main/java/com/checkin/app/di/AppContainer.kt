@@ -239,8 +239,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
             reminderSettings = reminderSettings,
             timeSource = timeSource,
             scope = applicationScope,
-            // Held only while a post would be refused: below API 33, and once the grant is held, a
-            // first run left unfinished costs no nudge.
+            // Held only while a post would be refused for a permission never asked; below API 33, never.
             firstRunPending = { !settings.hasAskedNotifications() && !appContext.holdsNotificationPermission() },
         )
     }
