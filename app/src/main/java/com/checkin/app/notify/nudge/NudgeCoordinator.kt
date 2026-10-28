@@ -13,9 +13,10 @@ import kotlinx.coroutines.launch
  * [runOnce] and [rearm] are `NudgeDispatcher`'s, deferred because building it over both databases
  * can throw; then [armFallback] runs instead, so the checkpoint alarm's chain never ends.
  *
- * **Nothing runs and nothing is armed while [firstRunPending]**: before the launch-time notification
- * ask, a post is refused for want of a permission never asked, and the refusal is recorded, spending
- * the habit's day under the tour. First run's end calls [launchRearm], which starts the chain.
+ * **Nothing runs and nothing is armed while [firstRunPending]**: the launch-time notification ask is
+ * still owed and the permission is not held, so a post would be refused for want of a permission
+ * never asked, and the refusal recorded, spending the habit's day under the tour. Below API 33 there
+ * is nothing to ask and it never holds. First run's end calls [launchRearm], which starts the chain.
  */
 class NudgeCoordinator(
     private val runOnce: suspend () -> Unit,

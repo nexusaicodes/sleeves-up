@@ -35,7 +35,9 @@ import com.checkin.app.ui.welcome.FirstRun
 import com.checkin.app.ui.welcome.WelcomeScreen
 import com.checkin.app.ui.welcome.WidgetPageScreen
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 /**
  * The four surfaces that can occupy the whole window, in the order they outrank each other:
@@ -114,9 +116,15 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
         onStopOrDispose { }
     }
     val widgets = container.homeWidgets
+    // Every question to the widget service is a binder call, so each is asked off the main thread.
+    // Null until answered; the widget page waits for it.
+    var canPin by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(widgets) {
+        canPin = withContext(Dispatchers.IO) { runCatching { widgets.canRequestPin() }.getOrDefault(false) }
+    }
     // Null where the launcher cannot place a widget for the app; the page then says how to by hand.
-    val onAddWidget: (() -> Unit)? = remember(widgets) {
-        if (runCatching { widgets.canRequestPin() }.getOrDefault(false)) {
+    val onAddWidget: (() -> Unit)? = remember(canPin) {
+        if (canPin == true) {
             { runCatching { widgets.requestPin() } }
         } else {
             null
@@ -132,6 +140,17 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
     var widgetPageDue by remember { mutableStateOf(false) }
     LaunchedEffect(starts, step) {
         if (step != FirstRun.Step.NONE || seenWidgetPage) return@LaunchedEffect
+        val placed = withContext(Dispatchers.IO) { runCatching { widgets.placed() }.getOrNull() }
+        // Unknown counts as placed for this start: a page about a widget the user may already have
+        // is the worse miss.
+        if (placed != false) {
+            // A widget seen placed settles the page for good, so no later start asks again.
+            if (placed == true) {
+                settings.markWidgetPageSeen()
+                seenWidgetPage = true
+            }
+            return@LaunchedEffect
+        }
         val days = try {
             container.repository.daysWithSession(container.habitRepository.selectedHabitIdFlow().first())
         } catch (e: CancellationException) {
@@ -140,9 +159,7 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
             // Not owed this start; the next one asks again.
             0
         }
-        // Unknown counts as placed: a page about a widget the user may already have is the worse miss.
-        val placed = runCatching { widgets.placed() }.getOrDefault(true)
-        widgetPageDue = FirstRun.widgetPageOwed(seenWelcome, seenWidgetPage, days, placed)
+        widgetPageDue = FirstRun.widgetPageOwed(seenWelcome, seenWidgetPage, days, widgetPlaced = false)
     }
     val endWidgetPage = {
         settings.markWidgetPageSeen()
@@ -199,7 +216,7 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
         }
 
         // Below the gate, which answers a tap the user just made, and never under the celebration.
-        widgetPageDue && completed == null -> {
+        widgetPageDue && canPin != null && completed == null -> {
             BackHandler(onBack = endWidgetPage)
             WidgetPageScreen(onAddWidget = onAddWidget, onDone = endWidgetPage)
         }

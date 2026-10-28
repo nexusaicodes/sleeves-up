@@ -52,7 +52,9 @@ class MainActivity : FragmentActivity() {
         // Transparent bars on every level: below 35 the platform otherwise keeps the theme's opaque ones.
         enableEdgeToEdge()
 
-        handlePresenceIntent(intent)
+        // A restored activity, or one reopened from Recents, carries the intent that first launched
+        // the task, extras and all: that tap was handled when it was made.
+        if (savedInstanceState == null && !intent.launchedFromHistory()) handlePresenceIntent(intent)
 
         setContent {
             CheckInAppTheme {
@@ -97,8 +99,7 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun handlePresenceIntent(intent: Intent?) {
-        // One-shot: consume the extra so an Activity recreation (rotation, theme change) doesn't
-        // replay the tap and re-open a gate the user already handled.
+        // One-shot: consume the extra so nothing reading this intent again acts on the tap twice.
         when {
             intent?.getBooleanExtra(LaunchExtras.CHECK_OUT_FROM_TIMER, false) == true -> {
                 intent.removeExtra(LaunchExtras.CHECK_OUT_FROM_TIMER)
@@ -139,7 +140,8 @@ class MainActivity : FragmentActivity() {
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                // Nothing raised; a failed read leaves the nudge posted to tap again.
+                // Nothing raised and nothing written: the tap can be made again (a nudge is still
+                // posted, since its retire follows the reads).
                 withContext(Dispatchers.Main) { showTapNotResolved() }
             } finally {
                 PresenceCheckSignal.resolvingTaps.update { it - 1 }
@@ -178,6 +180,8 @@ class MainActivity : FragmentActivity() {
      * rather than leaving the picker up.
      */
     private fun onHabitPicked(habitId: Long) {
+        // A second tap landing before the picker is taken down would race the first to the gate.
+        if (PresenceCheckSignal.resolvingTaps.value > 0) return
         resolveTap {
             PresenceCheckSignal.clear()
             TapRouting.forHabit(
@@ -186,6 +190,8 @@ class MainActivity : FragmentActivity() {
             )
         }
     }
+
+    private fun Intent.launchedFromHistory() = (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
 
     private suspend fun applyTap(outcome: TapOutcome) {
         when (outcome) {

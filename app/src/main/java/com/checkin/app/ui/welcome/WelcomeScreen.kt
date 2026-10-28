@@ -149,6 +149,8 @@ fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit, onAddWidget: ((
  */
 @Composable
 fun WidgetPageScreen(onAddWidget: (() -> Unit)?, onDone: () -> Unit) {
+    val canAdd = onAddWidget != null
+    val actionText = stringResource(if (canAdd) R.string.welcome_widget_add else R.string.widget_page_done)
     ConstrainedContent {
         Column(
             modifier = Modifier
@@ -158,7 +160,7 @@ fun WidgetPageScreen(onAddWidget: (() -> Unit)?, onDone: () -> Unit) {
             Box(modifier = Modifier.weight(1f)) {
                 WelcomePageContent(WelcomePages.widget, onAddWidget, inlineAdd = false)
             }
-            if (onAddWidget != null) {
+            if (canAdd) {
                 TextButton(
                     onClick = onDone,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -166,15 +168,7 @@ fun WidgetPageScreen(onAddWidget: (() -> Unit)?, onDone: () -> Unit) {
                 Spacer(modifier = Modifier.height(DOTS_TO_ACTION_GAP))
             }
             FullScreenAction(
-                text = stringResource(
-                    if (onAddWidget !=
-                        null
-                    ) {
-                        R.string.welcome_widget_add
-                    } else {
-                        R.string.widget_page_done
-                    },
-                ),
+                text = actionText,
                 onClick = {
                     onAddWidget?.invoke()
                     onDone()

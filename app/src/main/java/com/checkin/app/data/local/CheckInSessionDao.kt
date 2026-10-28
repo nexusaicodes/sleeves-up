@@ -29,7 +29,10 @@ interface CheckInSessionDao {
     @Query("SELECT * FROM sessions WHERE stopped_at IS NULL LIMIT 1")
     suspend fun getActiveSession(): CheckInSession?
 
-    /** How many days hold a completed session of [habitId]'s; read once, by the widget page's rule. */
+    /**
+     * How many days hold a completed session of [habitId]'s, read by the widget page's rule at each
+     * start until the page is settled.
+     */
     @Query("SELECT COUNT(DISTINCT date_key) FROM sessions WHERE habit_id = :habitId AND stopped_at IS NOT NULL")
     suspend fun countDaysWithSession(habitId: Long): Int
 

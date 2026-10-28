@@ -15,7 +15,6 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -66,46 +65,31 @@ class WidgetSyncTest {
     }
 
     @Test
-    fun `an unforced redraw of the face already drawn costs no update`() = runTest(UnconfinedTestDispatcher()) {
+    fun `a redraw draws the same face again`() = runTest(UnconfinedTestDispatcher()) {
         val widgets = FakeHomeWidgets()
         val faces = MutableStateFlow<WidgetFace>(single)
         val sync = syncOver(widgets) { faces }
 
         sync.start()
-        sync.redraw(force = false)
-
-        assertEquals(listOf(single), widgets.shown)
-    }
-
-    @Test
-    fun `a forced redraw draws the same face again`() = runTest(UnconfinedTestDispatcher()) {
-        val widgets = FakeHomeWidgets()
-        val faces = MutableStateFlow<WidgetFace>(single)
-        val sync = syncOver(widgets) { faces }
-
-        sync.start()
-        sync.redraw(force = true)
+        sync.redraw()
 
         assertEquals(listOf(single, single), widgets.shown)
     }
 
     @Test
-    fun `with no widget placed nothing follows the tables and an unforced redraw does nothing`() =
-        runTest(UnconfinedTestDispatcher()) {
-            val widgets = FakeHomeWidgets(isPlaced = false)
-            var subscriptions = 0
-            val sync = syncOver(widgets) {
-                subscriptions++
-                MutableStateFlow(single)
-            }
-
-            sync.start()
-            sync.redraw(force = false)
-
-            assertFalse(sync.isSyncing)
-            assertEquals(0, subscriptions)
-            assertTrue(widgets.shown.isEmpty())
+    fun `with no widget placed nothing follows the tables`() = runTest(UnconfinedTestDispatcher()) {
+        val widgets = FakeHomeWidgets(isPlaced = false)
+        var subscriptions = 0
+        val sync = syncOver(widgets) {
+            subscriptions++
+            MutableStateFlow(single)
         }
+
+        sync.start()
+
+        assertEquals(0, subscriptions)
+        assertTrue(widgets.shown.isEmpty())
+    }
 
     @Test
     fun `placing a widget starts the sync again`() = runTest(UnconfinedTestDispatcher()) {
@@ -118,7 +102,6 @@ class WidgetSyncTest {
         sync.start()
         faces.value = running
 
-        assertTrue(sync.isSyncing)
         assertEquals(listOf(single, running), widgets.shown)
     }
 
@@ -140,7 +123,6 @@ class WidgetSyncTest {
         runCurrent()
         faces.value = running
 
-        assertTrue(sync.isSyncing)
         assertEquals(listOf(single, running), widgets.shown)
     }
 
@@ -148,14 +130,14 @@ class WidgetSyncTest {
     fun `a failed draw is not remembered as drawn, so the next attempt draws it`() =
         runTest(UnconfinedTestDispatcher()) {
             val widgets = FakeHomeWidgets()
-            val faces = MutableStateFlow<WidgetFace>(single)
+            val faces = MutableSharedFlow<WidgetFace>()
             val sync = syncOver(widgets) { faces }
 
             widgets.failNextShow = true
             sync.start()
-            sync.redraw(force = false)
+            faces.emit(single)
+            faces.emit(single)
 
-            assertTrue(sync.isSyncing)
             assertEquals(listOf(single), widgets.shown)
         }
 
@@ -164,13 +146,13 @@ class WidgetSyncTest {
         val widgets = FakeHomeWidgets()
         val sync = syncOver(widgets) { flow { error("database unavailable") } }
 
-        sync.redraw(force = true)
+        sync.redraw()
 
         assertTrue(widgets.shown.isEmpty())
     }
 
     @Test
-    fun `a forced redraw with no widget placed reads nothing`() = runTest(UnconfinedTestDispatcher()) {
+    fun `a redraw with no widget placed reads nothing`() = runTest(UnconfinedTestDispatcher()) {
         val widgets = FakeHomeWidgets(isPlaced = false)
         var subscriptions = 0
         val sync = syncOver(widgets) {
@@ -178,7 +160,7 @@ class WidgetSyncTest {
             MutableStateFlow(single)
         }
 
-        sync.redraw(force = true)
+        sync.redraw()
 
         assertEquals(0, subscriptions)
         assertTrue(widgets.shown.isEmpty())
@@ -195,7 +177,7 @@ class WidgetSyncTest {
 
         faces.emit(single)
         sync.start()
-        sync.redraw(force = false)
+        sync.redraw()
         faces.emit(single)
 
         assertEquals(listOf(single, running, single), widgets.shown)
@@ -211,7 +193,6 @@ class WidgetSyncTest {
         sync.stop()
         faces.value = running
 
-        assertFalse(sync.isSyncing)
         assertEquals(listOf(single), widgets.shown)
     }
 }

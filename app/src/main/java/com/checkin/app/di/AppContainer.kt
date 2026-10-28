@@ -13,6 +13,7 @@ import com.checkin.app.notify.AndroidStringResolver
 import com.checkin.app.notify.HabitChannels
 import com.checkin.app.notify.NotificationFactory
 import com.checkin.app.notify.Notifier
+import com.checkin.app.notify.holdsNotificationPermission
 import com.checkin.app.notify.nudge.AndroidNudgeAlarms
 import com.checkin.app.notify.nudge.NudgeAlarms
 import com.checkin.app.notify.nudge.NudgeCoordinator
@@ -135,7 +136,7 @@ interface AppContainer {
         applicationScope.launch {
             runCatching { habitChannels.sync(habitRepository.allHabitsFlow().first()) }
             if (CheckInService.isRunning) runCatching { serviceController.refreshFromDb() }
-            widgetSync.redraw(force = true)
+            widgetSync.redraw()
         }
     }
 
@@ -238,7 +239,9 @@ class DefaultAppContainer(context: Context) : AppContainer {
             reminderSettings = reminderSettings,
             timeSource = timeSource,
             scope = applicationScope,
-            firstRunPending = { !settings.hasAskedNotifications() },
+            // Held only while a post would be refused: below API 33, and once the grant is held, a
+            // first run left unfinished costs no nudge.
+            firstRunPending = { !settings.hasAskedNotifications() && !appContext.holdsNotificationPermission() },
         )
     }
 

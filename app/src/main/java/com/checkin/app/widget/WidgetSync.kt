@@ -35,9 +35,6 @@ class WidgetSync(
     private var drawn: WidgetFace? = null
     private var collector: Job? = null
 
-    /** Whether the collector is running, which is whether any widget was placed when it started. */
-    val isSyncing: Boolean get() = synchronized(this) { collector?.isActive == true }
-
     /**
      * Starts following the tables, unless already following them. With no widget placed the collector
      * ends at once — most installs never place one, and two Room observers for the life of every
@@ -71,14 +68,13 @@ class WidgetSync(
     }
 
     /**
-     * Draws once from a fresh read. [force] draws even an unchanged face — the system asking for a
-     * widget's views (placement, a launcher restart) or a language change, where the face is the same
-     * and the words are not. Unforced, it does nothing while the collector is not running, and forced,
-     * nothing while no widget is placed.
+     * Draws once from a fresh read, even a face identical to the last drawn: its callers are the
+     * system asking for a widget's views (placement, a launcher restart) and a language change, where
+     * the face is the same and the words are not. Does nothing while no widget is placed.
      */
-    suspend fun redraw(force: Boolean) {
-        if (if (force) !placed() else !isSyncing) return
-        drawGuarded(face = null, force = force)
+    suspend fun redraw() {
+        if (!placed()) return
+        drawGuarded(face = null, force = true)
     }
 
     /**
