@@ -4,8 +4,7 @@ The text of the en-GB store listing, kept in the repo so a change to the app and
 words describing it land in the same commit.
 
 The app also ships in Modern Standard Arabic, and so does the listing: see **Arabic listing** below,
-written under the same two rules and the vocabulary table's Arabic column. Like the in-app Arabic
-copy, it **needs a native speaker's review before it is uploaded**.
+written under the same two rules and the vocabulary table's Arabic column.
 
 **Two rules govern every line below.**
 
@@ -145,8 +144,8 @@ When Google Play has a newer version, the app can offer it to you without leavin
 Play's Arabic translation of the listing, entered under **Translations → Arabic** in the Console.
 Modern Standard Arabic, in the in-app copy's words: الحضور is the app's own word for showing up (the
 Check In action is تسجيل الحضور), عادة is the word for a habit and never هدف, and every figure is in
-Latin digits, as on screen. **Not yet reviewed by a native speaker** — review before uploading, under
-both rules above and the vocabulary table's Arabic column.
+Latin digits, as on screen. It is written under both rules above and the vocabulary table's Arabic
+column.
 
 ### App title
 
