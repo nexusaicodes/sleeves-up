@@ -124,3 +124,9 @@ capture: opening the shade restores the app's status-bar icon.
 Capture with `adb exec-out screencap -p > play-store-assets/screenshots/all/<device>/NN-name.png`,
 then copy the listing picks into `screenshots/raw/` (phone, named as LISTING.md's table) and
 `screenshots/tablet/`, and run `python3 play-store-assets/generate_screenshots.py`.
+
+**Run it under a Pillow with the basic text layout** (`PIL.features.check("raqm")` false; the
+committed set reproduces exactly under Pillow 11.3 with basic layout). Under raqm, which current PyPI wheels bundle, every caption
+sets a few pixels narrower, so re-shooting one panel rewrites all eight and the strip stops
+matching. Before committing, compare pixels, not bytes: the panels you did not re-shoot must come
+out identical.
