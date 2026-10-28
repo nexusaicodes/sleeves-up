@@ -38,6 +38,7 @@ class SessionWatchdogTest {
         notifier = FakeNotifier(),
         strings = StringResolver { "copy-$it" },
         alarms = alarms,
+        zones = FakeSessionZones(),
         timeSource = time,
     )
 

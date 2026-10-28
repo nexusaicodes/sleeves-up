@@ -257,7 +257,7 @@
     <string name="privacy_no_internet_title">لا إذن بالوصول إلى الإنترنت</string>
     <string name="privacy_no_internet_body">لا يملك أي إذن بالوصول إلى الشبكة، فلا يمكنه رفع أي شيء.</string>
     <string name="privacy_no_account_title">لا حساب، ولا خادم</string>
-    <string name="privacy_no_account_body">لا يوجد ما تسجّل الدخول إليه. جلساتك محفوظة في قاعدة بيانات على هذا الهاتف.</string>
+    <string name="privacy_no_account_body">لا يوجد ما تسجّل الدخول إليه. جلساتك محفوظة في قاعدة بيانات على هذا الهاتف. وإن كان النسخ الاحتياطي في Android مفعّلًا، فإنه يحتفظ أيضًا بنسخة منها في حسابك على Google، مشفّرة تشفيرًا تامًّا بين الطرفين متى كان لهاتفك قفل شاشة.</string>
     <string name="privacy_no_photo_title">لا تُلتقط أي صورة</string>
     <string name="privacy_no_photo_body">تُبلغ الكاميرا فقط بوجود وجه في الإطار أو عدمه، ولا يقرأ التطبيق سوى ذلك العدد.</string>
     <string name="privacy_no_analytics_title">لا تحليلات، ولا إعلانات</string>

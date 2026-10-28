@@ -29,7 +29,8 @@ grade: a day counts because you turned up for it, not because its hours cleared 
   that habit has no session. Turn one off like any notification: long-press it, or find the habit's
   channel under **Habit Reminders** in Android's settings for the app.
 - **Self-contained** — Room-only storage, no backend, no internet permission. CSV export via the
-  share sheet.
+  share sheet. The record, habits and reminder times travel in Android's own cloud backup when the
+  user has it turned on, and in a device-to-device transfer, so a new phone restores them.
 - **English (UK) and Arabic**, chosen through Android's per-app language setting.
 
 ## Tabs
