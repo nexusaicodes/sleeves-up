@@ -13,6 +13,7 @@ import com.checkin.app.notify.AndroidStringResolver
 import com.checkin.app.notify.HabitChannels
 import com.checkin.app.notify.NotificationFactory
 import com.checkin.app.notify.Notifier
+import com.checkin.app.notify.holdsNotificationPermission
 import com.checkin.app.notify.nudge.AndroidNudgeAlarms
 import com.checkin.app.notify.nudge.NudgeAlarms
 import com.checkin.app.notify.nudge.NudgeCoordinator
@@ -43,18 +44,24 @@ import com.checkin.app.service.SessionWatchdog
 import com.checkin.app.ui.checkin.raiseCheckOutCelebration
 import com.checkin.app.util.MILLIS_PER_MINUTE
 import com.checkin.app.util.MILLIS_PER_SECOND
+import com.checkin.app.widget.AndroidHomeWidgets
+import com.checkin.app.widget.HomeWidgets
+import com.checkin.app.widget.WidgetFace
+import com.checkin.app.widget.WidgetSync
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 
 /**
  * Minimal manual DI: the single place that builds the repositories, the side-effect seams
- * ([PromptSettings], [LanguageSettings], [ServiceController], [CsvExporter]), and the app-wide coroutine scope.
+ * ([PromptSettings], [LanguageSettings], [ServiceController], [CsvExporter], [HomeWidgets]), and the
+ * app-wide coroutine scope.
  * ViewModels receive these via their factories, so they stay pure and unit-testable with fakes.
  */
 interface AppContainer {
@@ -66,6 +73,8 @@ interface AppContainer {
     val serviceController: ServiceController
     val csvExporter: CsvExporter
     val appUpdates: AppUpdates
+    val homeWidgets: HomeWidgets
+    val widgetSync: WidgetSync
     val timeSource: TimeSource
     val applicationScope: CoroutineScope
 
@@ -117,15 +126,17 @@ interface AppContainer {
     }
 
     /**
-     * Re-names every habit's channel and re-posts a running timer in the app's current language.
-     * A per-app language change recreates the activity but not the process, so nothing else that
-     * writes those strings runs again: the habits collector only emits on a table change, and the
-     * timer is posted on state changes alone. Never throws, for the same reason as [launchHabitSync].
+     * Re-names every habit's channel, re-posts a running timer and redraws the widgets in the app's
+     * current language. A per-app language change recreates the activity but not the process, so
+     * nothing else that writes those strings runs again: the habits collector only emits on a table
+     * change, and the timer is posted on state changes alone. Never throws, for the same reason as
+     * [launchHabitSync].
      */
     fun launchLanguageRefresh() {
         applicationScope.launch {
             runCatching { habitChannels.sync(habitRepository.allHabitsFlow().first()) }
             if (CheckInService.isRunning) runCatching { serviceController.refreshFromDb() }
+            widgetSync.redraw()
         }
     }
 
@@ -172,6 +183,22 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val appUpdates: AppUpdates = PlayAppUpdates(appContext)
 
+    override val homeWidgets: HomeWidgets = AndroidHomeWidgets(appContext)
+
+    override val widgetSync: WidgetSync by lazy {
+        WidgetSync(
+            widgets = homeWidgets,
+            faces = {
+                WidgetFace.faces(
+                    activeHabits = habitRepository.activeHabitsFlow(),
+                    runningHabitId = repository.activeSessionFlow().map { it?.habitId },
+                    animationsOn = homeWidgets.animationsOn(),
+                )
+            },
+            scope = applicationScope,
+        )
+    }
+
     override val notificationFactory = NotificationFactory(appContext)
 
     override val notifier: Notifier = AndroidNotifier(appContext, notificationFactory)
@@ -212,6 +239,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
             reminderSettings = reminderSettings,
             timeSource = timeSource,
             scope = applicationScope,
+            // Held only while a post would be refused for a permission never asked; below API 33, never.
+            firstRunPending = { !settings.hasAskedNotifications() && !appContext.holdsNotificationPermission() },
         )
     }
 

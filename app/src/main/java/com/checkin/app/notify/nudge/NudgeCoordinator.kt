@@ -12,6 +12,11 @@ import kotlinx.coroutines.launch
  *
  * [runOnce] and [rearm] are `NudgeDispatcher`'s, deferred because building it over both databases
  * can throw; then [armFallback] runs instead, so the checkpoint alarm's chain never ends.
+ *
+ * **Nothing runs and nothing is armed while [firstRunPending]**: the launch-time notification ask is
+ * still owed and the permission is not held, so a post would be refused for want of a permission
+ * never asked, and the refusal recorded, spending the habit's day under the tour. Below API 33 there
+ * is nothing to ask and it never holds. First run's end calls [launchRearm], which starts the chain.
  */
 class NudgeCoordinator(
     private val runOnce: suspend () -> Unit,
@@ -20,6 +25,7 @@ class NudgeCoordinator(
     private val reminderSettings: ReminderSettings,
     private val timeSource: TimeSource,
     private val scope: CoroutineScope,
+    private val firstRunPending: () -> Boolean,
 ) {
 
     /** One dispatcher pass, for the checkpoint receiver and the hourly worker. */
@@ -35,11 +41,13 @@ class NudgeCoordinator(
 
     /** Arms the earliest band any habit could have, which needs no database. */
     fun armFallback() {
+        if (firstRunPending()) return
         runCatching { alarms.armFallback(timeSource.nowMillis(), timeSource.zone(), reminderSettings) }
     }
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
     private suspend fun guarded(call: suspend () -> Unit) {
+        if (firstRunPending()) return
         try {
             call()
         } catch (e: CancellationException) {

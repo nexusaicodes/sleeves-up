@@ -85,4 +85,38 @@ class PresenceCheckSignalTest {
         PresenceCheckSignal.clear()
         assertEquals(PresenceCheckSignal.Request.NONE, PresenceCheckSignal.request.value)
     }
+
+    /** The widget's button with a choice to make: the picker is a check-in still waiting on its habit. */
+    @Test
+    fun `choosing is a check-in with no habit, and a check-in with one is not choosing`() {
+        PresenceCheckSignal.choose(raisedAt)
+
+        assertTrue(PresenceCheckSignal.request.value.choosingHabit)
+        assertEquals(Reason.CHECK_IN, PresenceCheckSignal.request.value.reason)
+
+        PresenceCheckSignal.raise(Reason.CHECK_IN, raisedAt, habitId = 4L)
+        assertFalse(PresenceCheckSignal.request.value.choosingHabit)
+        PresenceCheckSignal.raise(Reason.CHECK_OUT_FROM_WIDGET, raisedAt)
+        assertFalse(PresenceCheckSignal.request.value.choosingHabit)
+    }
+
+    /** A picker left on screen and the app sent home expires exactly as an abandoned gate does. */
+    @Test
+    fun `an abandoned picker is dropped like an abandoned gate`() {
+        PresenceCheckSignal.choose(raisedAt)
+
+        assertFalse(PresenceCheckSignal.expireIfStale(raisedAt + PresenceCheckSignal.EXPIRY_MS + 1))
+        assertEquals(PresenceCheckSignal.Request.NONE, PresenceCheckSignal.request.value)
+    }
+
+    /** The pick is a fresh raise, so the gate it opens gets its own ten minutes, not the picker's. */
+    @Test
+    fun `a pick restamps the request`() {
+        PresenceCheckSignal.choose(raisedAt)
+        val pickedAt = raisedAt + PresenceCheckSignal.EXPIRY_MS - 1
+        PresenceCheckSignal.raise(Reason.CHECK_IN, pickedAt, habitId = 4L)
+
+        assertTrue(PresenceCheckSignal.expireIfStale(pickedAt + PresenceCheckSignal.EXPIRY_MS))
+        assertEquals(4L, PresenceCheckSignal.request.value.habitId)
+    }
 }

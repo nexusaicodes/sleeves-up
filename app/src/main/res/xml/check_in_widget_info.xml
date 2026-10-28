@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    A short strip, three cells by one. Resizable sideways, where a longer habit name gets more room,
+    and upwards, where a label wrapped to two lines at a large font scale gets the height one cell
+    may not have; the content stays centred in whatever it is given. updatePeriodMillis is 0: the
+    widget changes only when the habits or the open session do, and the app pushes those itself
+    (WidgetSync), so a periodic wake would redraw nothing.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/widget_check_in"
+    android:minWidth="180dp"
+    android:minHeight="40dp"
+    android:minResizeHeight="40dp"
+    android:minResizeWidth="110dp"
+    android:previewLayout="@layout/widget_check_in"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="3"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

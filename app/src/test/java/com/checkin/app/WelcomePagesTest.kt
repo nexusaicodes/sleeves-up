@@ -12,8 +12,8 @@ class WelcomePagesTest {
 
     /** The count the dot row draws and the index the last page is found at. */
     @Test
-    fun `the tour is three pages`() {
-        assertEquals(3, WelcomePages.all.size)
+    fun `the tour is four pages`() {
+        assertEquals(4, WelcomePages.all.size)
     }
 
     /**
@@ -39,5 +39,13 @@ class WelcomePagesTest {
         val icons = WelcomePages.all.map { it.icon }
 
         assertEquals(icons.size, icons.toSet().size)
+    }
+
+    /** Exactly one page adds the widget: the one that stands alone for installs that never saw it. */
+    @Test
+    fun `one page adds the widget, and it is not the last`() {
+        assertEquals(1, WelcomePages.all.count { it.addsWidget })
+        // The last page leads into the naming step, which the widget page does not.
+        assertEquals(false, WelcomePages.all.last().addsWidget)
     }
 }

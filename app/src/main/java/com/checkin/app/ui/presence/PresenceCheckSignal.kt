@@ -7,17 +7,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Bridges a notification tap to the full-screen presence gate shown at the UI root. Whatever posted
- * the notification — the timer, the session reminder or a nudge —
+ * Bridges a tap from outside the app to the full-screen presence gate shown at the UI root. Whatever
+ * was tapped — the timer, the session reminder, a nudge or the home-screen widget —
  * [MainActivity][com.checkin.app.MainActivity] flips this to the matching [Reason] on the resulting
- * intent, and the root composable shows the auth gate regardless of the active tab.
+ * intent, and the root composable shows the auth gate regardless of the active tab — or, for a
+ * check-in whose habit is still the user's to choose, the habit picker ahead of it.
  */
 object PresenceCheckSignal {
     /**
      * Why the root gate is showing — decides what a successful auth does.
      *
-     * The two check-out reasons differ only in the [ClosedBy] they carry: both close the active
-     * session, and the gate itself renders identically for either. They are separate values rather
+     * The check-out reasons differ only in the [ClosedBy] they carry: each closes the active session,
+     * and the gate itself renders identically for every one. They are separate values rather
      * than one value plus a payload because the set of endings is closed and small, so an enum
      * value apiece costs nothing. The habit a check-in is for is the opposite — an open set the user
      * grows — which is why it rides on [Request] beside the reason rather than in it.
@@ -32,7 +33,13 @@ object PresenceCheckSignal {
         /** Session reminder's "Check Out" action: success checks the active session out. */
         CHECK_OUT_FROM_REMINDER(ClosedBy.REMINDER_NOTIFICATION),
 
-        /** Nudge tap: success starts a session for [Request.habitId]. */
+        /** The home-screen widget's button while a session is open: success checks it out. */
+        CHECK_OUT_FROM_WIDGET(ClosedBy.WIDGET),
+
+        /**
+         * Nudge or widget tap: success starts a session for [Request.habitId]. Raised without a habit
+         * by [choose], it is first the picker — see [Request.choosingHabit].
+         */
         CHECK_IN,
     }
 
@@ -42,6 +49,16 @@ object PresenceCheckSignal {
      * habit: it closes the one open session, whichever habit holds it.
      */
     data class Request(val reason: Reason, val habitId: Long? = null) {
+        /**
+         * A check-in whose habit is not chosen yet: the root draws the picker rather than the gate.
+         * The same request rather than a second flag beside it, so the stage and the reason cannot be
+         * read from two moments. A picker abandoned on the home screen expires exactly as a gate does;
+         * a pick is a fresh answer from someone present, so it re-raises with the habit and restamps,
+         * giving the gate its own [EXPIRY_MS]. Nothing can check in from this stage: a passed gate
+         * with no habit writes nothing.
+         */
+        val choosingHabit: Boolean get() = reason == Reason.CHECK_IN && habitId == null
+
         companion object {
             val NONE = Request(Reason.NONE)
         }
@@ -63,8 +80,9 @@ object PresenceCheckSignal {
     val request: StateFlow<Request> = mutableRequest.asStateFlow()
 
     /**
-     * How many nudge taps are being resolved — read off the database to decide whether each opens a
-     * gate, says another habit is running, or does nothing. The root draws nothing while any is (and
+     * How many taps — a nudge, the widget, a pick in the picker — are being resolved, read off the
+     * database by `TapRouting` to decide whether each opens the picker or a gate, says another habit
+     * is running, or does nothing. The root draws nothing while any is (and
      * the splash screen stays up on a cold start), so the nav host cannot appear for the wrong habit
      * and take a tap before the gate replaces it. A count rather than a flag, so the first of two
      * quick taps to finish cannot uncover the host while the second is still deciding.
@@ -81,6 +99,9 @@ object PresenceCheckSignal {
         raisedAtMillis = nowMillis
         mutableRequest.value = Request(reason, habitId)
     }
+
+    /** Opens the habit picker for a check-in: the widget's button, with more than one habit to choose. */
+    fun choose(nowMillis: Long) = raise(Reason.CHECK_IN, nowMillis, habitId = null)
 
     /** Retires the request once it has been answered or dismissed. */
     @Synchronized

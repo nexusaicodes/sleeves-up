@@ -135,6 +135,11 @@
          has none. -->
     <string name="welcome_habits_title">One habit at a time</string>
     <string name="welcome_habits_body">Start with one habit you want to build, and add more later — each keeps its own record.</string>
+    <string name="welcome_widget_title">On your home screen</string>
+    <string name="welcome_widget_body">Add the widget to check in or out without opening the app first. The same presence check runs.</string>
+    <string name="welcome_widget_add">Add widget</string>
+    <string name="welcome_widget_manual">Touch and hold an empty part of your home screen, then choose Widgets.</string>
+    <string name="widget_page_done">Done</string>
     <!-- Spoken by the dot row. HorizontalPager publishes a scroll range and no page count, so
          without this a screen reader is never told where in the tour it is. -->
     <string name="welcome_page_position">Page %1$d of %2$d</string>
@@ -292,6 +297,7 @@
     <!-- A nudge for one habit tapped while another habit's session is running. No gate opens. -->
     <string name="habit_running_check_out_first">%1$s is running. Check out of it first.</string>
     <string name="habit_running_check_out_first_unnamed">A session is running. Check out of it first.</string>
+    <string name="tap_not_resolved">Couldn\'t open that. Try again.</string>
     <!-- The editor dialog shared by every place a habit is created or edited. -->
     <string name="habit_editor_new_title">New Habit</string>
     <string name="habit_editor_edit_title">Edit Habit</string>
@@ -309,6 +315,11 @@
     <string name="name_habit_title">What are you showing up for?</string>
     <string name="name_habit_body">Add more in the app when you want.</string>
     <string name="name_habit_continue">Continue</string>
+    <!-- The picker the home-screen widget opens when there is more than one habit: names only, and a
+         pick goes straight on to the presence gate. A line, so sentence case. -->
+    <string name="habit_picker_title">Check in to…</string>
+    <!-- The widget picker's line under the home-screen widget. Says what it does; no exhortation. -->
+    <string name="widget_description">Check in from your home screen</string>
     <!-- Cycled as the name field's placeholder beside a matching icon. Activities, never targets:
          a number in an example would suggest a habit is a bar to clear. -->
     <string name="habit_example_running">Running</string>

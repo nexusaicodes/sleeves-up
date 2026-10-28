@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The home-screen widget: the brand mark and its label. WidgetViews sets the words and which views
+    show; everything here is resolved by the launcher in its own configuration, which is how the
+    colours follow light and dark without the app being asked.
+
+    As inflated, before the first update and in the widget picker's preview, it reads "Check In" with
+    the mark at rest — the face with nothing to say about any habit.
+
+    The root is android:id/background so the launcher can clip it to its own corner radius and
+    animate the app's launch out of it. The flipper's names are hidden from screen readers: the root
+    carries a stable description instead of text that changes every few seconds.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:contentDescription="@string/check_in"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="16dp">
+
+    <!-- At rest and running, as two views rather than one re-tinted: an XML tint is resolved by the
+         launcher for its current theme, where a tint set from the app would be fixed at render.
+         android:tint, not app:tint: the launcher inflates RemoteViews without AppCompat, which is the
+         only reader of app:tint. src_in because ImageView's default, src_atop, lays the translucent
+         rest colour over the icon's white and renders it opaque. -->
+    <ImageView
+        android:id="@+id/widget_mark_rest"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_stat_checkin"
+        android:tint="@color/widget_mark_rest"
+        android:tintMode="src_in"
+        tools:ignore="UseAppTint" />
+
+    <ImageView
+        android:id="@+id/widget_mark_running"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_stat_checkin"
+        android:tint="@color/widget_mark_running"
+        android:tintMode="src_in"
+        android:visibility="gone"
+        tools:ignore="UseAppTint" />
+
+    <TextView
+        android:id="@+id/widget_label"
+        style="@style/WidgetLabel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:importantForAccessibility="no"
+        android:text="@string/check_in" />
+
+    <!-- Every name holds the same interval, in the order given, so no habit's place in the cycle
+         says anything. Slow and a fade rather than a slide: a ticker on the home screen draws the eye
+         even when the user is not thinking about the habit. measureAllChildren sizes it to the
+         tallest name, so a name that wraps to a second line does not move the others. -->
+    <ViewFlipper
+        android:id="@+id/widget_flipper"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:measureAllChildren="true"
+        android:autoStart="true"
+        android:flipInterval="3500"
+        android:importantForAccessibility="noHideDescendants"
+        android:inAnimation="@android:anim/fade_in"
+        android:outAnimation="@android:anim/fade_out"
+        android:visibility="gone" />
+
+</LinearLayout>

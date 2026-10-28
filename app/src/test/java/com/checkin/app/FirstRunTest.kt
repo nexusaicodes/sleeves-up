@@ -116,4 +116,73 @@ class FirstRunTest {
     fun `a welcome read through releases the notification request`() {
         assertTrue(FirstRun.asksNotificationsAfter(FirstRun.Exit.FINISHED))
     }
+
+    @Test
+    fun `the widget page waits for the second day with a session`() {
+        assertFalse(
+            FirstRun.widgetPageOwed(
+                seenWelcome = true,
+                seenWidgetPage = false,
+                daysWithSession = 0,
+                widgetPlaced = false,
+            ),
+        )
+        assertFalse(
+            FirstRun.widgetPageOwed(
+                seenWelcome = true,
+                seenWidgetPage = false,
+                daysWithSession = 1,
+                widgetPlaced = false,
+            ),
+        )
+        assertTrue(
+            FirstRun.widgetPageOwed(
+                seenWelcome = true,
+                seenWidgetPage = false,
+                daysWithSession = 2,
+                widgetPlaced = false,
+            ),
+        )
+        assertTrue(
+            FirstRun.widgetPageOwed(
+                seenWelcome = true,
+                seenWidgetPage = false,
+                daysWithSession = 40,
+                widgetPlaced = false,
+            ),
+        )
+    }
+
+    /** The tour carries the page, so an install still owing the tour meets it there, not alone. */
+    @Test
+    fun `the widget page is never owed ahead of the tour`() {
+        assertFalse(
+            FirstRun.widgetPageOwed(
+                seenWelcome = false,
+                seenWidgetPage = false,
+                daysWithSession = 5,
+                widgetPlaced = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `the widget page is shown once, and not to whoever has a widget placed`() {
+        assertFalse(
+            FirstRun.widgetPageOwed(
+                seenWelcome = true,
+                seenWidgetPage = true,
+                daysWithSession = 5,
+                widgetPlaced = false,
+            ),
+        )
+        assertFalse(
+            FirstRun.widgetPageOwed(
+                seenWelcome = true,
+                seenWidgetPage = false,
+                daysWithSession = 5,
+                widgetPlaced = true,
+            ),
+        )
+    }
 }
