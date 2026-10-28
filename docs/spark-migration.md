@@ -1,6 +1,6 @@
 # Moving the UI to Spark: design plan and coverage gaps
 
-**Scope.** This is about design only: what changes on screen, what maps onto Spark cleanly, and what needs its own design work. The toolchain upgrade is a separate prerequisite and is not covered here (Spark 4.x needs Kotlin 2.x; this app is on 1.9.20).
+**Scope.** This is about design only: what changes on screen, what maps onto Spark cleanly, and what needs its own design work. The toolchain upgrade is a separate prerequisite, done on `build/kotlin2-spark-ready`; section 9 has what it settles and what a trial build with Spark found.
 
 **Reference.** [leboncoin/spark-android](https://github.com/leboncoin/spark-android) **4.2.1**, MIT licence. Its catalog app (`com.adevinta.spark.catalog`) was built from that tag and installed on the Nothing Phone for browsing. Component names below are Spark's public composables at that tag, and the colour findings in 2.3 come from reading its source there.
 
@@ -318,3 +318,23 @@ Each phase ends with something installable, so it can be judged on the phone bef
 - In dark, the Check In → Check Out change (brass to cream ink): does it read as a change of state at a glance?
 - On cream paper under Spark's light shadows, do cards, bars and dialogs read as raised enough, with no tonal step to help?
 - The brass recorded day beside the brass selected chip or radio: does brass still read as one meaning per screen?
+
+## 9. Prerequisites verified
+
+Spark 4.2.1 is built with Kotlin 2.4.21, AGP 9.4.1, Gradle 9.8.1, compileSdk 37 and Compose BOM 2026.09.00, minSdk 24. Branch `build/kotlin2-spark-ready` brings the app to that toolchain with no visible change: Gradle 9.8.2, AGP 9.4.1 with built-in Kotlin 2.4.21, KSP 2.3.12 and Room 2.8.5, compileSdk 37 (targetSdk stays 36, minSdk 31), the Compose BOM 2026.09.00 (material3 1.4.0), and floors for the transitive libraries Spark would otherwise raise.
+
+A scratch branch then added `spark-bom`/`spark` 4.2.1 and wrapped the theme root in `SparkTheme`, to see what adoption costs before any design work.
+
+| Check | Result |
+|---|---|
+| Builds | Yes, on the branch above. |
+| Moves an existing version | Not any more. Spark raised nine transitive libraries (coroutines 1.11, serialization 1.11, appcompat 1.8, window 1.5.1 and smaller ones); the branch's `constraints {}` block now sets them, so adoption only adds artifacts. |
+| Adds a permission | No. The merged `uses-permission` set is unchanged. |
+| Adds manifest components | Yes, four: FileKit's `FileKitFileProvider` and its startup `FileKitInitializer`, Compose Resources' `AndroidContextProvider`, and gms's `ModuleDependencies` service with `photopicker_activity` metadata, which asks Play services to install the backported photo picker. The app uses no file picker; remove FileKit's entries and the photo-picker request with `tools:node="remove"`, or the Privacy screen's "one outside question" claim gains a second. |
+| Networking classes in the dex | None (no `java.net`, OkHttp, Cronet, datatransport). Coil comes without a network fetcher. |
+| Fonts | `spark-core` bundles six Nunito Sans TTFs (~690 KB) as Compose Resources assets, not in `res/font`. `verifyLicenseCoverage` checks only `res/font`, so it cannot see them: either extend it to `assets/composeResources`, or keep Nunito out of the APK if the app passes its own families (2.1). Bundled, Nunito needs no download; the dex holds no font-provider code for it (checked statically, not on a device). |
+| Licence list | 14 new group ids need entries: `com.adevinta.spark` (MIT, which obliges a shipped notice: a new bundled `LibraryLicense` and its `res/raw` text), Coil 3, okio, accompanist, FileKit, and JetBrains' Compose Multiplatform and androidx redirect groups. |
+| Size | Release APK 5.38 MB → 6.39 MB (+1.0 MB), before any Spark component is used. The fonts are 0.7 MB of it. |
+
+**Found on the way, not Spark's:** v3.2 already ships emoji2's `EmojiCompatInitializer` (a transitive dependency), whose default config asks Play services' font provider for an emoji font. That is an outside request the Privacy screen does not name. Check it on a device and decide separately: disable the initializer, or name it.
+
