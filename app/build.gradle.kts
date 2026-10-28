@@ -182,12 +182,28 @@ dependencies {
     // Flow wrapper this needs none of.
     implementation("com.google.android.play:app-update:2.1.0")
 
+    // Floors for libraries that arrive only transitively, at the versions the Spark design system
+    // (com.adevinta.spark 4.2.1) resolves them to, so adopting it adds artifacts without moving any
+    // the app already ships. A constraint adds nothing to the graph by itself: each takes effect
+    // only on a library something else already brings.
+    constraints {
+        implementation("androidx.annotation:annotation-experimental:1.5.1")
+        implementation("androidx.appcompat:appcompat:1.8.0")
+        implementation("androidx.appcompat:appcompat-resources:1.8.0")
+        implementation("androidx.exifinterface:exifinterface:1.4.2")
+        implementation("androidx.profileinstaller:profileinstaller:1.4.1")
+        implementation("androidx.startup:startup-runtime:1.2.0")
+        implementation("androidx.window:window:1.5.1")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+        implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.11.0")
+    }
+
     // Testing
     // JUnit plus the coroutines test dispatcher, and nothing else: the suite is pure JVM and mocks
     // nothing, standing every seam up with a hand-written fake instead (app/src/test/.../Fakes.kt).
     // There is no androidTest source set, so no instrumentation dependency has anything to run.
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
 
