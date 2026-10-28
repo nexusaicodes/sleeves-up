@@ -9,10 +9,10 @@ import androidx.room.PrimaryKey
  * One habit: a record of its own, kept apart from every other habit's.
  *
  * **[uuid] is the habit's permanent identity, and [id] is not.** The row id is what sessions point
- * at, and it restarts on a fresh `_app` — which is excluded from cloud backup — while `nudges.db`
- * is backed up. Anything keyed outside this database is therefore keyed on [uuid]: the reminder
- * time, the nudge ledger and (through [channelId]) the notification channel. A rebuilt `_app` can
- * then orphan a key, which matches nothing; it can never hand one habit's state to another.
+ * at, and it restarts on a fresh `_app` — the destructive fallback rebuilds one — while `nudges.db`
+ * and `reminder_prefs` survive. Anything keyed outside this database is therefore keyed on [uuid]:
+ * the reminder time, the nudge ledger and (through [channelId]) the notification channel. A rebuilt
+ * `_app` can then orphan a key, which matches nothing; it can never hand one habit's state to another.
  *
  * **Habits are never deleted**, only [archived], which is what lets `sessions.habit_id` go without a
  * foreign key: the row a session points at always exists.

@@ -1,19 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  What Android's own backup carries. Everything not excluded here travels: the record (`_app`, with
+  its `-wal` and `-shm`, so a restore lands a consistent set and SQLite replays the WAL on open),
+  each habit's reminder time (`reminder_prefs`, keyed by the habit uuids `_app` holds), and the nudge
+  ledger (`nudges.db`, keyed the same way). The record, its habits and everything keyed on them
+  restore together, so nothing arrives naming a habit that is not there.
+
+  The app itself sends nothing: it holds no network permission. The backup is Android's, to the
+  user's own Google account, only when they have backup on, and end-to-end encrypted with the screen
+  lock where one is set. `android:restoreAnyVersion` is left at its default (false), so a backup from
+  a newer version code is never restored onto an older build, and a restored `_app` is never newer
+  than the schema this build opens; an older one runs `MIGRATION_1_2` on first open.
+
+  `ShippedBackupRulesTest` pins this policy.
+-->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- The sessions DB never leaves the device via Google cloud backup. -->
-        <exclude domain="database" path="_app" />
-        <exclude domain="database" path="_app-shm" />
-        <exclude domain="database" path="_app-wal" />
         <!--
-          `checkin_timer_prefs` mirrors a live session for rendering, so it describes rows a cloud
-          restore does not bring with it.
+          `checkin_timer_prefs` mirrors a live session for rendering and holds that session's armed
+          alarm instants and reminder count. None of it is true on another device: no alarm is set
+          there and no service is running. A session that was open when the backup was taken arrives
+          open with nothing armed, and the first app open repairs it like any session that lost its
+          alarms (`SessionWatchdog.reviveIfNeeded`): the day boundary is derived from the row's own
+          `date_key` and, already past, closes the session at that midnight as `DAY_BOUNDARY`.
 
-          There is deliberately no tracking-start entry here any more. It used to be a preference,
-          and excluding it was how the app stopped a restore reporting every day since as one the
-          user did not show up for. The start is now read from the sessions table itself
-          (`CheckInRepository.trackingStartFlow`), so it cannot arrive without them and there is
-          nothing left to exclude.
+          There is deliberately no tracking-start entry here. The start is read from the sessions
+          table itself (`CheckInRepository.trackingStartFlow`), so it cannot arrive without them.
         -->
         <exclude domain="sharedpref" path="checkin_timer_prefs.xml" />
         <!--
@@ -21,21 +33,16 @@
           device it would assert that of prompts never shown there — and a cloud restore does not
           carry runtime permission grants, so `notifications_asked` would suppress the launch
           request on a device that has granted nothing, leaving the timer notification, the session
-          reminder and every nudge silently dead.
+          reminder and every nudge silently dead. So a restored install sees the welcome tour once
+          more; the naming step is read from the habits table, so restored habits skip it.
         -->
         <exclude domain="sharedpref" path="prompt_prefs.xml" />
-        <!--
-          `reminder_prefs` holds each habit's reminder minute, keyed by the habit's uuid, and the
-          habits live in `_app`. A cloud restore brings no `_app`, so the new device seeds a habit
-          with a fresh uuid and no restored time could ever be read.
-        -->
-        <exclude domain="sharedpref" path="reminder_prefs.xml" />
     </cloud-backup>
     <device-transfer>
         <!--
-          Included by default, and correctly so: a direct device-to-device transfer moves the DB and
-          the permission grants together, so both the record and the prompts already answered land
-          beside what they describe.
+          Included by default, and correctly so: a direct device-to-device transfer moves the files
+          and the permission grants together, so both the record and the prompts already answered
+          land beside what they describe.
         -->
     </device-transfer>
 </data-extraction-rules>

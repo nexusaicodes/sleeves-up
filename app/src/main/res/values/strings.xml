@@ -362,7 +362,7 @@
     <string name="privacy_no_internet_title">No internet permission</string>
     <string name="privacy_no_internet_body">It holds no permission to reach the network, so it cannot upload anything.</string>
     <string name="privacy_no_account_title">No account, no server</string>
-    <string name="privacy_no_account_body">There is nothing to sign in to. Your sessions live in a database on this phone.</string>
+    <string name="privacy_no_account_body">There is nothing to sign in to. Your sessions live in a database on this phone. If you have Android\'s backup turned on, it also keeps a copy in your own Google account, end-to-end encrypted when your phone has a screen lock.</string>
     <string name="privacy_no_photo_title">No photo is taken</string>
     <string name="privacy_no_photo_body">Your camera reports whether a face is in frame. The app reads that count and nothing else.</string>
     <string name="privacy_no_analytics_title">No analytics, no ads</string>

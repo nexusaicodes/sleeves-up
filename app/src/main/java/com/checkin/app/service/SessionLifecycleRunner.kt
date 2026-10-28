@@ -180,10 +180,15 @@ class SessionLifecycleRunner(
     suspend fun onDayBoundaryFired(): Outcome = lock.withLock {
         val active = repository.getActiveSession() ?: return@withLock stale()
 
-        // Clamped to now as a last guard: a stop instant in the future is never right, whatever
-        // produced it. It can only bite the zone-travel case — a genuinely late alarm still
-        // back-stamps to its own midnight, which is the entire point of deriving the instant.
+        // Clamped at both ends as a last guard. A stop instant in the future is never right,
+        // whatever produced it, and neither is one before the check-in. Both bite only a boundary
+        // read in a zone other than the session's: travel, or a session restored from a cloud
+        // backup onto a device with no stored instant, where the fallback reads the new device's
+        // zone and a session begun late in the evening further west would otherwise stop before it
+        // started. A genuinely late alarm still back-stamps to its own midnight, which is the
+        // entire point of deriving the instant.
         val closeAt = (alarms.dayBoundaryAt.takeIf { it > 0L } ?: dayBoundaryFor(active))
+            .coerceAtLeast(active.startedAt)
             .coerceAtMost(timeSource.nowMillis())
 
         // The only writer of ClosedBy.DAY_BOUNDARY.

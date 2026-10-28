@@ -35,7 +35,8 @@ data class NudgeSend(
 
     /**
      * The habit the nudge was about, by its permanent uuid — never its row id, which restarts on a
-     * fresh `_app` while this file is backed up and could then credit one habit's send to another.
+     * fresh `_app` (the destructive fallback) while this file survives, and could then credit one
+     * habit's send to another.
      *
      * Empty on every row written before habits existed. This database cannot know the seed habit's
      * uuid, so [NudgeDispatcher] reads an empty one as the seed habit's: those rows were all about

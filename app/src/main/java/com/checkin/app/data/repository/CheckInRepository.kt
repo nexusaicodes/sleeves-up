@@ -164,9 +164,9 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * The day [habitId]'s tracking began — the day of its first session — or null when it has none.
      *
      * Derived rather than stored, and it must stay that way. Storing it is a second copy of a fact
-     * the table already holds, and the two can disagree: a cloud restore brings the copy back
-     * without the rows it indexes, and every day since reads as a day the user did not show up for,
-     * on the one screen they check their consistency in. Read off the sessions it describes, that
+     * the table already holds, and the two can disagree: a restore that brings the copy back
+     * without the rows it indexes reads every day since as a day the user did not show up for, on
+     * the one screen they check their consistency in. Read off the sessions it describes, that
      * disagreement is unrepresentable.
      *
      * `distinctUntilChanged` is load-bearing, not tidiness. Room re-runs the query on any write to

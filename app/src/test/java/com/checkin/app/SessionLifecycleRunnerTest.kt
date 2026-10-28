@@ -309,6 +309,60 @@ class SessionLifecycleRunnerTest {
         assertEquals(fireAt, dao.getSessionById(session.id)!!.stoppedAt)
     }
 
+    /**
+     * A cloud restore brings the sessions table but not `checkin_timer_prefs`, so a session open when
+     * the backup was taken arrives days later with no armed instant. The first app open must close
+     * it at its own midnight, as the day boundary, not leave it running or stamp the open's time.
+     */
+    @Test
+    fun `a session restored open with no stored instants closes at its own midnight`() = runTest {
+        val session = repository.open()
+        val restoredAt = boundary + 3 * 24 * 60 * 60 * 1000L
+        val later = FakeTimeSource(restoredAt, today.plusDays(3))
+        val restored = SessionLifecycleRunner(
+            repository = CheckInRepository(dao, later),
+            notifier = notifier,
+            strings = StringResolver { "copy-$it" },
+            alarms = alarms,
+            timeSource = later,
+            zone = { zone },
+        )
+
+        assertTrue(restored.ensureArmed(restoredAt))
+        assertEquals(boundary, alarms.lastDayBoundary)
+
+        restored.onDayBoundaryFired()
+
+        val closed = dao.getSessionById(session.id)!!
+        assertEquals(boundary, closed.stoppedAt)
+        assertEquals(ClosedBy.DAY_BOUNDARY, closed.closedBy)
+    }
+
+    /**
+     * Restored onto a device far to the east with no stored instant, the fallback midnight is read
+     * in the new zone and can fall before a late-evening check-in. The stop is held at the start.
+     */
+    @Test
+    fun `the boundary never stamps a stop before the check-in`() = runTest {
+        val evening = LocalDateTime.of(2026, 6, 15, 22, 0).atZone(zone).toInstant().toEpochMilli()
+        val session = CheckInRepository(dao, FakeTimeSource(evening, today)).open()
+        val east = SessionLifecycleRunner(
+            repository = repository,
+            notifier = notifier,
+            strings = StringResolver { "copy-$it" },
+            alarms = alarms,
+            timeSource = FakeTimeSource(boundary + 24 * 60 * 60 * 1000L, today.plusDays(1)),
+            // The midnight ending 15 June here is 15:00 UTC, seven hours before the check-in.
+            zone = { ZoneId.of("Asia/Tokyo") },
+        )
+
+        east.onDayBoundaryFired()
+
+        val closed = dao.getSessionById(session.id)!!
+        assertEquals(evening, closed.stoppedAt)
+        assertEquals(0L, closed.duration)
+    }
+
     /** A boundary alarm that outlived its session must not close whatever opened after it. */
     @Test
     fun `a boundary with no open session closes nothing`() = runTest {
