@@ -35,7 +35,7 @@ private const val MILLIS_PER_HOUR = 3_600_000.0
  * a new one goes on the end or it does not go in at all.
  *
  * There is deliberately no Status column. Any wording for one would be a verdict on the day, and this
- * is the one artifact that leaves the device — zero hours and zero sessions already say a day held
+ * is the one artifact the user hands to someone else — zero hours and zero sessions already say a day held
  * nothing, without grading it. The last five columns are not that column and must not become it:
  * they count what ended each of the day's sessions, which is a fact about what happened to a
  * *session*, not an assessment of the *day*. They are per-day counts because these rows are days; a

@@ -38,6 +38,12 @@ class ShippedBackupRulesTest {
         assertTrue("sharedpref:reminder_prefs.xml" !in cloudExcluded)
     }
 
+    /** Without it a session restored open closes at the restoring device's midnight, not its own. */
+    @Test
+    fun `the open session's check-in zone travels with the record`() {
+        assertTrue("sharedpref:session_zone_prefs.xml" !in cloudExcluded)
+    }
+
     @Test
     fun `prompt flags and the live session mirror stay off a cloud backup`() {
         assertEquals(

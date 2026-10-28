@@ -3,8 +3,9 @@
   What Android's own backup carries. Everything not excluded here travels: the record (`_app`, with
   its `-wal` and `-shm`, so a restore lands a consistent set and SQLite replays the WAL on open),
   each habit's reminder time (`reminder_prefs`, keyed by the habit uuids `_app` holds), and the nudge
-  ledger (`nudges.db`, keyed the same way). The record, its habits and everything keyed on them
-  restore together, so nothing arrives naming a habit that is not there.
+  ledger (`nudges.db`, keyed the same way), and the open session's check-in zone
+  (`session_zone_prefs`, keyed by its row id). The record, its habits and everything keyed on them
+  restore together, so nothing arrives naming a habit or session that is not there.
 
   The app itself sends nothing: it holds no network permission. The backup is Android's, to the
   user's own Google account, only when they have backup on, and end-to-end encrypted with the screen
@@ -22,7 +23,8 @@
           there and no service is running. A session that was open when the backup was taken arrives
           open with nothing armed, and the first app open repairs it like any session that lost its
           alarms (`SessionWatchdog.reviveIfNeeded`): the day boundary is derived from the row's own
-          `date_key` and, already past, closes the session at that midnight as `DAY_BOUNDARY`.
+          `date_key` in the zone `session_zone_prefs` recorded at check-in and, already past,
+          closes the session at that midnight as `DAY_BOUNDARY`.
 
           There is deliberately no tracking-start entry here. The start is read from the sessions
           table itself (`CheckInRepository.trackingStartFlow`), so it cannot arrive without them.

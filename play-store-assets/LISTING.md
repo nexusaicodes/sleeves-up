@@ -36,8 +36,9 @@ copy, it **needs a native speaker's review before it is uploaded**.
    `com.google.android.gms.version` meta-data. Play's docs say the check sends Google the device
    metadata, app version and installed modules, so neither the listing nor the Privacy screen may
    claim nothing at all leaves the device about the app. **The record is in Android's own backup**
-   (`data_extraction_rules.xml`): the app sends nothing, but the copy can say "stays on this
-   device", never "never leaves it". The Data safety form should be
+   (`data_extraction_rules.xml`): the app sends nothing, but the copy names that backup as the
+   second way the record leaves the phone, beside the CSV, and never says it stays or never leaves.
+   The Data safety form should be
    re-checked against Play's in-app updates data-safety section whenever it is resubmitted.
 
 ---
@@ -93,7 +94,7 @@ WHAT YOU SEE
 • In English or Arabic — choose in Settings, or follow your phone
 
 PRIVATE BY DESIGN
-• Your session data stays on this device. There is no account, no server and no sync. If you have Android's backup turned on, it keeps a copy in your own Google account, end-to-end encrypted when your phone has a screen lock.
+• Your session data lives on your phone. There is no account, no server and no sync. It leaves only in a CSV you export, or in Android's own backup to your Google account if you have that turned on, end-to-end encrypted when your phone has a screen lock.
 • The app holds no internet permission at all, so it cannot upload anything.
 • No photo is ever taken. Your camera hardware reports whether a face is in frame and the app reads only that count — frames never leave the camera, so there is no image to store, show, delete or leak.
 • Face detection, not face recognition: the check confirms someone is there. It identifies no one and matches nothing.
@@ -188,7 +189,7 @@ Sleeves Up متتبّع خاص لتسجيل الحضور يعمل على جها�
 • بالعربية أو الإنجليزية — اختر من الإعدادات، أو اتبع لغة هاتفك
 
 خاص بطبيعته
-• بيانات جلساتك تبقى على هذا الجهاز. لا حساب، ولا خادم، ولا مزامنة. وإن كان النسخ الاحتياطي في Android مفعّلًا، فإنه يحتفظ بنسخة منها في حسابك على Google، مشفّرة تشفيرًا تامًّا بين الطرفين متى كان لهاتفك قفل شاشة.
+• بيانات جلساتك محفوظة على هاتفك. لا حساب، ولا خادم، ولا مزامنة. ولا تغادره إلا في ملف CSV تصدّره بنفسك، أو في النسخ الاحتياطي الخاص بـ Android إلى حسابك على Google إن كان مفعّلًا، مشفّرةً تشفيرًا تامًّا بين الطرفين متى كان لهاتفك قفل شاشة.
 • لا يملك التطبيق أي إذن بالوصول إلى الإنترنت، فلا يمكنه رفع أي شيء.
 • لا تُلتقط أي صورة. تُبلغ كاميرا جهازك فقط بوجود وجه في الإطار، ولا يقرأ التطبيق سوى ذلك العدد — لا تغادر الإطارات الكاميرا، فلا توجد صورة تُحفظ أو تُعرض أو تُحذف أو تتسرّب.
 • كشفٌ عن وجود وجه، لا تعرّفٌ عليه: يتأكد الفحص من وجود شخص، ولا يحدد هوية أحد ولا يطابق شيئًا.

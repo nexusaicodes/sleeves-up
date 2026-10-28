@@ -36,6 +36,7 @@ import com.checkin.app.platform.PromptSettings
 import com.checkin.app.platform.ServiceController
 import com.checkin.app.platform.SharedPrefsPromptSettings
 import com.checkin.app.service.AndroidSessionAlarms
+import com.checkin.app.service.AndroidSessionZones
 import com.checkin.app.service.CheckInService
 import com.checkin.app.service.SessionActions
 import com.checkin.app.service.SessionAlarms
@@ -253,6 +254,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
             notifier = notifier,
             strings = AndroidStringResolver(appContext),
             alarms = sessionAlarms,
+            zones = AndroidSessionZones(appContext),
             timeSource = timeSource,
         )
     }

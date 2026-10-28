@@ -34,7 +34,16 @@ class SessionActionsTest {
         val actions = SessionActions(
             repository = repo,
             serviceController = service,
-            lifecycle = SessionLifecycleRunner(repo, FakeNotifier(), StringResolver { "copy-$it" }, alarms, time),
+            lifecycle = SessionLifecycleRunner(
+                repo,
+                FakeNotifier(),
+                StringResolver {
+                    "copy-$it"
+                },
+                alarms,
+                FakeSessionZones(),
+                time,
+            ),
             postedNudges = nudges,
             scope = scope,
             onCheckedOut = {

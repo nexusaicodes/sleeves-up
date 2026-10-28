@@ -49,6 +49,7 @@ class CheckInViewModelTest {
             notifier = FakeNotifier(),
             strings = StringResolver { "copy-$it" },
             alarms = alarms,
+            zones = FakeSessionZones(),
             timeSource = time,
         )
         // The real SessionActions on the test dispatcher, so advanceUntilIdle drives its launches.
