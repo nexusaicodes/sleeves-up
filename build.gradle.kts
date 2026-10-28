@@ -1,10 +1,20 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+// AGP 9 compiles Kotlin itself (built-in Kotlin) against the Kotlin Gradle plugin it bundles. This
+// classpath entry raises that plugin to the Kotlin the compose compiler plugin below is built for;
+// AGP documents it as the one way to choose a newer KGP.
+buildscript {
+    dependencies {
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.21")
+    }
+}
+
 plugins {
-    id("com.android.application") version "8.13.2" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.20" apply false
-    id("com.google.devtools.ksp") version "1.9.20-1.0.14" apply false
+    id("com.android.application") version "9.4.1" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.4.21" apply false
+    id("com.google.devtools.ksp") version "2.3.12" apply false
     id("io.gitlab.arturbosch.detekt") version "1.23.8"
-    id("org.jlleitschuh.gradle.ktlint") version "12.1.1"
+    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
 }
 
 // Static analysis is applied to every project, including this root build script itself, so the

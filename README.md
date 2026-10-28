@@ -50,7 +50,7 @@ grade: a day counts because you turned up for it, not because its hours cleared 
 
 ## Build & run
 
-The Gradle wrapper is pinned to **Gradle 8.13**. In Android Studio, open the project and Run. For
+The Gradle wrapper is pinned to **Gradle 9.8.2**. In Android Studio, open the project and Run. For
 CLI builds, point Gradle at Android Studio's bundled JDK:
 
 ```bash
