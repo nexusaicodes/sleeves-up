@@ -37,8 +37,21 @@ written under the same two rules and the vocabulary table's Arabic column.
    claim nothing at all leaves the device about the app. **The record is in Android's own backup**
    (`data_extraction_rules.xml`): the app sends nothing, but the copy names that backup as the
    second way the record leaves the phone, beside the CSV, and never says it stays or never leaves.
-   The Data safety form should be
-   re-checked against Play's in-app updates data-safety section whenever it is resubmitted.
+   **Data safety: "No data collected, no data shared", re-checked for 3.2.** Play defines collection
+   as data "transmitted from your app off a user's device", including by its libraries
+   (support.google.com/googleplay/android-developer/answer/10787469). Neither new path is the app's:
+   - *In-app updates.* The Play Store app sends Google the device metadata, app version and installed
+     modules (developer.android.com/guide/playcore/in-app-updates, its Data safety table), under
+     Play's terms, and the app never reads any of it. That is the shape of Play's own exemption for a
+     payment service such as Play billing ("your app never accesses this information" and the
+     collection "is governed by that service's terms").
+   - *Backup.* Android uploads the files to the user's own Google account; the app holds no network
+     permission and cannot read the copy. Play's FAQ exempts uploads to "Google Drive or Dropbox for
+     backup" governed by that provider's terms where the app "never collects or accesses the data",
+     and separately data end-to-end encrypted so the developer cannot read it.
+   Neither exemption names OS-initiated backup or the update check outright, so this is a reading of
+   the closest text, not a quoted ruling. Re-check it whenever the form is resubmitted, and at once
+   if the app ever gains a network path of its own.
 
 ---
 
@@ -135,6 +148,8 @@ through the welcome tour and so meets the widget's page alone, later, rather tha
 ```
 Check in from your home screen: add the Sleeves Up widget, and a tap takes you straight to the presence check. With more than one habit, it asks which.
 
+Your sessions and habits now come with you to a new phone, through Android's own backup when you have it turned on.
+
 Sleeves Up now runs on Android 12 and 12L.
 
 When Google Play has a newer version, the app can offer it to you without leaving.
@@ -214,6 +229,8 @@ Sleeves Up أداة للانضباط الذاتي، وليس بديلًا عن �
 
 ```
 سجّل حضورك من الشاشة الرئيسية: أضف التطبيق المصغّر لـ Sleeves Up، وبلمسة واحدة تصل مباشرة إلى التحقق من الحضور. وإن كانت لديك أكثر من عادة، يسألك أيّها.
+
+تنتقل جلساتك وعاداتك الآن معك إلى هاتف جديد، عبر النسخ الاحتياطي الخاص بـ Android متى كان مفعّلًا.
 
 يعمل Sleeves Up الآن على Android 12 و12L.
 
