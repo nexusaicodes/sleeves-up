@@ -249,24 +249,21 @@ class ReportsViewModel(
         scope.value = ReportScope.Month(displayedMonth().plusMonths(1))
     }
 
-    /** Leaving all time returns to the month the user is in, not to whichever they last stepped to. */
+    /**
+     * Leaving all time returns to the month the user is in, not to whichever they last stepped to;
+     * on a month already, nothing moves.
+     *
+     * The decision reads [scope] rather than the rendered state, because the state only catches up
+     * once the window's queries have emitted: judged from the screen, a tap on Month right after one
+     * on All time would see the month it has already left and stay there.
+     */
     fun selectMonth() {
+        if (scope.value is ReportScope.Month) return
         scope.value = ReportScope.Month(YearMonth.from(timeSource.today()))
     }
 
     fun selectAllTime() {
         scope.value = ReportScope.AllTime
-    }
-
-    /**
-     * Flips between all time and the current month.
-     *
-     * The decision reads [scope] rather than the rendered state, because the state only catches up
-     * once the window's queries have emitted: judged from the screen, a second tap inside that gap
-     * sees the scope it has already left and repeats the move instead of undoing it.
-     */
-    fun toggleAllTime() {
-        if (scope.value is ReportScope.AllTime) selectMonth() else selectAllTime()
     }
 
     private fun displayedMonth(): YearMonth =

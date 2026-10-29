@@ -178,7 +178,9 @@
     <string name="empty_day_sessions_message">No sessions recorded on this day.</string>
 
     <!-- Reports Screen -->
-    <!-- The scope selector's end-stop, read as a standalone label. -->
+    <!-- The scope selector's two segments, read as standalone labels: one month at a time, or the
+         whole record. -->
+    <string name="scope_month">Month</string>
     <string name="scope_all_time">All time</string>
     <!-- The same scope read inside a sentence ("Export all time"), where the Title Case form lands a
          capital mid-clause. A month name needs no such pair — it is a proper noun either way. -->

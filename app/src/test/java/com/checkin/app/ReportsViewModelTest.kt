@@ -306,27 +306,42 @@ class ReportsViewModelTest {
     }
 
     /**
-     * Two taps of the all-time chip land back on a month, even when nothing has re-rendered between
-     * them.
+     * All time then Month, tapped back to back, lands on the current month, even when nothing has
+     * re-rendered between them.
      *
-     * The toggle reads the scope the view-model holds rather than the one the screen is showing: the
+     * Month reads the scope the view-model holds rather than the one the screen is showing: the
      * rendered scope only catches up once the window's queries have emitted, so a decision taken
-     * from it sees the scope it has already left and repeats the move instead of undoing it.
+     * from it would see the month already left and stay on all time.
      */
     @Test
-    fun `toggling all time twice returns to a month scope`() = runTest {
+    fun `all time then month returns to the current month`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedCompleted("2026-06-10", startedAt = 0L, durationMs = 3_600_000L)
         val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
+        repeat(2) { viewModel.previousMonth() }
         advanceUntilIdle()
 
-        // Back to back, with no emission in between — the state is still reporting the month scope.
-        viewModel.toggleAllTime()
-        viewModel.toggleAllTime()
+        // Back to back, with no emission in between — the state is still reporting April.
+        viewModel.selectAllTime()
+        viewModel.selectMonth()
         advanceUntilIdle()
 
         assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+    }
+
+    /** Month on a month already is a no-op: it does not pull a stepped-to month back to today's. */
+    @Test
+    fun `month on a month keeps the month stepped to`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-04-10", startedAt = 0L, durationMs = 3_600_000L)
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        repeat(2) { viewModel.previousMonth() }
+        viewModel.selectMonth()
+        advanceUntilIdle()
+
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 4)), viewModel.uiState.value.scope)
     }
 
     /** Stepping outside the record leaves an empty scope, not a set of zeros over invented days. */

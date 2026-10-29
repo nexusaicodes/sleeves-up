@@ -1,14 +1,9 @@
 package com.checkin.app.ui.settings
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,7 +13,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -28,6 +22,7 @@ import com.adevinta.spark.components.buttons.Button
 import com.adevinta.spark.components.buttons.Ghost
 import com.adevinta.spark.components.dialog.AlertDialog
 import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.components.toggles.RadioButtonLabelled
 import com.checkin.app.R
 import com.checkin.app.platform.LanguageSettings
 import com.checkin.app.platform.choose
@@ -99,19 +94,15 @@ private fun LanguageDialog(current: AppLanguage?, onChoose: (AppLanguage) -> Uni
         text = {
             Column(modifier = Modifier.selectableGroup()) {
                 AppLanguage.entries.forEach { language ->
-                    Row(
+                    // The whole row is the radio's target, at the app's 48dp minimum.
+                    RadioButtonLabelled(
+                        selected = language == current,
+                        onClick = { onChoose(language) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                            .selectable(
-                                selected = language == current,
-                                role = Role.RadioButton,
-                                onClick = { onChoose(language) },
-                            ),
+                            .heightIn(min = 48.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(selected = language == current, onClick = null)
-                        Spacer(modifier = Modifier.width(16.dp))
                         Text(text = language.label(), style = language.labelStyle())
                     }
                 }

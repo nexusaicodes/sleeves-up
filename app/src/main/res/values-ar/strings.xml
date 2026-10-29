@@ -115,6 +115,7 @@
     <string name="empty_day_sessions_message">لا جلسات مسجّلة في هذا اليوم.</string>
 
     <!-- Reports Screen -->
+    <string name="scope_month">الشهر</string>
     <string name="scope_all_time">كل الأوقات</string>
     <string name="scope_all_time_inline">كل الأوقات</string>
     <string name="empty_scope_title">لا شيء مسجّل هنا</string>

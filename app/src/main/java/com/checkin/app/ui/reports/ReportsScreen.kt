@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.adevinta.spark.SparkTheme
 import com.adevinta.spark.components.buttons.Button
 import com.adevinta.spark.components.buttons.Primary
+import com.adevinta.spark.components.segmentedcontrol.SegmentedControl
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.icons.DownloadFileOutline
 import com.adevinta.spark.icons.GraphOutline
@@ -117,7 +117,8 @@ fun ReportsScreen(
                 scope = uiState.scope,
                 onPrevious = { viewModel.previousMonth() },
                 onNext = { viewModel.nextMonth() },
-                onToggleAllTime = { viewModel.toggleAllTime() },
+                onSelectMonth = { viewModel.selectMonth() },
+                onSelectAllTime = { viewModel.selectAllTime() },
             )
         }
 
@@ -150,55 +151,60 @@ fun ReportsScreen(
 /**
  * What the screen is describing, and the only control on it.
  *
- * A month stepper with an all-time end-stop: two scope kinds, so each card has one rule per kind
- * rather than a matrix of them. Stepping is **unbounded**, exactly as History's navigator is — a
- * month before the record began is an empty state rather than a disabled arrow, because a disabled
- * control says "not allowed" where the honest answer is "nothing here".
+ * Two scope kinds, so each card has one rule per kind rather than a matrix of them: a segmented
+ * Month / All time choice, and under it a month stepper. Stepping is **unbounded**, exactly as
+ * History's navigator is — a month before the record began is an empty state rather than a disabled
+ * arrow, because a disabled control says "not allowed" where the honest answer is "nothing here".
  */
 @Composable
 private fun ScopeSelector(
     scope: ReportScope,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
-    onToggleAllTime: () -> Unit,
+    onSelectMonth: () -> Unit,
+    onSelectAllTime: () -> Unit,
 ) {
     val allTime = scope is ReportScope.AllTime
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // The steppers hold their slot under all time rather than vanishing, so the row does not
-        // reflow around the toggle every time it is pressed.
-        AppIconButton(
-            icon = AppIcons.ChevronStart,
-            contentDescription = stringResource(R.string.previous_month),
-            onClick = onPrevious,
-            enabled = !allTime,
-        )
-        Text(
-            text = scopeLabel(scope),
-            style = LocalAppTypography.current.titleLarge,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            // Two lines rather than one: at a large font scale a single line clips "August 2026" to
-            // "Augus…", and a truncated month is not a date the user can read.
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-        AppIconButton(
-            icon = AppIcons.ChevronEnd,
-            contentDescription = stringResource(R.string.next_month),
-            onClick = onNext,
-            enabled = !allTime,
-        )
-        FilterChip(
-            selected = allTime,
-            onClick = onToggleAllTime,
-            label = { Text(stringResource(R.string.scope_all_time)) },
-        )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SegmentedControl.Horizontal(
+            selectedIndex = if (allTime) 1 else 0,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            singleLine(text = stringResource(R.string.scope_month), selected = !allTime, onClick = onSelectMonth)
+            singleLine(text = stringResource(R.string.scope_all_time), selected = allTime, onClick = onSelectAllTime)
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // The steppers hold their slot under all time rather than vanishing, so the row does not
+            // reflow around the choice every time it changes.
+            AppIconButton(
+                icon = AppIcons.ChevronStart,
+                contentDescription = stringResource(R.string.previous_month),
+                onClick = onPrevious,
+                enabled = !allTime,
+            )
+            Text(
+                text = scopeLabel(scope),
+                style = LocalAppTypography.current.titleLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                // Two lines rather than one: at a large font scale a single line clips "August 2026"
+                // to "Augus…", and a truncated month is not a date the user can read.
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            AppIconButton(
+                icon = AppIcons.ChevronEnd,
+                contentDescription = stringResource(R.string.next_month),
+                onClick = onNext,
+                enabled = !allTime,
+            )
+        }
     }
 }
 
