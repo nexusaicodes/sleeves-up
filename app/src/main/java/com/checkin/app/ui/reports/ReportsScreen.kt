@@ -115,6 +115,7 @@ fun ReportsScreen(
         item {
             ScopeSelector(
                 scope = uiState.scope,
+                hasNextMonth = uiState.hasNextMonth,
                 onPrevious = { viewModel.previousMonth() },
                 onNext = { viewModel.nextMonth() },
                 onSelectMonth = { viewModel.selectMonth() },
@@ -152,13 +153,15 @@ fun ReportsScreen(
  * What the screen is describing, and the only control on it.
  *
  * Two scope kinds, so each card has one rule per kind rather than a matrix of them: a segmented
- * Month / All time choice, and under it a month stepper. Stepping is **unbounded**, exactly as
- * History's navigator is — a month before the record began is an empty state rather than a disabled
- * arrow, because a disabled control says "not allowed" where the honest answer is "nothing here".
+ * Month / All time choice, and under it a month stepper. Stepping back is **unbounded** — a month
+ * before the record began is an empty state rather than a disabled arrow, because a disabled control
+ * says "not allowed" where the honest answer is "nothing here". Stepping forward stops at the month in
+ * progress ([ReportsUiState.hasNextMonth]): a month that has not begun is not a record to read.
  */
 @Composable
 private fun ScopeSelector(
     scope: ReportScope,
+    hasNextMonth: Boolean,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onSelectMonth: () -> Unit,
@@ -202,7 +205,7 @@ private fun ScopeSelector(
                 icon = AppIcons.ChevronEnd,
                 contentDescription = stringResource(R.string.next_month),
                 onClick = onNext,
-                enabled = !allTime,
+                enabled = hasNextMonth,
             )
         }
     }

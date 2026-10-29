@@ -41,6 +41,8 @@ data class ReportsUiState(
     val loading: Boolean = true,
     /** What span every figure below describes. The selector sets it; nothing else may narrow it. */
     val scope: ReportScope = ReportScope.AllTime,
+    /** Whether a later month exists to step to: false under all time and on the month in progress. */
+    val hasNextMonth: Boolean = false,
     /** The day of the first session, or null until one exists. Read from the sessions, never stored. */
     val trackingStartDate: LocalDate? = null,
     /** The counted days [scope] covers, or null when it covers none — the empty state. */
@@ -125,7 +127,7 @@ class ReportsViewModel(
                 } else {
                     windowStats(habit, activeScope, start, window)
                 }
-            }
+            }.map { state -> state.copy(hasNextMonth = state.scope.hasMonthAfter(today)) }
         }
 
     val uiState: StateFlow<ReportsUiState> = statsFlow.stateIn(
@@ -245,7 +247,9 @@ class ReportsViewModel(
         scope.value = ReportScope.Month(displayedMonth().minusMonths(1))
     }
 
+    /** Stops at the month in progress: a month that has not begun holds no day the record could cover. */
     fun nextMonth() {
+        if (!scope.value.hasMonthAfter(timeSource.today())) return
         scope.value = ReportScope.Month(displayedMonth().plusMonths(1))
     }
 
@@ -270,6 +274,9 @@ class ReportsViewModel(
     fun selectAllTime() {
         scope.value = ReportScope.AllTime
     }
+
+    private fun ReportScope.hasMonthAfter(today: LocalDate): Boolean =
+        this is ReportScope.Month && month.isBefore(YearMonth.from(today))
 
     private fun displayedMonth(): YearMonth =
         (scope.value as? ReportScope.Month)?.month ?: YearMonth.from(timeSource.today())

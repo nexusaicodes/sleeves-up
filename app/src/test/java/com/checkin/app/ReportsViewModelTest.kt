@@ -304,6 +304,44 @@ class ReportsViewModelTest {
         assertEquals(emptyList<MonthPoint>(), state.monthlySeries)
     }
 
+    @Test
+    fun `stepping forward stops at the month in progress`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-05-10", startedAt = 0L, durationMs = 3_600_000L)
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+        assertEquals(false, viewModel.uiState.value.hasNextMonth)
+
+        viewModel.nextMonth()
+        advanceUntilIdle()
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+
+        viewModel.previousMonth()
+        advanceUntilIdle()
+        assertEquals(true, viewModel.uiState.value.hasNextMonth)
+        repeat(2) { viewModel.nextMonth() }
+        advanceUntilIdle()
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+        assertEquals(false, viewModel.uiState.value.hasNextMonth)
+    }
+
+    @Test
+    fun `all time has no next month`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-05-10", startedAt = 0L, durationMs = 3_600_000L)
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        viewModel.previousMonth()
+        viewModel.selectAllTime()
+        advanceUntilIdle()
+        assertEquals(false, viewModel.uiState.value.hasNextMonth)
+
+        viewModel.nextMonth()
+        advanceUntilIdle()
+        assertEquals(ReportScope.AllTime, viewModel.uiState.value.scope)
+    }
+
     /**
      * A month the record only partly covers opens at the first session, not at the 1st — the same
      * clamp the CSV export depends on, since gap-filling days before the user had ever opened the
