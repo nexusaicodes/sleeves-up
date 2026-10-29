@@ -51,9 +51,11 @@ cannot drift. Sizing rules encoded in the script:
 python3 play-store-assets/generate_feature_graphic.py
 ```
 
-It draws the wordmark, the tagline and a fragment of the binary calendar over a deep-indigo
-gradient, sharing only `CORNER_FRAC` with `generate_icons.py`. The gradient sits below the launcher
-indigo (`#3F51B5`) in value so both the near-white filled cells and the faint empty ones read. Type
+It draws the wordmark, the tagline and a fragment of the binary calendar over a gradient from ink
+(`#1B2A4A`, the launcher tile) to the dark theme's paper (`#0E1830`), sharing only `CORNER_FRAC`
+with `generate_icons.py`. The cells and wordmark are paper (`#F1E6CE`) and the tagline the dark
+theme's muted ink, so both the filled cells and the faint empty ones read against the field. The
+screenshots' field and caption colour are imported from it, so the two stay one brand. Type
 is loaded from `app/src/main/res/font`, so output does not depend on the machine. The calendar runs
 off the right edge — asserted by the script — so it reads as a continuing record, not a complete
 object.
@@ -93,8 +95,26 @@ adb shell "rm -f $D/_app-wal $D/_app-shm; chown $U:$U $D/_app; chmod 660 $D/_app
 ```
 
 The same seeded `_app` can be pushed to the tablet after its own first run. Reminder times live in
-`reminder_prefs`, keyed by habit uuid, so set them through the Habits screen's editor on each device
-(Writing 09:00, Gym 18:00, Guitar 20:00) rather than expecting them to travel with the database.
+`reminder_prefs`, keyed by habit uuid, and do not travel with the database. Set Writing's (09:00) in
+the naming step. The seed opens a session, which locks the Habits screen, so Gym's (18:00) and
+Guitar's (20:00) go straight into the prefs file under the uuids `seed_demo_data.py` fixes:
+
+```bash
+F=/data/data/$P/shared_prefs/reminder_prefs.xml
+adb shell am force-stop $P
+adb exec-out cat $F > /tmp/rp.xml
+# add inside <map>:
+#   <int name="reminder_minute_5c0d1e2f-0000-4000-8000-00000000a002" value="1080" />
+#   <int name="reminder_minute_5c0d1e2f-0000-4000-8000-00000000a003" value="1200" />
+adb push /tmp/rp.xml $F
+adb shell "chown $U:$U $F; chmod 660 $F; restorecon $F"
+```
+
+The Habits panels and the tablet's resting Check-In screen are shot after checking out through the
+gate: no emulated camera finds a face, so wait for **Use device unlock** and enter the PIN.
+
+A reinstall can come back in Arabic: Android 13 backs up and restores per-app locales with the app.
+Clear it with `adb shell cmd locale set-app-locales $P --locales ""` before the first run.
 
 Easy to get wrong:
 

@@ -30,7 +30,7 @@ import sys
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 sys.path.insert(0, "play-store-assets")
-from generate_feature_graphic import BOT, TOP, font  # noqa: E402 -- one field for the brand
+from generate_feature_graphic import BOT, PAPER, TOP, font  # noqa: E402 -- one field for the brand
 
 W, H = 1080, 1920
 RAW = "play-store-assets/screenshots/raw"
@@ -108,7 +108,7 @@ def compose(raw_path, caption):
     for i, line in enumerate(lines):
         tw = draw.textlength(line, font=fnt)
         draw.text(((W - tw) / 2, CAPTION_TOP + i * CAPTION_LEADING), line,
-                  font=fnt, fill=(255, 255, 255, 255))
+                  font=fnt, fill=(*PAPER, 255))
 
     shot = Image.open(raw_path).convert("RGB")
     box_h = DEVICE_BOTTOM - DEVICE_TOP
