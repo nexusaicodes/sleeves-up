@@ -1,20 +1,22 @@
 package com.checkin.app.ui.navigation
 
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
-import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.ExperimentalSparkApi
+import com.adevinta.spark.components.appbar.NavigationBar
+import com.adevinta.spark.components.appbar.NavigationBarItem
 import com.adevinta.spark.components.text.Text
 
+@OptIn(ExperimentalSparkApi::class)
 @Composable
 internal fun BottomNavigationBar(navController: NavController, currentScreen: Screen, selectedTab: Screen.Tab) {
     NavigationBar {
         tabs.forEach { screen ->
             val title = stringResource(screen.titleRes)
             NavigationBarItem(
-                icon = { Icon(screen.icon, contentDescription = title) },
+                // Spark draws the icon with no description: the label beneath names the tab.
+                icon = screen.icon,
                 label = { Text(title) },
                 selected = selectedTab == screen,
                 onClick = {

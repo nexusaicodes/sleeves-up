@@ -242,6 +242,7 @@ One commit per group, so a regression can be bisected to a control. The file and
 - **Menus.** The Habits row's overflow is Spark's `DropdownMenu`; inside its `DropdownMenuItemColumnScope` the import `com.adevinta.spark.components.menu.DropdownMenuItem` resolves to the scoped item, not the deprecated unscoped one (the build reports no deprecation). The item's slots match M3's, so only the imports change.
 - **Selection.** Reports' scope is `SegmentedControl.Horizontal` with **Month** and **All time** (a new `scope_month` string, with its Arabic twin), on its own row above the month stepper, which keeps its slot and disables under all time as before. The chip's toggle no longer fits two segments, so `ReportsViewModel.toggleAllTime` is gone: All time calls `selectAllTime`, and `selectMonth` is now a no-op on a month already (reading the view-model's scope, so the race the toggle guarded against stays closed). `ReportsViewModelTest`'s toggle test became two: All time then Month back to back lands on the current month, and Month on a stepped-to month keeps it. `LanguagePicker`'s rows are `RadioButtonLabelled` with the 48dp floor kept on the row; Spark spaces the radio and label 8dp apart where the hand-built row used 16dp.
 - **Text fields.** The dialog's field is Spark's `TextField` (`label`, and `FormFieldStatus.Error` with the problem as `stateMessage`). No `counter`: the editor shows no length limit, and `TOO_LONG` is a stated problem rather than a cap. The naming step's large centred field is now the app's own `TitleNameField` on `BasicTextField` (D9): `AppTypography.headlineSmall` centred, an underline drawn in `outline` (1dp), `main` while focused or `error` with a problem (2dp), the problem in `caption`/`error` beneath, and the crossfading placeholder as before. It was M3's `TextField`, which lint did not flag, so the move is D9's restyle rather than a lint fix, and no suppression is needed for it.
+- **Frame and snackbar, one commit.** Spark's `SnackbarHost` takes only Spark's `SnackbarHostState`, so the snackbar group cannot land apart from the scaffold's; `LocalSnackbarHostState` changed type in the same commit, and every `showSnackbar` caller compiled unchanged. Two opt-ins differ from 5.5: `AppTopBar` needs `ExperimentalMaterial3Api` beside `ExperimentalSparkApi`, because Spark's `TopAppBar` takes M3's experimental `TopAppBarColors` and scroll behaviour; and `BottomNavigationBar` needs `ExperimentalSparkApi`, since Spark's `NavigationBar` is experimental (its `NavigationBarItem` is not). The nav item draws `tab.icon` with no description, the label naming the tab. Snackbars now take Spark's default `Info` intent, with its icon; whether that icon belongs on an update offer or a locked-switcher note is a device check for PR 5.
 
 ### PR 5 — `ui/spark-own-components`: our components in Spark tokens
 
@@ -422,8 +423,8 @@ Watch `primary` → `main`, which turns indigo into ink. That is correct per des
 
 ### 5.5 Opt-ins after the migration
 
-- `@OptIn(ExperimentalSparkApi::class)`: `AppNavScaffold` (`TopAppBar`, `NavigationBar`), `HabitEditor`, `LanguagePicker`, `ReminderTimePicker` (`AlertDialog`).
-- `@OptIn(ExperimentalMaterial3Api::class)`: `ReminderTimePicker` only.
+- `@OptIn(ExperimentalSparkApi::class)`: `AppNavScaffold` (`TopAppBar`), `BottomNavigationBar` (`NavigationBar`), `HabitEditor`, `LanguagePicker`, `ReminderTimePicker` (`AlertDialog`).
+- `@OptIn(ExperimentalMaterial3Api::class)`: `ReminderTimePicker`, and `AppNavScaffold`'s top bar (Spark's `TopAppBar` takes M3's experimental colour and scroll types).
 - `ExperimentalMaterial3WindowSizeClassApi`: `HistoryScreen`, unchanged.
 - `@InternalSparkApi` (an ERROR-level opt-in): never used.
 

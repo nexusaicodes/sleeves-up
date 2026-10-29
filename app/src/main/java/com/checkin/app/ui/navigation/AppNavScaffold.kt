@@ -3,10 +3,6 @@ package com.checkin.app.ui.navigation
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -18,6 +14,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.adevinta.spark.ExperimentalSparkApi
+import com.adevinta.spark.components.appbar.TopAppBar
+import com.adevinta.spark.components.scaffold.Scaffold
+import com.adevinta.spark.components.snackbars.SnackbarHost
+import com.adevinta.spark.components.snackbars.SnackbarHostState
 import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.ui.AppUpdateOffer
@@ -112,7 +113,8 @@ internal fun AppNavScaffold(navController: NavHostController, offerUpdates: Bool
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+// Spark's top bar is experimental, and its colour and scroll parameters are M3's experimental types.
+@OptIn(ExperimentalSparkApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun AppTopBar(currentScreen: Screen, onBack: (() -> Unit)?, actions: @Composable RowScope.() -> Unit) {
     // Start-aligned, so the title and the habit switcher at the end each keep their own side rather
