@@ -109,6 +109,16 @@ No visible change, by design. It keeps every gate cost apart from every design q
 
 **Device check**: install over the current v4.0 build. Nothing should look different. Open Licences and read the MIT text.
 
+**Done** on `plan/spark-migration`. What it found, and where it departs from the steps above:
+- **`ModuleDependencies` is FileKit's**, not a gms library's: the merger report names `filekit-dialogs-android`. Its entry carries no class anywhere. Lint also flags `AndroidContextProvider` as `MissingClass` although `components-resources-android` carries it; both keep the scoped ignore.
+- **The assets transform works** under AGP 9.4.1 (`SingleArtifact.ASSETS` is `Transformable`): `StripSparkFontAssets` in `app/build.gradle.kts`, applied to every variant. No `doLast` fallback.
+- **The font gate fails on any typeface in the release assets**, rather than matching asset fonts against `font:` entries as it does `res/font`. Every font the app draws is a `res/font` resource, so a typeface in assets is never one to attribute, only one to strip. Pinned as planned: with the exclude pointed elsewhere the task failed naming the six Nunito assets; restored, it passes.
+- **Not covered by the gate**: a font a library ships in its own `res/font`. Nunito's is discarded by `keep.xml`, but deleting that file would ship it again with no gate failing (the gate reads only the app's `res/font`). Closing it means scanning the release APK's resource table; left for PR 8.
+- **Licences**: 71 group ids, 20 entries. `androidx.constraintlayout`, `androidx.documentfile` and the Compose additions fall under `androidx.*`; `kotlinx-collections-immutable` and `kotlinx-io` under `org.jetbrains.kotlinx:*`. Okio comes through Coil and Accompanist's drawablepainter through Spark directly. Every POM was read: Spark and FileKit MIT, the rest Apache-2.0. `mit.txt` holds both projects' `LICENSE` files as shipped (Spark at 4.2.1, copyright 2023 Adevinta; FileKit at tag `0.16.0`, copyright 2026 Vincent Guillebaud), and `OpenSourceLibrariesTest` pins MIT to exactly those two entries.
+- **Release APK**: 5,417,123 B, **+66 KB** over the 5,350,848 B baseline (the trial's +110 KB also called `SparkTheme`, so expect the figure to rise once PR 2 does). `unzip -l` shows exactly the app's 12 TTFs, byte for byte; the dex holds no `java/net`, `javax/net`, OkHttp, Cronet or datatransport string; none of the four entries is in the APK's manifest.
+- **`lintDebug`** fails only on 152 × `MaterialComposableHasSparkReplacement`, as D3 expects. Its other findings (`GradleDependency`, `OldTargetApi` and one hint) predate Spark.
+- The `aapt2` diff against a pre-PR build was not run (that needs a second checkout); `verifyMergedManifest` passing against an unchanged allowlist shows the same thing for every entry kind it reads.
+
 ### PR 2 — group 2 of `ui/spark-adoption`: SparkTheme at the root, colours and type in
 
 The whole app changes colour and body face in one step (design 6 phase 1), through the M3 bridge. No component is swapped yet.

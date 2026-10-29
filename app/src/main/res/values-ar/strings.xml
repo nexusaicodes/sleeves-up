@@ -273,6 +273,13 @@
     <string name="licenses_note_outfit">أحجام العرض والعناوين.</string>
     <string name="licenses_note_manrope">أحجام النصوص والتسميات.</string>
     <string name="licenses_note_plex_arabic">جميع النصوص حين يكون التطبيق بالعربية.</string>
+    <string name="licenses_note_spark">نظام تصميم لـ Jetpack Compose.</string>
+    <string name="licenses_note_compose_multiplatform">إصدارات JetBrains من Compose، ويعتمد عليها Spark.</string>
+    <string name="licenses_note_jetbrains_androidx">إصدارات JetBrains من Lifecycle وSavedState وWindow، ويعتمد عليها Spark.</string>
+    <string name="licenses_note_coil">تحميل الصور، ويعتمد عليه Spark.</string>
+    <string name="licenses_note_okio">قراءة الملفات والبيانات وكتابتها، ويعتمد عليه Coil.</string>
+    <string name="licenses_note_accompanist">يرسم عناصر Android القابلة للرسم في Compose، ويعتمد عليه Spark.</string>
+    <string name="licenses_note_filekit">أدوات لاختيار الملفات، ويعتمد عليها Spark. لا يفتح التطبيق أيًّا منها.</string>
     <string name="licenses_intro">بُني Sleeves Up على هذه المشاريع، مجمّعةً حسب المشروع الأصلي لا حسب الحزمة.</string>
     <string name="licenses_show_full_text">إظهار نص %1$s</string>
     <string name="licenses_hide_full_text">إخفاء نص %1$s</string>

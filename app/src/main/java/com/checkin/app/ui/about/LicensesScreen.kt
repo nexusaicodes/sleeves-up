@@ -45,7 +45,7 @@ import kotlinx.coroutines.withContext
  * Licences flagged [LibraryLicense.bundled] have their text shipped rather than linked. Every link
  * here hands a URL to the browser via [ExternalLinks], which needs a browser and a connection — so
  * on an offline device a link alone would leave unreadable the licences the app is obliged to
- * reproduce in full: Apache-2.0 for the code, the OFL for the bundled typefaces.
+ * reproduce in full: Apache-2.0 and MIT for the code, the OFL for the bundled typefaces.
  */
 @Composable
 fun LicensesScreen(innerPadding: PaddingValues) {
@@ -188,6 +188,7 @@ fun LicensesScreen(innerPadding: PaddingValues) {
 private fun LibraryLicense.rawTextRes(): Int = when (this) {
     LibraryLicense.APACHE_2_0 -> R.raw.apache_2_0
     LibraryLicense.OFL_1_1 -> R.raw.ofl_1_1
+    LibraryLicense.MIT -> R.raw.mit
     // The rest link out; `bundled` is false for them and this is never reached.
     else -> error("$name has no bundled text")
 }

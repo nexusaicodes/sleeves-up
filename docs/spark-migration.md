@@ -338,5 +338,7 @@ A scratch branch then added `spark-bom`/`spark` 4.2.1 and wrapped the theme root
 
 **Found on the way, not Spark's:** v3.2 ships emoji2's `EmojiCompatInitializer`, which asks Play services' font provider for an emoji font. Removed on `v4.0` (#36), which also added `verifyMergedManifest`.
 
+**Since done:** the four manifest removals, Nunito out of the APK, the font gate over assets and the licence entries are PR 1 of `docs/spark-implementation-plan.md`, which records what it measured (+66 KB).
+
 A second trial on `v4.0` also found that Spark's own lint check (`MaterialComposableHasSparkReplacement`, an error, shipped in its AAR) fails `lintDebug` 152 times before any UI changes. The implementation plan's D3 covers it.
 
