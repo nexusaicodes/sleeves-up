@@ -277,8 +277,10 @@ abstract class VerifyPackagedFonts : DefaultTask() {
             zip.entries().toList()
                 .filterNot { it.isDirectory }
                 .mapNotNull { entry ->
-                    val bytes = zip.getInputStream(entry).use { it.readBytes() }
-                    if (isTypeface(bytes)) entry.name to sha256(bytes) else null
+                    zip.getInputStream(entry).use { stream ->
+                        val head = stream.readNBytes(4)
+                        if (isTypeface(head)) entry.name to sha256(head + stream.readBytes()) else null
+                    }
                 }
         }
 
@@ -305,12 +307,13 @@ abstract class VerifyPackagedFonts : DefaultTask() {
         stamp.get().asFile.apply { parentFile.mkdirs() }.writeText("$summary\n")
     }
 
-    // sfnt version tags: TrueType (0x00010000 or 'true'), CFF OpenType ('OTTO') and a collection ('ttcf').
-    private fun isTypeface(bytes: ByteArray): Boolean {
-        if (bytes.size < 4) return false
-        val tag = bytes.copyOfRange(0, 4)
-        return tag.contentEquals(byteArrayOf(0, 1, 0, 0)) ||
-            String(tag, Charsets.ISO_8859_1) in setOf("true", "OTTO", "ttcf")
+    // A font file's first four bytes: the sfnt version tags, TrueType (0x00010000 or 'true'), CFF
+    // OpenType ('OTTO') and a collection ('ttcf'), plus the web wrappers WOFF ('wOFF') and WOFF2
+    // ('wOF2'). res/font holds no web font, so one of those is always foreign.
+    private fun isTypeface(head: ByteArray): Boolean {
+        if (head.size < 4) return false
+        return head.contentEquals(byteArrayOf(0, 1, 0, 0)) ||
+            String(head, Charsets.ISO_8859_1) in setOf("true", "OTTO", "ttcf", "wOFF", "wOF2")
     }
 
     private fun sha256(bytes: ByteArray): String =
@@ -582,17 +585,19 @@ androidComponents {
     }
 }
 
-/** Manifest elements that put code or a capability in the APK, each listed by its `android:name`. */
+/** Manifest elements that put a capability in the APK, each listed by its `android:name`. */
 val manifestEntryKinds = listOf(
     "uses-permission",
     "uses-permission-sdk-23",
     "permission",
-    "activity",
-    "activity-alias",
-    "service",
-    "receiver",
-    "provider",
 )
+
+/**
+ * Manifest elements that put code in the APK, each listed by its `android:name` plus what decides
+ * whether another app can reach it: `exported`, and the `permission` guarding it when one is set. A
+ * library bump that exports a listed component or drops its guard therefore changes the line.
+ */
+val manifestComponentKinds = listOf("activity", "activity-alias", "service", "receiver", "provider")
 
 tasks.register("verifyMergedManifest") {
     group = "verification"
@@ -618,16 +623,38 @@ tasks.register("verifyMergedManifest") {
 
         val shipped = sortedSetOf<String>()
         manifestEntryKinds.forEach { kind -> elements(kind).forEach { shipped += "$kind ${it.androidName()}" } }
+        manifestComponentKinds.forEach { kind ->
+            elements(kind).forEach { component ->
+                val exported = component.getAttributeNS(androidNs, "exported").ifEmpty { "unset" }
+                val permission = component.getAttributeNS(androidNs, "permission")
+                shipped += "$kind ${component.androidName()} exported=$exported" +
+                    if (permission.isEmpty()) "" else " permission=$permission"
+            }
+        }
         // Startup initializers are meta-data under androidx.startup's provider, so the provider line
         // alone would admit every initializer any later library registers.
         elements("meta-data").forEach { meta ->
             val parent = meta.parentNode as org.w3c.dom.Element
-            val kind = when {
-                parent.tagName == "application" -> "meta-data"
-                parent.androidName() == "androidx.startup.InitializationProvider" -> "initializer"
-                else -> return@forEach
-            }
+            val startup = parent.androidName() == "androidx.startup.InitializationProvider"
+            val kind = if (startup) "initializer" else "meta-data"
             shipped += "$kind ${meta.androidName()}"
+        }
+        elements("property").forEach { shipped += "property ${it.androidName()}" }
+        // Package visibility: each <queries> child widens what the app can see of other apps.
+        elements("queries").forEach { queries ->
+            val children = queries.childNodes
+            (0 until children.length).mapNotNull { children.item(it) as? org.w3c.dom.Element }.forEach { child ->
+                val target = when (child.tagName) {
+                    "provider" -> child.getAttributeNS(androidNs, "authorities")
+                    "intent" -> child.getElementsByTagName("action").let { actions ->
+                        (0 until actions.length).joinToString(",") {
+                            (actions.item(it) as org.w3c.dom.Element).androidName()
+                        }
+                    }
+                    else -> child.androidName()
+                }
+                shipped += "queries ${child.tagName} $target"
+            }
         }
 
         val listed = allowlist.asFile.readLines()

@@ -2,6 +2,7 @@ package com.checkin.app.data
 
 import com.checkin.app.data.local.DailyAggregate
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 /**
@@ -39,6 +40,13 @@ object ConsistencyStats {
      */
     fun countedThrough(summaries: Map<String, DailyAggregate>, today: LocalDate): LocalDate =
         if (showedUp(summaries, today)) today else today.minusDays(1)
+
+    /**
+     * Whether a month stepper showing [shown] may step forward: only up to the month [today] falls
+     * in, since a month that has not begun holds no day the record could cover. History's and
+     * Reports' steppers both ask here, for the arrow they draw and for the step itself.
+     */
+    fun hasMonthAfter(shown: YearMonth, today: LocalDate): Boolean = shown.isBefore(YearMonth.from(today))
 
     fun showedUpDays(summaries: Map<String, DailyAggregate>): Int = summaries.size
 
