@@ -35,17 +35,11 @@ initializer androidx.work.WorkManagerInitializer
 # androidx.profileinstaller: lets Play's installer hand over the baseline profile.
 receiver androidx.profileinstaller.ProfileInstallReceiver
 
-# androidx.work (NudgeWorker): its scheduler services, constraint receivers and permissions.
+# androidx.work (NudgeWorker): its scheduler services, receivers and permissions.
 uses-permission android.permission.ACCESS_NETWORK_STATE
 uses-permission android.permission.WAKE_LOCK
-service androidx.work.impl.background.systemalarm.SystemAlarmService
 service androidx.work.impl.background.systemjob.SystemJobService
 service androidx.work.impl.foreground.SystemForegroundService
-receiver androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy
-receiver androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy
-receiver androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy
-receiver androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy
-receiver androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver
 receiver androidx.work.impl.background.systemalarm.RescheduleReceiver
 receiver androidx.work.impl.diagnostics.DiagnosticsReceiver
 receiver androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver
