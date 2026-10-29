@@ -335,9 +335,8 @@ private fun DailyHoursCard(uiState: ReportsUiState) {
 @Composable
 private fun SplitCard(uiState: ReportsUiState) {
     val showedUp = dayColor()
-    // `outline`, not `outlineVariant`: the latter *is* `surfaceVariant` in the dark scheme, which is
-    // this card's own container, so the missed arc and its legend dot would be painted in the
-    // background and be invisible. Neutral, never red; a missed day is a fact, not a failure.
+    // `outline`, which clears 3:1 on this card's raised paper in both themes, so the missed arc and its
+    // legend dot are seen. Neutral, never red; a missed day is a fact, not a failure.
     val missed = SparkTheme.colors.outline
 
     ChartCard(title = stringResource(R.string.chart_split_title)) {
@@ -410,7 +409,6 @@ private fun MonthlyHoursCard(uiState: ReportsUiState) {
                         Text(
                             text = TimeFormat.durationShort(point.workedMs, patterns),
                             style = SparkTheme.typography.caption.highlight,
-                            fontWeight = FontWeight.SemiBold,
                         )
                     }
                 }

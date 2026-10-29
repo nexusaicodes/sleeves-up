@@ -125,7 +125,7 @@ fun AboutCard(
  * Last and centred because it is the only thing on the card that cannot be acted on: the links are
  * why someone opens About, while the version is reference material looked up when support asks for
  * it. Centring is what stops it reading as another row — the five above are left-aligned and
- * tappable, and identity is neither. Muted to `bodySmall` because it is the least useful line on the
+ * tappable, and identity is neither. Muted, in caption, because it is the least useful line on the
  * card.
  */
 @Composable

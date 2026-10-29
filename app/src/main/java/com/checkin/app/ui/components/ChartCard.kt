@@ -10,15 +10,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.adevinta.spark.SparkTheme
 import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.tokens.highlight
 
 /**
  * A [SectionCard] holding a chart: the same card, with the wider gap under the heading that a plot
@@ -37,26 +36,35 @@ fun ChartCard(title: String, subtitle: String? = null, content: @Composable Colu
 
 private val CHART_CONTENT_SPACING = 16.dp
 
+/**
+ * A swatch, a label and its count, beside a [com.checkin.app.ui.components.charts.DonutChart].
+ *
+ * **The label gives way, never the count**, as in [StatsRow]: the count is measured first and the
+ * label wraps into what is left, so at a large font scale beside the ring a long label takes a second
+ * line instead of squeezing the count out of the row.
+ */
 @Composable
 fun LegendRow(color: Color, label: String, count: Int) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.size(10.dp).background(color, CircleShape))
+        Box(modifier = Modifier.size(10.dp).background(color, SparkTheme.shapes.full))
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = label,
             style = SparkTheme.typography.body2,
             color = SparkTheme.colors.onBackgroundVariant,
+            modifier = Modifier.weight(1f, fill = false),
         )
         Spacer(modifier = Modifier.width(6.dp))
-        Text(text = "$count", style = SparkTheme.typography.body2, fontWeight = FontWeight.Bold)
+        Text(text = "$count", style = SparkTheme.typography.body2.highlight, maxLines = 1)
     }
 }
 
+/** A chart's axis label: caption, in the muted text colour, the same size as the figures beside it. */
 @Composable
 fun AxisLabel(text: String) {
     Text(
         text = text,
-        style = SparkTheme.typography.small,
+        style = SparkTheme.typography.caption,
         color = SparkTheme.colors.onBackgroundVariant,
     )
 }
@@ -90,8 +98,7 @@ fun StatsRow(label: String, value: String) {
         )
         Text(
             text = value,
-            style = SparkTheme.typography.body2,
-            fontWeight = FontWeight.SemiBold,
+            style = SparkTheme.typography.body2.highlight,
             maxLines = 1,
         )
     }

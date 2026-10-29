@@ -41,8 +41,8 @@ fun ActionRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled, onClickLabel = onClickLabel, onClick = onClick)
-            // Disabled reads as dimmed, the way Material draws a disabled control's content.
-            .alpha(if (enabled) 1f else DISABLED_ALPHA)
+            // Disabled reads as dimmed, at Spark's disabled emphasis.
+            .alpha(if (enabled) 1f else SparkTheme.colors.dim3)
             // 48dp of height is the minimum tap target; the vertical padding gets it there without
             // pinning the row, so it still grows with a large font scale.
             .padding(vertical = 14.dp),
@@ -69,5 +69,3 @@ fun ActionRow(
         }
     }
 }
-
-private const val DISABLED_ALPHA = 0.38f

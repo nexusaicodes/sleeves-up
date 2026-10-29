@@ -185,9 +185,13 @@ private val WEEKDAY_HEADER_HEIGHT = 20.dp
 /**
  * The day-detail slot, sized to whichever of its states is tallest.
  *
- * That is the placeholder rather than the sessions: `EmptyState` is 24dp of padding at each end, a
- * 48dp icon, 12dp, a title line, 4dp and a two-line message — around 176dp, against roughly 140dp
- * for a date, a summary line and three ledger rows.
+ * That is the placeholder rather than the sessions. `EmptyState` is 24dp of padding at each end, a
+ * 48dp icon, 12dp, a 24dp title line (Outfit `titleMedium`), 4dp and the message in `body2` at 20dp a
+ * line: 176dp with two lines. Two is the most it takes at the default font scale, since the longest
+ * message, "Tap a day in the calendar to see its sessions.", is 284dp of Manrope against 280dp of
+ * room on a 360dp phone (20dp screen and 24dp placeholder padding each side), and still two lines in
+ * the 232dp a 320dp phone leaves. The sessions state is a 24dp date, a 16dp summary and 4dp, then
+ * three 28dp ledger rows at a 4dp pitch: 140dp.
  *
  * It is a constant rather than a measurement because the grid above has to be sized before the slot
  * below it is laid out. **Keep it in step with [daySlotItems]** — over-stating it costs the grid height

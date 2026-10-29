@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -24,12 +23,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.adevinta.spark.SparkTheme
 import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.tokens.highlight
 import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.ui.theme.LocalTimePatterns
@@ -98,8 +97,7 @@ internal fun SessionIntervalRow(session: CheckInSession) {
             } else {
                 Text(
                     text = duration.orEmpty(),
-                    style = SparkTheme.typography.caption.tabularFigures(),
-                    fontWeight = FontWeight.SemiBold,
+                    style = SparkTheme.typography.caption.highlight.tabularFigures(),
                     color = color,
                     maxLines = 1,
                 )
@@ -135,26 +133,33 @@ private fun OngoingPulse(color: Color) {
                 modifier = Modifier
                     .size(PULSE_DOT_SIZE)
                     .alpha(if (animated) alpha else 1f)
-                    .background(color, CircleShape),
+                    .background(color, SparkTheme.shapes.full),
             )
         }
     }
 }
 
 /**
- * The amount column: wide enough for "12h 59m", so a settled duration and the pulse share one slot
- * and the figures stack instead of ragging with the range beside them.
+ * The amount column: wide enough for the widest duration a row can print, so a settled duration and
+ * the pulse share one slot and the figures stack instead of ragging with the range beside them.
+ *
+ * **Sized from the shipped fonts, not by eye.** With tabular figures every two-digit-hours duration is
+ * as wide as "12h 59m": 50.1dp in Manrope SemiBold at caption's 12sp, and 57.0dp for Arabic's
+ * "12 س 59 د" in Plex Arabic (Medium, the highlight weight, is narrower in both). [DURATION_COLUMN]
+ * is the Arabic figure plus 3dp.
  *
  * **It scales with the font, and that is not polish.** The width is `dp` while the text is `sp`, and
- * the duration is `maxLines = 1` with no ellipsis, so a fixed column at 1.5x renders 2h 15m as a flat
- * "2h" — a wrong number on screen rather than a clipped one.
+ * the duration is `maxLines = 1` with no ellipsis, so a column that holds "12h 59m" at one scale
+ * renders it as a bare "12h" at a larger one: a wrong number rather than a clipped one. Caption's 12sp
+ * still scales linearly at 2.0, the largest system font scale, so [DURATION_COLUMN_MAX] is twice the
+ * base: 114dp of Arabic duration in a 120dp column.
  *
- * The cap stops the column eating the range at the largest scales; past it the range ellipsizes,
- * which is the correct order of sacrifice — a shortened clock range still reads as one, a shortened
- * duration reads as a different duration.
+ * The range gives way instead, which is the correct order of sacrifice: a shortened clock range still
+ * reads as one, a shortened duration reads as a different duration. At 2.0 on a 360dp phone the range
+ * keeps 192dp of a 320dp row and ellipsizes.
  */
-private val DURATION_COLUMN = 56.dp
-private val DURATION_COLUMN_MAX = 88.dp
+private val DURATION_COLUMN = 60.dp
+private val DURATION_COLUMN_MAX = 120.dp
 
 @Composable
 private fun durationColumnWidth(): Dp =

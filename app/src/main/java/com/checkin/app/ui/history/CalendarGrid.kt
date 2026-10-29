@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -151,20 +149,6 @@ fun CalendarGrid(
  */
 private const val RECORDED_DAY_ALPHA = 0.40f
 
-/**
- * How far a day outside the tracked window is faded back.
- *
- * **Only the future and the days before tracking began are faded — never a day the user missed.** The
- * fade separates "no record kept" from "in the record"; applied to the past it would land on exactly
- * the empty days the record covers, and a day drawn fainter for holding nothing is a verdict, which
- * this calendar never renders. It is allowed to be colour-only because a date after today already
- * reads as the future from the number itself, and a date before the record began sits outside every
- * count the screen states.
- */
-private const val OUTSIDE_WINDOW_ALPHA = 0.38f
-
-private val CELL_SHAPE = RoundedCornerShape(8.dp)
-
 /** The selected day's ring: ink, 7:1 on a recorded cell and 11:1 on the page. */
 private val SELECTION_RING = 2.dp
 
@@ -188,15 +172,22 @@ private fun DayCell(
     // The selection is a ring over the cell's own state rather than a fill replacing it, so a
     // selected day still shows whether it was recorded, and no fill can be mistaken for a recorded
     // day's brass.
+    val cellShape = SparkTheme.shapes.small
     val selection = if (isSelected) {
-        Modifier.border(SELECTION_RING, SparkTheme.colors.onSurface, CELL_SHAPE)
+        Modifier.border(SELECTION_RING, SparkTheme.colors.onSurface, cellShape)
     } else {
         Modifier
     }
 
     val textColor = when {
         isToday -> SparkTheme.colors.main
-        isOutsideWindow -> SparkTheme.colors.onBackgroundVariant.copy(alpha = OUTSIDE_WINDOW_ALPHA)
+        // Only the future and the days before tracking began are faded, to Spark's disabled emphasis,
+        // and never a day the user missed. The fade separates "no record kept" from "in the record";
+        // applied to the past it would land on exactly the empty days the record covers, and a day
+        // drawn fainter for holding nothing is a verdict, which this calendar never renders. Colour
+        // alone is enough: a date after today reads as the future from its number, and a date before
+        // the record began sits outside every count the screen states.
+        isOutsideWindow -> SparkTheme.colors.onBackgroundVariant.copy(alpha = SparkTheme.colors.dim3)
         else -> SparkTheme.colors.onSurface
     }
 
@@ -210,7 +201,7 @@ private fun DayCell(
         modifier = modifier
             .heightIn(min = cellHeight)
             .padding(2.dp)
-            .clip(CELL_SHAPE)
+            .clip(cellShape)
             .background(bgColor)
             .then(selection)
             .clickable(onClick = onClick)
@@ -231,7 +222,7 @@ private fun DayCell(
                 Box(
                     modifier = Modifier
                         .padding(top = 2.dp)
-                        .background(SparkTheme.colors.main, CircleShape)
+                        .background(SparkTheme.colors.main, SparkTheme.shapes.full)
                         .padding(2.dp),
                 )
             }

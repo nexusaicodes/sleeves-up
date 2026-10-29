@@ -20,7 +20,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.Widgets
@@ -241,15 +240,14 @@ private fun PageDots(pageCount: Int, current: Int) {
                     .padding(horizontal = DOT_GAP)
                     .size(DOT_SIZE)
                     .background(
-                        // `outline`, not `outlineVariant`: the latter is the surface's own container
-                        // in the dark scheme and under 2:1 against the background in both, so the
-                        // companions of the active dot would not be there at all.
+                        // `outline`, the lightest line that still clears 3:1 on the page in both
+                        // themes, so the companions of the active dot are there to be counted.
                         color = if (page == current) {
                             SparkTheme.colors.main
                         } else {
                             SparkTheme.colors.outline
                         },
-                        shape = CircleShape,
+                        shape = SparkTheme.shapes.full,
                     ),
             )
         }
