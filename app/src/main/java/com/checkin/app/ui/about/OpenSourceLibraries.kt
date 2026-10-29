@@ -88,7 +88,8 @@ data class OpenSourceLibrary(
  * CameraX, except the in-app update stack: Play In-App Updates (Play Core terms) and the two Play
  * services artifacts it needs, basement and tasks (Android SDK License). Presence detection runs
  * on the camera hardware, so no ML library is on the classpath, and no other Play services
- * artifact; `OpenSourceLibrariesTest` fails if either returns. The type keeps its name though not every entry is open source.
+ * artifact; `OpenSourceLibrariesTest` fails if either returns. The type keeps its name though not
+ * every entry is open source.
  *
  * Keeping this by hand means it can drift when a dependency is added, so drift detection is
  * automated while the wording stays human. Two checks cover it: `OpenSourceLibrariesTest` guards the

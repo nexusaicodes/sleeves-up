@@ -16,7 +16,6 @@ import com.adevinta.spark.SparkFeatureFlag
 import com.adevinta.spark.SparkTheme
 import com.adevinta.spark.tokens.SparkColors
 import com.adevinta.spark.tokens.SparkFontFamily
-import com.adevinta.spark.tokens.sparkFontFamily
 import com.checkin.app.R
 import com.checkin.app.util.TimePatterns
 import com.checkin.app.util.displayLocale
@@ -81,7 +80,12 @@ fun CheckInAppTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Compos
     }
     val typography = remember(locale) { sparkTypographyFor(locale) }
     val appTypography = remember(locale) { appTypographyFor(locale) }
-    val fontFamily = sparkFontFamily(fontFamily = remember(locale) { sparkFamilyFor(locale) })
+    // Built once per locale: SparkFontFamily has no equality, so a fresh one on every recomposition
+    // (as Spark's composable sparkFontFamily() builder returns) would change LocalAppSparkFontFamily
+    // and recompose everything under the theme. No token highlighter, as the builder's default.
+    val fontFamily = remember(locale) {
+        SparkFontFamily(useSparkTokensHighlighter = false, fontFamily = sparkFamilyFor(locale))
+    }
 
     SparkTheme(
         colors = colors,
