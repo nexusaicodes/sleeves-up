@@ -85,6 +85,11 @@ class ReportsViewModel(
 
     private val refresh = MutableStateFlow(0)
 
+    // The screen's one clock: the figures and nextMonth's guard both read it, so the arrow and the
+    // step it takes cannot disagree.
+    private val day = timeSource.dayTrigger(refresh)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), timeSource.today())
+
     // Opens on the current month rather than on the whole record: the live question is the month in
     // progress, and it is the scope History opens on too.
     private val scope = MutableStateFlow<ReportScope>(ReportScope.Month(YearMonth.from(timeSource.today())))
@@ -113,7 +118,7 @@ class ReportsViewModel(
      * The tracking start is a DB read rather than a setting, so a record with no sessions behind it
      * cannot report days the user failed to show up for.
      */
-    private val statsFlow: Flow<ReportsUiState> = combine(timeSource.dayTrigger(refresh), habitId) { today, habit ->
+    private val statsFlow: Flow<ReportsUiState> = combine(day, habitId) { today, habit ->
         today to habit
     }
         .flatMapLatest { (today, habit) -> repository.trackingStartFlow(habit).map { Triple(today, habit, it) } }
@@ -249,7 +254,7 @@ class ReportsViewModel(
 
     /** Stops at the month in progress: a month that has not begun holds no day the record could cover. */
     fun nextMonth() {
-        if (!scope.value.hasMonthAfter(timeSource.today())) return
+        if (!scope.value.hasMonthAfter(day.value)) return
         scope.value = ReportScope.Month(displayedMonth().plusMonths(1))
     }
 
@@ -276,7 +281,7 @@ class ReportsViewModel(
     }
 
     private fun ReportScope.hasMonthAfter(today: LocalDate): Boolean =
-        this is ReportScope.Month && month.isBefore(YearMonth.from(today))
+        this is ReportScope.Month && ConsistencyStats.hasMonthAfter(month, today)
 
     private fun displayedMonth(): YearMonth =
         (scope.value as? ReportScope.Month)?.month ?: YearMonth.from(timeSource.today())
