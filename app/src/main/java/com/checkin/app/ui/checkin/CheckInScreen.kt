@@ -57,6 +57,7 @@ import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.service.SessionClock
 import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.SessionIntervalRow
+import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.startActionColors
 import com.checkin.app.ui.theme.stopActionColors
@@ -268,7 +269,7 @@ private fun CheckInOutButton(isRunning: Boolean, habitName: String?, onCheckIn: 
     val start = startActionColors()
     val stop = stopActionColors()
 
-    // Start/stop, read at a glance and without the label: green to check in, red to check out. The
+    // Start/stop, read at a glance and without the label: brass to check in, ink to check out. The
     // colour animates across the switch so the change reads as one control changing state rather
     // than two buttons swapping places.
     val containerColor by animateColorAsState(
@@ -308,7 +309,7 @@ private fun CheckInOutButton(isRunning: Boolean, habitName: String?, onCheckIn: 
                 isRunning -> stringResource(R.string.check_out_of, habitName)
                 else -> stringResource(R.string.check_in_to, habitName)
             },
-            style = MaterialTheme.typography.titleMedium,
+            style = LocalAppTypography.current.titleMedium,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

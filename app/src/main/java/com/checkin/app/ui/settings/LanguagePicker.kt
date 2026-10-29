@@ -30,6 +30,7 @@ import com.checkin.app.R
 import com.checkin.app.platform.LanguageSettings
 import com.checkin.app.platform.choose
 import com.checkin.app.ui.components.ActionRow
+import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.typographyFor
 import com.checkin.app.util.AppLanguage
 import java.util.Locale
@@ -91,7 +92,7 @@ internal fun LanguageRow(settings: LanguageSettings) {
 private fun LanguageDialog(current: AppLanguage?, onChoose: (AppLanguage) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.language_app)) },
+        title = { Text(stringResource(R.string.language_app), style = LocalAppTypography.current.headlineSmall) },
         text = {
             Column(modifier = Modifier.selectableGroup()) {
                 AppLanguage.entries.forEach { language ->

@@ -54,8 +54,10 @@ import com.checkin.app.ui.components.charts.BarChart
 import com.checkin.app.ui.components.charts.DonutChart
 import com.checkin.app.ui.components.charts.DonutChartDefaults
 import com.checkin.app.ui.components.charts.LineChart
+import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.dayColor
+import com.checkin.app.ui.theme.descriptiveHues
 import com.checkin.app.util.TimeFormat
 import com.checkin.app.util.withLatinDigits
 import java.util.Locale
@@ -178,7 +180,7 @@ private fun ScopeSelector(
         }
         Text(
             text = scopeLabel(scope),
-            style = MaterialTheme.typography.titleLarge,
+            style = LocalAppTypography.current.titleLarge,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
             // Two lines rather than one: at a large font scale a single line clips "August 2026" to
@@ -506,20 +508,6 @@ private fun SplitRow(values: List<Int>, colors: List<Color>, labels: List<String
         }
     }
 }
-
-/**
- * Three hues of equal visual weight for a descriptive split.
- *
- * Deliberately not the day hue at three strengths: one colour at varying alpha is an intensity ramp,
- * and a ramp says one end is more than the other. These are three different colours saying three
- * different things.
- */
-@Composable
-private fun descriptiveHues(): List<Color> = listOf(
-    MaterialTheme.colorScheme.primary,
-    MaterialTheme.colorScheme.tertiary,
-    MaterialTheme.colorScheme.secondary,
-)
 
 /** One decimal place: the figure is a rhythm, and a second digit implies a precision it lacks. */
 private fun formatAverage(value: Float): String = String.format(Locale.getDefault().withLatinDigits(), "%.1f", value)

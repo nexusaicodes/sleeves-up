@@ -41,6 +41,7 @@ import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.SessionIntervalRow
+import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.util.TimeFormat
 import java.time.YearMonth
@@ -265,7 +266,7 @@ private fun DayHeader(dateKey: String, sessions: List<CheckInSession>) {
         TimeFormat.dateKeyWithWeekday(dateKey, patterns)?.let { date ->
             Text(
                 text = date,
-                style = MaterialTheme.typography.titleMedium,
+                style = LocalAppTypography.current.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
         }
@@ -297,7 +298,7 @@ private fun MonthSelector(currentMonth: YearMonth, onPrevious: () -> Unit, onNex
         }
         Text(
             text = TimeFormat.monthYear(currentMonth, patterns),
-            style = MaterialTheme.typography.titleLarge,
+            style = LocalAppTypography.current.titleLarge,
             fontWeight = FontWeight.Bold,
         )
         IconButton(onClick = onNext) {

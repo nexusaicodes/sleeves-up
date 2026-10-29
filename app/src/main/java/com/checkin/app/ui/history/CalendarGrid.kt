@@ -1,6 +1,7 @@
 package com.checkin.app.ui.history
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -148,7 +149,7 @@ fun CalendarGrid(
  * A constant, not a figure derived from the day's hours: every day the user showed up is drawn
  * identically, whatever it held.
  */
-private const val RECORDED_DAY_ALPHA = 0.35f
+private const val RECORDED_DAY_ALPHA = 0.40f
 
 /**
  * How far a day outside the tracked window is faded back.
@@ -161,6 +162,11 @@ private const val RECORDED_DAY_ALPHA = 0.35f
  * count the screen states.
  */
 private const val OUTSIDE_WINDOW_ALPHA = 0.38f
+
+private val CELL_SHAPE = RoundedCornerShape(8.dp)
+
+/** The selected day's ring: ink, 7:1 on a recorded cell and 11:1 on the page. */
+private val SELECTION_RING = 2.dp
 
 @Composable
 private fun DayCell(
@@ -177,14 +183,18 @@ private fun DayCell(
     // A day with no sessions gets no shade at all: an empty cell, not a coloured failure.
     val dayShade = dayColor().copy(alpha = RECORDED_DAY_ALPHA)
 
-    val bgColor = when {
-        isSelected -> MaterialTheme.colorScheme.primaryContainer
-        summary != null -> dayShade
-        else -> Color.Transparent
+    val bgColor = if (summary != null) dayShade else Color.Transparent
+
+    // The selection is a ring over the cell's own state rather than a fill replacing it, so a
+    // selected day still shows whether it was recorded, and no fill can be mistaken for a recorded
+    // day's brass.
+    val selection = if (isSelected) {
+        Modifier.border(SELECTION_RING, MaterialTheme.colorScheme.onSurface, CELL_SHAPE)
+    } else {
+        Modifier
     }
 
     val textColor = when {
-        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
         isToday -> MaterialTheme.colorScheme.primary
         isOutsideWindow -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = OUTSIDE_WINDOW_ALPHA)
         else -> MaterialTheme.colorScheme.onSurface
@@ -200,8 +210,9 @@ private fun DayCell(
         modifier = modifier
             .heightIn(min = cellHeight)
             .padding(2.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(CELL_SHAPE)
             .background(bgColor)
+            .then(selection)
             .clickable(onClick = onClick)
             .semantics { contentDescription = cellDescription },
         contentAlignment = Alignment.Center,

@@ -31,6 +31,7 @@ import com.checkin.app.ui.checkin.CheckInViewModel
 import com.checkin.app.ui.components.LocalSnackbarHostState
 import com.checkin.app.ui.habits.HabitsViewModel
 import com.checkin.app.ui.presence.PresenceGate
+import com.checkin.app.ui.theme.LocalAppTypography
 import kotlinx.coroutines.launch
 
 /**
@@ -119,7 +120,14 @@ private fun AppTopBar(currentScreen: Screen, onBack: (() -> Unit)?, actions: @Co
     // Start-aligned, so the title and the habit switcher at the end each keep their own side rather
     // than the title being centred in whatever width the switcher leaves.
     TopAppBar(
-        title = { Text(stringResource(currentScreen.titleRes), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        title = {
+            Text(
+                stringResource(currentScreen.titleRes),
+                style = LocalAppTypography.current.titleLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
         actions = actions,
         navigationIcon = {
             if (onBack != null) {

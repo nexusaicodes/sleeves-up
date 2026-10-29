@@ -84,7 +84,7 @@ The hook only runs when Kotlin is staged, and always refuses to commit a keystor
 
 ## Tech
 
-Kotlin · Jetpack Compose (Material 3, fixed indigo theme, light + dark) · Room via KSP · a
+Kotlin · Jetpack Compose (Spark over Material 3, a fixed ink-and-brass theme, light + dark) · Room via KSP · a
 `specialUse` foreground service for the live timer notification · CameraX + Camera2 HAL face
 detection · BiometricPrompt fallback · WorkManager. MVVM, one reactive `UiState` per screen, manual
 DI (`AppContainer`). See [`CLAUDE.md`](CLAUDE.md) for architecture, conventions and non-obvious

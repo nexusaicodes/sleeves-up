@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.ui.components.BrandGrid
 import com.checkin.app.ui.theme.CheckInAppTheme
+import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.tabularFigures
 import com.checkin.app.util.MILLIS_PER_HOUR
@@ -101,13 +102,13 @@ fun CheckOutCelebration(completed: CheckOutSignal.Completed, onDismiss: () -> Un
             }
             Text(
                 text = titleText,
-                style = MaterialTheme.typography.headlineSmall,
+                style = LocalAppTypography.current.headlineSmall,
                 color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = sessionText,
-                style = MaterialTheme.typography.displaySmall.tabularFigures(),
+                style = LocalAppTypography.current.displaySmall.tabularFigures(),
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,

@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.checkin.app.ui.theme.LocalAppTypography
 
 /**
  * The app's one full-screen message: an icon, a title, a paragraph, and whatever the caller puts
@@ -55,7 +56,7 @@ fun FullScreenMessage(
         Spacer(modifier = Modifier.height(ICON_TO_TITLE_GAP))
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall,
+            style = LocalAppTypography.current.headlineSmall,
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(TITLE_TO_BODY_GAP))
@@ -105,7 +106,7 @@ fun FullScreenAction(text: String, onClick: () -> Unit, modifier: Modifier = Mod
             .heightIn(min = ACTION_MIN_HEIGHT),
         shape = RoundedCornerShape(ACTION_CORNER),
     ) {
-        Text(text = text, style = MaterialTheme.typography.titleMedium)
+        Text(text = text, style = LocalAppTypography.current.titleMedium)
     }
 }
 

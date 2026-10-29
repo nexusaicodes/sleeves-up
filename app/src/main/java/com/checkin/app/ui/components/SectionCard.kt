@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.checkin.app.ui.theme.LocalAppTypography
 
 /**
  * A titled block on a settings-style list. The heading is a plain [Text] rather than a top app bar
@@ -42,7 +43,7 @@ fun SectionCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = LocalAppTypography.current.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             if (subtitle != null) {
@@ -61,11 +62,9 @@ fun SectionCard(
 /**
  * A rule between groups of rows inside a [SectionCard], with its own spacing.
  *
- * Never a bare `HorizontalDivider`: that defaults to `outlineVariant`, which in the dark brand
- * scheme is the same value as the `surfaceVariant` this card fills with — 1.00:1, an
- * invisible line whose margins read as an unexplained gap. `outline` at half alpha clears it in
- * both themes (about 1.75:1 on the card) while staying a rule rather than a border; full `outline`
- * reads heavier than the rows it separates.
+ * Never a bare `HorizontalDivider`: that defaults to `outlineVariant`, which Spark's bridge sets to
+ * `outlineHigh`, the ink the text is drawn in — the heaviest line in the app, louder than the rows it
+ * separates. `outline` at half alpha stays a rule rather than a border, close to mudda's hairline.
  */
 @Composable
 fun SectionDivider() {

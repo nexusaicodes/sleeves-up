@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.ui.habits.HabitsUiState
+import com.checkin.app.ui.theme.LocalAppTypography
 
 /**
  * The habit switcher in the top bar: the habit every tab is showing, in the title's own type so the
@@ -49,7 +50,7 @@ internal fun HabitSwitcher(state: HabitsUiState, onOpen: () -> Unit, onLocked: (
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = selectedName,
-                style = MaterialTheme.typography.titleLarge,
+                style = LocalAppTypography.current.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

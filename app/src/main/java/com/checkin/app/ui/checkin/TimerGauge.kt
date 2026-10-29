@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.checkin.app.R
 import com.checkin.app.ui.components.BrandGridGauge
 import com.checkin.app.ui.theme.CheckInAppTheme
+import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.tabularFigures
 import com.checkin.app.util.MILLIS_PER_HOUR
@@ -98,9 +99,9 @@ internal fun TimerGauge(elapsedMs: Long, running: Boolean, markSize: Dp = MARK_M
             // the screen scrolls anyway and the smaller style simply buys room; and a font scale at
             // which the larger one no longer fits a narrow phone on one line.
             style = if (markSize < MARK_MIN || LocalDensity.current.fontScale >= READOUT_SHRINK_SCALE) {
-                MaterialTheme.typography.headlineMedium
+                LocalAppTypography.current.headlineMedium
             } else {
-                MaterialTheme.typography.displayMedium
+                LocalAppTypography.current.displayMedium
             }.tabularFigures(),
             fontWeight = FontWeight.Bold,
             maxLines = 1,

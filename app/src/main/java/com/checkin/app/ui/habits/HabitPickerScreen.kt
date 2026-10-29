@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -20,6 +19,7 @@ import com.checkin.app.R
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.SectionCard
 import com.checkin.app.ui.components.SectionDivider
+import com.checkin.app.ui.theme.LocalAppTypography
 
 /**
  * Which habit a check-in is for, asked when the home-screen widget's one button is pressed with more
@@ -53,7 +53,7 @@ fun HabitPickerScreen(active: List<HabitEntry>, onPick: (habitId: Long) -> Unit,
                 item {
                     Text(
                         text = stringResource(R.string.habit_picker_title),
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = LocalAppTypography.current.headlineSmall,
                         modifier = Modifier.padding(horizontal = 4.dp),
                     )
                 }

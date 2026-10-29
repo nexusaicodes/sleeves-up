@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.checkin.app.ui.theme.CheckInAppTheme
+import com.checkin.app.ui.theme.LocalAppTypography
 
 /**
  * Friendly empty / first-run placeholder: an icon over a title, and a short message where one adds
@@ -60,7 +61,7 @@ fun EmptyState(
             modifier = Modifier.size(48.dp),
         )
         Spacer(Modifier.height(12.dp))
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text(title, style = LocalAppTypography.current.titleMedium, fontWeight = FontWeight.SemiBold)
         if (message != null) {
             Spacer(Modifier.height(4.dp))
             Text(

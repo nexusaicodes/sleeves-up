@@ -46,6 +46,7 @@ import com.checkin.app.data.HabitRules
 import com.checkin.app.data.NameProblem
 import com.checkin.app.ui.components.ReminderTimePicker
 import com.checkin.app.ui.components.reminderTimeSummary
+import com.checkin.app.ui.theme.LocalAppTypography
 
 /**
  * A habit's name and reminder time, as one pair of fields. Every place a habit is created or named —
@@ -99,7 +100,7 @@ fun HabitFields(
             )
         } else {
             val label = stringResource(R.string.habit_name_label)
-            val titleStyle = MaterialTheme.typography.headlineSmall.copy(textAlign = TextAlign.Center)
+            val titleStyle = LocalAppTypography.current.headlineSmall.copy(textAlign = TextAlign.Center)
             TextField(
                 value = name,
                 onValueChange = onNameChange,
@@ -209,7 +210,7 @@ fun HabitEditorDialog(
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = { Text(title, style = LocalAppTypography.current.headlineSmall) },
         text = {
             HabitFields(
                 name = name,
