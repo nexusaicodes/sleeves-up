@@ -84,3 +84,34 @@ style:
     excludeGuardClauses: true
   ThrowsCount:
     max: 3
+  ForbiddenImport:
+    # Spark components that break a product rule in CLAUDE.md, and Spark-bundled machinery whose
+    # manifest entries are removed. A ban is by package, so it holds for every component a later
+    # Spark release adds there; re-check the package names on any Spark bump. `*` spans
+    # subpackages (progress.tracker, meter.circular). A wildcard import of a banned package is not
+    # matched here; WildcardImport (detekt's default) and ktlint refuse it instead. A fully qualified
+    # name with no import is seen by neither.
+    active: true
+    imports:
+      - value: 'com.adevinta.spark.components.progress.*'
+        reason: 'Hours have no direction: no gauge, meter, progress or tracker. Includes Spinner.'
+      - value: 'com.adevinta.spark.components.progressbar.*'
+        reason: 'Hours have no direction: no gauge, meter, progress or tracker.'
+      - value: 'com.adevinta.spark.components.gauge.*'
+        reason: 'Hours have no direction: no gauge, meter, progress or tracker.'
+      - value: 'com.adevinta.spark.components.meter.*'
+        reason: 'Hours have no direction: no gauge, meter, progress or tracker.'
+      - value: 'com.adevinta.spark.components.rating.*'
+        reason: 'Grades a day or a habit.'
+      - value: 'com.adevinta.spark.components.badge.*'
+        reason: 'A count per habit ranks habits.'
+      - value: 'com.adevinta.spark.components.stepper.*'
+        reason: 'Nothing in the app takes a number; a stepper invites a target.'
+      - value: 'com.adevinta.spark.components.slider.*'
+        reason: 'Nothing in the app takes a number; a slider invites a target.'
+      - value: 'com.adevinta.spark.components.fileupload.*'
+        reason: "FileKit's provider and initializer are removed from the manifest."
+      - value: 'com.adevinta.spark.components.image.*'
+        reason: 'Coil-backed; the app loads no images.'
+      - value: 'org.jetbrains.compose.resources.*'
+        reason: 'AndroidContextProvider is removed from the manifest, so a Compose Resources read throws.'
