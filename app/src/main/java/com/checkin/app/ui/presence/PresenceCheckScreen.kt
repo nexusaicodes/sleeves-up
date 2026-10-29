@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -50,13 +49,13 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.adevinta.spark.SparkTheme
 import com.adevinta.spark.components.buttons.Button
 import com.adevinta.spark.components.buttons.Tertiary
-import com.adevinta.spark.components.icons.Icon
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.icons.Cross
 import com.adevinta.spark.icons.LeboncoinIcons
 import com.adevinta.spark.icons.LockOutline
 import com.adevinta.spark.icons.SparkIcon
 import com.checkin.app.R
+import com.checkin.app.ui.components.AppIconButton
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.atomic.AtomicBoolean
@@ -273,19 +272,15 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
             modifier = Modifier.fillMaxSize(),
         )
 
-        IconButton(
+        AppIconButton(
+            icon = LeboncoinIcons.Cross,
+            contentDescription = stringResource(R.string.presence_dismiss),
             onClick = onDismiss,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .statusBarsPadding()
                 .padding(16.dp),
-        ) {
-            Icon(
-                LeboncoinIcons.Cross,
-                contentDescription = stringResource(R.string.presence_dismiss),
-                tint = SparkTheme.colors.onSurface,
-            )
-        }
+        )
 
         Column(
             modifier = Modifier

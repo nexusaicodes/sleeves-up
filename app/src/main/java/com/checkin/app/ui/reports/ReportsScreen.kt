@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,7 +31,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.adevinta.spark.SparkTheme
 import com.adevinta.spark.components.buttons.Button
 import com.adevinta.spark.components.buttons.Primary
-import com.adevinta.spark.components.icons.Icon
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.icons.DownloadFileOutline
 import com.adevinta.spark.icons.GraphOutline
@@ -42,6 +40,7 @@ import com.checkin.app.R
 import com.checkin.app.data.SessionBand
 import com.checkin.app.data.StartBucket
 import com.checkin.app.platform.ExportResult
+import com.checkin.app.ui.components.AppIconButton
 import com.checkin.app.ui.components.AppIcons
 import com.checkin.app.ui.components.AxisLabel
 import com.checkin.app.ui.components.ChartCard
@@ -172,12 +171,12 @@ private fun ScopeSelector(
     ) {
         // The steppers hold their slot under all time rather than vanishing, so the row does not
         // reflow around the toggle every time it is pressed.
-        IconButton(onClick = onPrevious, enabled = !allTime) {
-            Icon(
-                AppIcons.ChevronStart,
-                contentDescription = stringResource(R.string.previous_month),
-            )
-        }
+        AppIconButton(
+            icon = AppIcons.ChevronStart,
+            contentDescription = stringResource(R.string.previous_month),
+            onClick = onPrevious,
+            enabled = !allTime,
+        )
         Text(
             text = scopeLabel(scope),
             style = LocalAppTypography.current.titleLarge,
@@ -189,12 +188,12 @@ private fun ScopeSelector(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        IconButton(onClick = onNext, enabled = !allTime) {
-            Icon(
-                AppIcons.ChevronEnd,
-                contentDescription = stringResource(R.string.next_month),
-            )
-        }
+        AppIconButton(
+            icon = AppIcons.ChevronEnd,
+            contentDescription = stringResource(R.string.next_month),
+            onClick = onNext,
+            enabled = !allTime,
+        )
         FilterChip(
             selected = allTime,
             onClick = onToggleAllTime,

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.adevinta.spark.SparkTheme
 import com.adevinta.spark.components.buttons.Button
 import com.adevinta.spark.components.buttons.Ghost
+import com.adevinta.spark.components.iconbuttons.IconButtonIntent
 import com.adevinta.spark.components.icons.Icon
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.icons.BoxOutline
@@ -40,6 +40,7 @@ import com.checkin.app.data.local.Habit
 import com.checkin.app.data.repository.ArchiveResult
 import com.checkin.app.notify.nudge.NudgeSchedule
 import com.checkin.app.ui.components.ActionRow
+import com.checkin.app.ui.components.AppIconButton
 import com.checkin.app.ui.components.LocalSnackbarHostState
 import com.checkin.app.ui.components.SectionCard
 import com.checkin.app.ui.components.SectionDivider
@@ -202,16 +203,16 @@ private fun HabitRow(
         // tap target beside it stays the habit itself.
         Box {
             var menuOpen by rememberSaveable { mutableStateOf(false) }
-            IconButton(onClick = { menuOpen = true }) {
-                Icon(
-                    sparkIcon = LeboncoinIcons.ThreeDotsVertical,
-                    contentDescription = stringResource(
-                        R.string.habit_more_actions,
-                        habit.name ?: stringResource(R.string.habit_unnamed),
-                    ),
-                    tint = SparkTheme.colors.onBackgroundVariant,
-                )
-            }
+            // Neutral is the muted ink, so the overflow mark stays quieter than the name it follows.
+            AppIconButton(
+                icon = LeboncoinIcons.ThreeDotsVertical,
+                contentDescription = stringResource(
+                    R.string.habit_more_actions,
+                    habit.name ?: stringResource(R.string.habit_unnamed),
+                ),
+                onClick = { menuOpen = true },
+                intent = IconButtonIntent.Neutral,
+            )
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.habit_edit)) },

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
@@ -30,13 +29,13 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.adevinta.spark.SparkTheme
-import com.adevinta.spark.components.icons.Icon
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.icons.CalendarDotOutline
 import com.adevinta.spark.icons.LeboncoinIcons
 import com.adevinta.spark.tokens.highlight
 import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
+import com.checkin.app.ui.components.AppIconButton
 import com.checkin.app.ui.components.AppIcons
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.EmptyState
@@ -290,22 +289,20 @@ private fun MonthSelector(currentMonth: YearMonth, onPrevious: () -> Unit, onNex
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onPrevious) {
-            Icon(
-                AppIcons.ChevronStart,
-                contentDescription = stringResource(R.string.previous_month),
-            )
-        }
+        AppIconButton(
+            icon = AppIcons.ChevronStart,
+            contentDescription = stringResource(R.string.previous_month),
+            onClick = onPrevious,
+        )
         Text(
             text = TimeFormat.monthYear(currentMonth, patterns),
             style = LocalAppTypography.current.titleLarge,
             fontWeight = FontWeight.Bold,
         )
-        IconButton(onClick = onNext) {
-            Icon(
-                AppIcons.ChevronEnd,
-                contentDescription = stringResource(R.string.next_month),
-            )
-        }
+        AppIconButton(
+            icon = AppIcons.ChevronEnd,
+            contentDescription = stringResource(R.string.next_month),
+            onClick = onNext,
+        )
     }
 }

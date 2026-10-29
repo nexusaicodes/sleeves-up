@@ -3,7 +3,6 @@ package com.checkin.app.ui.navigation
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -19,13 +18,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.adevinta.spark.components.icons.Icon
 import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.ui.AppUpdateOffer
 import com.checkin.app.ui.ForfeitUpdateCheck
 import com.checkin.app.ui.UpdateCheckTurn
 import com.checkin.app.ui.checkin.CheckInViewModel
+import com.checkin.app.ui.components.AppIconButton
 import com.checkin.app.ui.components.AppIcons
 import com.checkin.app.ui.components.LocalSnackbarHostState
 import com.checkin.app.ui.habits.HabitsViewModel
@@ -130,12 +129,11 @@ private fun AppTopBar(currentScreen: Screen, onBack: (() -> Unit)?, actions: @Co
         actions = actions,
         navigationIcon = {
             if (onBack != null) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        sparkIcon = AppIcons.Back,
-                        contentDescription = stringResource(R.string.nav_back),
-                    )
-                }
+                AppIconButton(
+                    icon = AppIcons.Back,
+                    contentDescription = stringResource(R.string.nav_back),
+                    onClick = onBack,
+                )
             }
         },
     )
