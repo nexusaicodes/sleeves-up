@@ -80,6 +80,25 @@ class ReportsViewModelTest {
         assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
     }
 
+    /** The switch lands on the month in progress from a stepped-to month too, not only from all time. */
+    @Test
+    fun `switching habits from a stepped-to month returns to the current month`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        val habitDao = FakeHabitDao()
+        val appState = FakeAppStateDao()
+        val time = FakeTimeSource(0L, LocalDate.of(2026, 6, 15))
+        val writing = (HabitRepository(habitDao, appState, dao, time).create("Writing") as HabitEdit.Saved).habit
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), time, habitDao, appState)
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        repeat(2) { viewModel.previousMonth() }
+        advanceUntilIdle()
+
+        appState.selected.value = writing.id
+        advanceUntilIdle()
+
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+    }
+
     /** The file is the habit's record alone, and names it, since nothing inside the file says which. */
     @Test
     fun `an export writes the selected habit's days and names it`() = runTest {

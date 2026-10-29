@@ -96,7 +96,7 @@ class ReportsViewModel(
     // the pipeline rebuilds for the new habit, so the switch is one rebuild rather than two, and
     // nothing holds the subscription open while the tab is off screen.
     private val habitId = habits.selectedHabitIdFlow().onEach { id ->
-        if (shownHabitId != null && id != shownHabitId) selectMonth()
+        if (shownHabitId != null && id != shownHabitId) showCurrentMonth()
         shownHabitId = id
     }
 
@@ -259,6 +259,11 @@ class ReportsViewModel(
      */
     fun selectMonth() {
         if (scope.value is ReportScope.Month) return
+        showCurrentMonth()
+    }
+
+    /** The month in progress, from either scope: where the tab opens, and where a habit switch lands. */
+    private fun showCurrentMonth() {
         scope.value = ReportScope.Month(YearMonth.from(timeSource.today()))
     }
 
