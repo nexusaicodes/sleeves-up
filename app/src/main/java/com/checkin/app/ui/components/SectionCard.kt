@@ -1,20 +1,21 @@
 package com.checkin.app.ui.components
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.card.Card
+import com.adevinta.spark.components.divider.DividerIntent
+import com.adevinta.spark.components.divider.HorizontalDivider
 import com.adevinta.spark.components.text.Text
 import com.checkin.app.ui.theme.LocalAppTypography
 
@@ -34,42 +35,43 @@ fun SectionCard(
     contentSpacing: Dp = 12.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
+    // Flat, never Highlight: a highlighted card's border is the accent, vermilion, which the app
+    // never draws as a verdict.
+    Card.Flat(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = SparkTheme.colors.backgroundVariant,
-        ),
+        colors = SparkTheme.colors.backgroundVariant,
+        contentPadding = PaddingValues(16.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            text = title,
+            style = LocalAppTypography.current.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        if (subtitle != null) {
             Text(
-                text = title,
-                style = LocalAppTypography.current.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                text = subtitle,
+                style = SparkTheme.typography.small,
+                color = SparkTheme.colors.onBackgroundVariant,
             )
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    style = SparkTheme.typography.small,
-                    color = SparkTheme.colors.onBackgroundVariant,
-                )
-            }
-            Spacer(modifier = Modifier.height(contentSpacing))
-            content()
         }
+        Spacer(modifier = Modifier.height(contentSpacing))
+        content()
     }
 }
 
 /**
  * A rule between groups of rows inside a [SectionCard], with its own spacing.
  *
- * Never a bare `HorizontalDivider`: that defaults to `outlineVariant`, which Spark's bridge sets to
- * `outlineHigh`, the ink the text is drawn in — the heaviest line in the app, louder than the rows it
- * separates. `outline` at half alpha stays a rule rather than a border, close to mudda's hairline.
+ * Spark's divider in its `Outline` intent, at half alpha: a rule rather than a border, close to
+ * mudda's hairline. Never `OutlineHigh`, the ink the text is drawn in — the heaviest line in the
+ * app, louder than the rows it separates.
  */
 @Composable
 fun SectionDivider() {
     HorizontalDivider(
-        modifier = Modifier.padding(vertical = 8.dp),
-        color = SparkTheme.colors.outline.copy(alpha = 0.5f),
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .alpha(0.5f),
+        intent = DividerIntent.Outline,
     )
 }
