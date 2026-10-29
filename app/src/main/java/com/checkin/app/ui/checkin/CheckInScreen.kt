@@ -1,6 +1,5 @@
 package com.checkin.app.ui.checkin
 
-import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -19,10 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,6 +41,9 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.ButtonSize
+import com.adevinta.spark.components.buttons.Primary
 import com.adevinta.spark.components.icons.Icon
 import com.adevinta.spark.components.surface.Surface
 import com.adevinta.spark.components.text.Text
@@ -61,6 +60,7 @@ import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.SessionIntervalRow
 import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.LocalTimePatterns
+import com.checkin.app.ui.theme.SparkColorScope
 import com.checkin.app.ui.theme.startActionColors
 import com.checkin.app.ui.theme.stopActionColors
 import com.checkin.app.util.TimeFormat
@@ -266,9 +266,6 @@ private val SESSION_LIST_MIN = 96.dp
 // The mark's three sizes, the gap and the readout's height are the remaining terms in this budget
 // and live in TimerGauge.kt, beside the composable they size.
 
-// Still Material 3: Spark buttons take no colours, so the start/stop colouring moves to a Spark
-// Button.Primary inside a scoped colour copy in its own stage, ui/check-in-button (plan PR 6.1).
-@SuppressLint("MaterialComposableHasSparkReplacement")
 @Composable
 private fun CheckInOutButton(isRunning: Boolean, habitName: String?, onCheckIn: () -> Unit, onCheckOut: () -> Unit) {
     val start = startActionColors()
@@ -286,39 +283,46 @@ private fun CheckInOutButton(isRunning: Boolean, habitName: String?, onCheckIn: 
         label = "checkButtonContent",
     )
 
-    Button(
-        onClick = if (isRunning) onCheckOut else onCheckIn,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(ACTION_HEIGHT),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = containerColor,
-            contentColor = contentColor,
-        ),
-        shape = RoundedCornerShape(16.dp),
-    ) {
-        Icon(
-            if (isRunning) LeboncoinIcons.Export else LeboncoinIcons.Import,
-            contentDescription = null, // decorative — the button's text label conveys the action
-            modifier = Modifier.size(28.dp),
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        // Names the habit, because the switcher is the only other place that says which record this
-        // button writes to. One line, ellipsized: the button's height is a term in this screen's fit
-        // budget, so a long name gives way rather than growing it. Bare only for a habit still owed a
-        // name, which the first-run naming step keeps from ever reaching this screen.
-        Text(
-            text = when {
-                habitName == null && isRunning -> stringResource(R.string.check_out)
-                habitName == null -> stringResource(R.string.check_in)
-                isRunning -> stringResource(R.string.check_out_of, habitName)
-                else -> stringResource(R.string.check_in_to, habitName)
-            },
-            style = LocalAppTypography.current.titleMedium,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+    // Spark buttons take no colours: Button.Primary draws in main/onMain, so a scoped copy of the
+    // theme's colours is how this one control takes the start/stop pair. Spark draws whatever colour
+    // it is handed without animating it again, so the transition above is the only one.
+    SparkColorScope(transform = { copy(main = containerColor, onMain = contentColor) }) {
+        Button.Primary(
+            onClick = if (isRunning) onCheckOut else onCheckIn,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(ACTION_HEIGHT),
+            size = ButtonSize.Large,
+        ) {
+            // In the content rather than Spark's icon slot, which draws 16dp: this is the screen's
+            // one action, and its mark is sized to the 64dp button.
+            Icon(
+                if (isRunning) LeboncoinIcons.Export else LeboncoinIcons.Import,
+                contentDescription = null, // decorative — the button's text label conveys the action
+                modifier = Modifier
+                    .size(28.dp)
+                    .align(Alignment.CenterVertically),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            // Names the habit, because the switcher is the only other place that says which record
+            // this button writes to. One line, ellipsized: the button's height is a term in this
+            // screen's fit budget, so a long name gives way rather than growing it. Bare only for a
+            // habit still owed a name, which the first-run naming step keeps from ever reaching this
+            // screen.
+            Text(
+                text = when {
+                    habitName == null && isRunning -> stringResource(R.string.check_out)
+                    habitName == null -> stringResource(R.string.check_in)
+                    isRunning -> stringResource(R.string.check_out_of, habitName)
+                    else -> stringResource(R.string.check_in_to, habitName)
+                },
+                modifier = Modifier.align(Alignment.CenterVertically),
+                style = LocalAppTypography.current.titleMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

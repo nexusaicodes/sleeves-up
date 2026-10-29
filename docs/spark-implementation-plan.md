@@ -277,6 +277,12 @@ Each is small, design-led, and judged on device before the next. Design 6 phase 
 3. **`ui/presence-scrim`**: a `SparkTheme.colors.scrim`-based container behind `PresenceCheckScreen`'s hint and fallback, so white text over a bright preview reads at 4.5:1. Measure it over a white wall.
 4. **`ui/gauge-type`**: the readout (`AppTypography.display`/`headline` with `tnum`, step-down unchanged), the celebration's type, and `BrandGrid`'s colours (`primary` → `SparkTheme.colors.main`; the geometry never takes a Spark shape token, design 2.4).
 
+**Done** on `plan/spark-migration`, one commit per item. What each found:
+- **6.1, the Check-In button.** `Button.Primary(size = ButtonSize.Large)` inside `SparkColorScope { copy(main = container, onMain = content) }`, with `Modifier.height(ACTION_HEIGHT)` (64dp) winning over the Large size's 56dp `defaultMinSize`; the shape is Spark's pill. The `@SuppressLint` and its comment are gone, and M3's `Button`/`ButtonDefaults` are no longer imported anywhere in `src/main`.
+  - **The two animations cannot stack**, so the outer spec stays the default spring rather than `snap()`. Read in M3 1.4.0's bytecode (the version Spark resolves): `ButtonColors.containerColor(enabled)` returns a plain colour and `ButtonKt` calls no `animateColor*`, so the button draws each frame's scoped `main` as given. The device check is now only that the change looks as before.
+  - **The icon stays 28dp, in the content row** rather than Spark's `icon` slot, which draws 16dp (S`buttons/Button.kt:228`) and would be lost on a 64dp button. Spark's content `Row` is top-aligned, so icon and label each take `align(CenterVertically)`. `Import`/`Export` stay unmirrored (PR 3: symmetric about the vertical axis).
+  - The label keeps `AppTypography.titleMedium` Bold, one line, ellipsized. `FIXED_CONTENT_HEIGHT` is unchanged: the button is still 64dp tall.
+
 ### PR 7 — `ui/spark-off-compose`: surfaces Spark cannot reach
 
 Design 5's table, executed:
