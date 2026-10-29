@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +26,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.ui.theme.CheckInAppTheme
@@ -86,8 +86,8 @@ fun CalendarGrid(
                     text = day.getDisplayName(TextStyle.NARROW, locale),
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = SparkTheme.typography.small,
+                    color = SparkTheme.colors.onBackgroundVariant,
                 )
             }
         }
@@ -189,15 +189,15 @@ private fun DayCell(
     // selected day still shows whether it was recorded, and no fill can be mistaken for a recorded
     // day's brass.
     val selection = if (isSelected) {
-        Modifier.border(SELECTION_RING, MaterialTheme.colorScheme.onSurface, CELL_SHAPE)
+        Modifier.border(SELECTION_RING, SparkTheme.colors.onSurface, CELL_SHAPE)
     } else {
         Modifier
     }
 
     val textColor = when {
-        isToday -> MaterialTheme.colorScheme.primary
-        isOutsideWindow -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = OUTSIDE_WINDOW_ALPHA)
-        else -> MaterialTheme.colorScheme.onSurface
+        isToday -> SparkTheme.colors.main
+        isOutsideWindow -> SparkTheme.colors.onBackgroundVariant.copy(alpha = OUTSIDE_WINDOW_ALPHA)
+        else -> SparkTheme.colors.onSurface
     }
 
     // The shade says only that the day has a session, so the hours are stated here rather than left
@@ -223,7 +223,7 @@ private fun DayCell(
         ) {
             Text(
                 text = day.toString(),
-                style = MaterialTheme.typography.bodyMedium,
+                style = SparkTheme.typography.body2,
                 fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
                 color = textColor,
             )
@@ -231,7 +231,7 @@ private fun DayCell(
                 Box(
                     modifier = Modifier
                         .padding(top = 2.dp)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        .background(SparkTheme.colors.main, CircleShape)
                         .padding(2.dp),
                 )
             }

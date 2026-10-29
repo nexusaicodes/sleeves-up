@@ -5,11 +5,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,6 +15,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.icons.LockOutline
+import com.adevinta.spark.icons.SparkIcon
 import com.checkin.app.R
 import com.checkin.app.ui.habits.HabitsUiState
 import com.checkin.app.ui.theme.LocalAppTypography
@@ -51,7 +53,7 @@ internal fun HabitSwitcher(state: HabitsUiState, onOpen: () -> Unit, onLocked: (
             Text(
                 text = selectedName,
                 style = LocalAppTypography.current.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = SparkTheme.colors.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 // Room for a tab title beside it; a name past this ellipsizes.
@@ -59,7 +61,7 @@ internal fun HabitSwitcher(state: HabitsUiState, onOpen: () -> Unit, onLocked: (
             )
             Spacer(modifier = Modifier.width(6.dp))
             Icon(
-                imageVector = if (locked) Icons.Default.Lock else Icons.Default.SwapHoriz,
+                sparkIcon = if (locked) LeboncoinIcons.LockOutline else SparkIcon.Vector(Icons.Default.SwapHoriz),
                 contentDescription = null,
             )
         }

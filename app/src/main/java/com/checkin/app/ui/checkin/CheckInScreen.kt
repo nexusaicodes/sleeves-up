@@ -20,17 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Login
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,6 +43,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.surface.Surface
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.ChevronHorizontalDown
+import com.adevinta.spark.icons.ChevronHorizontalUp
+import com.adevinta.spark.icons.Export
+import com.adevinta.spark.icons.Import
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.tokens.highlight
 import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.service.SessionClock
@@ -159,8 +160,8 @@ fun CheckInScreen(
         ) {
             Text(
                 text = TimeFormat.dateKeyWithWeekday(uiState.todayDateKey, LocalTimePatterns.current).orEmpty(),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = SparkTheme.typography.body2.highlight,
+                color = SparkTheme.colors.onBackgroundVariant,
             )
 
             // Splits the free space ~0.6 : 1 above and below the gauge, which drops it roughly 15%
@@ -186,7 +187,7 @@ fun CheckInScreen(
                 else -> EmptyState(
                     icon = painterResource(R.drawable.ic_stat_checkin),
                     title = stringResource(R.string.empty_checkin_title),
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = SparkTheme.colors.main,
                 )
             }
 
@@ -293,7 +294,7 @@ private fun CheckInOutButton(isRunning: Boolean, habitName: String?, onCheckIn: 
         shape = RoundedCornerShape(16.dp),
     ) {
         Icon(
-            if (isRunning) Icons.AutoMirrored.Filled.Logout else Icons.AutoMirrored.Filled.Login,
+            if (isRunning) LeboncoinIcons.Export else LeboncoinIcons.Import,
             contentDescription = null, // decorative — the button's text label conveys the action
             modifier = Modifier.size(28.dp),
         )
@@ -341,9 +342,9 @@ private fun TodaySessions(
         // day's total reads as a figure this way instead of as a list header with a chevron.
         Surface(
             onClick = onToggle,
-            shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            shape = SparkTheme.shapes.extraLarge,
+            color = SparkTheme.colors.backgroundVariant,
+            contentColor = SparkTheme.colors.onBackgroundVariant,
             // Height goes on the Surface and the tighter padding inside it, so the pill can look
             // compact without its touch target dropping below the 48dp minimum.
             modifier = Modifier.heightIn(min = MIN_TOUCH_TARGET),
@@ -359,10 +360,14 @@ private fun TodaySessions(
                         pluralStringResource(R.plurals.sessions_count, sessions.size, sessions.size),
                         TimeFormat.durationShort(total, patterns),
                     ),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = SparkTheme.typography.body2,
                 )
                 Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    sparkIcon = if (expanded) {
+                        LeboncoinIcons.ChevronHorizontalUp
+                    } else {
+                        LeboncoinIcons.ChevronHorizontalDown
+                    },
                     contentDescription = stringResource(
                         if (expanded) R.string.cd_collapse_sessions else R.string.cd_expand_sessions,
                     ),

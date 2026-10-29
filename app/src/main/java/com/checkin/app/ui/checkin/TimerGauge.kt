@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +17,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.ui.components.BrandGridGauge
 import com.checkin.app.ui.theme.CheckInAppTheme
@@ -89,8 +89,8 @@ internal fun TimerGauge(elapsedMs: Long, running: Boolean, markSize: Dp = MARK_M
     ) {
         BrandGridGauge(
             running = running,
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = TRACK_ALPHA),
+            color = SparkTheme.colors.main,
+            trackColor = SparkTheme.colors.main.copy(alpha = TRACK_ALPHA),
             modifier = Modifier.size(markSize),
         )
         Text(

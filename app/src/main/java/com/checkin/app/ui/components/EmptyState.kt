@@ -7,22 +7,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Insights
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.icons.rememberSparkIconPainter
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.GraphOutline
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.icons.SparkIcon
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.ui.theme.LocalAppTypography
 
@@ -32,12 +32,12 @@ import com.checkin.app.ui.theme.LocalAppTypography
  */
 @Composable
 fun EmptyState(
-    icon: ImageVector,
+    icon: SparkIcon,
     title: String,
     modifier: Modifier = Modifier,
     message: String? = null,
-    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-) = EmptyState(rememberVectorPainter(icon), title, modifier, message, tint)
+    tint: Color = SparkTheme.colors.onBackgroundVariant,
+) = EmptyState(rememberSparkIconPainter(icon), title, modifier, message, tint)
 
 /** Painter overload, for a drawable-backed mark such as the brand logo. */
 @Composable
@@ -46,7 +46,7 @@ fun EmptyState(
     title: String,
     modifier: Modifier = Modifier,
     message: String? = null,
-    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    tint: Color = SparkTheme.colors.onBackgroundVariant,
 ) {
     Column(
         modifier = modifier
@@ -66,8 +66,8 @@ fun EmptyState(
             Spacer(Modifier.height(4.dp))
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = SparkTheme.typography.body2,
+                color = SparkTheme.colors.onBackgroundVariant,
                 textAlign = TextAlign.Center,
             )
         }
@@ -80,7 +80,7 @@ fun EmptyState(
 private fun EmptyStatePreview() {
     CheckInAppTheme {
         EmptyState(
-            icon = Icons.Default.Insights,
+            icon = LeboncoinIcons.GraphOutline,
             title = "No completed days yet",
             message = "Your stats appear here once you've tracked a full day.",
         )

@@ -9,13 +9,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.text.Text
 import com.checkin.app.ui.theme.LocalAppTypography
 
 /**
@@ -37,7 +37,7 @@ fun SectionCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            containerColor = SparkTheme.colors.backgroundVariant,
         ),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -49,8 +49,8 @@ fun SectionCard(
             if (subtitle != null) {
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = SparkTheme.typography.small,
+                    color = SparkTheme.colors.onBackgroundVariant,
                 )
             }
             Spacer(modifier = Modifier.height(contentSpacing))
@@ -70,6 +70,6 @@ fun SectionCard(
 fun SectionDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(vertical = 8.dp),
-        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+        color = SparkTheme.colors.outline.copy(alpha = 0.5f),
     )
 }

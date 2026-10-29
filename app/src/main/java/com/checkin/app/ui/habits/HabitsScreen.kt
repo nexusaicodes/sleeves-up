@@ -8,18 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Archive
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,6 +25,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.BoxOutline
+import com.adevinta.spark.icons.Check
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.icons.PenOutline
+import com.adevinta.spark.icons.Plus
+import com.adevinta.spark.icons.ThreeDotsVertical
 import com.checkin.app.R
 import com.checkin.app.data.local.Habit
 import com.checkin.app.data.repository.ArchiveResult
@@ -118,7 +118,7 @@ fun HabitsScreen(
                 SectionDivider()
                 ActionRow(
                     label = stringResource(R.string.habit_new),
-                    icon = Icons.Default.Add,
+                    icon = LeboncoinIcons.Plus,
                     contentDescription = null,
                     onClick = { editing = NEW_HABIT },
                 )
@@ -190,9 +190,9 @@ private fun HabitRow(
             Box(modifier = Modifier.size(CHECK_SLOT), contentAlignment = Alignment.CenterStart) {
                 if (selected) {
                     Icon(
-                        imageVector = Icons.Default.Check,
+                        sparkIcon = LeboncoinIcons.Check,
                         contentDescription = stringResource(R.string.habit_selected),
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = SparkTheme.colors.main,
                     )
                 }
             }
@@ -203,18 +203,18 @@ private fun HabitRow(
             var menuOpen by rememberSaveable { mutableStateOf(false) }
             IconButton(onClick = { menuOpen = true }) {
                 Icon(
-                    imageVector = Icons.Default.MoreVert,
+                    sparkIcon = LeboncoinIcons.ThreeDotsVertical,
                     contentDescription = stringResource(
                         R.string.habit_more_actions,
                         habit.name ?: stringResource(R.string.habit_unnamed),
                     ),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = SparkTheme.colors.onBackgroundVariant,
                 )
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.habit_edit)) },
-                    leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
+                    leadingIcon = { Icon(LeboncoinIcons.PenOutline, contentDescription = null) },
                     onClick = {
                         menuOpen = false
                         onEdit()
@@ -222,7 +222,7 @@ private fun HabitRow(
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.habit_archive)) },
-                    leadingIcon = { Icon(Icons.Default.Archive, contentDescription = null) },
+                    leadingIcon = { Icon(LeboncoinIcons.BoxOutline, contentDescription = null) },
                     onClick = {
                         menuOpen = false
                         onArchive()
@@ -238,7 +238,7 @@ private fun ArchivedRow(habit: Habit, onRestore: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = habit.name ?: stringResource(R.string.habit_unnamed),
-            style = MaterialTheme.typography.bodyMedium,
+            style = SparkTheme.typography.body2,
             modifier = Modifier.weight(1f),
         )
         TextButton(onClick = onRestore) { Text(stringResource(R.string.habit_restore)) }

@@ -9,9 +9,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,6 +24,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.platform.LanguageSettings
 import com.checkin.app.platform.choose
@@ -137,5 +137,5 @@ private fun AppLanguage.label(): String = stringResource(
 @Composable
 private fun AppLanguage.labelStyle(): TextStyle {
     val own = remember(locale) { locale?.let { typographyFor(it).bodyLarge } }
-    return own ?: MaterialTheme.typography.bodyLarge
+    return own ?: SparkTheme.typography.body1
 }

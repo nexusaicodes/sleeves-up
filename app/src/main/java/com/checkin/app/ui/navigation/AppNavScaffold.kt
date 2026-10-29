@@ -2,15 +2,11 @@ package com.checkin.app.ui.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -23,11 +19,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.ui.AppUpdateOffer
 import com.checkin.app.ui.ForfeitUpdateCheck
 import com.checkin.app.ui.UpdateCheckTurn
 import com.checkin.app.ui.checkin.CheckInViewModel
+import com.checkin.app.ui.components.AppIcons
 import com.checkin.app.ui.components.LocalSnackbarHostState
 import com.checkin.app.ui.habits.HabitsViewModel
 import com.checkin.app.ui.presence.PresenceGate
@@ -133,7 +132,7 @@ private fun AppTopBar(currentScreen: Screen, onBack: (() -> Unit)?, actions: @Co
             if (onBack != null) {
                 IconButton(onClick = onBack) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        sparkIcon = AppIcons.Back,
                         contentDescription = stringResource(R.string.nav_back),
                     )
                 }

@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -22,6 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.tokens.highlight
 import com.checkin.app.R
 import com.checkin.app.ui.components.BrandGrid
 import com.checkin.app.ui.theme.CheckInAppTheme
@@ -66,7 +67,7 @@ fun CheckOutCelebration(completed: CheckOutSignal.Completed, onDismiss: () -> Un
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(SparkTheme.colors.background)
             // No ripple and no role: the whole surface is a dismiss target rather than a control,
             // and an indication spreading from the tap point would read as a button that isn't there.
             .clickable(
@@ -95,36 +96,36 @@ fun CheckOutCelebration(completed: CheckOutSignal.Completed, onDismiss: () -> Un
             completed.habitName?.let { name ->
                 Text(
                     text = name,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = SparkTheme.typography.body2.highlight,
+                    color = SparkTheme.colors.onBackgroundVariant,
                     textAlign = TextAlign.Center,
                 )
             }
             Text(
                 text = titleText,
                 style = LocalAppTypography.current.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = SparkTheme.colors.onBackground,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = sessionText,
                 style = LocalAppTypography.current.displaySmall.tabularFigures(),
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
+                color = SparkTheme.colors.main,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = dayText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = SparkTheme.typography.body2,
+                color = SparkTheme.colors.onBackgroundVariant,
                 textAlign = TextAlign.Center,
             )
         }
 
         Text(
             text = stringResource(R.string.checkout_celebration_dismiss),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = SparkTheme.typography.caption.highlight,
+            color = SparkTheme.colors.onBackgroundVariant,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 48.dp),

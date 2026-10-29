@@ -14,7 +14,7 @@ import com.adevinta.spark.icons.SparkIcon
  * This icon, drawn flipped left to right whenever the layout it lands in is right-to-left.
  *
  * Spark's icons are vector drawables with no `android:autoMirrored`, so a directional one — back, a
- * chevron, check in and check out — points the same way under Arabic as under English, which reads
+ * chevron, a walking figure — points the same way under Arabic as under English, which reads
  * as the opposite direction. This does for them what `Icons.AutoMirrored` does for Material's. It
  * works for any [SparkIcon] in any Spark component, because every one of them draws its icon through
  * [rememberSparkIconPainter], which this wraps.

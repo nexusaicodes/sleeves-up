@@ -14,16 +14,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.SparkIcon
 import com.checkin.app.ui.theme.LocalAppTypography
 
 /**
@@ -62,9 +62,9 @@ fun FullScreenMessage(
         Spacer(modifier = Modifier.height(TITLE_TO_BODY_GAP))
         Text(
             text = message,
-            style = MaterialTheme.typography.bodyMedium,
+            style = SparkTheme.typography.body2,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = SparkTheme.colors.onBackgroundVariant,
         )
         actions()
     }
@@ -72,23 +72,23 @@ fun FullScreenMessage(
 
 /** The mark above a [FullScreenMessage], sized and tinted once for every caller. */
 @Composable
-fun MessageIcon(imageVector: ImageVector) {
+fun MessageIcon(icon: SparkIcon) {
     Icon(
-        imageVector = imageVector,
+        sparkIcon = icon,
         contentDescription = null,
         modifier = Modifier.size(MESSAGE_ICON_SIZE),
-        tint = MaterialTheme.colorScheme.primary,
+        tint = SparkTheme.colors.main,
     )
 }
 
-/** The drawable form of [MessageIcon], for a mark the app ships rather than a Material vector. */
+/** The drawable form of [MessageIcon], for a mark the app ships as a drawable of its own. */
 @Composable
 fun MessageIcon(painter: Painter) {
     Icon(
         painter = painter,
         contentDescription = null,
         modifier = Modifier.size(MESSAGE_ICON_SIZE),
-        tint = MaterialTheme.colorScheme.primary,
+        tint = SparkTheme.colors.main,
     )
 }
 

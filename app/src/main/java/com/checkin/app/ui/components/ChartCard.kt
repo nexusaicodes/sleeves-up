@@ -11,14 +11,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.text.Text
 
 /**
  * A [SectionCard] holding a chart: the same card, with the wider gap under the heading that a plot
@@ -44,11 +44,11 @@ fun LegendRow(color: Color, label: String, count: Int) {
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = SparkTheme.typography.body2,
+            color = SparkTheme.colors.onBackgroundVariant,
         )
         Spacer(modifier = Modifier.width(6.dp))
-        Text(text = "$count", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        Text(text = "$count", style = SparkTheme.typography.body2, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -56,8 +56,8 @@ fun LegendRow(color: Color, label: String, count: Int) {
 fun AxisLabel(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = SparkTheme.typography.small,
+        color = SparkTheme.colors.onBackgroundVariant,
     )
 }
 
@@ -84,13 +84,13 @@ fun StatsRow(label: String, value: String) {
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = SparkTheme.typography.body2,
+            color = SparkTheme.colors.onBackgroundVariant,
             modifier = Modifier.weight(1f),
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
+            style = SparkTheme.typography.body2,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
         )

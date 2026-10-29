@@ -8,15 +8,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.SparkIcon
 
 /**
  * A tappable row inside a [SectionCard]: a label, an optional [value] beneath it stating the current
@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ActionRow(
     label: String,
-    icon: ImageVector?,
+    icon: SparkIcon?,
     contentDescription: String?,
     value: String? = null,
     enabled: Boolean = true,
@@ -50,21 +50,21 @@ fun ActionRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = label, style = MaterialTheme.typography.bodyMedium)
+            Text(text = label, style = SparkTheme.typography.body2)
             if (value != null) {
                 Text(
                     text = value,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = SparkTheme.typography.caption,
+                    color = SparkTheme.colors.onBackgroundVariant,
                 )
             }
         }
         if (icon != null) {
             Spacer(modifier = Modifier.width(12.dp))
             Icon(
-                imageVector = icon,
+                sparkIcon = icon,
                 contentDescription = contentDescription,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = SparkTheme.colors.onBackgroundVariant,
             )
         }
     }

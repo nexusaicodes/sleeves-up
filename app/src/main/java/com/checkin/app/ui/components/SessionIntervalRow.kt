@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.ui.theme.LocalTimePatterns
@@ -56,7 +56,7 @@ import com.checkin.app.util.TimeFormat
 internal fun SessionIntervalRow(session: CheckInSession) {
     val patterns = LocalTimePatterns.current
     val running = session.stoppedAt == null
-    val color = if (running) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+    val color = if (running) SparkTheme.colors.main else SparkTheme.colors.onSurface
     val end = if (running) {
         stringResource(R.string.session_in_progress)
     } else {
@@ -80,7 +80,7 @@ internal fun SessionIntervalRow(session: CheckInSession) {
         Text(
             text = range,
             // Tabular so the clock times stack into a column instead of shifting per digit width.
-            style = MaterialTheme.typography.bodySmall.tabularFigures(),
+            style = SparkTheme.typography.caption.tabularFigures(),
             color = color,
             maxLines = 1,
             // The range is the column that absorbs the squeeze, so it states when it has been cut:
@@ -98,7 +98,7 @@ internal fun SessionIntervalRow(session: CheckInSession) {
             } else {
                 Text(
                     text = duration.orEmpty(),
-                    style = MaterialTheme.typography.bodySmall.tabularFigures(),
+                    style = SparkTheme.typography.caption.tabularFigures(),
                     fontWeight = FontWeight.SemiBold,
                     color = color,
                     maxLines = 1,

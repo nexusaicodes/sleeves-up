@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDefaults
@@ -19,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.notify.nudge.NudgeSchedule
 import com.checkin.app.ui.theme.LocalTimePatterns
@@ -74,7 +75,7 @@ fun ReminderTimePicker(selectedMinute: Int, onPicked: (Int) -> Unit, onDismiss: 
 @Composable
 private fun PickerDialog(state: TimePickerState, inRange: Boolean, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     val patterns = LocalTimePatterns.current
-    val raised = MaterialTheme.colorScheme.surfaceVariant
+    val raised = SparkTheme.colors.backgroundVariant
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.reminder_time_dialog_title)) },
@@ -97,9 +98,9 @@ private fun PickerDialog(state: TimePickerState, inRange: Boolean, onConfirm: ()
                         TimeFormat.timeOfDay(NudgeSchedule.minuteRange.first, patterns),
                         TimeFormat.timeOfDay(NudgeSchedule.minuteRange.last, patterns),
                     ),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = SparkTheme.typography.caption,
                     textAlign = TextAlign.Center,
-                    color = with(MaterialTheme.colorScheme) { if (inRange) onSurfaceVariant else error },
+                    color = if (inRange) SparkTheme.colors.onBackgroundVariant else SparkTheme.colors.error,
                 )
             }
         },

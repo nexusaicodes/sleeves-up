@@ -18,14 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -53,6 +48,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.Cross
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.icons.LockOutline
 import com.checkin.app.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -212,7 +213,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(SparkTheme.colors.background),
     ) {
         AndroidView(
             factory = { ctx ->
@@ -278,9 +279,9 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                 .padding(16.dp),
         ) {
             Icon(
-                Icons.Default.Close,
+                LeboncoinIcons.Cross,
                 contentDescription = stringResource(R.string.presence_dismiss),
-                tint = MaterialTheme.colorScheme.onSurface,
+                tint = SparkTheme.colors.onSurface,
             )
         }
 
@@ -294,8 +295,8 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
             successMessage?.let { msg ->
                 Text(
                     text = msg,
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium,
+                    color = SparkTheme.colors.main,
+                    style = SparkTheme.typography.body2,
                     // Announce the outcome to TalkBack as it changes.
                     modifier = Modifier
                         .padding(horizontal = 24.dp)
@@ -307,8 +308,8 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
             errorMessage?.let { msg ->
                 Text(
                     text = msg,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
+                    color = SparkTheme.colors.error,
+                    style = SparkTheme.typography.body2,
                     modifier = Modifier
                         .padding(horizontal = 24.dp)
                         .semantics { liveRegion = LiveRegionMode.Polite },
@@ -325,8 +326,8 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                             R.string.presence_unsupported_no_unlock
                         },
                     ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
+                    color = SparkTheme.colors.onBackgroundVariant,
+                    style = SparkTheme.typography.body2,
                     modifier = Modifier
                         .padding(horizontal = 24.dp)
                         .semantics { liveRegion = LiveRegionMode.Polite },
@@ -342,8 +343,8 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                     text = stringResource(
                         if (searchTimedOut) R.string.presence_looking_slow else R.string.presence_looking,
                     ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
+                    color = SparkTheme.colors.onBackgroundVariant,
+                    style = SparkTheme.typography.body2,
                     modifier = Modifier
                         .padding(horizontal = 24.dp)
                         .semantics { liveRegion = LiveRegionMode.Polite },
@@ -380,7 +381,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
                         },
                     ) {
                         Icon(
-                            Icons.Default.Lock,
+                            LeboncoinIcons.LockOutline,
                             contentDescription = null, // label text conveys the action
                             modifier = Modifier.size(20.dp),
                         )

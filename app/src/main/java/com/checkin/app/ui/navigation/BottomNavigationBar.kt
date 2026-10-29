@@ -1,12 +1,12 @@
 package com.checkin.app.ui.navigation
 
-import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.text.Text
 
 @Composable
 internal fun BottomNavigationBar(navController: NavController, currentScreen: Screen, selectedTab: Screen.Tab) {

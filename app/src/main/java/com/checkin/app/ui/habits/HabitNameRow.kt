@@ -4,13 +4,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.data.local.Habit
 
@@ -42,13 +42,13 @@ internal fun HabitNameRow(
         Column {
             Text(
                 text = habit.name ?: stringResource(R.string.habit_unnamed),
-                style = MaterialTheme.typography.bodyMedium,
+                style = SparkTheme.typography.body2,
             )
             if (detail != null) {
                 Text(
                     text = detail,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = SparkTheme.typography.caption,
+                    color = SparkTheme.colors.onBackgroundVariant,
                 )
             }
         }

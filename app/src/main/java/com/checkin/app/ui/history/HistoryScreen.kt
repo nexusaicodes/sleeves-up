@@ -12,14 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
@@ -36,8 +29,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.CalendarDotOutline
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.tokens.highlight
 import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
+import com.checkin.app.ui.components.AppIcons
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.SessionIntervalRow
@@ -224,7 +224,7 @@ private fun LazyListScope.daySlotItems(uiState: HistoryUiState) {
     when {
         dateKey == null -> item {
             EmptyState(
-                icon = Icons.Default.Event,
+                icon = LeboncoinIcons.CalendarDotOutline,
                 title = stringResource(R.string.empty_day_detail_title),
                 message = stringResource(R.string.empty_day_detail_message),
             )
@@ -232,7 +232,7 @@ private fun LazyListScope.daySlotItems(uiState: HistoryUiState) {
 
         sessions.isEmpty() -> item {
             EmptyState(
-                icon = Icons.Default.Event,
+                icon = LeboncoinIcons.CalendarDotOutline,
                 // Names the day rather than restating "no day selected" — the tap did land.
                 title = TimeFormat.dateKeyWithWeekday(dateKey, LocalTimePatterns.current).orEmpty(),
                 message = stringResource(R.string.empty_day_sessions_message),
@@ -276,8 +276,8 @@ private fun DayHeader(dateKey: String, sessions: List<CheckInSession>) {
                 pluralStringResource(R.plurals.sessions_count, sessions.size, sessions.size),
                 TimeFormat.durationShort(sessions.sumOf { it.duration ?: 0L }, patterns),
             ),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = SparkTheme.typography.caption.highlight,
+            color = SparkTheme.colors.onBackgroundVariant,
         )
     }
 }
@@ -292,7 +292,7 @@ private fun MonthSelector(currentMonth: YearMonth, onPrevious: () -> Unit, onNex
     ) {
         IconButton(onClick = onPrevious) {
             Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                AppIcons.ChevronStart,
                 contentDescription = stringResource(R.string.previous_month),
             )
         }
@@ -303,7 +303,7 @@ private fun MonthSelector(currentMonth: YearMonth, onPrevious: () -> Unit, onNex
         )
         IconButton(onClick = onNext) {
             Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                AppIcons.ChevronEnd,
                 contentDescription = stringResource(R.string.next_month),
             )
         }

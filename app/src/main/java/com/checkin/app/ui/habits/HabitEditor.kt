@@ -10,15 +10,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -41,6 +36,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.ClockOutline
+import com.adevinta.spark.icons.LeboncoinIcons
 import com.checkin.app.R
 import com.checkin.app.data.HabitRules
 import com.checkin.app.data.NameProblem
@@ -115,7 +115,7 @@ fun HabitFields(
                         Text(
                             text = it,
                             style = titleStyle,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = PLACEHOLDER_ALPHA),
+                            color = SparkTheme.colors.onBackgroundVariant.copy(alpha = PLACEHOLDER_ALPHA),
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -146,7 +146,7 @@ fun HabitFields(
             modifier = Modifier.semantics { onClick(label = changeLabel, action = null) },
         ) {
             Icon(
-                imageVector = Icons.Outlined.Schedule,
+                sparkIcon = LeboncoinIcons.ClockOutline,
                 contentDescription = null,
                 modifier = Modifier.size(ButtonDefaults.IconSize),
             )

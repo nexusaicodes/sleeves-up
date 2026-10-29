@@ -12,17 +12,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.FileDownload
-import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,10 +31,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.DownloadFileOutline
+import com.adevinta.spark.icons.GraphOutline
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.tokens.highlight
 import com.checkin.app.R
 import com.checkin.app.data.SessionBand
 import com.checkin.app.data.StartBucket
 import com.checkin.app.platform.ExportResult
+import com.checkin.app.ui.components.AppIcons
 import com.checkin.app.ui.components.AxisLabel
 import com.checkin.app.ui.components.ChartCard
 import com.checkin.app.ui.components.EmptyState
@@ -174,7 +174,7 @@ private fun ScopeSelector(
         // reflow around the toggle every time it is pressed.
         IconButton(onClick = onPrevious, enabled = !allTime) {
             Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                AppIcons.ChevronStart,
                 contentDescription = stringResource(R.string.previous_month),
             )
         }
@@ -191,7 +191,7 @@ private fun ScopeSelector(
         )
         IconButton(onClick = onNext, enabled = !allTime) {
             Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                AppIcons.ChevronEnd,
                 contentDescription = stringResource(R.string.next_month),
             )
         }
@@ -228,7 +228,7 @@ private fun scopeLabel(scope: ReportScope, inline: Boolean = false): String = wh
 @Composable
 private fun EmptyScope(scope: ReportScope) {
     EmptyState(
-        icon = Icons.Default.Insights,
+        icon = LeboncoinIcons.GraphOutline,
         title = stringResource(R.string.empty_scope_title),
         // The month copy sends the user to the arrows; under all time those arrows are disabled, so
         // it says what would actually fill the scope instead of naming a control that cannot move.
@@ -307,9 +307,9 @@ private fun DailyHoursCard(uiState: ReportsUiState) {
         LineChart(
             values = hours,
             referenceValue = average,
-            lineColor = MaterialTheme.colorScheme.primary,
-            fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
-            referenceColor = MaterialTheme.colorScheme.outline,
+            lineColor = SparkTheme.colors.main,
+            fillColor = SparkTheme.colors.main.copy(alpha = 0.25f),
+            referenceColor = SparkTheme.colors.outline,
             // States the window and nothing else. No superlative here: naming the window's longest
             // day ranks one of the user's days against the others, which nothing in the app does.
             contentDescription = pluralStringResource(
@@ -333,7 +333,7 @@ private fun SplitCard(uiState: ReportsUiState) {
     // `outline`, not `outlineVariant`: the latter *is* `surfaceVariant` in the dark scheme, which is
     // this card's own container, so the missed arc and its legend dot would be painted in the
     // background and be invisible. Neutral, never red; a missed day is a fact, not a failure.
-    val missed = MaterialTheme.colorScheme.outline
+    val missed = SparkTheme.colors.outline
 
     ChartCard(title = stringResource(R.string.chart_split_title)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -387,8 +387,8 @@ private fun MonthlyHoursCard(uiState: ReportsUiState) {
     ChartCard(title = stringResource(R.string.chart_monthly_title)) {
         BarChart(
             values = hours,
-            barColor = MaterialTheme.colorScheme.primary,
-            baselineColor = MaterialTheme.colorScheme.outline,
+            barColor = SparkTheme.colors.main,
+            baselineColor = SparkTheme.colors.outline,
             contentDescription = stringResource(R.string.cd_monthly_chart, spoken),
             modifier = Modifier.fillMaxWidth().height(120.dp),
         )
@@ -404,7 +404,7 @@ private fun MonthlyHoursCard(uiState: ReportsUiState) {
                         AxisLabel(label(point))
                         Text(
                             text = TimeFormat.durationShort(point.workedMs, patterns),
-                            style = MaterialTheme.typography.labelMedium,
+                            style = SparkTheme.typography.caption.highlight,
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
@@ -497,7 +497,7 @@ private fun SplitRow(values: List<Int>, colors: List<Color>, labels: List<String
             colors = colors,
             contentDescription = contentDescription,
             // Nothing recorded yet still has to read as a ring rather than as blank space.
-            emptyColor = MaterialTheme.colorScheme.outline,
+            emptyColor = SparkTheme.colors.outline,
             modifier = Modifier.size(DonutChartDefaults.size()),
         )
         Spacer(Modifier.width(20.dp))
@@ -534,7 +534,7 @@ private fun ExportCard(scope: ReportScope, onExport: () -> Unit) {
             shape = RoundedCornerShape(12.dp),
         ) {
             // Icon is decorative — the button's text label conveys the action.
-            Icon(Icons.Default.FileDownload, contentDescription = null)
+            Icon(LeboncoinIcons.DownloadFileOutline, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(R.string.export_scope, scopeLabel(scope, inline = true)))
         }

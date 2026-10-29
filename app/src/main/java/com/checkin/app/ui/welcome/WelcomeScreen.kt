@@ -24,9 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.Widgets
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -39,6 +37,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.SparkIcon
 import com.checkin.app.R
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.FullScreenAction
@@ -196,8 +197,8 @@ private fun WelcomePageContent(page: WelcomePage, onAddWidget: (() -> Unit)?, in
             when {
                 onAddWidget == null -> Text(
                     text = stringResource(R.string.welcome_widget_manual),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = SparkTheme.typography.body2,
+                    color = SparkTheme.colors.onBackgroundVariant,
                     textAlign = TextAlign.Center,
                 )
                 inlineAdd -> OutlinedButton(onClick = onAddWidget) {
@@ -214,8 +215,8 @@ private fun PageIcon(icon: WelcomeIcon) = when (icon) {
     WelcomeIcon.CHECK_IN_MARK -> MessageIcon(painterResource(R.drawable.ic_stat_checkin))
     // The camera disclosure's own icon, so the screen met at the first check-in reads as a
     // continuation of this one.
-    WelcomeIcon.FACE -> MessageIcon(Icons.Rounded.Face)
-    WelcomeIcon.WIDGET -> MessageIcon(Icons.Rounded.Widgets)
+    WelcomeIcon.FACE -> MessageIcon(SparkIcon.Vector(Icons.Rounded.Face))
+    WelcomeIcon.WIDGET -> MessageIcon(SparkIcon.Vector(Icons.Rounded.Widgets))
     // The habits being cycled through, the same carousel the naming step that follows opens on.
     WelcomeIcon.HABITS -> HabitExampleIcon(cyclingHabitExample())
 }
@@ -244,9 +245,9 @@ private fun PageDots(pageCount: Int, current: Int) {
                         // in the dark scheme and under 2:1 against the background in both, so the
                         // companions of the active dot would not be there at all.
                         color = if (page == current) {
-                            MaterialTheme.colorScheme.primary
+                            SparkTheme.colors.main
                         } else {
-                            MaterialTheme.colorScheme.outline
+                            SparkTheme.colors.outline
                         },
                         shape = CircleShape,
                     ),

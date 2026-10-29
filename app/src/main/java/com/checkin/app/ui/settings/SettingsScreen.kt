@@ -4,9 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -14,10 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.icons.LockOutline
 import com.checkin.app.CheckInApplication
 import com.checkin.app.R
 import com.checkin.app.ui.about.AboutCard
 import com.checkin.app.ui.components.ActionRow
+import com.checkin.app.ui.components.AppIcons
 import com.checkin.app.ui.components.LocalSnackbarHostState
 import com.checkin.app.ui.components.SectionCard
 import kotlinx.coroutines.launch
@@ -74,9 +74,9 @@ fun SettingsScreen(
                     icon = if (runningHabitName ==
                         null
                     ) {
-                        Icons.AutoMirrored.Filled.KeyboardArrowRight
+                        AppIcons.ChevronEnd
                     } else {
-                        Icons.Default.Lock
+                        LeboncoinIcons.LockOutline
                     },
                     contentDescription = null,
                     value = runningHabitName?.let { stringResource(R.string.habits_manage_locked, it) },
