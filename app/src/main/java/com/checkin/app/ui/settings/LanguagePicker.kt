@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,9 +22,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.adevinta.spark.ExperimentalSparkApi
 import com.adevinta.spark.SparkTheme
 import com.adevinta.spark.components.buttons.Button
 import com.adevinta.spark.components.buttons.Ghost
+import com.adevinta.spark.components.dialog.AlertDialog
 import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.platform.LanguageSettings
@@ -89,6 +90,7 @@ internal fun LanguageRow(settings: LanguageSettings) {
 }
 
 /** [current] is null when the stored locale is none of the choices, so no option is selected. */
+@OptIn(ExperimentalSparkApi::class)
 @Composable
 private fun LanguageDialog(current: AppLanguage?, onChoose: (AppLanguage) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(

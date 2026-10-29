@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -30,10 +29,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.ExperimentalSparkApi
 import com.adevinta.spark.SparkTheme
 import com.adevinta.spark.components.buttons.Button
 import com.adevinta.spark.components.buttons.Ghost
 import com.adevinta.spark.components.buttons.Secondary
+import com.adevinta.spark.components.dialog.AlertDialog
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.icons.ClockOutline
 import com.adevinta.spark.icons.LeboncoinIcons
@@ -172,6 +173,7 @@ private fun problemText(problem: NameProblem): String = when (problem) {
  * shows until the name is edited. Save does nothing while a write is outstanding, so a double tap
  * cannot create the habit twice.
  */
+@OptIn(ExperimentalSparkApi::class)
 @Composable
 fun HabitEditorDialog(
     title: String,
