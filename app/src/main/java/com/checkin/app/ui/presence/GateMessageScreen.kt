@@ -2,12 +2,12 @@ package com.checkin.app.ui.presence
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Ghost
+import com.adevinta.spark.components.buttons.Primary
 import com.adevinta.spark.icons.SparkIcon
 import com.checkin.app.R
 import com.checkin.app.ui.components.FullScreenMessage
@@ -36,11 +36,7 @@ fun GateMessageScreen(
         message = message,
     ) {
         Spacer(modifier = Modifier.height(MESSAGE_BODY_TO_ACTION_GAP))
-        Button(onClick = onAction) {
-            Text(actionLabel)
-        }
-        TextButton(onClick = onDismiss) {
-            Text(stringResource(R.string.presence_gate_cancel))
-        }
+        Button.Primary(onClick = onAction, text = actionLabel)
+        Button.Ghost(onClick = onDismiss, text = stringResource(R.string.presence_gate_cancel))
     }
 }

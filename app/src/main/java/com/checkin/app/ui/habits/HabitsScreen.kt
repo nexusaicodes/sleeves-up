@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Ghost
 import com.adevinta.spark.components.icons.Icon
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.icons.BoxOutline
@@ -241,6 +242,6 @@ private fun ArchivedRow(habit: Habit, onRestore: () -> Unit) {
             style = SparkTheme.typography.body2,
             modifier = Modifier.weight(1f),
         )
-        TextButton(onClick = onRestore) { Text(stringResource(R.string.habit_restore)) }
+        Button.Ghost(onClick = onRestore, text = stringResource(R.string.habit_restore))
     }
 }

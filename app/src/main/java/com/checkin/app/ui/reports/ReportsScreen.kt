@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -32,6 +30,8 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Primary
 import com.adevinta.spark.components.icons.Icon
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.icons.DownloadFileOutline
@@ -528,15 +528,12 @@ private fun daysPhrase(count: Int): String = pluralStringResource(R.plurals.days
 @Composable
 private fun ExportCard(scope: ReportScope, onExport: () -> Unit) {
     ChartCard(title = stringResource(R.string.export_title)) {
-        Button(
+        // Spark draws a button's icon with no description: the label conveys the action.
+        Button.Primary(
             onClick = onExport,
+            text = stringResource(R.string.export_scope, scopeLabel(scope, inline = true)),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-        ) {
-            // Icon is decorative — the button's text label conveys the action.
-            Icon(LeboncoinIcons.DownloadFileOutline, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.export_scope, scopeLabel(scope, inline = true)))
-        }
+            icon = LeboncoinIcons.DownloadFileOutline,
+        )
     }
 }

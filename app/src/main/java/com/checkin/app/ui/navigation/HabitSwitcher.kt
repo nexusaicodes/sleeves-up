@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,6 +15,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Ghost
 import com.adevinta.spark.components.icons.Icon
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.icons.LeboncoinIcons
@@ -45,7 +46,9 @@ internal fun HabitSwitcher(state: HabitsUiState, onOpen: () -> Unit, onLocked: (
     val description = stringResource(R.string.habit_switcher_cd, selectedName)
     val locked = state.running != null
 
-    TextButton(
+    // A ghost button takes the slot's content colour, which in the top bar's actions is the muted
+    // one, so the mark is tinted to match the name beside it.
+    Button.Ghost(
         onClick = if (locked) onLocked else onOpen,
         modifier = Modifier.semantics { contentDescription = description },
     ) {
@@ -63,6 +66,7 @@ internal fun HabitSwitcher(state: HabitsUiState, onOpen: () -> Unit, onLocked: (
             Icon(
                 sparkIcon = if (locked) LeboncoinIcons.LockOutline else SparkIcon.Vector(Icons.Default.SwapHoriz),
                 contentDescription = null,
+                tint = SparkTheme.colors.onSurface,
             )
         }
     }

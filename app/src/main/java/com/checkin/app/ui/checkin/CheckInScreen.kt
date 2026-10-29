@@ -1,5 +1,6 @@
 package com.checkin.app.ui.checkin
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -265,6 +266,9 @@ private val SESSION_LIST_MIN = 96.dp
 // The mark's three sizes, the gap and the readout's height are the remaining terms in this budget
 // and live in TimerGauge.kt, beside the composable they size.
 
+// Still Material 3: Spark buttons take no colours, so the start/stop colouring moves to a Spark
+// Button.Primary inside a scoped colour copy in its own stage, ui/check-in-button (plan PR 6.1).
+@SuppressLint("MaterialComposableHasSparkReplacement")
 @Composable
 private fun CheckInOutButton(isRunning: Boolean, habitName: String?, onCheckIn: () -> Unit, onCheckOut: () -> Unit) {
     val start = startActionColors()

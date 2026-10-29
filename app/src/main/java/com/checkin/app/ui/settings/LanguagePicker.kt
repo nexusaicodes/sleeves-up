@@ -10,7 +10,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +24,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Ghost
 import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.platform.LanguageSettings
@@ -116,7 +117,7 @@ private fun LanguageDialog(current: AppLanguage?, onChoose: (AppLanguage) -> Uni
         },
         // Choosing a row is the confirmation, so the dialog's one button only dismisses it.
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        dismissButton = { Button.Ghost(onClick = onDismiss, text = stringResource(R.string.action_cancel)) },
     )
 }
 

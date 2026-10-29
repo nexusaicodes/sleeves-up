@@ -235,6 +235,9 @@ One commit per group, so a regression can be bisected to a control. The file and
 
 **Docs**: CLAUDE.md wherever an M3 component is named (the nav scaffold entry, the habit switcher entry, the Settings entry), and the 48dp rule now saying Spark's 44dp floor is raised to 48.
 
+**Done** on `plan/spark-migration`, one commit per group below. What it found, and where it departs from the table above:
+- **Buttons.** Every site follows D6. One `Primary` per screen holds: `FullScreenAction` (tour, naming step, widget page), the gate stop's action, and Reports' export; everything else is `Secondary`, `Tertiary` or `Ghost`. `FullScreenAction` is `ButtonSize.Large`, so its `ACTION_MIN_HEIGHT` and `ACTION_CORNER` are gone (the shape is Spark's pill); it keeps its `AppTypography.titleMedium` label. Button icons go through the `icon` parameter, which Spark draws with no description, as the label already names the action. `HabitSwitcher` is a `Button.Ghost` around its existing row (PR 6.2 still redesigns it): a ghost takes the slot's content colour, which in the top bar's actions is `onBackgroundVariant`, so its mark is tinted `onSurface` to stay beside the name as it was. The Check-In button keeps M3 under a site-level `@SuppressLint` whose comment names PR 6.1.
+
 ### PR 5 — `ui/spark-own-components`: our components in Spark tokens
 
 Design 6 phase 3. These are app composables, restyled only:

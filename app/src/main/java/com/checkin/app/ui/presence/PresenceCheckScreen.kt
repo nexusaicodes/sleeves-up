@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -49,11 +48,14 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Tertiary
 import com.adevinta.spark.components.icons.Icon
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.icons.Cross
 import com.adevinta.spark.icons.LeboncoinIcons
 import com.adevinta.spark.icons.LockOutline
+import com.adevinta.spark.icons.SparkIcon
 import com.checkin.app.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -359,35 +361,26 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
             )
             if (offerBiometric) {
                 if (canUseBiometric) {
-                    OutlinedButton(onClick = { launchBiometric() }) {
-                        Icon(
-                            Icons.Default.Fingerprint,
-                            contentDescription = null, // label text conveys the action
-                            modifier = Modifier.size(20.dp),
-                        )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text(stringResource(R.string.biometric_use_device_unlock))
-                    }
+                    // Spark draws a button's icon with no description: the label conveys the action.
+                    Button.Tertiary(
+                        onClick = { launchBiometric() },
+                        text = stringResource(R.string.biometric_use_device_unlock),
+                        icon = SparkIcon.Vector(Icons.Default.Fingerprint),
+                    )
                 } else {
                     // The fallback the message names does not exist yet. Handing the user the screen
                     // that creates it keeps the check gated without leaving only Dismiss — and since
                     // check-out is as gated as check-in, a dead end here would leave the session open
                     // until the day boundary wrote a full day onto a row nothing can edit.
-                    OutlinedButton(
+                    Button.Tertiary(
                         onClick = {
                             if (!openScreenLockSettings(context)) {
                                 errorMessage = unavailableMessage
                             }
                         },
-                    ) {
-                        Icon(
-                            LeboncoinIcons.LockOutline,
-                            contentDescription = null, // label text conveys the action
-                            modifier = Modifier.size(20.dp),
-                        )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text(stringResource(R.string.presence_set_up_screen_lock))
-                    }
+                        text = stringResource(R.string.presence_set_up_screen_lock),
+                        icon = LeboncoinIcons.LockOutline,
+                    )
                 }
             }
         }

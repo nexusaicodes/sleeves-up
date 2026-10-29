@@ -4,17 +4,11 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -37,7 +31,9 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.adevinta.spark.SparkTheme
-import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Ghost
+import com.adevinta.spark.components.buttons.Secondary
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.icons.ClockOutline
 import com.adevinta.spark.icons.LeboncoinIcons
@@ -140,19 +136,12 @@ fun HabitFields(
         val changeLabel = stringResource(R.string.reminder_time_change)
         // Sized to its text rather than the field above it: a full-width bar reads as a second
         // primary action beside Continue, where this is a setting with a sensible default.
-        FilledTonalButton(
+        Button.Secondary(
             onClick = { picking = true },
-            contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+            text = reminderTimeSummary(minute),
             modifier = Modifier.semantics { onClick(label = changeLabel, action = null) },
-        ) {
-            Icon(
-                sparkIcon = LeboncoinIcons.ClockOutline,
-                contentDescription = null,
-                modifier = Modifier.size(ButtonDefaults.IconSize),
-            )
-            Spacer(modifier = Modifier.width(ButtonDefaults.IconSpacing))
-            Text(reminderTimeSummary(minute))
-        }
+            icon = LeboncoinIcons.ClockOutline,
+        )
     }
     if (picking) {
         ReminderTimePicker(
@@ -226,8 +215,8 @@ fun HabitEditorDialog(
                 onDone = save,
             )
         },
-        confirmButton = { TextButton(onClick = save) { Text(stringResource(R.string.habit_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        confirmButton = { Button.Ghost(onClick = save, text = stringResource(R.string.habit_save)) },
+        dismissButton = { Button.Ghost(onClick = onDismiss, text = stringResource(R.string.action_cancel)) },
     )
 }
 

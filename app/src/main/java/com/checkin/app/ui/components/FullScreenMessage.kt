@@ -7,13 +7,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +18,9 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.ButtonSize
+import com.adevinta.spark.components.buttons.Primary
 import com.adevinta.spark.components.icons.Icon
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.icons.SparkIcon
@@ -98,13 +98,14 @@ fun MessageIcon(painter: Painter) {
  */
 @Composable
 fun FullScreenAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Button(
+    // Large is Spark's 56.dp minimum height: a comfortable full-width action, independent of the
+    // Check-In screen's 64.dp button, which is sized by that screen's fit budget.
+    Button.Primary(
         onClick = onClick,
         modifier = modifier
             .padding(start = MESSAGE_PADDING, end = MESSAGE_PADDING, bottom = ACTION_BOTTOM_GAP)
-            .fillMaxWidth()
-            .heightIn(min = ACTION_MIN_HEIGHT),
-        shape = RoundedCornerShape(ACTION_CORNER),
+            .fillMaxWidth(),
+        size = ButtonSize.Large,
     ) {
         Text(text = text, style = LocalAppTypography.current.titleMedium)
     }
@@ -122,11 +123,6 @@ val MESSAGE_BODY_TO_ACTION_GAP = 24.dp
 private val MESSAGE_ICON_SIZE = 56.dp
 private val ICON_TO_TITLE_GAP = 24.dp
 private val TITLE_TO_BODY_GAP = 16.dp
-
-/** A comfortable full-width action. Independent of the Check-In screen's 64.dp primary button,
- *  which is sized by that screen's fit budget rather than by how a button should look. */
-private val ACTION_MIN_HEIGHT = 56.dp
-private val ACTION_CORNER = 16.dp
 
 /** Lifts the action clear of the gesture bar, above the inset `safeDrawingPadding` already applied. */
 private val ACTION_BOTTOM_GAP = 16.dp

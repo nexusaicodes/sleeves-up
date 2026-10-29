@@ -24,8 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.Widgets
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -38,6 +36,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Ghost
+import com.adevinta.spark.components.buttons.Tertiary
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.icons.SparkIcon
 import com.checkin.app.R
@@ -100,7 +101,7 @@ fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit, onAddWidget: ((
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 if (!onLastPage) {
-                    TextButton(onClick = onSkipped) { Text(stringResource(R.string.welcome_skip)) }
+                    Button.Ghost(onClick = onSkipped, text = stringResource(R.string.welcome_skip))
                 }
             }
 
@@ -162,10 +163,11 @@ fun WidgetPageScreen(onAddWidget: (() -> Unit)?, onDone: () -> Unit) {
                 WelcomePageContent(WelcomePages.widget, onAddWidget, inlineAdd = false)
             }
             if (canAdd) {
-                TextButton(
+                Button.Ghost(
                     onClick = onDone,
+                    text = stringResource(R.string.presence_gate_cancel),
                     modifier = Modifier.align(Alignment.CenterHorizontally),
-                ) { Text(stringResource(R.string.presence_gate_cancel)) }
+                )
                 Spacer(modifier = Modifier.height(DOTS_TO_ACTION_GAP))
             }
             FullScreenAction(
@@ -201,9 +203,7 @@ private fun WelcomePageContent(page: WelcomePage, onAddWidget: (() -> Unit)?, in
                     color = SparkTheme.colors.onBackgroundVariant,
                     textAlign = TextAlign.Center,
                 )
-                inlineAdd -> OutlinedButton(onClick = onAddWidget) {
-                    Text(stringResource(R.string.welcome_widget_add))
-                }
+                inlineAdd -> Button.Tertiary(onClick = onAddWidget, text = stringResource(R.string.welcome_widget_add))
             }
         }
     }

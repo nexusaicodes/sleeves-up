@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,6 +30,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Tertiary
 import com.adevinta.spark.components.text.Text
 import com.adevinta.spark.tokens.highlight
 import com.checkin.app.R
@@ -155,7 +156,7 @@ fun LicensesScreen(innerPadding: PaddingValues) {
         bundledLicenses.forEach { license ->
             val open = license.name in expanded
             item(key = "toggle-${license.name}") {
-                OutlinedButton(
+                Button.Tertiary(
                     onClick = {
                         expanded = if (open) expanded - license.name else expanded + license.name
                     },

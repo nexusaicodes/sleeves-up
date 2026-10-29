@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.TimePickerState
@@ -19,6 +18,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Ghost
 import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.notify.nudge.NudgeSchedule
@@ -105,12 +106,14 @@ private fun PickerDialog(state: TimePickerState, inRange: Boolean, onConfirm: ()
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm, enabled = inRange) {
-                Text(stringResource(R.string.reminder_time_confirm))
-            }
+            Button.Ghost(
+                onClick = onConfirm,
+                text = stringResource(R.string.reminder_time_confirm),
+                enabled = inRange,
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+            Button.Ghost(onClick = onDismiss, text = stringResource(R.string.action_cancel))
         },
     )
 }
