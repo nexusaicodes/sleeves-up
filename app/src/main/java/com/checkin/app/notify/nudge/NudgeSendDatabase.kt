@@ -76,7 +76,7 @@ abstract class NudgeSendDatabase : RoomDatabase() {
                 // Backstop only, and safe here in a way it would never be for `_app`: no session
                 // record is at risk, and the most a wipe costs is one duplicate nudge that day.
                 .addMigrations(MIGRATION_1_3)
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration(dropAllTables = false)
                 .build()
                 .also { cached = it }
         }

@@ -117,7 +117,7 @@ abstract class AppDatabase : RoomDatabase() {
                 "_app",
             ).addMigrations(MIGRATION_1_2)
                 .addCallback(seedOnOpen)
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration(dropAllTables = false)
                 .build()
                 .also { cached = it }
         }

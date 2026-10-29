@@ -2,6 +2,7 @@ package com.checkin.app
 
 import com.checkin.app.data.local.Habit
 import com.checkin.app.widget.WidgetFace
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
@@ -15,6 +16,7 @@ import org.junit.Test
  * The widget shows names and whether a session is open, and nothing that measures a habit — so these
  * pin which face each state gets, and that only a change the widget would show reaches it.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class WidgetFaceTest {
 
     private fun habit(id: Long, name: String? = "Habit $id") =

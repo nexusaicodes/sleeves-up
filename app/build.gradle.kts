@@ -2,7 +2,7 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
 }
 
@@ -18,7 +18,7 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.checkin.app"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.nexusai.checkin.app"
@@ -80,19 +80,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
         // Needed for BuildConfig.VERSION_NAME / VERSION_CODE, which the About card renders and the
         // feedback draft carries. Nothing reads BuildConfig.DEBUG — the app has no debug-only branch.
         buildConfig = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.4"
     }
 
     // Generates the manifest's localeConfig from the values-* folders, with res/resources.properties
@@ -134,14 +126,14 @@ android {
 
 dependencies {
     // Core
-    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-ktx:1.19.1")
     implementation("androidx.core:core-splashscreen:1.0.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
-    implementation("androidx.activity:activity-compose:1.9.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
+    implementation("androidx.activity:activity-compose:1.13.0")
 
     // Compose
-    implementation(platform("androidx.compose:compose-bom:2025.12.00"))
+    implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -150,15 +142,15 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.navigation:navigation-compose:2.10.2")
 
     // Room Database
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-runtime:2.8.5")
+    implementation("androidx.room:room-ktx:2.8.5")
+    ksp("androidx.room:room-compiler:2.8.5")
 
     // ViewModel
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
 
     // CameraX
     implementation("androidx.camera:camera-core:1.5.0")
@@ -182,7 +174,7 @@ dependencies {
 
     // Hourly backstop pass: the session-service revive, the nudge re-arm and the send-ledger
     // prune all hang off it (see notify/nudge/NudgeWorker). Nudges are delivered by an alarm.
-    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
 
     // Flexible in-app update prompt (platform/AppUpdates). It asks the Play Store app over IPC and
     // declares no permission; it brings core-common and gms basement/tasks, all proprietary terms
@@ -190,12 +182,28 @@ dependencies {
     // Flow wrapper this needs none of.
     implementation("com.google.android.play:app-update:2.1.0")
 
+    // Floors for libraries that arrive only transitively, at the versions the Spark design system
+    // (com.adevinta.spark 4.2.1) resolves them to, so adopting it adds artifacts without moving any
+    // the app already ships. A constraint adds nothing to the graph by itself: each takes effect
+    // only on a library something else already brings.
+    constraints {
+        implementation("androidx.annotation:annotation-experimental:1.5.1")
+        implementation("androidx.appcompat:appcompat:1.8.0")
+        implementation("androidx.appcompat:appcompat-resources:1.8.0")
+        implementation("androidx.exifinterface:exifinterface:1.4.2")
+        implementation("androidx.profileinstaller:profileinstaller:1.4.1")
+        implementation("androidx.startup:startup-runtime:1.2.0")
+        implementation("androidx.window:window:1.5.1")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+        implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.11.0")
+    }
+
     // Testing
     // JUnit plus the coroutines test dispatcher, and nothing else: the suite is pure JVM and mocks
     // nothing, standing every seam up with a hand-written fake instead (app/src/test/.../Fakes.kt).
     // There is no androidTest source set, so no instrumentation dependency has anything to run.
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
 

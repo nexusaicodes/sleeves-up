@@ -1,6 +1,6 @@
 package com.checkin.app.ui.history
 
-import android.app.Activity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -27,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -70,7 +69,7 @@ fun HistoryScreen(
         onPauseOrDispose { }
     }
 
-    val widthSizeClass = calculateWindowSizeClass(LocalContext.current as Activity).widthSizeClass
+    val widthSizeClass = calculateWindowSizeClass(checkNotNull(LocalActivity.current)).widthSizeClass
     val topPad = innerPadding.calculateTopPadding() + 16.dp
     val bottomPad = innerPadding.calculateBottomPadding() + 8.dp
 
