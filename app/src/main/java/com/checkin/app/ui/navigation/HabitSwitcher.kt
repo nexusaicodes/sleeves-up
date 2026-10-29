@@ -1,16 +1,10 @@
 package com.checkin.app.ui.navigation
 
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,8 +13,18 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Ghost
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.icons.LockOutline
+import com.adevinta.spark.icons.SparkIcon
+import com.adevinta.spark.tokens.dim1
 import com.checkin.app.R
 import com.checkin.app.ui.habits.HabitsUiState
+import com.checkin.app.ui.theme.LocalAppTypography
 
 /**
  * The habit switcher in the top bar: the habit every tab is showing, in the title's own type so the
@@ -30,8 +34,8 @@ import com.checkin.app.ui.habits.HabitsUiState
  * it would invite comparing.
  *
  * **Locked while a session runs**, on every tab. There is one open session across all habits, so
- * the app is about the running habit until it is checked out of; the swap mark becomes a lock and a
- * tap calls [onLocked] to say why. The lock is the repository's too
+ * the app is about the running habit until it is checked out of; the swap mark becomes a lock, the
+ * name dims, and a tap calls [onLocked] to say why. The lock is the repository's too
  * ([com.checkin.app.data.repository.HabitRepository.select] refuses), so this is the explanation
  * rather than the enforcement.
  */
@@ -42,25 +46,32 @@ internal fun HabitSwitcher(state: HabitsUiState, onOpen: () -> Unit, onLocked: (
     val description = stringResource(R.string.habit_switcher_cd, selectedName)
     val locked = state.running != null
 
-    TextButton(
+    // A ghost button draws in the ambient content colour, which in the top bar's actions slot is the
+    // muted one, so the name and the mark take theirs explicitly: full ink while the switcher leads
+    // somewhere, ink at dim1 while locked (5.2:1 on paper in light, 7.7:1 in dark). The locked
+    // button stays enabled, because a tap is how it says why.
+    val contentColor = if (locked) SparkTheme.colors.onSurface.dim1 else SparkTheme.colors.onSurface
+    Button.Ghost(
         onClick = if (locked) onLocked else onOpen,
         modifier = Modifier.semantics { contentDescription = description },
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = selectedName,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                // Room for a tab title beside it; a name past this ellipsizes.
-                modifier = Modifier.widthIn(max = 160.dp),
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Icon(
-                imageVector = if (locked) Icons.Default.Lock else Icons.Default.SwapHoriz,
-                contentDescription = null,
-            )
-        }
+        Text(
+            text = selectedName,
+            style = LocalAppTypography.current.titleLarge,
+            color = contentColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            // Room for a tab title beside it; a name past this ellipsizes.
+            modifier = Modifier
+                .widthIn(max = 160.dp)
+                .align(Alignment.CenterVertically),
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Icon(
+            sparkIcon = if (locked) LeboncoinIcons.LockOutline else SparkIcon.Vector(Icons.Default.SwapHoriz),
+            contentDescription = null,
+            tint = contentColor,
+            modifier = Modifier.align(Alignment.CenterVertically),
+        )
     }
 }

@@ -1,5 +1,6 @@
 import com.android.build.api.artifact.SingleArtifact
 import java.util.Properties
+import javax.inject.Inject
 
 plugins {
     id("com.android.application")
@@ -141,6 +142,9 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material3:material3-window-size-class")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation(platform("com.adevinta.spark:spark-bom:4.2.1"))
+    implementation("com.adevinta.spark:spark")
+    implementation("com.adevinta.spark:spark-icons")
 
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.10.2")
@@ -208,7 +212,48 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
 
-// The open-source licence list in ui/about/OpenSourceLibraries.kt is hand-written: it groups ~220
+// Spark's Compose Resources ship Nunito Sans a second time, as assets under
+// composeResources/com.adevinta.spark.core/font/, and assets are never shrunk. Nothing on Android
+// reads them: Spark draws its default family from res/font (discarded in res/raw/keep.xml), and the
+// app makes no Res.* read. So every variant's merged assets pass through this copy minus that
+// directory, as a transform of the ASSETS artifact rather than an edit of the merge task's output,
+// which keeps the merge cacheable and up to date.
+abstract class StripSparkFontAssets : DefaultTask() {
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val mergedAssets: DirectoryProperty
+
+    @get:OutputDirectory
+    abstract val strippedAssets: DirectoryProperty
+
+    @get:Inject
+    abstract val files: FileSystemOperations
+
+    @TaskAction
+    fun strip() {
+        files.sync {
+            from(mergedAssets)
+            into(strippedAssets)
+            exclude("composeResources/com.adevinta.spark.core/font/**")
+        }
+    }
+}
+
+/** The release variant's final assets, after every transform, as the APK packages them. */
+val releaseAssets = objects.directoryProperty()
+
+androidComponents {
+    onVariants { variant ->
+        val taskName = "strip${variant.name.replaceFirstChar { it.uppercase() }}SparkFontAssets"
+        val strip = tasks.register<StripSparkFontAssets>(taskName)
+        variant.artifacts.use(strip)
+            .wiredWithDirectories(StripSparkFontAssets::mergedAssets, StripSparkFontAssets::strippedAssets)
+            .toTransform(SingleArtifact.ASSETS)
+        if (variant.buildType == "release") releaseAssets.set(variant.artifacts.get(SingleArtifact.ASSETS))
+    }
+}
+
+// The open-source licence list in ui/about/OpenSourceLibraries.kt is hand-written: it groups ~240
 // resolved artifacts into the upstream projects a reader can act on, and carries the corrections a
 // generator reading POMs alone gets wrong where a POM is silent — today that is CameraX's embedded
 // libyuv BSD, the one non-Apache row among the Maven groups — the two bundled typefaces carry the
@@ -222,16 +267,22 @@ val licenseSourceFile = layout.projectDirectory
 /** What aapt packages out of res/font — a typeface binary, or an XML family that references them. */
 val fontExtensions = setOf("ttf", "otf", "ttc", "xml")
 
+/** A typeface binary, wherever it sits in assets: there is no XML family outside res/font. */
+val assetFontExtensions = setOf("ttf", "otf", "ttc")
+
 tasks.register("verifyLicenseCoverage") {
     group = "verification"
-    description = "Fails if a release-classpath group id or a res/font typeface has no licence entry."
+    description = "Fails if a release-classpath group id or a res/font typeface has no licence entry, " +
+        "or a typeface ships in the release assets."
 
     val source = licenseSourceFile
     val fonts = layout.projectDirectory.dir("src/main/res/font")
+    val assets = releaseAssets
     val classpath = configurations.named("releaseRuntimeClasspath")
     val stamp = layout.buildDirectory.file("reports/licenseCoverage.txt")
     inputs.file(source)
     inputs.dir(fonts)
+    inputs.dir(assets)
     // Gradle only skips a task that declares both inputs and outputs, and resolving the release
     // classpath is not cheap — it is the dependency resolution deliberately kept out of
     // staticAnalysis. Without a declared output the inputs above buy nothing and every `check`
@@ -297,7 +348,24 @@ tasks.register("verifyLicenseCoverage") {
                 "from the font's own name table rather than guessing."
         }
 
-        // The reverse direction. The two checks above fail on something shipped with no entry;
+        // A library can ship a typeface as an asset instead (Compose Resources does), where neither
+        // the resource shrinker nor the check above reaches it. Every font the app draws is a
+        // res/font resource, so any typeface in the release variant's final assets fails the build:
+        // strip it in the assets transform if nothing reads it, or move it to res/font and attribute it.
+        val assetsRoot = assets.get().asFile
+        val assetFonts = assetsRoot.walkTopDown()
+            .filter { it.isFile && it.extension.lowercase() in assetFontExtensions }
+            .map { it.relativeTo(assetsRoot).invariantSeparatorsPath }
+            .sorted()
+            .toList()
+        check(assetFonts.isEmpty()) {
+            "These fonts ship in the APK's assets:\n" +
+                assetFonts.joinToString("\n") { "  - assets/$it" } +
+                "\n\nThe app draws only res/font typefaces. Exclude them in StripSparkFontAssets (or a " +
+                "transform like it) if nothing reads them; otherwise move them to res/font and attribute them."
+        }
+
+        // The reverse direction. The checks above fail on something shipped with no entry;
         // neither fails on an entry covering nothing shipped, so a dependency that leaves the graph
         // strands its attribution and the screen keeps crediting a library the APK does not carry.
         // That is not a licence risk, but it is a false statement in the one screen whose whole job

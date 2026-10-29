@@ -141,7 +141,39 @@
             <meta-data
                 android:name="androidx.emoji2.text.EmojiCompatInitializer"
                 tools:node="remove" />
+            <!-- Spark brings FileKit, whose initializer hands it the application context at every
+                 launch for its file pickers. The app opens no picker through FileKit. -->
+            <meta-data
+                android:name="io.github.vinceglb.filekit.initializer.FileKitInitializer"
+                tools:node="remove" />
         </provider>
+
+        <!-- FileKit's provider, which shares files its pickers and camera capture create. Another
+             app reaches it through a granted URI; the app shares its CSV through its own
+             FileProvider above and never through FileKit. -->
+        <provider
+            android:name="io.github.vinceglb.filekit.dialogs.fileprovider.FileKitFileProvider"
+            android:authorities="${applicationId}.FileKitFileProvider"
+            tools:node="remove" />
+
+        <!-- Compose Resources' provider, which captures the application context at launch so a
+             Res.* read can find its files. Spark's Android code reads its fonts and icons through R,
+             and the app makes no Res.* read, since one throws without this provider. Lint reports
+             the class missing although Compose Resources carries it, hence the MissingClass ignore. -->
+        <provider
+            android:name="org.jetbrains.compose.resources.AndroidContextProvider"
+            android:authorities="${applicationId}.resources.AndroidContextProvider"
+            tools:ignore="MissingClass"
+            tools:node="remove" />
+
+        <!-- FileKit's request that Play services install the photo picker backport
+             (photopicker_activity) on the device. The app opens no photo picker. The entry is a
+             declaration Play services reads, with no class in any library, hence the MissingClass
+             ignore. -->
+        <service
+            android:name="com.google.android.gms.metadata.ModuleDependencies"
+            tools:ignore="MissingClass"
+            tools:node="remove" />
 
     </application>
 

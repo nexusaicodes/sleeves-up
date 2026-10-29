@@ -12,14 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
@@ -36,11 +28,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.CalendarDotOutline
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.tokens.highlight
 import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
+import com.checkin.app.ui.components.AppIconButton
+import com.checkin.app.ui.components.AppIcons
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.SessionIntervalRow
+import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.util.TimeFormat
 import java.time.YearMonth
@@ -154,6 +154,7 @@ private fun LazyListScope.calendarItems(uiState: HistoryUiState, viewModel: Hist
     item {
         MonthSelector(
             currentMonth = uiState.currentMonth,
+            hasNextMonth = uiState.hasNextMonth,
             onPrevious = { viewModel.previousMonth() },
             onNext = { viewModel.nextMonth() },
         )
@@ -185,9 +186,13 @@ private val WEEKDAY_HEADER_HEIGHT = 20.dp
 /**
  * The day-detail slot, sized to whichever of its states is tallest.
  *
- * That is the placeholder rather than the sessions: `EmptyState` is 24dp of padding at each end, a
- * 48dp icon, 12dp, a title line, 4dp and a two-line message — around 176dp, against roughly 140dp
- * for a date, a summary line and three ledger rows.
+ * That is the placeholder rather than the sessions. `EmptyState` is 24dp of padding at each end, a
+ * 48dp icon, 12dp, a 24dp title line (Outfit `titleMedium`), 4dp and the message in `body2` at 20dp a
+ * line: 176dp with two lines. Two is the most it takes at the default font scale, since the longest
+ * message, "Tap a day in the calendar to see its sessions.", is 284dp of Manrope against 280dp of
+ * room on a 360dp phone (20dp screen and 24dp placeholder padding each side), and still two lines in
+ * the 232dp a 320dp phone leaves. The sessions state is a 24dp date, a 16dp summary and 4dp, then
+ * three 28dp ledger rows at a 4dp pitch: 140dp.
  *
  * It is a constant rather than a measurement because the grid above has to be sized before the slot
  * below it is laid out. **Keep it in step with [daySlotItems]** — over-stating it costs the grid height
@@ -223,7 +228,7 @@ private fun LazyListScope.daySlotItems(uiState: HistoryUiState) {
     when {
         dateKey == null -> item {
             EmptyState(
-                icon = Icons.Default.Event,
+                icon = LeboncoinIcons.CalendarDotOutline,
                 title = stringResource(R.string.empty_day_detail_title),
                 message = stringResource(R.string.empty_day_detail_message),
             )
@@ -231,7 +236,7 @@ private fun LazyListScope.daySlotItems(uiState: HistoryUiState) {
 
         sessions.isEmpty() -> item {
             EmptyState(
-                icon = Icons.Default.Event,
+                icon = LeboncoinIcons.CalendarDotOutline,
                 // Names the day rather than restating "no day selected" — the tap did land.
                 title = TimeFormat.dateKeyWithWeekday(dateKey, LocalTimePatterns.current).orEmpty(),
                 message = stringResource(R.string.empty_day_sessions_message),
@@ -265,7 +270,7 @@ private fun DayHeader(dateKey: String, sessions: List<CheckInSession>) {
         TimeFormat.dateKeyWithWeekday(dateKey, patterns)?.let { date ->
             Text(
                 text = date,
-                style = MaterialTheme.typography.titleMedium,
+                style = LocalAppTypography.current.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
         }
@@ -275,36 +280,35 @@ private fun DayHeader(dateKey: String, sessions: List<CheckInSession>) {
                 pluralStringResource(R.plurals.sessions_count, sessions.size, sessions.size),
                 TimeFormat.durationShort(sessions.sumOf { it.duration ?: 0L }, patterns),
             ),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = SparkTheme.typography.caption.highlight,
+            color = SparkTheme.colors.onBackgroundVariant,
         )
     }
 }
 
 @Composable
-private fun MonthSelector(currentMonth: YearMonth, onPrevious: () -> Unit, onNext: () -> Unit) {
+private fun MonthSelector(currentMonth: YearMonth, hasNextMonth: Boolean, onPrevious: () -> Unit, onNext: () -> Unit) {
     val patterns = LocalTimePatterns.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onPrevious) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = stringResource(R.string.previous_month),
-            )
-        }
+        AppIconButton(
+            icon = AppIcons.ChevronStart,
+            contentDescription = stringResource(R.string.previous_month),
+            onClick = onPrevious,
+        )
         Text(
             text = TimeFormat.monthYear(currentMonth, patterns),
-            style = MaterialTheme.typography.titleLarge,
+            style = LocalAppTypography.current.titleLarge,
             fontWeight = FontWeight.Bold,
         )
-        IconButton(onClick = onNext) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = stringResource(R.string.next_month),
-            )
-        }
+        AppIconButton(
+            icon = AppIcons.ChevronEnd,
+            contentDescription = stringResource(R.string.next_month),
+            onClick = onNext,
+            enabled = hasNextMonth,
+        )
     }
 }

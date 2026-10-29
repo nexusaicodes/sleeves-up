@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import com.adevinta.spark.icons.SparkIcon
 import com.checkin.app.R
 
 /**
@@ -15,7 +16,7 @@ import com.checkin.app.R
 @Composable
 fun CameraDisclosureScreen(onAccept: () -> Unit, onDismiss: () -> Unit) {
     GateMessageScreen(
-        icon = Icons.Rounded.Face,
+        icon = SparkIcon.Vector(Icons.Rounded.Face),
         title = stringResource(R.string.camera_disclosure_title),
         message = stringResource(R.string.camera_disclosure_message),
         actionLabel = stringResource(R.string.camera_disclosure_button),

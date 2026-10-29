@@ -7,13 +7,13 @@ import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.surface.Surface
 import com.checkin.app.data.local.Habit
 import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.ui.AppRoot
@@ -60,7 +60,7 @@ class MainActivity : FragmentActivity() {
             CheckInAppTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
+                    color = SparkTheme.colors.background,
                 ) {
                     AppRoot(onGatePassed = ::onRootGatePassed, onHabitPicked = ::onHabitPicked)
                 }

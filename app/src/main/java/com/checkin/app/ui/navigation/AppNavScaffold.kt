@@ -2,16 +2,7 @@ package com.checkin.app.ui.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -23,14 +14,23 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.adevinta.spark.ExperimentalSparkApi
+import com.adevinta.spark.components.appbar.TopAppBar
+import com.adevinta.spark.components.scaffold.Scaffold
+import com.adevinta.spark.components.snackbars.SnackbarHost
+import com.adevinta.spark.components.snackbars.SnackbarHostState
+import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.ui.AppUpdateOffer
 import com.checkin.app.ui.ForfeitUpdateCheck
 import com.checkin.app.ui.UpdateCheckTurn
 import com.checkin.app.ui.checkin.CheckInViewModel
+import com.checkin.app.ui.components.AppIconButton
+import com.checkin.app.ui.components.AppIcons
 import com.checkin.app.ui.components.LocalSnackbarHostState
 import com.checkin.app.ui.habits.HabitsViewModel
 import com.checkin.app.ui.presence.PresenceGate
+import com.checkin.app.ui.theme.LocalAppTypography
 import kotlinx.coroutines.launch
 
 /**
@@ -113,22 +113,29 @@ internal fun AppNavScaffold(navController: NavHostController, offerUpdates: Bool
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+// Spark's top bar is experimental, and its colour and scroll parameters are M3's experimental types.
+@OptIn(ExperimentalSparkApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun AppTopBar(currentScreen: Screen, onBack: (() -> Unit)?, actions: @Composable RowScope.() -> Unit) {
     // Start-aligned, so the title and the habit switcher at the end each keep their own side rather
     // than the title being centred in whatever width the switcher leaves.
     TopAppBar(
-        title = { Text(stringResource(currentScreen.titleRes), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        title = {
+            Text(
+                stringResource(currentScreen.titleRes),
+                style = LocalAppTypography.current.titleLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
         actions = actions,
         navigationIcon = {
             if (onBack != null) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.nav_back),
-                    )
-                }
+                AppIconButton(
+                    icon = AppIcons.Back,
+                    contentDescription = stringResource(R.string.nav_back),
+                    onClick = onBack,
+                )
             }
         },
     )

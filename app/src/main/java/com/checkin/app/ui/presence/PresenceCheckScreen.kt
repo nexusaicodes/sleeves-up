@@ -8,24 +8,16 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -40,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -53,7 +46,18 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Tertiary
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.Cross
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.icons.LockOutline
+import com.adevinta.spark.icons.SparkIcon
 import com.checkin.app.R
+import com.checkin.app.ui.components.AppIconButton
+import com.checkin.app.ui.theme.SparkColorScope
+import com.checkin.app.ui.theme.SparkDark
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.atomic.AtomicBoolean
@@ -212,7 +216,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(SparkTheme.colors.background),
     ) {
         AndroidView(
             factory = { ctx ->
@@ -270,125 +274,138 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
             modifier = Modifier.fillMaxSize(),
         )
 
-        IconButton(
-            onClick = onDismiss,
+        OverPreview(
+            shape = SparkTheme.shapes.full,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .statusBarsPadding()
                 .padding(16.dp),
         ) {
-            Icon(
-                Icons.Default.Close,
+            AppIconButton(
+                icon = LeboncoinIcons.Cross,
                 contentDescription = stringResource(R.string.presence_dismiss),
-                tint = MaterialTheme.colorScheme.onSurface,
+                onClick = onDismiss,
             )
         }
 
-        Column(
+        OverPreview(
+            shape = SparkTheme.shapes.large,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(bottom = 48.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(start = 16.dp, end = 16.dp, bottom = 48.dp),
         ) {
-            successMessage?.let { msg ->
-                Text(
-                    text = msg,
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    // Announce the outcome to TalkBack as it changes.
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp)
-                        .semantics { liveRegion = LiveRegionMode.Polite },
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                successMessage?.let { msg ->
+                    Text(
+                        text = msg,
+                        color = SparkTheme.colors.main,
+                        style = SparkTheme.typography.body2,
+                        // Announce the outcome to TalkBack as it changes.
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
 
-            errorMessage?.let { msg ->
-                Text(
-                    text = msg,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp)
-                        .semantics { liveRegion = LiveRegionMode.Polite },
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+                errorMessage?.let { msg ->
+                    Text(
+                        text = msg,
+                        color = SparkTheme.colors.error,
+                        style = SparkTheme.typography.body2,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
 
-            if (cameraUsable == false) {
-                Text(
-                    text = stringResource(
-                        if (canUseBiometric) {
-                            R.string.presence_unsupported
-                        } else {
-                            R.string.presence_unsupported_no_unlock
-                        },
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp)
-                        .semantics { liveRegion = LiveRegionMode.Polite },
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            } else if (successMessage == null) {
-                // What the screen says while it looks. Shown from the moment the gate opens rather
-                // than from the first capture result, because a camera still being opened is a camera
-                // that has not found anyone either — and the alternative is a bare preview that
-                // states nothing at all for as long as the bind takes. It changes with the wait
-                // running out, so the button that appears then is explained rather than simply there.
-                Text(
-                    text = stringResource(
-                        if (searchTimedOut) R.string.presence_looking_slow else R.string.presence_looking,
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp)
-                        .semantics { liveRegion = LiveRegionMode.Polite },
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                if (cameraUsable == false) {
+                    Text(
+                        text = stringResource(
+                            if (canUseBiometric) {
+                                R.string.presence_unsupported
+                            } else {
+                                R.string.presence_unsupported_no_unlock
+                            },
+                        ),
+                        color = SparkTheme.colors.onBackgroundVariant,
+                        style = SparkTheme.typography.body2,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                } else if (successMessage == null) {
+                    // What the screen says while it looks. Shown from the moment the gate opens rather
+                    // than from the first capture result, because a camera still being opened is a camera
+                    // that has not found anyone either — and the alternative is a bare preview that
+                    // states nothing at all for as long as the bind takes. It changes with the wait
+                    // running out, so the button that appears then is explained rather than simply there.
+                    Text(
+                        text = stringResource(
+                            if (searchTimedOut) R.string.presence_looking_slow else R.string.presence_looking,
+                        ),
+                        color = SparkTheme.colors.onBackgroundVariant,
+                        style = SparkTheme.typography.body2,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
 
-            val offerBiometric = PresenceCheckRules.offersFallback(
-                passed = successMessage != null,
-                usingDeviceUnlock = usingDeviceUnlock,
-                searchTimedOut = searchTimedOut,
-            )
-            if (offerBiometric) {
-                if (canUseBiometric) {
-                    OutlinedButton(onClick = { launchBiometric() }) {
-                        Icon(
-                            Icons.Default.Fingerprint,
-                            contentDescription = null, // label text conveys the action
-                            modifier = Modifier.size(20.dp),
+                val offerBiometric = PresenceCheckRules.offersFallback(
+                    passed = successMessage != null,
+                    usingDeviceUnlock = usingDeviceUnlock,
+                    searchTimedOut = searchTimedOut,
+                )
+                if (offerBiometric) {
+                    if (canUseBiometric) {
+                        // Spark draws a button's icon with no description: the label conveys the action.
+                        Button.Tertiary(
+                            onClick = { launchBiometric() },
+                            text = stringResource(R.string.biometric_use_device_unlock),
+                            icon = SparkIcon.Vector(Icons.Default.Fingerprint),
                         )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text(stringResource(R.string.biometric_use_device_unlock))
-                    }
-                } else {
-                    // The fallback the message names does not exist yet. Handing the user the screen
-                    // that creates it keeps the check gated without leaving only Dismiss — and since
-                    // check-out is as gated as check-in, a dead end here would leave the session open
-                    // until the day boundary wrote a full day onto a row nothing can edit.
-                    OutlinedButton(
-                        onClick = {
-                            if (!openScreenLockSettings(context)) {
-                                errorMessage = unavailableMessage
-                            }
-                        },
-                    ) {
-                        Icon(
-                            Icons.Default.Lock,
-                            contentDescription = null, // label text conveys the action
-                            modifier = Modifier.size(20.dp),
+                    } else {
+                        // The fallback the message names does not exist yet. Handing the user the screen
+                        // that creates it keeps the check gated without leaving only Dismiss — and since
+                        // check-out is as gated as check-in, a dead end here would leave the session open
+                        // until the day boundary wrote a full day onto a row nothing can edit.
+                        Button.Tertiary(
+                            onClick = {
+                                if (!openScreenLockSettings(context)) {
+                                    errorMessage = unavailableMessage
+                                }
+                            },
+                            text = stringResource(R.string.presence_set_up_screen_lock),
+                            icon = LeboncoinIcons.LockOutline,
                         )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text(stringResource(R.string.presence_set_up_screen_lock))
                     }
                 }
             }
         }
     }
 }
+
+/**
+ * A pocket of the dark scheme on a scrim, for anything drawn over the camera preview.
+ *
+ * The preview is whatever the front camera sees, so it can be a white wall in either theme, and text
+ * in the page's colours has nothing fixed to stand on. Inside, every colour is the dark scheme's, so
+ * the hint, the error, the outlined fallback button and the dismiss mark stay light on dark whatever
+ * the theme. [SCRIM_ALPHA] is sized for the worst case, the scrim over pure white, and the
+ * vermilion error text is what sets it.
+ */
+@Composable
+private fun OverPreview(shape: Shape, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    SparkColorScope(transform = { SparkDark }) {
+        Box(modifier = modifier.background(SparkTheme.colors.scrim.copy(alpha = SCRIM_ALPHA), shape)) {
+            content()
+        }
+    }
+}
+
+/**
+ * Black at this alpha over pure white is #1F1F1F. On it the dark scheme reads at 4.57:1 for the
+ * error's vermilion, 7.59:1 for the muted hint, 13.1:1 for the cream text and the dismiss mark,
+ * and 3.49:1 for the fallback button's outline, against 4.5:1 for text and 3:1 for the outline.
+ * Over anything darker than white, every figure only rises.
+ */
+private const val SCRIM_ALPHA = 0.88f

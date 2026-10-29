@@ -41,6 +41,8 @@ data class ReportsUiState(
     val loading: Boolean = true,
     /** What span every figure below describes. The selector sets it; nothing else may narrow it. */
     val scope: ReportScope = ReportScope.AllTime,
+    /** Whether a later month exists to step to: false under all time and on the month in progress. */
+    val hasNextMonth: Boolean = false,
     /** The day of the first session, or null until one exists. Read from the sessions, never stored. */
     val trackingStartDate: LocalDate? = null,
     /** The counted days [scope] covers, or null when it covers none — the empty state. */
@@ -96,7 +98,7 @@ class ReportsViewModel(
     // the pipeline rebuilds for the new habit, so the switch is one rebuild rather than two, and
     // nothing holds the subscription open while the tab is off screen.
     private val habitId = habits.selectedHabitIdFlow().onEach { id ->
-        if (shownHabitId != null && id != shownHabitId) selectMonth()
+        if (shownHabitId != null && id != shownHabitId) showCurrentMonth()
         shownHabitId = id
     }
 
@@ -125,7 +127,7 @@ class ReportsViewModel(
                 } else {
                     windowStats(habit, activeScope, start, window)
                 }
-            }
+            }.map { state -> state.copy(hasNextMonth = state.scope.hasMonthAfter(today)) }
         }
 
     val uiState: StateFlow<ReportsUiState> = statsFlow.stateIn(
@@ -245,12 +247,27 @@ class ReportsViewModel(
         scope.value = ReportScope.Month(displayedMonth().minusMonths(1))
     }
 
+    /** Stops at the month in progress: a month that has not begun holds no day the record could cover. */
     fun nextMonth() {
+        if (!scope.value.hasMonthAfter(timeSource.today())) return
         scope.value = ReportScope.Month(displayedMonth().plusMonths(1))
     }
 
-    /** Leaving all time returns to the month the user is in, not to whichever they last stepped to. */
+    /**
+     * Leaving all time returns to the month the user is in, not to whichever they last stepped to;
+     * on a month already, nothing moves.
+     *
+     * The decision reads [scope] rather than the rendered state, because the state only catches up
+     * once the window's queries have emitted: judged from the screen, a tap on Month right after one
+     * on All time would see the month it has already left and stay there.
+     */
     fun selectMonth() {
+        if (scope.value is ReportScope.Month) return
+        showCurrentMonth()
+    }
+
+    /** The month in progress, from either scope: where the tab opens, and where a habit switch lands. */
+    private fun showCurrentMonth() {
         scope.value = ReportScope.Month(YearMonth.from(timeSource.today()))
     }
 
@@ -258,16 +275,8 @@ class ReportsViewModel(
         scope.value = ReportScope.AllTime
     }
 
-    /**
-     * Flips between all time and the current month.
-     *
-     * The decision reads [scope] rather than the rendered state, because the state only catches up
-     * once the window's queries have emitted: judged from the screen, a second tap inside that gap
-     * sees the scope it has already left and repeats the move instead of undoing it.
-     */
-    fun toggleAllTime() {
-        if (scope.value is ReportScope.AllTime) selectMonth() else selectAllTime()
-    }
+    private fun ReportScope.hasMonthAfter(today: LocalDate): Boolean =
+        this is ReportScope.Month && month.isBefore(YearMonth.from(today))
 
     private fun displayedMonth(): YearMonth =
         (scope.value as? ReportScope.Month)?.month ?: YearMonth.from(timeSource.today())

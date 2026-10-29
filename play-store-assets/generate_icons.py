@@ -54,8 +54,11 @@ CORNER_FRAC = 0.22    # corner radius as a fraction of cell
 # fiducial, and gaps in a line read as a letter or a bolt. Verified at 48dp against both.
 EMPTY_CELLS = frozenset({(1, 2), (2, 0)})
 
-BRAND_INDIGO = (63, 81, 181)   # #3F51B5
-WHITE = (255, 255, 255)
+# mudda's own icon: a paper mark on an ink tile. INK is ic_launcher_background (and so the
+# splash); PAPER is the launcher foreground's fill. The themed icon ignores the fill, and the
+# notification silhouette is white, since the status bar reads only its alpha.
+INK = (0x1B, 0x2A, 0x4A)       # #1B2A4A
+PAPER = (0xF1, 0xE6, 0xCE)     # #F1E6CE
 
 SAFE_RADIUS = 33.0    # adaptive-icon safe circle; nothing may exceed this
 
@@ -141,7 +144,7 @@ def verify():
 
 # --- raster rendering for the Play listing ---------------------------------------------
 
-def render(size, bg=BRAND_INDIGO, fg=WHITE, supersample=4):
+def render(size, bg=INK, fg=PAPER, supersample=4):
     """Render the mark to a square RGBA image, anti-aliased by supersampling.
 
     Pillow's rounded_rectangle draws the same shape the cubics above describe, so the raster
@@ -157,6 +160,11 @@ def render(size, bg=BRAND_INDIGO, fg=WHITE, supersample=4):
     for x0, y0, x1, y1 in cells():
         d.rounded_rectangle([x0 * k, y0 * k, x1 * k, y1 * k], radius=r * k, fill=fg)
     return img.resize((size, size), Image.LANCZOS)
+
+
+def hex_colour(rgb):
+    """An (r, g, b) triple as the #RRGGBB a resource file takes."""
+    return "#" + "".join(f"{c:02X}" for c in rgb)
 
 
 # Notification icons live on a 24x24 viewport. Scale so the grid spans 20 of 24, leaving the
@@ -178,12 +186,16 @@ if __name__ == "__main__":
           f"span {SIDE:g} of 108, corner radius {corner_radius():.2f}\n")
 
     print("--- ic_launcher_foreground.xml (viewport 108) - launcher, monochrome and splash ---")
+    print(f"fillColor {hex_colour(PAPER)}")
     print(path_data())
     print()
 
     print("--- ic_stat_checkin.xml (viewport 24) ---")
+    print("fillColor #FFFFFF")
     print(stat_path_data())
     print()
+
+    print(f"--- values/colors.xml ---\nic_launcher_background {hex_colour(INK)}\n")
 
     out = "app/src/main/ic_launcher-playstore.png"
     render(512).convert("RGB").save(out)

@@ -8,18 +8,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Ghost
+import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.SectionCard
 import com.checkin.app.ui.components.SectionDivider
+import com.checkin.app.ui.theme.LocalAppTypography
 
 /**
  * Which habit a check-in is for, asked when the home-screen widget's one button is pressed with more
@@ -53,7 +54,7 @@ fun HabitPickerScreen(active: List<HabitEntry>, onPick: (habitId: Long) -> Unit,
                 item {
                     Text(
                         text = stringResource(R.string.habit_picker_title),
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = LocalAppTypography.current.headlineSmall,
                         modifier = Modifier.padding(horizontal = 4.dp),
                     )
                 }
@@ -71,9 +72,11 @@ fun HabitPickerScreen(active: List<HabitEntry>, onPick: (habitId: Long) -> Unit,
                     }
                 }
             }
-            TextButton(onClick = onDismiss, modifier = Modifier.padding(bottom = 8.dp)) {
-                Text(stringResource(R.string.presence_gate_cancel))
-            }
+            Button.Ghost(
+                onClick = onDismiss,
+                text = stringResource(R.string.presence_gate_cancel),
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
         }
     }
 }

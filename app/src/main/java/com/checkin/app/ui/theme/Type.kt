@@ -1,10 +1,14 @@
 package com.checkin.app.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import com.adevinta.spark.tokens.SparkTypography
+import com.adevinta.spark.tokens.sparkTypography
 import com.checkin.app.R
 import java.util.Locale
 
@@ -61,7 +65,13 @@ private val Arabic = FontFamily(
 // rather than silently falling back to the system font.
 private val Default = Typography()
 
-/** The app's type for [locale]: the Outfit/Manrope split, or Plex Arabic throughout for Arabic. */
+/**
+ * The app's full Material 3 type for [locale]: the Outfit/Manrope split, or Plex Arabic throughout.
+ *
+ * Not the theme's typography: Spark's bridge builds that from [sparkTypographyFor]. This is the
+ * fallback for what Spark cannot reach — the M3 time picker's local theme, and the language picker
+ * naming each language in its own face — and the source [AppTypography] is cut from.
+ */
 fun typographyFor(locale: Locale): Typography {
     val arabic = locale.language == "ar"
     val display = if (arabic) Arabic else Display
@@ -83,6 +93,79 @@ fun typographyFor(locale: Locale): Typography {
         labelMedium = Default.labelMedium.copy(fontFamily = text),
         labelSmall = Default.labelSmall.copy(fontFamily = text),
     )
+}
+
+/**
+ * The one family Spark stamps onto every style it holds: Manrope, or Plex Arabic under Arabic.
+ *
+ * Spark's theme applies a single family to all of its typography, so the Outfit/Manrope split
+ * cannot live inside it. Spark's own controls draw body and label text (button labels, fields), which
+ * is Manrope's size range; Outfit's sizes are the app's, and live in [AppTypography].
+ */
+fun sparkFamilyFor(locale: Locale): FontFamily = if (locale.language == "ar") Arabic else Text
+
+/**
+ * Spark's typography at Material 3's metrics, so every fit budget sized against M3 text holds.
+ *
+ * Each style is the M3 style the bridge maps onto it: `body1` is `bodyLarge` (16/24), `body2`
+ * `bodyMedium` (14/20, and the default for unstyled text), `caption` `bodySmall` (12/16), `small`
+ * `labelSmall` (11/16 rather than Spark's 10/14, which the calendar's weekday header is sized for),
+ * and `callout`, Spark's button label, `labelLarge` (14/20 medium). The highlight weight is Medium,
+ * the weight the app's label styles carry. Display and headline keep Spark's defaults: the app's
+ * display text reads [AppTypography], never these.
+ *
+ * The family here is a placeholder: the theme passes [sparkFamilyFor] and Spark stamps it on.
+ */
+fun sparkTypographyFor(locale: Locale): SparkTypography {
+    val m3 = typographyFor(locale)
+    return sparkTypography(
+        body1 = m3.bodyLarge,
+        body2 = m3.bodyMedium,
+        caption = m3.bodySmall,
+        small = m3.labelSmall,
+        callout = m3.labelLarge,
+        highlightWeight = FontWeight.Medium,
+    )
+}
+
+/**
+ * The display, headline and title styles, in Outfit (Plex Arabic under Arabic), read through
+ * [LocalAppTypography].
+ *
+ * They sit outside Spark's typography because Spark stamps one family on everything it holds, and
+ * outside `MaterialTheme.typography` because Spark's bridge maps `titleMedium` to its 32sp bold
+ * `display2`. Only the six styles the app draws are here; a new size is a new field.
+ */
+@Immutable
+data class AppTypography(
+    val displayMedium: TextStyle,
+    val displaySmall: TextStyle,
+    val headlineMedium: TextStyle,
+    val headlineSmall: TextStyle,
+    val titleLarge: TextStyle,
+    val titleMedium: TextStyle,
+)
+
+/** The [AppTypography] for [locale], at Material 3's metrics. */
+fun appTypographyFor(locale: Locale): AppTypography {
+    val m3 = typographyFor(locale)
+    return AppTypography(
+        displayMedium = m3.displayMedium,
+        displaySmall = m3.displaySmall,
+        headlineMedium = m3.headlineMedium,
+        headlineSmall = m3.headlineSmall,
+        titleLarge = m3.titleLarge,
+        titleMedium = m3.titleMedium,
+    )
+}
+
+/**
+ * The reader's [AppTypography]. There is no default, for the reason `LocalTimePatterns` has none:
+ * a composable reached outside `CheckInAppTheme` would otherwise draw in the wrong face with
+ * nothing failing.
+ */
+val LocalAppTypography = staticCompositionLocalOf<AppTypography> {
+    error("LocalAppTypography is provided by CheckInAppTheme")
 }
 
 /**
