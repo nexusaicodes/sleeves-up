@@ -1,5 +1,8 @@
 import com.android.build.api.artifact.SingleArtifact
+import com.android.build.api.variant.BuiltArtifactsLoader
+import java.security.MessageDigest
 import java.util.Properties
+import java.util.zip.ZipFile
 import javax.inject.Inject
 
 plugins {
@@ -239,8 +242,87 @@ abstract class StripSparkFontAssets : DefaultTask() {
     }
 }
 
-/** The release variant's final assets, after every transform, as the APK packages them. */
-val releaseAssets = objects.directoryProperty()
+// Every typeface the release APK carries must be one of the app's own res/font files, byte for
+// byte, and every one of those must ship. A library's font arrives two ways, and keeping both out is
+// what this checks: in its own res/font (Spark's Nunito, discarded only by res/raw/keep.xml) and in
+// its assets (Spark's Compose Resources copy, stripped by StripSparkFontAssets). Reading the packaged
+// APK sees both after shrinking, whatever either mechanism does. Entries are recognised by their
+// header rather than their path, since the release build may shorten resource paths.
+abstract class VerifyPackagedFonts : DefaultTask() {
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val apk: DirectoryProperty
+
+    @get:Internal
+    abstract val apkLoader: Property<BuiltArtifactsLoader>
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val ownFonts: DirectoryProperty
+
+    @get:OutputFile
+    abstract val stamp: RegularFileProperty
+
+    @TaskAction
+    fun verify() {
+        val artifacts = checkNotNull(apkLoader.get().load(apk.get())) { "No release APK in ${apk.get()}" }
+        val apkFile = File(artifacts.elements.single().outputFile)
+
+        val own = ownFonts.get().asFile.listFiles().orEmpty()
+            .filter { it.isFile && it.extension.lowercase() in setOf("ttf", "otf", "ttc") }
+            .associateBy { sha256(it.readBytes()) }
+        check(own.isNotEmpty()) { "Found no typeface in ${ownFonts.get()}; the check would pass by comparing nothing." }
+
+        val packaged = ZipFile(apkFile).use { zip ->
+            zip.entries().toList()
+                .filterNot { it.isDirectory }
+                .mapNotNull { entry ->
+                    val bytes = zip.getInputStream(entry).use { it.readBytes() }
+                    if (isTypeface(bytes)) entry.name to sha256(bytes) else null
+                }
+        }
+
+        val foreign = packaged.filter { (_, hash) -> hash !in own }.map { it.first }.sorted()
+        check(foreign.isEmpty()) {
+            "These typefaces ship in ${apkFile.name} and are not the app's own res/font files:\n" +
+                foreign.joinToString("\n") { "  - $it" } +
+                "\n\nA library brought them. Discard a res/font copy in res/raw/keep.xml, strip an assets " +
+                "copy in StripSparkFontAssets (or a transform like it), or, if the app draws it, move it " +
+                "to res/font and attribute it."
+        }
+
+        val shipped = packaged.map { it.second }.toSet()
+        val missing = own.filterKeys { it !in shipped }.values.map { "res/font/${it.name}" }.sorted()
+        check(missing.isEmpty()) {
+            "These res/font typefaces are missing from ${apkFile.name}:\n" +
+                missing.joinToString("\n") { "  - $it" } +
+                "\n\nThe shrinker dropped them as unused, or a build step altered them. Delete a font " +
+                "nothing draws (and its licence entry); otherwise find what changed the bytes."
+        }
+
+        val summary = "Packaged fonts: ${packaged.size} in ${apkFile.name}, each one of ${own.size} res/font files."
+        logger.lifecycle(summary)
+        stamp.get().asFile.apply { parentFile.mkdirs() }.writeText("$summary\n")
+    }
+
+    // sfnt version tags: TrueType (0x00010000 or 'true'), CFF OpenType ('OTTO') and a collection ('ttcf').
+    private fun isTypeface(bytes: ByteArray): Boolean {
+        if (bytes.size < 4) return false
+        val tag = bytes.copyOfRange(0, 4)
+        return tag.contentEquals(byteArrayOf(0, 1, 0, 0)) ||
+            String(tag, Charsets.ISO_8859_1) in setOf("true", "OTTO", "ttcf")
+    }
+
+    private fun sha256(bytes: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+}
+
+tasks.register<VerifyPackagedFonts>("verifyPackagedFonts") {
+    group = "verification"
+    description = "Fails unless the release APK's typefaces are exactly the app's own res/font files."
+    ownFonts.set(layout.projectDirectory.dir("src/main/res/font"))
+    stamp.set(layout.buildDirectory.file("reports/packagedFonts.txt"))
+}
 
 androidComponents {
     onVariants { variant ->
@@ -249,7 +331,12 @@ androidComponents {
         variant.artifacts.use(strip)
             .wiredWithDirectories(StripSparkFontAssets::mergedAssets, StripSparkFontAssets::strippedAssets)
             .toTransform(SingleArtifact.ASSETS)
-        if (variant.buildType == "release") releaseAssets.set(variant.artifacts.get(SingleArtifact.ASSETS))
+        if (variant.buildType == "release") {
+            tasks.named<VerifyPackagedFonts>("verifyPackagedFonts") {
+                apk.set(variant.artifacts.get(SingleArtifact.APK))
+                apkLoader.set(variant.artifacts.getBuiltArtifactsLoader())
+            }
+        }
     }
 }
 
@@ -267,22 +354,16 @@ val licenseSourceFile = layout.projectDirectory
 /** What aapt packages out of res/font — a typeface binary, or an XML family that references them. */
 val fontExtensions = setOf("ttf", "otf", "ttc", "xml")
 
-/** A typeface binary, wherever it sits in assets: there is no XML family outside res/font. */
-val assetFontExtensions = setOf("ttf", "otf", "ttc")
-
 tasks.register("verifyLicenseCoverage") {
     group = "verification"
-    description = "Fails if a release-classpath group id or a res/font typeface has no licence entry, " +
-        "or a typeface ships in the release assets."
+    description = "Fails if a release-classpath group id or a res/font typeface has no licence entry."
 
     val source = licenseSourceFile
     val fonts = layout.projectDirectory.dir("src/main/res/font")
-    val assets = releaseAssets
     val classpath = configurations.named("releaseRuntimeClasspath")
     val stamp = layout.buildDirectory.file("reports/licenseCoverage.txt")
     inputs.file(source)
     inputs.dir(fonts)
-    inputs.dir(assets)
     // Gradle only skips a task that declares both inputs and outputs, and resolving the release
     // classpath is not cheap — it is the dependency resolution deliberately kept out of
     // staticAnalysis. Without a declared output the inputs above buy nothing and every `check`
@@ -346,23 +427,6 @@ tasks.register("verifyLicenseCoverage") {
                 unattributed.joinToString("\n") { "  - res/font/$it" } +
                 "\n\nAdd an entry with coordinates \"font:<resource name>\", taking the copyright " +
                 "from the font's own name table rather than guessing."
-        }
-
-        // A library can ship a typeface as an asset instead (Compose Resources does), where neither
-        // the resource shrinker nor the check above reaches it. Every font the app draws is a
-        // res/font resource, so any typeface in the release variant's final assets fails the build:
-        // strip it in the assets transform if nothing reads it, or move it to res/font and attribute it.
-        val assetsRoot = assets.get().asFile
-        val assetFonts = assetsRoot.walkTopDown()
-            .filter { it.isFile && it.extension.lowercase() in assetFontExtensions }
-            .map { it.relativeTo(assetsRoot).invariantSeparatorsPath }
-            .sorted()
-            .toList()
-        check(assetFonts.isEmpty()) {
-            "These fonts ship in the APK's assets:\n" +
-                assetFonts.joinToString("\n") { "  - assets/$it" } +
-                "\n\nThe app draws only res/font typefaces. Exclude them in StripSparkFontAssets (or a " +
-                "transform like it) if nothing reads them; otherwise move them to res/font and attribute them."
         }
 
         // The reverse direction. The checks above fail on something shipped with no entry;
@@ -599,4 +663,6 @@ tasks.register("verifyMergedManifest") {
     }
 }
 
-tasks.named("check") { dependsOn("verifyLicenseCoverage", "verifyDocMap", "verifyMergedManifest") }
+tasks.named("check") {
+    dependsOn("verifyLicenseCoverage", "verifyDocMap", "verifyMergedManifest", "verifyPackagedFonts")
+}

@@ -69,6 +69,7 @@ export JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew :app:verifyDocMap           # CLAUDE.md and the source tree agree
 ./gradlew :app:verifyLicenseCoverage  # in-app licence list matches the release classpath
 ./gradlew :app:verifyMergedManifest   # merged release manifest matches app/merged-manifest-allowlist.txt
+./gradlew :app:verifyPackagedFonts    # release APK carries only the app's own res/font typefaces
 ./gradlew :app:lintDebug              # Android lint
 ```
 
