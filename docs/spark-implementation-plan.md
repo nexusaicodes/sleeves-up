@@ -384,7 +384,7 @@ Watch `primary` → `main`, which turns indigo into ink. That is correct per des
 
 ### 5.6 Icons: Material → Spark (PR 3)
 
-**Mirror** marks the icons that are `Icons.AutoMirrored` today, which take `.mirroredInRtl()`. Hold each mirrored icon in a top-level `val`, as `MirroredIcon.kt`'s KDoc says. "Gap" means Spark has no equivalent, so the Material vector stays, drawn through Spark's `Icon` (open item 1 in section 9). Spark's Outline cut is used throughout, for one weight.
+**Mirror** marks the icons that are `Icons.AutoMirrored` today, which take `.mirroredInRtl()`. Hold each mirrored icon in a top-level `val`, as `MirroredIcon.kt`'s KDoc says. "Gap" means Spark has no equivalent, so the Material vector stays, drawn through Spark's `Icon` (confirmed), and `material-icons-extended` stays a dependency for them. Spark's Outline cut is used throughout, for one weight.
 
 | Material today | Where | Spark | Mirror |
 |---|---|---|---|
@@ -412,13 +412,13 @@ Watch `primary` → `main`, which turns indigo into ink. That is correct per des
 | `Rounded.PhotoCamera` | `PresenceGate` | `CameraOutline` | no |
 | `Default.Block` | `PrivacyScreen` | `BannedOutline` | no |
 | `Filled.MusicNote`, `Filled.FitnessCenter`, `Filled.SelfImprovement`, `Filled.Brush` | `HabitExample` | `Music`, `DumbbellCriteria`, `LotusFlowerCriteria`, `PaintPalette` | no |
-| `Default.SwapHoriz` | `HabitSwitcher` | **gap** (no two-way arrow) | — |
-| `Default.Fingerprint` | `PresenceCheckScreen` device unlock | **gap** (`UnlockOutline` is the nearest) | — |
-| `Rounded.Face` | `CameraDisclosureScreen`, `WelcomeScreen` | **gap**. Spark's faces (`HappyFace`, `NeutralFace`, `SadFace`) carry an expression, which grades: never use them. `UserOutline` is the nearest neutral one. | — |
-| `Rounded.Widgets` | `WelcomeScreen` widget page | **gap** (`LayerOutline` is the nearest) | — |
-| `Default.CloudOff`, `NoAccounts`, `NoPhotography` | `PrivacyScreen` | **gap**: Spark has no struck-through glyphs | — |
+| `Default.SwapHoriz` | `HabitSwitcher` | **gap**: Material kept | — |
+| `Default.Fingerprint` | `PresenceCheckScreen` device unlock | **gap**: Material kept | — |
+| `Rounded.Face` | `CameraDisclosureScreen`, `WelcomeScreen` | **gap**: Material kept. Spark's faces (`HappyFace`, `NeutralFace`, `SadFace`) carry an expression, which grades: never use them. | — |
+| `Rounded.Widgets` | `WelcomeScreen` widget page | **gap**: Material kept | — |
+| `Default.CloudOff`, `NoAccounts`, `NoPhotography` | `PrivacyScreen` | **gap**: Material kept (Spark has no struck-through glyphs) | — |
 
-Spark's `*Criteria` icons are drawn for Leboncoin's listing filters. Check that the ones above sit at the same weight as the rest before taking them, and treat any that don't as gaps.
+Spark's `*Criteria` icons are drawn for Leboncoin's listing filters. Check that the ones above sit at the same weight as the rest before taking them, and treat any that don't as gaps, keeping the Material icon.
 
 ---
 
@@ -471,10 +471,9 @@ PR 1 needs only an install-over plus Licences. PR 3 needs only a screenshot diff
 
 ## 9. Decisions: status
 
-**Confirmed on 2026-10-29:** D1 (Manrope as Spark's family, Outfit in `AppTypography`), D3 (Spark's lint stays an error), D4 (all four manifest removals), D5 (Spark's icons with `mirroredInRtl`), D6 (rebranded `Button.*`), D8 (pill-shaped Check-In button), D11 (segmented control).
+**Confirmed on 2026-10-29:** D1 (Manrope as Spark's family, Outfit in `AppTypography`), D3 (Spark's lint stays an error), D4 (all four manifest removals), D5 (Spark's icons with `mirroredInRtl`), D6 (rebranded `Button.*`), the icon gaps (Material kept), D8 (pill-shaped Check-In button), D11 (segmented control).
 
 **Still open, all small and settled on device during PR 3 and PR 6:**
 
-1. **The icon gaps** in section 5.6: keep the Material vector (two icon styles side by side), or pick the nearest Spark icon even where its meaning drifts.
-2. **Check in and check out icons**: `Import`/`Export` (an arrow into or out of a tray) or `Disconnect` for check out. Neither is a door, which Material's `Login`/`Logout` are.
-3. **`FilledTonalButton` → `Button.Secondary`**: today's tonal button is soft and `Secondary` is solid brass. `Button.Tertiary` (outlined) is the quieter fallback for `HabitEditor`'s time button.
+1. **Check in and check out icons**: `Import`/`Export` (an arrow into or out of a tray) or `Disconnect` for check out. Neither is a door, which Material's `Login`/`Logout` are.
+2. **`FilledTonalButton` → `Button.Secondary`**: today's tonal button is soft and `Secondary` is solid brass. `Button.Tertiary` (outlined) is the quieter fallback for `HabitEditor`'s time button.
