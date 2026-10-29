@@ -300,6 +300,15 @@ Design 5's table, executed:
 - Status-bar icons stay white (alpha only).
 - **Device check**: the launcher icon (themed and unthemed), the splash in both themes, the widget on a light and a dark wallpaper, and no off-white flash at cold start.
 
+**Done** on `plan/spark-migration`. What it found:
+- **Colours**, from design 5 and the palette in `ui/theme/Color.kt`: `brand_window_background` and `widget_background` paper (`#F1E6CE` / `#0E1830`), `widget_text` and `widget_mark_running` ink (`#1B2A4A` / `#EFE4CB`), `widget_mark_rest` ink at 40% (`#661B2A4A` / `#66EFE4CB`), `ic_launcher_background` ink `#1B2A4A` (one value, no night override, as before). Measured: widget text 11.5:1 (light) and 14.0:1 (dark); the launcher's paper mark on ink 11.5:1. The resting mark is 2.25:1 in light and 3.25:1 in dark, decorative (`importantForAccessibility="no"`, the label carries the meaning), keeping the gauge's convention.
+- **`generate_icons.py` now prints the fills and the tile colour** beside each `pathData` (`INK`/`PAPER`, replacing `BRAND_INDIGO`/`WHITE`), so "paste the printed values back" covers colour too; it printed no fill before. Run: `verify()` passes (29.34 of 33). The printed paths were compared with the shipped ones by script and are byte-identical, so only `ic_launcher_foreground.xml`'s `fillColor` changed. `ic_stat_checkin.xml` stays white (printed as such). The 512px Play icon is regenerated, paper on ink.
+- **`ic_stat_check_out` is redrawn from Spark's `spark_icons_lbc_export`** (PR 3's carried gap): the path verbatim with its `evenOdd` fill type, filled white, and no longer `autoMirrored`, since the glyph is symmetric about its vertical axis (as in-app). Its MIT notice is already on the Licences screen (PR 1).
+- Comments naming indigo in `ic_launcher_background.xml` and `themes.xml` now say ink.
+- **Not done, left for the store re-shoot**: the feature graphic (`generate_feature_graphic.py`) still draws its deep-indigo gradient, and `play-store-assets/README.md` describes it against the old launcher indigo. Both go with the screenshots, which need a device.
+- **Gates**: all pass.
+- **Device checks**: the launcher icon themed and unthemed, the splash in both themes, the widget on a light and a dark wallpaper (both faces, at rest and running), the check-out action icon in the timer and reminder notifications, and no off-white flash at cold start.
+
 ### PR 8 — `ui/spark-hardening`: lock it in
 
 1. **Audit the lint suppressions** (D3). Every `@SuppressLint("MaterialComposableHasSparkReplacement")` left in `src/main` carries its reason, and each still has no Spark equivalent: the time picker and the large name field (D9), and nothing else unless the PR says why.
