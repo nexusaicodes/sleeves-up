@@ -55,6 +55,14 @@ jobs:
           -Dorg.gradle.java.installations.paths="$JAVA_HOME"
           :app:testDebugUnitTest :app:verifyLicenseCoverage :app:verifyMergedManifest :app:assembleDebug
 
+      # verifyPackagedFonts reads the minified release APK, so it pays for the R8 build. It is kept
+      # in its own step so a typeface a library slipped in is named apart from a test failure.
+      - name: Verify packaged fonts (release APK)
+        run: >-
+          ./gradlew --stacktrace
+          -Dorg.gradle.java.installations.paths="$JAVA_HOME"
+          :app:verifyPackagedFonts
+
       # Android lint catches what ktlint and detekt structurally cannot: manifest and resource
       # problems, and AndroidX's own @RequiresOptIn markers, which the Kotlin compiler never
       # enforces because they are declared Java-side. It needs a compiled classpath, so it runs
