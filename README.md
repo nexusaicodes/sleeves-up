@@ -71,7 +71,7 @@ export JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew :app:lintDebug              # Android lint
 ```
 
-CI runs all of these on push and PR to `main`, cheapest first. To run `staticAnalysis` before each
+CI runs all of these on push and PR to `main` and to every version branch, cheapest first. To run `staticAnalysis` before each
 commit (once per clone):
 
 ```bash
