@@ -18,6 +18,7 @@ import com.checkin.app.data.local.Habit
 import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.ui.AppRoot
 import com.checkin.app.ui.checkin.CheckOutSignal
+import com.checkin.app.ui.fadeIntoApp
 import com.checkin.app.ui.presence.PresenceCheckSignal
 import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import com.checkin.app.ui.presence.PresenceGate
@@ -47,7 +48,10 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen().setKeepOnScreenCondition { PresenceCheckSignal.resolvingTaps.value > 0 }
+        installSplashScreen().apply {
+            setKeepOnScreenCondition { PresenceCheckSignal.resolvingTaps.value > 0 }
+            fadeIntoApp(this@MainActivity)
+        }
         super.onCreate(savedInstanceState)
         // Transparent bars on every level: below 35 the platform otherwise keeps the theme's opaque ones.
         enableEdgeToEdge()

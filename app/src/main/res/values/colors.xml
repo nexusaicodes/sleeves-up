@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Ink: the adaptive icon's tile and the splash behind the paper mark. Printed by
-         play-store-assets/generate_icons.py, which draws the Play icon in the same pair. -->
+    <!-- Ink: the adaptive icon's tile. Printed by play-store-assets/generate_icons.py, which
+         draws the Play icon in the same pair. -->
     <color name="ic_launcher_background">#1B2A4A</color>
-    <!-- Launch window background: the theme's paper background (light). Overridden in values-night. -->
+    <!-- Launch window background: the theme's paper background (light). Overridden in values-night.
+         The splash's background too, so the splash hands over to a first frame of the same colour. -->
     <color name="brand_window_background">#F1E6CE</color>
+    <!-- The splash's mark (ic_splash_icon): ink on the light splash's paper. -->
+    <color name="splash_mark">#1B2A4A</color>
 
     <!-- The home-screen widget, in the theme's paper and ink (no dynamic colour). The mark is the
          gauge's convention — dimmed at rest, full colour while a session is open — with a rest
