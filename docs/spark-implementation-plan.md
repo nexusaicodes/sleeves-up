@@ -585,3 +585,4 @@ PR 1 needs only an install-over plus Licences. PR 3 needs only a screenshot diff
 ### Device pass (A142, Android 16)
 
 - **Fixed:** Spark 4.2.1's `RadioButtonLabelled` lays out with `Arrangement.Absolute.spacedBy` (bytecode of `SparkToggleLabelledContainerKt`), so the language picker's radios sat on the left under Arabic. `LanguagePicker` now builds its rows around Spark's bare `RadioButton` with `Modifier.selectable` and 16dp spacing, as before the migration. CLAUDE.md's Spark entry carries the rule.
+- **Fixed:** Reports' and History's month steppers stepped into months that had not begun. Both now stop at the month in progress (`hasNextMonth` on each UI state, also read by `nextMonth`); stepping back stays unbounded.

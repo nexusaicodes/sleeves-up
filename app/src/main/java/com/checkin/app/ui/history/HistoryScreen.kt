@@ -154,6 +154,7 @@ private fun LazyListScope.calendarItems(uiState: HistoryUiState, viewModel: Hist
     item {
         MonthSelector(
             currentMonth = uiState.currentMonth,
+            hasNextMonth = uiState.hasNextMonth,
             onPrevious = { viewModel.previousMonth() },
             onNext = { viewModel.nextMonth() },
         )
@@ -286,7 +287,7 @@ private fun DayHeader(dateKey: String, sessions: List<CheckInSession>) {
 }
 
 @Composable
-private fun MonthSelector(currentMonth: YearMonth, onPrevious: () -> Unit, onNext: () -> Unit) {
+private fun MonthSelector(currentMonth: YearMonth, hasNextMonth: Boolean, onPrevious: () -> Unit, onNext: () -> Unit) {
     val patterns = LocalTimePatterns.current
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -307,6 +308,7 @@ private fun MonthSelector(currentMonth: YearMonth, onPrevious: () -> Unit, onNex
             icon = AppIcons.ChevronEnd,
             contentDescription = stringResource(R.string.next_month),
             onClick = onNext,
+            enabled = hasNextMonth,
         )
     }
 }

@@ -40,7 +40,10 @@ data class HistoryUiState(
     val summaries: Map<String, DailyAggregate> = emptyMap(),
     val selectedDateKey: String? = null,
     val selectedDaySessions: List<CheckInSession> = emptyList(),
-)
+) {
+    /** Whether a later month exists to step to: false on the month in progress. */
+    val hasNextMonth: Boolean get() = currentMonth.isBefore(YearMonth.from(today))
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryViewModel(
@@ -131,7 +134,9 @@ class HistoryViewModel(
         selectedDateKey.value = null
     }
 
+    /** Stops at the month in progress: a month that has not begun holds no day to look back on. */
     fun nextMonth() {
+        if (!currentMonth.value.isBefore(YearMonth.from(timeSource.today()))) return
         currentMonth.value = currentMonth.value.plusMonths(1)
         selectedDateKey.value = null
     }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -217,5 +218,29 @@ class HistoryViewModelTest {
 
         assertEquals(YearMonth.of(2026, 5), viewModel.uiState.value.currentMonth)
         assertNull(viewModel.uiState.value.selectedDateKey)
+    }
+
+    @Test
+    fun `stepping forward stops at the month in progress`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        val viewModel = buildViewModel(dao, FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.hasNextMonth)
+
+        viewModel.selectDay("2026-06-10")
+        viewModel.nextMonth()
+        advanceUntilIdle()
+        assertEquals(YearMonth.of(2026, 6), viewModel.uiState.value.currentMonth)
+        // A refused step is not a navigation, so the selection stays.
+        assertEquals("2026-06-10", viewModel.uiState.value.selectedDateKey)
+
+        viewModel.previousMonth()
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.hasNextMonth)
+        repeat(2) { viewModel.nextMonth() }
+        advanceUntilIdle()
+        assertEquals(YearMonth.of(2026, 6), viewModel.uiState.value.currentMonth)
+        assertFalse(viewModel.uiState.value.hasNextMonth)
     }
 }
