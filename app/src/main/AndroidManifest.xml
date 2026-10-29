@@ -130,6 +130,19 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- Compose brings emoji2, whose startup initializer asks Play services' font provider for an
+             emoji font on every launch: a second outside question the Privacy screen does not name.
+             Removed, Compose draws emoji with the system font. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                tools:node="remove" />
+        </provider>
+
     </application>
 
 </manifest>

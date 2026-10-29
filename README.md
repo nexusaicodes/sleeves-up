@@ -68,6 +68,7 @@ export JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew ktlintFormat                # auto-fix formatting
 ./gradlew :app:verifyDocMap           # CLAUDE.md and the source tree agree
 ./gradlew :app:verifyLicenseCoverage  # in-app licence list matches the release classpath
+./gradlew :app:verifyMergedManifest   # merged release manifest matches app/merged-manifest-allowlist.txt
 ./gradlew :app:lintDebug              # Android lint
 ```
 

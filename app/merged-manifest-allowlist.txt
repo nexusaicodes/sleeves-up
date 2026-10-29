@@ -1,0 +1,56 @@
+# Everything the merged release manifest declares, checked by :app:verifyMergedManifest in both
+# directions. One "<kind> <android:name>" per line; '#' starts a comment. An entry is added only after
+# reading what it does: anything that reaches another app, a provider or the network, or runs unasked,
+# is removed in AndroidManifest.xml with tools:node="remove" instead. The merger report
+# (build/outputs/logs/manifest-merger-release-report.txt) names the library behind each line.
+
+# The app's own.
+uses-permission android.permission.CAMERA
+uses-permission android.permission.FOREGROUND_SERVICE
+uses-permission android.permission.FOREGROUND_SERVICE_SPECIAL_USE
+uses-permission android.permission.POST_NOTIFICATIONS
+uses-permission android.permission.RECEIVE_BOOT_COMPLETED
+uses-permission android.permission.USE_BIOMETRIC
+activity com.checkin.app.MainActivity
+service com.checkin.app.service.CheckInService
+receiver com.checkin.app.service.SessionAlarmReceiver
+receiver com.checkin.app.service.SessionRestoreReceiver
+receiver com.checkin.app.notify.nudge.NudgeAlarmReceiver
+receiver com.checkin.app.widget.CheckInWidgetProvider
+provider androidx.core.content.FileProvider
+
+# androidx.core: the app-scoped permission guarding its non-exported dynamic receivers.
+permission com.nexusai.checkin.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+uses-permission com.nexusai.checkin.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+
+# androidx.biometric: declared unconditionally, dead at minSdk 31.
+uses-permission android.permission.USE_FINGERPRINT
+
+# androidx.startup and the initializers it runs at launch. emoji2's is removed in AndroidManifest.xml.
+provider androidx.startup.InitializationProvider
+initializer androidx.lifecycle.ProcessLifecycleInitializer
+initializer androidx.profileinstaller.ProfileInstallerInitializer
+initializer androidx.work.WorkManagerInitializer
+
+# androidx.profileinstaller: lets Play's installer hand over the baseline profile.
+receiver androidx.profileinstaller.ProfileInstallReceiver
+
+# androidx.work (NudgeWorker): its scheduler services, receivers and permissions.
+uses-permission android.permission.ACCESS_NETWORK_STATE
+uses-permission android.permission.WAKE_LOCK
+service androidx.work.impl.background.systemjob.SystemJobService
+service androidx.work.impl.foreground.SystemForegroundService
+receiver androidx.work.impl.background.systemalarm.RescheduleReceiver
+receiver androidx.work.impl.diagnostics.DiagnosticsReceiver
+receiver androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver
+
+# androidx.room: multi-instance invalidation (not enabled by the app; inert).
+service androidx.room.MultiInstanceInvalidationService
+
+# androidx.camera: the camera-core metadata holder, which CameraX reads its config from.
+service androidx.camera.core.impl.MetadataHolderService
+
+# Play In-App Updates: the update dialog's host and the gms version stamp. Asks the Play Store app
+# over IPC; the one outside question the Privacy screen names.
+activity com.google.android.play.core.common.PlayCoreDialogWrapperActivity
+meta-data com.google.android.gms.version

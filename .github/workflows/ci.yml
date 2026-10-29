@@ -48,11 +48,12 @@ jobs:
 
       # verifyLicenseCoverage resolves the release runtime classpath, so it runs here rather than
       # with the static analysis above — that step is kept free of dependency resolution.
-      - name: Run unit tests, verify licence coverage, assemble debug APK
+      # verifyMergedManifest merges the release manifest, which also needs the resolved graph.
+      - name: Run unit tests, verify licence coverage and merged manifest, assemble debug APK
         run: >-
           ./gradlew --stacktrace
           -Dorg.gradle.java.installations.paths="$JAVA_HOME"
-          :app:testDebugUnitTest :app:verifyLicenseCoverage :app:assembleDebug
+          :app:testDebugUnitTest :app:verifyLicenseCoverage :app:verifyMergedManifest :app:assembleDebug
 
       # Android lint catches what ktlint and detekt structurally cannot: manifest and resource
       # problems, and AndroidX's own @RequiresOptIn markers, which the Kotlin compiler never
