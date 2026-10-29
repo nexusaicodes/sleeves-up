@@ -13,24 +13,24 @@
 
 ## 1. Decisions taken for this plan
 
-These were open, or turned out to be forced by Spark's source. Each has a best guess so the plan can be concrete. Section 9 lists them for confirmation.
+These were open, or turned out to be forced by Spark's source. Each has a best guess so the plan can be concrete. Section 9 has their status: most are now confirmed.
 
 | # | Decision | Taken | Why |
 |---|---|---|---|
 | D1 | Typography under Spark's one-family theme | **Spark's family is Manrope** (Plex Arabic under `ar`). **Outfit lives on in an app-owned `AppTypography`** for the 15 display, headline and title sites. | `SparkTheme` always calls `typography.updateFontFamily(fontFamily)` (C`SparkTheme.kt:136`, C`tokens/Type.kt:155-167`), so a per-style family cannot survive inside Spark's typography. Spark's controls draw body and label text (button labels use `callout`, fields use `body1`), which is Manrope's size range. Spark's `Text` takes an explicit `style` (C`components/text/Text.kt:199-216`), so an Outfit style passed in is respected. |
 | D2 | Nunito Sans | **Never shipped.** Always pass `fontFamily`, `tools:discard` the `res/font` copy, and strip the `assets/composeResources` copy at build time. | Nunito ships twice (924 KB of the 1.04 MB Spark adds), and the app never draws in it. The discard is safe only if no `SparkTheme` falls back to the default, so every `SparkTheme` goes through one app wrapper (D7). |
-| D3 | Spark's lint (`MaterialComposableHasSparkReplacement`, ERROR, ships inside the AAR) | **Downgraded to a warning while the migration runs, then restored to an error in the last PR.** Remaining legitimate M3 uses get a site-level `@SuppressLint` with a reason. | Adding the dependency fails `lintDebug` with 152 errors before a line of UI changes. A baseline file would contradict the repo's no-baseline stance and outlive the migration. A temporary severity override is one line, visible, and deleted at the end. |
+| D3 | Spark's lint (`MaterialComposableHasSparkReplacement`, ERROR, ships inside the AAR) | **Stays an error throughout** (confirmed). Legitimate M3 leftovers take a site-level `@SuppressLint` with a reason. | Adding the dependency fails `lintDebug` with 152 errors before a line of UI changes. With the rule never relaxed, the dependency and every flagged replacement have to land together, so PRs 1-4 below are commit groups of **one** PR, `ui/spark-adoption` (section 3). |
 | D4 | Manifest entries Spark brings | **Remove all four** with `tools:node="remove"`. | FileKit's provider and initializer, Compose Resources' `AndroidContextProvider` and gms `ModuleDependencies` (the photo-picker backport request) all run or register unasked, and the app uses none of them. The trial confirmed the merged manifest then matches the baseline exactly. CLAUDE.md's rule is to remove what runs unasked. |
-| D5 | Icons | **Keep Material icons** (`material-icons-extended`), wrapped as `SparkIcon.Vector(...)` where a Spark parameter wants a `SparkIcon`. Never use `LeboncoinIcons`. | None of Spark's 571 drawables is `autoMirrored`, and its `UpNavigationIcon` hard-codes a left arrow (S`navigation/UpNavigationIcon.kt:49`), so Arabic would get backwards arrows. `Icons.AutoMirrored.*` already mirror. `Tab.icon` stays `ImageVector`, so `ScreenTest` is untouched. |
-| D6 | Buttons API | **The legacy intent API (`ButtonFilled`, `ButtonTinted`, `ButtonOutlined`, `ButtonGhost`) with `useRebrandedButtons = false`.** Revisit the rebranded `Button.*` family as its own later PR. | Design 2.2 and 2.3's colour mapping was read against the intent API. Rebranded buttons are rerouted through `ButtonStyleMapper` (S`buttons/ButtonStyleMapper.kt:47-106`) and would need the palette re-checked. `SparkButtonMigration` is only a warning. |
+| D5 | Icons | **Spark's `LeboncoinIcons`** (confirmed), with every directional icon wrapped in `mirroredInRtl()`. The few with no Spark equivalent keep their Material vector, drawn through Spark's `Icon` (section 5.6). | None of Spark's 571 drawables is `autoMirrored`, and its `UpNavigationIcon` hard-codes a left arrow (S`navigation/UpNavigationIcon.kt:49`). `SparkIcon.mirroredInRtl()` (`ui/components/MirroredIcon.kt`, done on `ui/spark-adoption`, `MirroredIconTest`) flips any `SparkIcon` under a right-to-left layout, in every Spark component, since they all draw through `rememberSparkIconPainter`. `Tab.icon` becomes a `SparkIcon`. `ScreenTest` reads no icon, and `LeboncoinIcons.X` is a plain `R.drawable` reference on the JVM. |
+| D6 | Buttons API | **The rebranded `Button.*` family with `useRebrandedButtons = true`** (confirmed). Mapping: M3 `Button` → `Button.Primary`, `FilledTonalButton` → `Button.Secondary`, `OutlinedButton` → `Button.Tertiary`, `TextButton` → `Button.Ghost`. Never `Button.Success`, `Button.Danger`, `Button.Boost` or `Button.Ai`. | It is where Spark is heading, and README recommends the flag. Read at the tag, its colours sit on design 2.2's slots with no re-mapping: `Primary` is `main`/`onMain`, ink (S`buttons/ButtonPrimary.kt:78-79`); `Secondary` is `support`/`onSupport`, brass-fill (S`buttons/ButtonSecondary.kt:77-78`); `Tertiary` is transparent with an `onSurface` label and outline (S`buttons/ButtonTertiary.kt:77-81`); `Ghost` is text. `Success` and `Danger` are outlined in `success` and `error`, which design 4 already bans for the action. Spark's guidance is one `Primary` per view. |
 | D7 | Theme entry point | **One `CheckInAppTheme` builds the only `SparkTheme`; nested themes go through `SparkColorScope`.** | A nested `SparkTheme` re-defaults `fontFamily` to Nunito and `sparkFeatureFlag` to its default (C`SparkTheme.kt:105-108`). With Nunito discarded (D2), a bare nested `SparkTheme` crashes with `Resources.NotFoundException`. A source-reading test fails on a `SparkTheme(` call anywhere else (PR 8.2, added in PR 2). |
-| D8 | The Check-In start/stop button | **A Spark `ButtonFilled` at 64dp inside `SparkColorScope(main = animated container, onMain = animated content)`.** The shape becomes Spark's pill (design decision 4). | Spark buttons accept no colours, only `intent`, and `BaseSparkButton(colors =)` is `@InternalSparkApi` (S`buttons/Button.kt:67-86`). `Modifier.height(64.dp)` wins over Spark's `defaultMinSize` (S`buttons/Button.kt:89-91`), so the fit budget is unchanged. The button shape is fixed to `shapes.full` (S`buttons/ButtonTokens.kt:38-41`); 16dp corners would mean building our own button and suppressing lint. |
+| D8 | The Check-In start/stop button | **A Spark `Button.Primary` at 64dp inside `SparkColorScope(main = animated container, onMain = animated content)`.** The shape becomes Spark's pill (confirmed). | Spark buttons accept no colours, and `BaseSparkButton(colors =)` is `@InternalSparkApi` (S`buttons/Button.kt:67-86`). `Button.Primary` reads `SparkTheme.colors.main`/`onMain` (S`buttons/ButtonPrimary.kt:78-79`), so a scoped copy of the colours recolours it. `Modifier.height(64.dp)` wins over Spark's `defaultMinSize` (S`buttons/Button.kt:89-91`), so the fit budget is unchanged. The shape is fixed to `shapes.full` (S`buttons/ButtonTokens.kt:38-41`). |
 | D9 | Large centred name field (`HabitFields` in `HabitEditor.kt`) | **Stays an app component** on `BasicTextField`, restyled in Spark tokens. The ordinary dialog field becomes Spark's `TextField`. | Spark's `TextField` has no `textStyle` or `textAlign`; input is fixed to `body1` (S`textfields/SparkTextField.kt:149,254,359`). |
 | D10 | Reminder time picker | **Stays M3 `TimePicker`, inside a local `MaterialTheme` carrying the app's M3 typography and explicit dial colours.** | Spark has no time picker. Spark's M3 bridge maps `titleMedium` to `display2` (32sp bold) and folds every `surfaceContainer*` role into `surface`, so the picker would render oversized text on an invisible dial. |
 | D11 | Reports scope selector | **`SegmentedControl.Horizontal`** with two segments. The month stepper stays icon buttons. | Two exclusive options are a segmented control, not filters. The segment count is within Spark's 2-5 (S`segmentedcontrol/SegmentedControlTokens.kt:47-56`). Its 52dp minimum height has to be checked against the Reports layout. |
 | D12 | Snackbars | **Spark's own `SnackbarHostState`** in `LocalSnackbarHostState`. | Spark's `SnackbarHost` takes its own state class (S`snackbars/SnackbarHost.kt:89`), and its lint flags M3's. It reuses M3's `SnackbarDuration` and `SnackbarResult`, so `AppUpdateOffer`'s logic is unchanged. |
 | D13 | Licence entries | **Seven grouped entries** (section 3.4), plus a new bundled `LibraryLicense.MIT` whose text ships in `res/raw/mit.txt`. | 18 group ids are uncovered. Spark and FileKit are MIT, which obliges shipping the notice. Everything else is Apache-2.0. |
-| D14 | Order | **Build plumbing (no visible change), then the theme, then primitives, controls, our components, design items, off-Compose surfaces, hardening.** Each PR leaves `v4.0` green and installable. | The same order as design 6, with the plumbing and the lint downgrade pulled ahead so the theme PR's diff is only theme. |
+| D14 | Order | **One adoption PR (plumbing, theme, primitives, controls, as ordered commit groups), then our components, design items, off-Compose surfaces, hardening.** Each PR leaves `v4.0` green and installable. | The same order as design 6. D3 makes the first four inseparable: no subset of them passes lint. |
 
 ---
 
@@ -59,20 +59,16 @@ Things that did **not** work, so the plan does not use them:
 
 ## 3. PR sequence
 
+**PRs 1-4 are one PR.** Spark's lint stays an error (D3), so no build that has the dependency passes `lintDebug` until every flagged composable is replaced. They land together from `ui/spark-adoption` (already started: the dependency and `mirroredInRtl`, `3a8828c`). Each "PR" below is a commit group on that branch, in this order, so the history still bisects. CI is red on the branch until group 4 is in, which is expected; open the PR only then. PR 5 onward are separate PRs.
+
 Each PR is a branch off `v4.0`, named as shown, and targets `v4.0`. All CI gates must pass, every PR ends with an installable build, and every PR passes CLAUDE.md §5's docs-sync and self-review. "Device check" means the Pixel and the Nothing Phone, light and dark, English and Arabic, unless narrowed.
 
-### PR 1 — `build/spark-dependency`: Spark on the classpath, nothing drawn with it
+### PR 1 — group 1 of `ui/spark-adoption`: Spark on the classpath, nothing drawn with it
 
-No visible change, by design. It isolates every gate cost from every design question.
+No visible change, by design. It keeps every gate cost apart from every design question in the history.
 
 1. **`app/build.gradle.kts` dependencies**: `implementation(platform("com.adevinta.spark:spark-bom:4.2.1"))`, `implementation("com.adevinta.spark:spark")`, `implementation("com.adevinta.spark:spark-icons")`. Keep the existing Compose BOM; Spark's own BOM resolves to the same 2026.09.00.
-2. **Lint** (D3), in the existing `lint {}` block, beside `UnusedResources`:
-   ```kotlin
-   // Spark's own check, shipped in its AAR. A warning only while v4.0 moves the UI onto Spark;
-   // the last migration PR deletes this line so it is an error again.
-   warning += "MaterialComposableHasSparkReplacement"
-   ```
-   `lintDebug` must still fail on any other new issue.
+2. **Lint** (D3): no change. Spark's rule stays an error, which is why groups 1-4 share one PR. Done alongside step 1: `SparkIcon.mirroredInRtl()` and `MirroredIconTest` (`3a8828c`).
 3. **Manifest** (D4), in `app/src/main/AndroidManifest.xml`:
    - Inside the existing `androidx.startup.InitializationProvider` `<provider>`: `<meta-data android:name="io.github.vinceglb.filekit.initializer.FileKitInitializer" tools:node="remove" />`.
    - `<provider android:name="io.github.vinceglb.filekit.dialogs.fileprovider.FileKitFileProvider" tools:node="remove" />`.
@@ -113,7 +109,7 @@ No visible change, by design. It isolates every gate cost from every design ques
 
 **Device check**: install over the current v4.0 build. Nothing should look different. Open Licences and read the MIT text.
 
-### PR 2 — `ui/spark-theme`: SparkTheme at the root, colours and type in
+### PR 2 — group 2 of `ui/spark-adoption`: SparkTheme at the root, colours and type in
 
 The whole app changes colour and body face in one step (design 6 phase 1), through the M3 bridge. No component is swapped yet.
 
@@ -133,7 +129,7 @@ The whole app changes colour and body face in one step (design 6 phase 1), throu
        colors = if (darkTheme) SparkDark else SparkLight,
        typography = sparkTypographyFor(locale),
        fontFamily = sparkFontFamily(fontFamily = sparkFamilyFor(locale)),
-       sparkFeatureFlag = AppSparkFlags,  // useRebrandedButtons = false, isContainingActivityEdgeToEdge = true
+       sparkFeatureFlag = AppSparkFlags,  // useRebrandedButtons = true, isContainingActivityEdgeToEdge = true
    ) { CompositionLocalProvider(LocalTimePatterns provides patterns, LocalAppTypography provides appType, content = content) }
    ```
    - Delete `BrandLight` and `BrandDark` (the M3 schemes); their replacement is the bridge.
@@ -163,12 +159,12 @@ The whole app changes colour and body face in one step (design 6 phase 1), throu
 
 **Device check**: everything, as this is the biggest visual step. Look specifically for the time picker dial, bars raised on cream with no tonal step, and the dark-mode Check In → Check Out change.
 
-### PR 3 — `ui/spark-primitives`: Text, Icon, Surface and theme reads
+### PR 3 — group 3 of `ui/spark-adoption`: Text, Icon, Surface and theme reads
 
-Mechanical, and lint-driven: it clears most of the 152 warnings.
+Mechanical, and lint-driven: it clears most of the 152 errors.
 
 1. `androidx.compose.material3.Text` → `com.adevinta.spark.components.text.Text` (83 sites, 30 files). The signature is the same; `style`, `color`, `maxLines` and `overflow` carry over.
-2. `androidx.compose.material3.Icon` → `com.adevinta.spark.components.icons.Icon` (23 sites), using its `ImageVector` overload (C`components/icons/Icon.kt:64`), so `Icons.*` stays (D5).
+2. `androidx.compose.material3.Icon` → `com.adevinta.spark.components.icons.Icon` (23 sites), and every `Icons.*` to its `LeboncoinIcons` equivalent from section 5.6: `.mirroredInRtl()` on the directional ones, and the gaps keep their Material vector through Spark `Icon`'s `ImageVector` overload (C`components/icons/Icon.kt:64`). `Tab.icon` (`Screen.kt`) becomes `SparkIcon`.
 3. `Surface` (CheckIn pill `CheckInScreen.kt:341`, `MainActivity.kt` root) → `com.adevinta.spark.components.surface.Surface`. Keep the pill's 48dp touch floor.
 4. Theme reads:
    - `MaterialTheme.colorScheme.X` → `SparkTheme.colors.Y` (71 sites, map in section 5.4).
@@ -179,19 +175,19 @@ Mechanical, and lint-driven: it clears most of the 152 warnings.
 6. **Verify**: screenshots should match PR 2's pixel for pixel, apart from Spark `Text`'s defaults (`LocalContentColor` is `onSurface`). Any visible difference is a bug in this PR.
 7. **Docs**: CLAUDE.md's "One description of…" and the components entries that name M3 types.
 
-### PR 4 — `ui/spark-controls`: the direct swaps
+### PR 4 — group 4 of `ui/spark-adoption`: the direct swaps
 
 One commit per group, so a regression can be bisected to a control. The file and line map is section 5.1.
 
 | Group | Today → Spark | Notes |
 |---|---|---|
-| Buttons | `Button`/`FilledTonalButton`/`OutlinedButton`/`TextButton` → `ButtonFilled`/`ButtonTinted`/`ButtonOutlined`/`ButtonGhost` | `FullScreenMessage`, `GateMessageScreen`, `WelcomeScreen`, `LicensesScreen`, `PresenceCheckScreen`, `HabitEditor`, `HabitPickerScreen`, `HabitsScreen`, `LanguagePicker`, `ReminderTimePicker`'s dialog buttons, `HabitSwitcher` (see PR 6), `ReportsScreen` export. `size = ButtonSize.Large` where today's minimum height is 56dp (`FullScreenMessage`'s `ACTION_MIN_HEIGHT`). **Never `isLoading`** (it draws a spinner, S`buttons/Button.kt:100-111`). Not the Check-In button: PR 6. |
-| Icon buttons | `IconButton` (7) → `IconButtonGhost(icon = SparkIcon.Vector(...), contentDescription = ...)` | The minimum touch target becomes 44dp (C`tools/modifiers/TouchTarget.kt:49`) against M3's 48. Wrap in `Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)` to keep the app's 48dp rule, and keep `MONTH_SELECTOR_HEIGHT` at 48. Spark wraps every icon button in a tooltip showing `contentDescription`: check it doesn't fire on a long press over the month arrows. |
+| Buttons | `Button`/`FilledTonalButton`/`OutlinedButton`/`TextButton` → `Button.Primary`/`Button.Secondary`/`Button.Tertiary`/`Button.Ghost` (D6) | `FullScreenMessage`, `GateMessageScreen`, `WelcomeScreen`, `LicensesScreen`, `PresenceCheckScreen`, `HabitEditor`, `HabitPickerScreen`, `HabitsScreen`, `LanguagePicker`, `ReminderTimePicker`'s dialog buttons, `HabitSwitcher` (see PR 6), `ReportsScreen` export. `size = ButtonSize.Large` where today's minimum height is 56dp (`FullScreenMessage`'s `ACTION_MIN_HEIGHT`). One `Primary` per screen; a second filled action is `Secondary`. **Never `isLoading`** (it draws a spinner, S`buttons/Button.kt:100-111`). Not the Check-In button: PR 6. |
+| Icon buttons | `IconButton` (7) → `IconButtonGhost(icon = LeboncoinIcons.X, contentDescription = ...)`, chevrons `.mirroredInRtl()` | The minimum touch target becomes 44dp (C`tools/modifiers/TouchTarget.kt:49`) against M3's 48. Wrap in `Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)` to keep the app's 48dp rule, and keep `MONTH_SELECTOR_HEIGHT` at 48. Spark wraps every icon button in a tooltip showing `contentDescription`: check it doesn't fire on a long press over the month arrows. |
 | Dialogs | `AlertDialog` (3: `HabitEditor`, `LanguagePicker`, `ReminderTimePicker`) → Spark `AlertDialog` (`@ExperimentalSparkApi`) | `ReminderTimePicker` keeps its local `MaterialTheme` around the `TimePicker` only; the dialog frame becomes Spark's. Titles take an `AppTypography.headline` `Text`. |
 | Menus | `DropdownMenu`/`DropdownMenuItem` (`HabitsScreen`) → Spark's | The item is the scoped `DropdownMenuItemColumnScope.DropdownMenuItem` (S`menu/DropdownMenu.kt:461`), not the deprecated unscoped one. |
 | Selection | `FilterChip` (`ReportsScreen`) → `SegmentedControl.Horizontal` (D11); `RadioButton` (`LanguagePicker`) → `RadioButtonLabelled` | The segmented control's 52dp minimum height moves the Reports scroll content. Nothing on Reports has a fit budget, but check the first card is still in view on a small viewport. |
 | Text fields | `OutlinedTextField` → Spark `TextField`; the large centred `TextField` stays ours (D9), restyled | `counter = TextFieldCharacterCounter(...)` if the editor shows a length limit today. Spark's `keyboardOptions` defaults to sentence capitalisation, as the app does now. |
-| Frame | `Scaffold`/`TopAppBar`/`NavigationBar`/`NavigationBarItem`/`SnackbarHost` → Spark's | `TopAppBar` and `NavigationBar` are `@ExperimentalSparkApi`; `@OptIn` at the call site, replacing today's `ExperimentalMaterial3Api` one. `NavigationBarItem.icon` takes a `SparkIcon`: `SparkIcon.Vector(tab.icon)`. Spark lint's `UnusedSparkScaffoldPaddingParameter` and `SparkScaffoldBarWithoutInsets` must pass. The back arrow stays `Icons.AutoMirrored.Filled.ArrowBack`, never Spark's `UpNavigationIcon` (D5). |
+| Frame | `Scaffold`/`TopAppBar`/`NavigationBar`/`NavigationBarItem`/`SnackbarHost` → Spark's | `TopAppBar` and `NavigationBar` are `@ExperimentalSparkApi`; `@OptIn` at the call site, replacing today's `ExperimentalMaterial3Api` one. `NavigationBarItem.icon` takes a `SparkIcon`: `tab.icon`. Spark lint's `UnusedSparkScaffoldPaddingParameter` and `SparkScaffoldBarWithoutInsets` must pass. The back arrow is `LeboncoinIcons.ArrowLeft.mirroredInRtl()` in an `IconButtonGhost`, never Spark's `UpNavigationIcon`, which cannot mirror (D5). |
 | Snackbar | `SnackbarHostState` (M3) → Spark's (D12) | `LocalSnackbarHostState`'s type changes; `AppUpdateOffer` and every `showSnackbar` caller recompile against it. Spark's `showSnackbar` signature is a superset. |
 | Cards and dividers | `Card` (`SectionCard`) → `Card.Flat(colors = SparkTheme.colors.backgroundVariant)`; `HorizontalDivider` → Spark's, `intent = Outline` at the existing 50% | Never `Card.Highlight*`: its border is `accent`, vermilion (design 4). |
 
@@ -215,8 +211,8 @@ Design 6 phase 3. These are app composables, restyled only:
 
 Each is small, design-led, and judged on device before the next. Design 6 phase 4, with Spark's constraints now known:
 
-1. **`ui/check-in-button`**: D8. `SparkColorScope({ copy(main = container, onMain = content) })` around a `ButtonFilled(size = Large, modifier = Modifier.fillMaxWidth().height(ACTION_HEIGHT))`. `container` and `content` come from `animateColorAsState` over start and stop. Spark animates its own colours too (S`buttons/ButtonFilled.kt:104-118`), so set the outer spec to `snap()` if the two animations stack visibly. Keep the label in `AppTypography.title` Bold, and the `Login`/`Logout` auto-mirrored icons as `SparkIcon.Vector`. `FIXED_CONTENT_HEIGHT` is unchanged (still 64dp); re-check it.
-2. **`ui/habit-switcher`**: the top bar's end slot. A `ButtonGhost` with the name in `AppTypography.title` and the swap or lock icon. Locked state: `enabled = true` (so it can snackbar) with the lock icon and `onSurface` at `dim1`.
+1. **`ui/check-in-button`**: D8. `SparkColorScope({ copy(main = container, onMain = content) })` around a `Button.Primary(size = ButtonSize.Large, modifier = Modifier.fillMaxWidth().height(ACTION_HEIGHT))`. `container` and `content` come from `animateColorAsState` over start and stop. Check on device whether Spark animates the change again inside the button; if the two animations stack visibly, set the outer spec to `snap()`. Keep the label in `AppTypography.title` Bold. Icons: the section 5.6 pick for check in and check out, `.mirroredInRtl()`. `FIXED_CONTENT_HEIGHT` is unchanged (still 64dp); re-check it.
+2. **`ui/habit-switcher`**: the top bar's end slot. A `Button.Ghost` with the name in `AppTypography.title` and the swap or lock icon. Locked state: `enabled = true` (so it can snackbar) with the lock icon and `onSurface` at `dim1`.
 3. **`ui/presence-scrim`**: a `SparkTheme.colors.scrim`-based container behind `PresenceCheckScreen`'s hint and fallback, so white text over a bright preview reads at 4.5:1. Measure it over a white wall.
 4. **`ui/gauge-type`**: the readout (`AppTypography.display`/`headline` with `tnum`, step-down unchanged), the celebration's type, and `BrandGrid`'s colours (`primary` → `SparkTheme.colors.main`; the geometry never takes a Spark shape token, design 2.4).
 
@@ -230,7 +226,7 @@ Design 5's table, executed:
 
 ### PR 8 — `ui/spark-hardening`: lock it in
 
-1. **Delete the lint downgrade** (D3). `MaterialComposableHasSparkReplacement` is an error again. Each residue takes `@SuppressLint("MaterialComposableHasSparkReplacement")` at the call with its reason: the time picker (no Spark equivalent), the large name field (D9), and anything else PR 4 left.
+1. **Audit the lint suppressions** (D3). Every `@SuppressLint("MaterialComposableHasSparkReplacement")` left in `src/main` carries its reason, and each still has no Spark equivalent: the time picker and the large name field (D9), and nothing else unless the PR says why.
 2. **detekt `ForbiddenImport`** in `config/detekt/detekt.yml`, carrying design 4 as a build failure rather than a review rule:
    ```yaml
    style:
@@ -257,8 +253,6 @@ Design 5's table, executed:
            reason: "FileKit's provider and initializer are removed from the manifest."
          - value: 'com.adevinta.spark.components.image.*'
            reason: 'Coil-backed; the app loads no images.'
-         - value: 'com.adevinta.spark.icons.LeboncoinIcons'
-           reason: 'Not auto-mirrored; use Icons.AutoMirrored via SparkIcon.Vector.'
          - value: 'org.jetbrains.compose.resources.*'
            reason: 'AndroidContextProvider is removed; a Compose Resources read throws.'
    ```
@@ -278,7 +272,7 @@ When PR 8 lands, `v4.0` is releasable from the migration's side.
 
 ## 4. Branch and CI mechanics
 
-- Each PR rebases on `v4.0` after its predecessor merges. They are serial, not stacked, so a PR never targets another feature branch.
+- `ui/spark-adoption` (PRs 1-4) merges first, as one PR. Each later PR branches off `v4.0` after its predecessor merges: serial, not stacked, so a PR never targets another feature branch.
 - PR 6's four items may run in parallel once PR 5 is in, since they touch disjoint files (`CheckInScreen.kt`, `HabitSwitcher.kt`, `PresenceCheckScreen.kt`, `TimerGauge.kt`/`CheckOutCelebration.kt`/`BrandGrid.kt`).
 - CI already runs on `v[0-9]*` pushes and PRs. Nothing in `.github/workflows/ci.yml` changes.
 - `VERSION_CODE`/`VERSION_NAME`: unchanged by these PRs. Set them when v4.0 is cut.
@@ -296,7 +290,7 @@ From the inventory of `app/src/main/java/com/checkin/app/` on `v4.0`.
 | `MainActivity.kt` | `MaterialTheme` read, `Surface` | `SparkTheme.colors.background`, Spark `Surface` |
 | `ui/AppUpdateOffer.kt` | `SnackbarDuration`, `SnackbarResult` | unchanged (Spark reuses them) |
 | `ui/about/AboutCard.kt` | `Text`×2 | Spark `Text` |
-| `ui/about/LicensesScreen.kt` | `Text`×7, `OutlinedButton` | Spark `Text`, `ButtonOutlined` |
+| `ui/about/LicensesScreen.kt` | `Text`×7, `OutlinedButton` | Spark `Text`, `Button.Tertiary` |
 | `ui/about/PrivacyScreen.kt` | `Text`×3, `Icon` | Spark |
 | `ui/checkin/CheckInScreen.kt` | `Text`×3, `Icon`×2, `Button`+`buttonColors`, `Surface` pill | PR 6.1 for the button; Spark `Surface` pill |
 | `ui/checkin/CheckOutCelebration.kt` | `Text`×5 | Spark `Text`, `AppTypography` |
@@ -304,26 +298,26 @@ From the inventory of `app/src/main/java/com/checkin/app/` on `v4.0`.
 | `ui/components/ActionRow.kt` | `Text`×2, `Icon` | Spark |
 | `ui/components/ChartCard.kt` | `Text`×5 | Spark |
 | `ui/components/EmptyState.kt` | `Text`×2, `Icon` | Spark |
-| `ui/components/FullScreenMessage.kt` | `Text`×3, `Icon`×2, `Button` | Spark, `ButtonFilled(size = Large)` |
+| `ui/components/FullScreenMessage.kt` | `Text`×3, `Icon`×2, `Button` | Spark, `Button.Primary(size = Large)` |
 | `ui/components/LocalSnackbarHostState.kt` | `SnackbarHostState` | Spark's |
-| `ui/components/ReminderTimePicker.kt` | `AlertDialog`, `TimePicker`, `TextButton`×2, `Text`×4 | Spark `AlertDialog`, `ButtonGhost`; **M3 `TimePicker` kept** (D10) |
+| `ui/components/ReminderTimePicker.kt` | `AlertDialog`, `TimePicker`, `TextButton`×2, `Text`×4 | Spark `AlertDialog`, `Button.Ghost`; **M3 `TimePicker` kept** (D10) |
 | `ui/components/SectionCard.kt` | `Card`, `HorizontalDivider`, `Text`×2 | `Card.Flat`, Spark `HorizontalDivider` |
 | `ui/components/SessionIntervalRow.kt` | `Text`×2 | Spark |
-| `ui/habits/HabitEditor.kt` | `AlertDialog`, `FilledTonalButton`, `TextButton`×2, `OutlinedTextField`, `TextField`, `Icon`, `Text`×7 | Spark `AlertDialog`, `ButtonTinted`, `ButtonGhost`, Spark `TextField`; large field ours (D9) |
+| `ui/habits/HabitEditor.kt` | `AlertDialog`, `FilledTonalButton`, `TextButton`×2, `OutlinedTextField`, `TextField`, `Icon`, `Text`×7 | Spark `AlertDialog`, `Button.Secondary`, `Button.Ghost`, Spark `TextField`; large field ours (D9) |
 | `ui/habits/HabitNameRow.kt` | `Text`×2 | Spark |
-| `ui/habits/HabitPickerScreen.kt` | `TextButton`, `Text`×2 | `ButtonGhost` |
-| `ui/habits/HabitsScreen.kt` | `DropdownMenu`, `DropdownMenuItem`×2, `IconButton`, `TextButton`, `Icon`×4, `Text`×4 | Spark menu, `IconButtonGhost`, `ButtonGhost` |
+| `ui/habits/HabitPickerScreen.kt` | `TextButton`, `Text`×2 | `Button.Ghost` |
+| `ui/habits/HabitsScreen.kt` | `DropdownMenu`, `DropdownMenuItem`×2, `IconButton`, `TextButton`, `Icon`×4, `Text`×4 | Spark menu, `IconButtonGhost`, `Button.Ghost` |
 | `ui/history/CalendarGrid.kt` | `Text`×2 | Spark |
 | `ui/history/HistoryScreen.kt` | `IconButton`×2, `Icon`×2, `Text`×3; window-size-class | `IconButtonGhost`; window-size-class unchanged (`material3-window-size-class` stays) |
 | `ui/navigation/AppNavScaffold.kt` | `Scaffold`, `TopAppBar`, `SnackbarHost`, `IconButton`, `Icon`, `Text` | Spark frame |
 | `ui/navigation/BottomNavigationBar.kt` | `NavigationBar`, `NavigationBarItem`, `Icon`, `Text` | Spark |
 | `ui/navigation/HabitSwitcher.kt` | `TextButton`, `Icon`, `Text` | PR 6.2 |
-| `ui/presence/GateMessageScreen.kt` | `Button`, `TextButton`, `Text`×2 | `ButtonFilled`, `ButtonGhost` |
-| `ui/presence/PresenceCheckScreen.kt` | `OutlinedButton`×2, `IconButton`, `Icon`×3, `Text`×6 | `ButtonOutlined`, `IconButtonGhost`; scrim PR 6.3 |
-| `ui/reports/ReportsScreen.kt` | `Button`, `FilterChip`, `IconButton`×2, `Icon`×3, `Text`×4 | `ButtonFilled`, `SegmentedControl`, `IconButtonGhost` |
-| `ui/settings/LanguagePicker.kt` | `AlertDialog`, `RadioButton`, `TextButton`, `Text`×3 | Spark `AlertDialog`, `RadioButtonLabelled`, `ButtonGhost` |
+| `ui/presence/GateMessageScreen.kt` | `Button`, `TextButton`, `Text`×2 | `Button.Primary`, `Button.Ghost` |
+| `ui/presence/PresenceCheckScreen.kt` | `OutlinedButton`×2, `IconButton`, `Icon`×3, `Text`×6 | `Button.Tertiary`, `IconButtonGhost`; scrim PR 6.3 |
+| `ui/reports/ReportsScreen.kt` | `Button`, `FilterChip`, `IconButton`×2, `Icon`×3, `Text`×4 | `Button.Primary`, `SegmentedControl`, `IconButtonGhost` |
+| `ui/settings/LanguagePicker.kt` | `AlertDialog`, `RadioButton`, `TextButton`, `Text`×3 | Spark `AlertDialog`, `RadioButtonLabelled`, `Button.Ghost` |
 | `ui/theme/Theme.kt`, `Type.kt` | `MaterialTheme`, color schemes, `Typography` | PR 2 |
-| `ui/welcome/WelcomeScreen.kt` | `OutlinedButton`, `TextButton`×2, `Text`×4 | `ButtonOutlined`, `ButtonGhost` |
+| `ui/welcome/WelcomeScreen.kt` | `OutlinedButton`, `TextButton`×2, `Text`×4 | `Button.Tertiary`, `Button.Ghost` |
 
 Nothing in `ui/components/charts/`, the ViewModels or the pure files imports M3, so none of them changes.
 
@@ -388,6 +382,44 @@ Watch `primary` → `main`, which turns indigo into ink. That is correct per des
 - `ExperimentalMaterial3WindowSizeClassApi`: `HistoryScreen`, unchanged.
 - `@InternalSparkApi` (an ERROR-level opt-in): never used.
 
+### 5.6 Icons: Material → Spark (PR 3)
+
+**Mirror** marks the icons that are `Icons.AutoMirrored` today, which take `.mirroredInRtl()`. Hold each mirrored icon in a top-level `val`, as `MirroredIcon.kt`'s KDoc says. "Gap" means Spark has no equivalent, so the Material vector stays, drawn through Spark's `Icon` (open item 1 in section 9). Spark's Outline cut is used throughout, for one weight.
+
+| Material today | Where | Spark | Mirror |
+|---|---|---|---|
+| `AutoMirrored.Filled.ArrowBack` | `AppNavScaffold` | `ArrowLeft` | yes |
+| `AutoMirrored.Filled.KeyboardArrowLeft`/`Right` | `HistoryScreen`, `ReportsScreen` month steppers | `ChevronVerticalLeft`/`Right` | yes |
+| `AutoMirrored.Filled.KeyboardArrowRight` | `AboutCard`, `SettingsScreen` rows | `ChevronVerticalRight` | yes |
+| `AutoMirrored.Filled.Login`/`Logout` | `CheckInScreen` button | `Import`/`Export`, or `Disconnect` (open item 2) | yes |
+| `AutoMirrored.Filled.DirectionsRun` | `HabitExample` | `ManWalkingOutline` | yes |
+| `AutoMirrored.Filled.MenuBook` | `HabitExample` | `Book` | yes |
+| `Default.ExpandLess`/`ExpandMore` | `CheckInScreen` pill | `ChevronHorizontalUp`/`Down` | no |
+| `OpenInNew` | `AboutCard` | `ShareExternal` (check the glyph reads as "opens elsewhere") | no |
+| `Default.Schedule`, `Outlined.Schedule` | `Screen` (Check In tab), `HabitEditor` | `ClockOutline` | no |
+| `Default.CalendarMonth` | `Screen` (History tab) | `CalendarTextOutline` | no |
+| `Default.Event` | `HistoryScreen` | `CalendarDotOutline` | no |
+| `Default.Assessment`, `Default.Insights` | `Screen` (Reports tab), `ReportsScreen`, `EmptyState` preview | `GraphOutline` | no |
+| `Default.Settings` | `Screen` (Settings tab) | `GearOutline` | no |
+| `Default.Lock` | `HabitSwitcher`, `SettingsScreen`, `PresenceCheckScreen` | `LockOutline` | no |
+| `Default.Add` | `HabitsScreen` | `Plus` | no |
+| `Default.Check` | `HabitsScreen` | `Check` | no |
+| `Default.MoreVert` | `HabitsScreen` | `ThreeDotsVertical` | no |
+| `Outlined.Edit` | `HabitsScreen` | `PenOutline` | no |
+| `Default.Archive` | `HabitsScreen` | `BoxOutline` | no |
+| `Default.Close` | `PresenceCheckScreen` | `Cross` | no |
+| `Default.FileDownload` | `ReportsScreen` export | `DownloadFileOutline` | no |
+| `Rounded.PhotoCamera` | `PresenceGate` | `CameraOutline` | no |
+| `Default.Block` | `PrivacyScreen` | `BannedOutline` | no |
+| `Filled.MusicNote`, `Filled.FitnessCenter`, `Filled.SelfImprovement`, `Filled.Brush` | `HabitExample` | `Music`, `DumbbellCriteria`, `LotusFlowerCriteria`, `PaintPalette` | no |
+| `Default.SwapHoriz` | `HabitSwitcher` | **gap** (no two-way arrow) | — |
+| `Default.Fingerprint` | `PresenceCheckScreen` device unlock | **gap** (`UnlockOutline` is the nearest) | — |
+| `Rounded.Face` | `CameraDisclosureScreen`, `WelcomeScreen` | **gap**. Spark's faces (`HappyFace`, `NeutralFace`, `SadFace`) carry an expression, which grades: never use them. `UserOutline` is the nearest neutral one. | — |
+| `Rounded.Widgets` | `WelcomeScreen` widget page | **gap** (`LayerOutline` is the nearest) | — |
+| `Default.CloudOff`, `NoAccounts`, `NoPhotography` | `PrivacyScreen` | **gap**: Spark has no struck-through glyphs | — |
+
+Spark's `*Criteria` icons are drawn for Leboncoin's listing filters. Check that the ones above sit at the same weight as the rest before taking them, and treat any that don't as gaps.
+
 ---
 
 ## 6. Guards this plan adds, and the invariants behind them
@@ -401,7 +433,7 @@ Watch `primary` → `main`, which turns indigo into ink. That is correct per des
 | Every shipped group id has a licence entry, MIT text bundled | `verifyLicenseCoverage` (exists), `OpenSourceLibrariesTest` | 1 |
 | No gauge, meter, progress, rating, badge, stepper or slider | detekt `ForbiddenImport` | 8 |
 | No raw M3 where Spark has a replacement | Spark's own lint, back at ERROR | 8 |
-| Arrows mirror under RTL | detekt bans `LeboncoinIcons`; `SparkIcon.Vector(Icons.AutoMirrored…)` | 8 |
+| Arrows mirror under RTL | `mirroredInRtl()` on every directional icon (section 5.6 marks them), with `MirroredIconTest` pinning the flip. Nothing can tell a directional icon from a symmetric one, so the Arabic device pass in section 8 is the check. | 1, 3 |
 | No networking class | the dex grep, by hand, on every Spark bump (CLAUDE.md lists it) | 1 |
 
 ---
@@ -437,12 +469,12 @@ PR 1 needs only an install-over plus Licences. PR 3 needs only a screenshot diff
 
 ---
 
-## 9. For confirmation
+## 9. Decisions: status
 
-The decisions most worth a second look, ranked by how hard they are to reverse once the screens are built on them:
+**Confirmed on 2026-10-29:** D1 (Manrope as Spark's family, Outfit in `AppTypography`), D3 (Spark's lint stays an error), D4 (all four manifest removals), D5 (Spark's icons with `mirroredInRtl`), D6 (rebranded `Button.*`), D8 (pill-shaped Check-In button), D11 (segmented control).
 
-1. **D8, the pill-shaped Check-In button.** Spark fixes the button shape. Keeping 16dp corners means building our own button outside Spark (one `@SuppressLint`), the one place the app would leave Spark's button system.
-2. **D1, Manrope as Spark's family, Outfit kept beside it.** The alternative is one family everywhere (Manrope, or Outfit, which is wrong at body size per CLAUDE.md), dropping `AppTypography`.
-3. **D4, removing Compose Resources' context provider.** Safe today, by reading Spark's source. Keeping and allowlisting it trades a small unasked startup provider for robustness against a future Spark bump.
-4. **D11, segmented control for the Reports scope.**
-5. **D6, the legacy button API.** The rebranded `Button.*` family is where Spark is heading. Adopting it later is a contained PR.
+**Still open, all small and settled on device during PR 3 and PR 6:**
+
+1. **The icon gaps** in section 5.6: keep the Material vector (two icon styles side by side), or pick the nearest Spark icon even where its meaning drifts.
+2. **Check in and check out icons**: `Import`/`Export` (an arrow into or out of a tray) or `Disconnect` for check out. Neither is a door, which Material's `Login`/`Logout` are.
+3. **`FilledTonalButton` → `Button.Secondary`**: today's tonal button is soft and `Secondary` is solid brass. `Button.Tertiary` (outlined) is the quieter fallback for `HabitEditor`'s time button.
