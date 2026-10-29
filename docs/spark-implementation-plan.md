@@ -581,3 +581,7 @@ PR 1 needs only an install-over plus Licences. PR 3 needs only a screenshot diff
 
 1. **Check in and check out icons**: `Import`/`Export` (an arrow into or out of a tray) or `Disconnect` for check out. Neither is a door, which Material's `Login`/`Logout` are.
 2. **`FilledTonalButton` → `Button.Secondary`**: today's tonal button is soft and `Secondary` is solid brass. `Button.Tertiary` (outlined) is the quieter fallback for `HabitEditor`'s time button.
+
+### Device pass (A142, Android 16)
+
+- **Fixed:** Spark 4.2.1's `RadioButtonLabelled` lays out with `Arrangement.Absolute.spacedBy` (bytecode of `SparkToggleLabelledContainerKt`), so the language picker's radios sat on the left under Arabic. `LanguagePicker` now builds its rows around Spark's bare `RadioButton` with `Modifier.selectable` and 16dp spacing, as before the migration. CLAUDE.md's Spark entry carries the rule.
