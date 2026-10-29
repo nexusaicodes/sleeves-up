@@ -1,6 +1,6 @@
 # Moving the UI to Spark: design plan and coverage gaps
 
-**Scope.** This is about design only: what changes on screen, what maps onto Spark cleanly, and what needs its own design work. The toolchain upgrade is a separate prerequisite, done on `build/kotlin2-spark-ready`; section 9 has what it settles and what a trial build with Spark found.
+**Scope.** This is about design only: what changes on screen, what maps onto Spark cleanly, and what needs its own design work. The toolchain upgrade it needed is on `v4.0` (#35). The build-and-code plan, PR by PR, is `docs/spark-implementation-plan.md`; section 9 here has what a trial build with Spark found.
 
 **Reference.** [leboncoin/spark-android](https://github.com/leboncoin/spark-android) **4.2.1**, MIT licence. Its catalog app (`com.adevinta.spark.catalog`) was built from that tag and installed on the Nothing Phone for browsing. Component names below are Spark's public composables at that tag, and the colour findings in 2.3 come from reading its source there.
 
@@ -39,7 +39,7 @@ So the real question is not whether Spark covers the app. It is **whose visual i
 | Scale | M3: display, headline, title, body and label, each S/M/L | `display1–3`, `headline1–2`, `subhead`, `body1–2`, `caption`, `small`, `callout` |
 | Ticking figures | `tabularFigures()` is load-bearing: Outfit's `1` is half the width of its `0`, so without it the gauge lurches every second | No tabular setting in the tokens |
 
-Decisions:
+Decisions (settled in the implementation plan, D1: Spark's one family is Manrope or Plex, and Outfit lives in an app-owned `AppTypography`):
 - **Keep two families or accept one?** Spark's API wants one. Keeping two means building our own `SparkTypography` with a family per style and **not** passing `fontFamily`, which would overwrite them. That works, but it fights the system you are adopting.
 - **Arabic must stay Plex**, chosen by locale at the theme root, as today. Pass `sparkFontFamily(plexArabic)` under `ar`.
 - **Map the two scales.** Spark's scale is coarser (no S/M/L per role). Every `MaterialTheme.typography.X` call site needs a decided equivalent, and the two places that step a style down at large font scales (the gauge readout's `displayMedium` → `headlineMedium`) need the same step in Spark's names.
@@ -321,7 +321,7 @@ Each phase ends with something installable, so it can be judged on the phone bef
 
 ## 9. Prerequisites verified
 
-Spark 4.2.1 is built with Kotlin 2.4.21, AGP 9.4.1, Gradle 9.8.1, compileSdk 37 and Compose BOM 2026.09.00, minSdk 24. Branch `build/kotlin2-spark-ready` brings the app to that toolchain with no visible change: Gradle 9.8.2, AGP 9.4.1 with built-in Kotlin 2.4.21, KSP 2.3.12 and Room 2.8.5, compileSdk 37 (targetSdk stays 36, minSdk 31), the Compose BOM 2026.09.00 (material3 1.4.0), and floors for the transitive libraries Spark would otherwise raise.
+Spark 4.2.1 is built with Kotlin 2.4.21, AGP 9.4.1, Gradle 9.8.1, compileSdk 37 and Compose BOM 2026.09.00, minSdk 24. `v4.0` (#35) brings the app to that toolchain with no visible change: Gradle 9.8.2, AGP 9.4.1 with built-in Kotlin 2.4.21, KSP 2.3.12 and Room 2.8.5, compileSdk 37 (targetSdk stays 36, minSdk 31), the Compose BOM 2026.09.00 (material3 1.4.0), and floors for the transitive libraries Spark would otherwise raise.
 
 A scratch branch then added `spark-bom`/`spark` 4.2.1 and wrapped the theme root in `SparkTheme`, to see what adoption costs before any design work.
 
@@ -332,9 +332,11 @@ A scratch branch then added `spark-bom`/`spark` 4.2.1 and wrapped the theme root
 | Adds a permission | No. The merged `uses-permission` set is unchanged. |
 | Adds manifest components | Yes, four: FileKit's `FileKitFileProvider` and its startup `FileKitInitializer`, Compose Resources' `AndroidContextProvider`, and gms's `ModuleDependencies` service with `photopicker_activity` metadata, which asks Play services to install the backported photo picker. The app uses no file picker; remove FileKit's entries and the photo-picker request with `tools:node="remove"`, or the Privacy screen's "one outside question" claim gains a second. |
 | Networking classes in the dex | None (no `java.net`, OkHttp, Cronet, datatransport). Coil comes without a network fetcher. |
-| Fonts | `spark-core` bundles six Nunito Sans TTFs (~690 KB) as Compose Resources assets, not in `res/font`. `verifyLicenseCoverage` checks only `res/font`, so it cannot see them: either extend it to `assets/composeResources`, or keep Nunito out of the APK if the app passes its own families (2.1). Bundled, Nunito needs no download; the dex holds no font-provider code for it (checked statically, not on a device). |
-| Licence list | 14 new group ids need entries: `com.adevinta.spark` (MIT, which obliges a shipped notice: a new bundled `LibraryLicense` and its `res/raw` text), Coil 3, okio, accompanist, FileKit, and JetBrains' Compose Multiplatform and androidx redirect groups. |
+| Fonts | Nunito Sans ships **twice**: seven TTFs in `res/font` (591 KB compressed, read through `R.font`) and six more as Compose Resources assets (333 KB, never read on Android). `verifyLicenseCoverage` checks only `res/font`. Both copies can be stripped (`tools:discard` and an assets transform), taking the cost to +110 KB; the implementation plan's D2 and PR 1 have the details. |
+| Licence list | 18 new group ids need entries: `com.adevinta.spark` (MIT, which obliges a shipped notice: a new bundled `LibraryLicense` and its `res/raw` text), Coil 3, okio, accompanist, FileKit, and JetBrains' Compose Multiplatform and androidx redirect groups. |
 | Size | Release APK 5.38 MB → 6.39 MB (+1.0 MB), before any Spark component is used. The fonts are 0.7 MB of it. |
 
-**Found on the way, not Spark's:** v3.2 already ships emoji2's `EmojiCompatInitializer` (a transitive dependency), whose default config asks Play services' font provider for an emoji font. That is an outside request the Privacy screen does not name. Check it on a device and decide separately: disable the initializer, or name it.
+**Found on the way, not Spark's:** v3.2 ships emoji2's `EmojiCompatInitializer`, which asks Play services' font provider for an emoji font. Removed on `v4.0` (#36), which also added `verifyMergedManifest`.
+
+A second trial on `v4.0` also found that Spark's own lint check (`MaterialComposableHasSparkReplacement`, an error, shipped in its AAR) fails `lintDebug` 152 times before any UI changes. The implementation plan's D3 covers it.
 
