@@ -352,7 +352,7 @@ strip is only ever reached from the listing page itself, by someone who has alre
 History is the one worth having, and the reason the set exists at all: it goes two-pane on expanded
 widths, so the calendar and the selected day's ledger sit side by side — which is the layout a phone
 cannot show and the one a tablet user is deciding about. The Check-In screen is deliberately the
-resting state, green button and still lattice, because a tablet is not where a session is usually
+resting state, brass button and still lattice, because a tablet is not where a session is usually
 running.
 
 Play does not require tablet screenshots; without them a listing carries a "not optimised for
