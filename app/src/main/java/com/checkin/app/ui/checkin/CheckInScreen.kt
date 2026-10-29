@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -309,6 +310,10 @@ private fun CheckInOutButton(isRunning: Boolean, habitName: String?, onCheckIn: 
             // screen's fit budget, so a long name gives way rather than growing it. Bare only for a
             // habit still owed a name, which the first-run naming step keeps from ever reaching this
             // screen.
+            //
+            // Measured unbounded and centred: ButtonSize.Large pads 18dp above and below, leaving
+            // 28dp, which titleMedium's 24dp line outgrows from a font scale of about 1.17. Drawn
+            // past that padding, the line has the whole 64dp before the button's shape clips it.
             Text(
                 text = when {
                     habitName == null && isRunning -> stringResource(R.string.check_out)
@@ -316,7 +321,9 @@ private fun CheckInOutButton(isRunning: Boolean, habitName: String?, onCheckIn: 
                     isRunning -> stringResource(R.string.check_out_of, habitName)
                     else -> stringResource(R.string.check_in_to, habitName)
                 },
-                modifier = Modifier.align(Alignment.CenterVertically),
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .wrapContentHeight(unbounded = true),
                 style = LocalAppTypography.current.titleMedium,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
