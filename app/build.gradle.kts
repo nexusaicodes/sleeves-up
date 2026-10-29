@@ -1,3 +1,4 @@
+import com.android.build.api.artifact.SingleArtifact
 import java.util.Properties
 
 plugins {
@@ -426,4 +427,100 @@ tasks.register("verifyDocMap") {
     }
 }
 
-tasks.named("check") { dependsOn("verifyLicenseCoverage", "verifyDocMap") }
+// A library's manifest merges into the app's and can run code nobody calls: a startup initializer, a
+// provider or service another app binds to. None needs a permission or a networking class, so the
+// permission grep and the dex grep both pass it (emoji2's initializer, which asks Play services for
+// a font at every launch, is one). So everything the merged release manifest declares is
+// listed in merged-manifest-allowlist.txt, and anything new fails the build until someone decides
+// whether it stays (listed) or goes (`tools:node="remove"` in the app's manifest).
+val manifestAllowlistFile = layout.projectDirectory.file("merged-manifest-allowlist.txt")
+val releaseMergedManifest = objects.fileProperty()
+
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        releaseMergedManifest.set(variant.artifacts.get(SingleArtifact.MERGED_MANIFEST))
+    }
+}
+
+/** Manifest elements that put code or a capability in the APK, each listed by its `android:name`. */
+val manifestEntryKinds = listOf(
+    "uses-permission",
+    "uses-permission-sdk-23",
+    "permission",
+    "activity",
+    "activity-alias",
+    "service",
+    "receiver",
+    "provider",
+)
+
+tasks.register("verifyMergedManifest") {
+    group = "verification"
+    description = "Fails if the merged release manifest and merged-manifest-allowlist.txt disagree."
+
+    val allowlist = manifestAllowlistFile
+    val manifest = releaseMergedManifest
+    val stamp = layout.buildDirectory.file("reports/mergedManifest.txt")
+    inputs.file(allowlist)
+    inputs.file(manifest)
+    outputs.file(stamp)
+
+    doLast {
+        val androidNs = "http://schemas.android.com/apk/res/android"
+        val document = javax.xml.parsers.DocumentBuilderFactory.newInstance()
+            .apply { isNamespaceAware = true }
+            .newDocumentBuilder()
+            .parse(manifest.get().asFile)
+        fun elements(tag: String) = document.getElementsByTagName(tag).let { nodes ->
+            (0 until nodes.length).map { nodes.item(it) as org.w3c.dom.Element }
+        }
+        fun org.w3c.dom.Element.androidName() = getAttributeNS(androidNs, "name")
+
+        val shipped = sortedSetOf<String>()
+        manifestEntryKinds.forEach { kind -> elements(kind).forEach { shipped += "$kind ${it.androidName()}" } }
+        // Startup initializers are meta-data under androidx.startup's provider, so the provider line
+        // alone would admit every initializer any later library registers.
+        elements("meta-data").forEach { meta ->
+            val parent = meta.parentNode as org.w3c.dom.Element
+            val kind = when {
+                parent.tagName == "application" -> "meta-data"
+                parent.androidName() == "androidx.startup.InitializationProvider" -> "initializer"
+                else -> return@forEach
+            }
+            shipped += "$kind ${meta.androidName()}"
+        }
+
+        val listed = allowlist.asFile.readLines()
+            .map { it.substringBefore('#').trim() }
+            .filter { it.isNotEmpty() }
+            .toSortedSet()
+        check(listed.isNotEmpty() && shipped.isNotEmpty()) {
+            "Parsed nothing to compare (allowlist ${listed.size} lines, manifest ${shipped.size} entries). " +
+                "A format changed, and this check would otherwise pass by finding nothing."
+        }
+
+        val unlisted = shipped - listed
+        check(unlisted.isEmpty()) {
+            "The merged release manifest declares entries ${allowlist.asFile.name} does not list:\n" +
+                unlisted.joinToString("\n") { "  - $it" } +
+                "\n\nbuild/outputs/logs/manifest-merger-release-report.txt names the library each came " +
+                "from. Read what it does. If it reaches outside the app (another app, a provider, the " +
+                "network) or runs unasked, remove it with tools:node=\"remove\" in AndroidManifest.xml; " +
+                "otherwise list it, with a comment saying where it comes from."
+        }
+
+        // The reverse direction: an entry whose library left would otherwise stay listed, and the
+        // list would go on vouching for something the APK no longer carries.
+        val stale = listed - shipped
+        check(stale.isEmpty()) {
+            "${allowlist.asFile.name} lists entries the merged release manifest no longer declares:\n" +
+                stale.joinToString("\n") { "  - $it" } + "\n\nDelete them."
+        }
+
+        val summary = "Merged manifest: ${shipped.size} entries, all listed."
+        logger.lifecycle(summary)
+        stamp.get().asFile.apply { parentFile.mkdirs() }.writeText("$summary\n")
+    }
+}
+
+tasks.named("check") { dependsOn("verifyLicenseCoverage", "verifyDocMap", "verifyMergedManifest") }
