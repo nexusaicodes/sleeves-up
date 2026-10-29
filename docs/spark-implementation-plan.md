@@ -358,6 +358,18 @@ Design 5's table, executed:
 - **Not done here**: the store re-shoot (item 5, with PR 7's feature graphic and README line) and the design 6 phase 6 review pass (item 6), both device work. PR 1's font gap (a font a library ships in its own `res/font`, caught only by `keep.xml`) is still open; closing it means scanning the release APK's resource table, a gate of its own. PR 5's Hours by Month per-bar totals (`160h 30m`, 57.6dp in about 48dp columns) are for item 6's re-measure.
 - **Gates**: all pass; `lintDebug` reports 0 errors and 0 `MaterialComposableHasSparkReplacement` findings.
 
+**Final review** of `04c72df..HEAD` on `plan/spark-migration`, file by file against this plan, the design doc and CLAUDE.md's product rules. Fixed, one commit each:
+- **A habit switch kept a stepped-to month on Reports.** PR 4 made `selectMonth` a no-op on a month scope, and the habit-switch reset in `ReportsViewModel` still went through it, so a switch made while viewing a past month stayed on that month, against CLAUDE.md's "returns to it on a habit switch". The switch now sets the month in progress directly (`showCurrentMonth`); `ReportsViewModelTest` covers the switch from a stepped-to month as well as from all time.
+- **Deviation from PR 2 step 3's snippet**: `CheckInAppTheme` constructs `SparkFontFamily` inside `remember(locale)` rather than calling `sparkFontFamily(...)`. The builder is composable and returns a new instance on every call, and the class has no equality, so each recomposition of the theme changed the static `LocalAppSparkFontFamily` and recomposed everything under it. The constructor is public, and the builder's only other input, the token highlighter, is off in the app's flags.
+- A 129-column KDoc line in `OpenSourceLibraries.kt`, rewrapped.
+
+Judged not defects:
+- **No banned component, `isLoading`, `Success`/`Danger`/`Boost`/`Ai` intent, `Card.Highlight*` or Compose Resources read** anywhere in `src/main`, and `SparkTheme(` appears only in `Theme.kt` (twice). Nothing draws in vermilion but errors, focus and the time picker's out-of-range line; nothing compares habits.
+- **RTL**: every directional icon (back, the two chevrons, walking, book, open elsewhere) comes from `AppIcons`; `Import`/`Export` were re-checked against Spark's path data and are symmetric about x = 12, so unmirrored is right. The swap mark (`SwapHoriz`, two opposed arrows) and the remaining glyphs read the same either way.
+- **Strings**: the eight new strings each have their `values-ar` twin. **Comments**: no added comment narrates the change. **Fit budgets**: re-derived in PR 5 and PR 6.4, with the arithmetic in the KDocs and CLAUDE.md's figures (60/120dp, 112/140dp, 180dp, 236dp) matching the constants.
+- **Hours by Month's per-bar totals** wrap rather than truncate in a narrow column ("160h 30m" over about 48dp), which is unchanged from M3 at the same 12sp and shows the whole figure on two lines; it stays on item 6's device re-measure.
+- `dayColor`, the action pairs and `descriptiveHues` pick light or dark from `isSystemInDarkTheme()` rather than `CheckInAppTheme`'s `darkTheme` parameter, as before the migration; nothing passes that parameter.
+
 When PR 8 lands, `v4.0` is releasable from the migration's side.
 
 ---
