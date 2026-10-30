@@ -1,7 +1,8 @@
 """Composites the captioned Play screenshots from raw device captures.
 
-Reads  play-store-assets/screenshots/raw/<NN-name>.png   (whatever the device gave)
-Writes play-store-assets/screenshots/phone/<NN-name>.png (1080x1920, 9:16)
+Reads  play-store-assets/screenshots/<locale>/raw/<NN-name>.png   (whatever the device gave)
+Writes play-store-assets/screenshots/<locale>/phone/<NN-name>.png (1080x1920, 9:16)
+for each listing locale: en-GB, and ar.
 
 **The captions are not stored here.** They are parsed out of the screenshot table in
 LISTING.md, because that table is what a human reads and edits when the pitch changes, and a
@@ -20,21 +21,24 @@ Output is 9:16 regardless of what the device's aspect happens to be, which is th
 compositing into a fixed canvas: a 20:9 phone capture dropped straight into the listing is
 letterboxed by Play, and a crop to 9:16 would cut app UI.
 
-Run from the repo root:  python3 play-store-assets/generate_screenshots.py
+Arabic captions are the numbered list under the Arabic listing's "Screenshot captions", in the
+English table's order, set in IBM Plex Sans Arabic with raqm's right-to-left shaping; English stays
+on basic layout. So the Arabic set needs a Pillow with raqm (see README.md).
+
+Run from the repo root:  python3 play-store-assets/generate_screenshots.py [en-GB|ar]
 """
 
 import os
 import re
 import sys
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, features
 
 sys.path.insert(0, "play-store-assets")
 from generate_feature_graphic import BOT, PAPER, TOP, font  # noqa: E402 -- one field for the brand
 
 W, H = 1080, 1920
-RAW = "play-store-assets/screenshots/raw"
-OUT = "play-store-assets/screenshots/phone"
+SHOTS = "play-store-assets/screenshots"
 LISTING = "play-store-assets/LISTING.md"
 
 MARGIN = 88
@@ -47,10 +51,20 @@ DEVICE_RADIUS = 38
 EXPECTED = 8
 
 ROW = re.compile(r"^\|\s*(\d)\s*\|\s*`([^`]+)`\s*\|[^|]*\|\s*([^|]+?)\s*\|\s*$")
+AR_HEADING = "### Screenshot captions"
+AR_ITEM = re.compile(r"^(\d)\. (.+)$")
+
+# Per locale: the caption face, its shrink size, the layout and direction it is set with, and whether
+# two lines are balanced. English keeps its greedy wrap, which the committed set was drawn with.
+STYLES = {
+    "en-GB": ("outfit_bold", 44, ImageFont.Layout.BASIC, None, False),
+    "ar": ("plex_arabic_bold", 44, ImageFont.Layout.RAQM, "rtl", True),
+}
 
 
-def captions():
-    """(filename, caption) for each row of LISTING.md's screenshot table, in order."""
+def captions(locale):
+    """(filename, caption) for each screenshot in order: the English table's names, and the
+    locale's captions."""
     out = []
     for line in open(LISTING, encoding="utf-8"):
         m = ROW.match(line.rstrip("\n"))
@@ -61,17 +75,37 @@ def captions():
             f"parsed {len(out)} caption rows from {LISTING}, expected {EXPECTED}. "
             "The screenshot table's shape changed -- fix the parse rather than the table."
         )
-    return out
+    if locale == "en-GB":
+        return out
+    lines = open(LISTING, encoding="utf-8").read().split(AR_HEADING, 1)[1].splitlines()
+    items = [m.group(2) for m in map(AR_ITEM.match, lines) if m]
+    if len(items) != EXPECTED:
+        raise SystemExit(f"parsed {len(items)} Arabic captions under '{AR_HEADING}', expected {EXPECTED}.")
+    return [(name, caption) for (name, _), caption in zip(out, items)]
 
 
-def wrap(draw, text, fnt, width):
+def wrap(draw, text, fnt, width, direction):
     lines, words = [], text.split()
     while words:
         line = words.pop(0)
-        while words and draw.textlength(f"{line} {words[0]}", font=fnt) <= width:
+        while words and draw.textlength(f"{line} {words[0]}", font=fnt, direction=direction) <= width:
             line += f" {words.pop(0)}"
         lines.append(line)
     return lines
+
+
+def balance(draw, lines, fnt, direction, width):
+    """Two lines broken between sentences when each fits, else where the wider is narrowest, so no
+    word is left alone on the second line."""
+    if len(lines) != 2:
+        return lines
+    words = " ".join(lines).split()
+    splits = [(" ".join(words[:i]), " ".join(words[i:])) for i in range(1, len(words))]
+
+    def widest(pair):
+        return max(draw.textlength(t, font=fnt, direction=direction) for t in pair)
+    sentences = [p for p in splits if p[0].endswith((".", "،")) and widest(p) <= width]
+    return list(sentences[0] if sentences else min(splits, key=widest))
 
 
 def gradient():
@@ -93,22 +127,25 @@ def rounded(img, radius):
     return out
 
 
-def compose(raw_path, caption):
+def compose(raw_path, caption, locale):
     canvas = gradient()
     draw = ImageDraw.Draw(canvas, "RGBA")
 
-    fnt = font("outfit_bold", CAPTION_SIZE)
-    lines = wrap(draw, caption, fnt, W - MARGIN * 2)
+    face, shrunk, layout, direction, balanced = STYLES[locale]
+    fnt = font(face, CAPTION_SIZE, layout)
+    lines = wrap(draw, caption, fnt, W - MARGIN * 2, direction)
     if len(lines) > 2:
         # Three lines would run into the device. Shrink once and re-wrap rather than clipping:
         # the long captions are the ones carrying the claim, so losing their tail is the worst
         # available failure.
-        fnt = font("outfit_bold", 44)
-        lines = wrap(draw, caption, fnt, W - MARGIN * 2)
+        fnt = font(face, shrunk, layout)
+        lines = wrap(draw, caption, fnt, W - MARGIN * 2, direction)
+    if balanced:
+        lines = balance(draw, lines, fnt, direction, W - MARGIN * 2)
     for i, line in enumerate(lines):
-        tw = draw.textlength(line, font=fnt)
+        tw = draw.textlength(line, font=fnt, direction=direction)
         draw.text(((W - tw) / 2, CAPTION_TOP + i * CAPTION_LEADING), line,
-                  font=fnt, fill=(*PAPER, 255))
+                  font=fnt, fill=(*PAPER, 255), direction=direction)
 
     shot = Image.open(raw_path).convert("RGB")
     box_h = DEVICE_BOTTOM - DEVICE_TOP
@@ -130,18 +167,22 @@ def compose(raw_path, caption):
     return canvas
 
 
-def main():
-    os.makedirs(OUT, exist_ok=True)
-    rows = captions()
-    missing = [n for n, _ in rows if not os.path.exists(f"{RAW}/{n}")]
+def generate(locale):
+    if STYLES[locale][2] == ImageFont.Layout.RAQM and not features.check("raqm"):
+        raise SystemExit(f"{locale} captions need Pillow with raqm, which this one lacks; see README.md.")
+    raw, out_dir = f"{SHOTS}/{locale}/raw", f"{SHOTS}/{locale}/phone"
+    os.makedirs(out_dir, exist_ok=True)
+    rows = captions(locale)
+    missing = [n for n, _ in rows if not os.path.exists(f"{raw}/{n}")]
     if missing:
         raise SystemExit(f"no raw capture for: {', '.join(missing)}\n"
-                         f"See README.md for the capture procedure; raws live in {RAW}/.")
+                         f"See README.md for the capture procedure; raws live in {raw}/.")
     for name, caption in rows:
-        out = f"{OUT}/{name}"
-        compose(f"{RAW}/{name}", caption).convert("RGB").save(out)
+        out = f"{out_dir}/{name}"
+        compose(f"{raw}/{name}", caption, locale).convert("RGB").save(out)
         print(f"wrote {out}  “{caption}”")
 
 
 if __name__ == "__main__":
-    main()
+    for loc in sys.argv[1:] or STYLES:
+        generate(loc)
