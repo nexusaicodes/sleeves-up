@@ -31,6 +31,8 @@ class LatinDigitsTest {
         val saved = Locale.getDefault()
         try {
             Locale.setDefault(arabic)
+            // The premise: the time picker's NumberFormat would print ١٥ under the bare default.
+            assertEquals("١٥", java.text.NumberFormat.getIntegerInstance(Locale.getDefault()).format(15))
             useLatinDigitsByDefault()
             assertEquals("ar", Locale.getDefault().language)
             assertEquals("15", java.text.NumberFormat.getIntegerInstance(Locale.getDefault()).format(15))
