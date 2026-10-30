@@ -1,5 +1,6 @@
 package com.checkin.app
 
+import com.checkin.app.util.useLatinDigitsByDefault
 import com.checkin.app.util.withLatinDigits
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -23,5 +24,18 @@ class LatinDigitsTest {
         assertEquals("ar", latin.language)
         assertEquals("15", String.format(latin, "%d", 15))
         assertEquals("1.5", String.format(latin, "%.1f", 1.5f))
+    }
+
+    @Test
+    fun `the default locale numbers in latin digits once set, keeping its language`() {
+        val saved = Locale.getDefault()
+        try {
+            Locale.setDefault(arabic)
+            useLatinDigitsByDefault()
+            assertEquals("ar", Locale.getDefault().language)
+            assertEquals("15", java.text.NumberFormat.getIntegerInstance(Locale.getDefault()).format(15))
+        } finally {
+            Locale.setDefault(saved)
+        }
     }
 }

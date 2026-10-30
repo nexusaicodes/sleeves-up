@@ -8,6 +8,7 @@ import com.checkin.app.di.DefaultAppContainer
 import com.checkin.app.notify.NotificationChannels
 import com.checkin.app.notify.nudge.NudgeSendDatabase
 import com.checkin.app.notify.nudge.NudgeWorker
+import com.checkin.app.util.useLatinDigitsByDefault
 import kotlinx.coroutines.launch
 
 /** Owns the app-wide [AppContainer] (manual DI — no framework). */
@@ -17,6 +18,7 @@ class CheckInApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        useLatinDigitsByDefault()
         container = DefaultAppContainer(this)
         // Registered here rather than in the service, so a channel exists before anything tries to
         // post to it — the hourly pass can run without the service ever having started.
@@ -44,6 +46,7 @@ class CheckInApplication : Application() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        useLatinDigitsByDefault()
         if (newConfig.locales == languages) return
         languages = newConfig.locales
         NotificationChannels.ensureAll(this)

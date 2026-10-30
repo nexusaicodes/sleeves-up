@@ -26,6 +26,7 @@ import com.checkin.app.ui.presence.TapOutcome
 import com.checkin.app.ui.presence.TapRouting
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.util.latinDigitsOverride
+import com.checkin.app.util.useLatinDigitsByDefault
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
@@ -53,6 +54,7 @@ class MainActivity : FragmentActivity() {
             fadeIntoApp(this@MainActivity)
         }
         super.onCreate(savedInstanceState)
+        useLatinDigitsByDefault()
         // Transparent bars on every level: below 35 the platform otherwise keeps the theme's opaque ones.
         enableEdgeToEdge()
 
