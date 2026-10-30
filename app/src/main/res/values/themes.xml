@@ -1,14 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Cold-start splash theme; hands off to Theme.CheckInApp once the Activity is ready.
-         The background is the app's own window background, paper or dark paper with the system
-         theme, so the splash hands over to a first frame of the same colour rather than flashing
-         ink before a light app. The icon is ic_splash_icon, the mark arriving cell by cell,
-         generated from the same geometry as the launcher icon. -->
+    <!-- Cold-start splash, on the app's own window background so the hand-over doesn't flash. -->
     <style name="Theme.CheckInApp.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/brand_window_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_icon</item>
-        <!-- Android 12 reads the arrival's length from here; 13 and later from the icon itself. -->
+        <!-- Read by Android 12 only. -->
         <item name="windowSplashScreenAnimationDuration">680</item>
         <item name="postSplashScreenTheme">@style/Theme.CheckInApp</item>
     </style>

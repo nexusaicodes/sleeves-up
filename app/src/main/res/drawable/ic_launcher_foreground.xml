@@ -4,10 +4,8 @@
   a cell or it is nothing, which is the product's whole thesis as a shape — what you read is
   density, never depth. Nothing here is shaded or ramped; there is no fraction in this file.
 
-  This single file is the launcher foreground and the themed (monochrome) layer. The splash
-  (ic_splash_icon) is a separate, animated copy, written by the same generator from the same
-  numbers, so the two cannot drift the way a raster launcher icon and a hand-drawn vector splash
-  once did, shipping as two different logos under one name.
+  The launcher foreground and the themed (monochrome) layer. The splash (ic_splash_icon) is
+  generated from the same numbers.
 
   Geometry is authored in play-store-assets/generate_icons.py, which emits this pathData and
   the matching 512px Play icon from the same numbers. Edit there, not here. Corners are cubic

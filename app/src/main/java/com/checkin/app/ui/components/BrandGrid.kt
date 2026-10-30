@@ -40,8 +40,7 @@ import kotlin.math.pow
  * at [FILL_FRAC] of the pitch, with [EMPTY_CELLS] left out. Seven of nine: a full grid claims a
  * perfect month, which is the claim this app exists not to make. **Those constants are a second
  * copy of the generator's and must be changed with it**; the drawables it emits are the launcher,
- * splash and notification marks, and this is the same mark at display size. The splash also plays
- * [settle]'s arrival, so the generator restates its timings, scale and easings too. It is a copy rather
+ * splash and notification marks, and this is the same mark at display size. It is a copy rather
  * than a shared source because the generator is Python and emits `pathData` — a single flattened
  * path, which is exactly what cannot be animated per cell.
  *
@@ -215,10 +214,7 @@ private val FILLED_COUNT = FILLED_CELLS.size
 
 // --- the settle ----------------------------------------------------------------------------
 
-/**
- * Milliseconds one cell takes to arrive, and the offset between one cell's start and the next.
- * `generate_icons.py` restates these, [MIN_SCALE] and the two easings for the splash's arrival.
- */
+/** Milliseconds one cell takes to arrive, and the offset between starts. The splash restates both. */
 private const val CELL_MS = 260
 private const val STAGGER_MS = 70
 
