@@ -2,6 +2,7 @@
 <resources>
     <!-- Dark launch window background: the theme's dark paper background. -->
     <color name="brand_window_background">#0E1830</color>
+    <color name="splash_mark">#EFE4CB</color>
 
     <!-- The widget's dark counterparts; see values/colors.xml. -->
     <color name="widget_background">#0E1830</color>

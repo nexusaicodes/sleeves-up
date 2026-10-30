@@ -36,9 +36,9 @@ drawables (never hand-edit a path), and update the same constants in the app's `
 draws the mark cell by cell in Compose. `verify()` asserts the adaptive-icon safe circle on every
 run.
 
-`ic_launcher_foreground.xml` is the launcher foreground and the themed (monochrome) layer, and the
-splash draws it through `ic_splash_icon.xml`, an `<inset>` that only enlarges it — so the three
-cannot drift. Sizing rules encoded in the script:
+`ic_launcher_foreground.xml` is the launcher foreground and the themed (monochrome) layer. The
+script also writes the animated splash, `ic_splash_icon.xml`; re-run it after changing the geometry
+or `BrandGrid`'s settle timing. Sizing rules encoded in the script:
 
 - The mark is sized against the **72dp window the launcher actually shows**, not the 66dp safe
   circle, which would read oversized next to other icons.

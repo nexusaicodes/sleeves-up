@@ -214,7 +214,7 @@ private val FILLED_COUNT = FILLED_CELLS.size
 
 // --- the settle ----------------------------------------------------------------------------
 
-/** Milliseconds one cell takes to arrive, and the offset between one cell's start and the next. */
+/** Milliseconds one cell takes to arrive, and the offset between starts. The splash restates both. */
 private const val CELL_MS = 260
 private const val STAGGER_MS = 70
 
