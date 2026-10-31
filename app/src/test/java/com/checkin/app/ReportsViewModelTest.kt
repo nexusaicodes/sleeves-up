@@ -326,6 +326,34 @@ class ReportsViewModelTest {
         assertEquals(false, viewModel.uiState.value.hasNextMonth)
     }
 
+    /**
+     * The month in progress is read off the screen's own day, not a fresh clock: with the midnight
+     * emission stalled, a fresh read would land on a month the arrow then refuses to step back to.
+     */
+    @Test
+    fun `returning to the month in progress reads the screen's day`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-09-10", startedAt = 0L, durationMs = 3_600_000L)
+        val time = FakeTimeSource(0L, LocalDate.of(2026, 10, 31))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), time)
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+        time.todayAhead = LocalDate.of(2026, 11, 1)
+
+        viewModel.selectAllTime()
+        viewModel.selectMonth()
+        advanceUntilIdle()
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 10)), viewModel.uiState.value.scope)
+        assertEquals(false, viewModel.uiState.value.hasNextMonth)
+
+        viewModel.previousMonth()
+        advanceUntilIdle()
+        assertEquals(true, viewModel.uiState.value.hasNextMonth)
+        viewModel.nextMonth()
+        advanceUntilIdle()
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 10)), viewModel.uiState.value.scope)
+    }
+
     @Test
     fun `all time has no next month`() = runTest {
         val dao = FakeCheckInSessionDao()
