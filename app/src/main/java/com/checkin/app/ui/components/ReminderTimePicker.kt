@@ -11,6 +11,7 @@ import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -97,9 +98,9 @@ private fun PickerDialog(state: TimePickerState, inRange: Boolean, onConfirm: ()
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // The dial formats its numbers with Locale.getDefault(), which the platform can reset
-                // while this dialog is open; re-asserting it on each hour/minute switch, ahead of the
-                // dial, keeps them Latin.
-                remember(state.selection) { useLatinDigitsByDefault() }
+                // while this dialog is open. Keyed on the selection, this recomposes ahead of the dial
+                // on each hour/minute switch and re-asserts Latin digits before the dial redraws.
+                key(state.selection) { useLatinDigitsByDefault() }
                 TimePicker(
                     state = state,
                     colors = TimePickerDefaults.colors(
