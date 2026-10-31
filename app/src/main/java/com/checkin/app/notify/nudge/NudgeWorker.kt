@@ -67,11 +67,11 @@ class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
         private const val INTERVAL_MINUTES = 60L
 
         /**
-         * Nothing reads a send older than the start of today — [NudgeDispatcher] queries from
-         * midnight and no other reader exists. The week is slack for a clock moved backwards, not a
-         * decision to keep records: this ledger is scheduler state, and stale rows are just litter.
+         * The furthest back anything reads: the wording rotation's [NudgeVoice.HISTORY_MS] (the
+         * frequency rules read only from midnight). Not a decision to keep records — this ledger is
+         * scheduler state, and a row past the rotation's reach is litter.
          */
-        private val RETENTION_MS = TimeUnit.DAYS.toMillis(7)
+        private const val RETENTION_MS = NudgeVoice.HISTORY_MS
 
         /**
          * Enqueued unconditionally at startup with [ExistingPeriodicWorkPolicy.KEEP], so it survives

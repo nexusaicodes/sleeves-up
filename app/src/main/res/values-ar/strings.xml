@@ -72,10 +72,69 @@
     <string name="nudge_channel_name">تذكيرات تسجيل الحضور</string>
     <string name="nudge_channel_description">يذكّرك بتسجيل الحضور في الأيام التي لم تسجّل فيها بعد. مرة واحدة في اليوم على الأكثر.</string>
 
-    <!-- One wording; never warms or grows urgent, and never names the hour. -->
+    <!-- Three voices, rotated; the voice is never revealed, never warms or grows urgent, and never names the hour. -->
+    <string name="nudge_not_started_title_1">%1$s: حين تكون مستعدًا</string>
+    <string name="nudge_not_started_title_unnamed_1">حين تكون مستعدًا</string>
+    <string name="nudge_not_started_title_2">%1$s: الجلسة الأولى هي الخطوة كلها</string>
+    <string name="nudge_not_started_title_unnamed_2">الجلسة الأولى هي الخطوة كلها</string>
+    <string name="nudge_not_started_title_3">%1$s: ابدأ بجلسة قصيرة</string>
+    <string name="nudge_not_started_title_unnamed_3">ابدأ بجلسة قصيرة</string>
+    <string name="nudge_not_started_title_4">%1$s: قد يكون اليوم هو اليوم الأول</string>
+    <string name="nudge_not_started_title_unnamed_4">قد يكون اليوم هو اليوم الأول</string>
+    <string name="nudge_not_started_body_1">سجّل حضورك بضع دقائق، فهذا كل ما يحتاجه اليوم الأول.</string>
+    <string name="nudge_not_started_body_2">لم يبقَ شيء لإعداده، تسجيل حضور واحد يبدأ السجلّ.</string>
+    <string name="nudge_not_started_body_3">الجلسة القصيرة تُحتسب تمامًا كالطويلة، فابدأ بما يناسبك.</string>
+    <string name="nudge_not_started_body_4">أصعب جلسة هي الأولى، فلتكن قصيرة.</string>
+    <string name="nudge_not_started_body_5">لا شيء لتحضّره. سجّل حضورك، وقد بدأت.</string>
+    <string name="nudge_not_started_body_6">عشر دقائق بدايةٌ حقيقية.</string>
+    <string name="nudge_not_started_body_7">لا تحتاج خطة لليوم، يكفيك أن تبدأ.</string>
+    <string name="nudge_not_started_body_8">اختر أصغر ما تستطيع فعله من هذا، وافعله.</string>
+    <string name="nudge_not_started_body_9">كل سجلّ يبدأ بيوم واحد، وهذا اليوم متاح.</string>
+    <string name="nudge_not_started_body_10">ابدأ قبل أن تشعر بالاستعداد، فالحضور هو ما يُحتسب.</string>
+    <string name="nudge_not_started_body_11">جلسة واحدة اليوم تمنح التقويم أول علامة.</string>
+    <string name="nudge_not_started_body_12">مهما كان طول جلستك، يمكن لهذا اليوم أن يُحتسب.</string>
+
     <string name="nudge_not_checked_in_title">%1$s: لا جلسة بعد اليوم</string>
     <string name="nudge_not_checked_in_unnamed_title">لا جلسة بعد اليوم</string>
+    <string name="nudge_steady_title_2">%1$s: اليوم ما زال متاحًا</string>
+    <string name="nudge_steady_title_unnamed_2">اليوم ما زال متاحًا</string>
+    <string name="nudge_steady_title_3">%1$s: حان وقت الحضور</string>
+    <string name="nudge_steady_title_unnamed_3">حان وقت الحضور</string>
+    <string name="nudge_steady_title_4">%1$s: لحظة مناسبة للبدء</string>
+    <string name="nudge_steady_title_unnamed_4">لحظة مناسبة للبدء</string>
     <string name="nudge_not_checked_in_body">متى بدأت فهو يُحتسب، فاليوم القصير يومٌ حضرتَ فيه أيضًا.</string>
+    <string name="nudge_steady_body_2">أي مدة تُحتسب. ابدأ من حيث أنت.</string>
+    <string name="nudge_steady_body_3">لا يلزم أن يكون اليوم كبيرًا، يكفي أن يبدأ.</string>
+    <string name="nudge_steady_body_4">احضر بضع دقائق وانظر إلى أين تمضي.</string>
+    <string name="nudge_steady_body_5">جلسة سريعة الآن يومٌ حضرتَ فيه كاملًا.</string>
+    <string name="nudge_steady_body_6">تعرف الطريق: سجّل حضورك ثم ابدأ.</string>
+    <string name="nudge_steady_body_7">ما زال في اليوم متّسع لجلسة.</string>
+    <string name="nudge_steady_body_8">القصير المنجَز يُحتسب كالطويل المنجَز.</string>
+    <string name="nudge_steady_body_9">ابدأ صغيرًا، ويمكنك دائمًا أن تواصل.</string>
+    <string name="nudge_steady_body_10">الحضور هو مهمة اليوم كلها.</string>
+    <string name="nudge_steady_body_11">لا حاجة لأن تشعر بالاستعداد، فالبدء يكفي.</string>
+    <string name="nudge_steady_body_12">سجّل حضورك ولو قليلًا، فيُحتسب اليوم.</string>
+
+    <string name="nudge_returning_title_1">%1$s: اليوم يبدأ من جديد</string>
+    <string name="nudge_returning_title_unnamed_1">اليوم يبدأ من جديد</string>
+    <string name="nudge_returning_title_2">%1$s: بضع دقائق فقط</string>
+    <string name="nudge_returning_title_unnamed_2">بضع دقائق فقط</string>
+    <string name="nudge_returning_title_3">%1$s: البداية الصغيرة تُحتسب</string>
+    <string name="nudge_returning_title_unnamed_3">البداية الصغيرة تُحتسب</string>
+    <string name="nudge_returning_title_4">%1$s: في الوقت الذي يناسبك</string>
+    <string name="nudge_returning_title_unnamed_4">في الوقت الذي يناسبك</string>
+    <string name="nudge_returning_body_1">كل يوم يبدأ من جديد، والجلسة القصيرة اليوم تُحتسب كاملة.</string>
+    <string name="nudge_returning_body_2">عشر دقائق تُحتسب كأي يوم مضى.</string>
+    <string name="nudge_returning_body_3">لا شيء مستحق عليك. اليوم فقط، بأي مدة تناسبه.</string>
+    <string name="nudge_returning_body_4">أصغر جلسة تُحتسب أيضًا، فابدأ بها.</string>
+    <string name="nudge_returning_body_5">اليوم يومٌ قائم بذاته. سجّل حضورك بضع دقائق.</string>
+    <string name="nudge_returning_body_6">لا شيء لتعوّضه، فالسجلّ لا يسأل إلا عن اليوم.</string>
+    <string name="nudge_returning_body_7">خمس دقائق يومٌ حضرتَ فيه كاملًا.</string>
+    <string name="nudge_returning_body_8">اجعلها صغيرة كما تشاء، فالبدء هو ما يُحتسب.</string>
+    <string name="nudge_returning_body_9">يمكن لليوم أن يُحتسب، أيًّا كان شكله.</string>
+    <string name="nudge_returning_body_10">على مهل. جلسة قصيرة واحدة تكفي.</string>
+    <string name="nudge_returning_body_11">لا توجد لحظة مثالية، والآن مناسبة.</string>
+    <string name="nudge_returning_body_12">تسجيل حضور قصير اليوم يومٌ كامل في السجلّ.</string>
 
     <!-- The first-run welcome tour -->
     <string name="welcome_quote_title">اجعلها عادة</string>

@@ -13,6 +13,7 @@ import com.checkin.app.notify.nudge.NudgeConfig
 import com.checkin.app.notify.nudge.NudgeDispatcher
 import com.checkin.app.notify.nudge.NudgeSendLog
 import com.checkin.app.notify.nudge.NudgeSending
+import com.checkin.app.notify.nudge.NudgeVoice.Voice
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -72,6 +73,10 @@ class NudgeDispatcherTest {
 
     private suspend fun shownCount() = log.attemptsSince(0L).count { it.posted }
 
+    private fun NudgeSending.withoutWording() = copy(titleKey = null, bodyKey = null)
+
+    private fun pool(voice: Voice) = NudgeCatalog.copyFor(Nudge.NOT_CHECKED_IN, voice)
+
     private suspend fun newHabit(name: String, hour: Int): Habit {
         val habit = (habits.create(name) as HabitEdit.Saved).habit
         reminderSettings.setReminderMinute(habit.uuid, hour * 60)
@@ -84,7 +89,10 @@ class NudgeDispatcherTest {
 
         assertEquals(listOf(Habit.SEED_ID), reminded.map { it.id })
         assertEquals(1, notifier.shown.size)
-        assertEquals(NudgeSending(seed.uuid, Nudge.NOT_CHECKED_IN.name, triggerHour, posted = true), log.sends.single())
+        assertEquals(
+            NudgeSending(seed.uuid, Nudge.NOT_CHECKED_IN.name, triggerHour, posted = true),
+            log.sends.single().withoutWording(),
+        )
     }
 
     /**
@@ -102,7 +110,7 @@ class NudgeDispatcherTest {
         assertEquals(0, shownCount())
         assertEquals(
             NudgeSending(seed.uuid, Nudge.NOT_CHECKED_IN.name, triggerHour, posted = false),
-            log.sends.single(),
+            log.sends.single().withoutWording(),
         )
     }
 
@@ -197,19 +205,94 @@ class NudgeDispatcherTest {
     }
 
     /**
-     * The catalog is the only source of a nudge's wording — there is no variant bucket and no
-     * override — and the title names the habit, so a user with two can tell which one it is about.
+     * The catalog is the only source of a nudge's wording, and the title names the habit, so a user
+     * with two can tell which one it is about.
      */
     @Test
-    fun `the posted copy is the nudge's registered copy, naming the habit`() = runTest {
-        val copy = NudgeCatalog.copyFor(Nudge.NOT_CHECKED_IN)
-        val strings = StringResolver { if (it == copy.titleRes) "%1\$s: title" else "copy-$it" }
+    fun `the posted copy is from the voice's registered pools, naming the habit`() = runTest {
+        val copy = pool(Voice.NOT_STARTED)
+        val titles = copy.titles.map { it.titleRes }.toSet()
+        val strings = StringResolver { if (it in titles) "%1\$s: title" else "copy-$it" }
 
         dispatcher(strings = strings).runOnce()
 
         val spec = notifier.shown.single()
         assertEquals("Seed: title", spec.title)
-        assertEquals("copy-${copy.bodyRes}", spec.body)
+        assertTrue(spec.body in copy.bodies.map { "copy-${it.bodyRes}" })
+    }
+
+    /** The voice is read from the habit's last session before today, and only picks the pool. */
+    @Test
+    fun `the voice follows the habit's last session`() = runTest {
+        // Each step adds a later session, so the latest is the one given; the log is cleared so the
+        // day's one nudge can be sent again.
+        suspend fun bodyKeyAfter(lastSessionDaysAgo: Long?): String {
+            log.sends.clear()
+            lastSessionDaysAgo?.let { dao.seedOpen(dateKey = today.minusDays(it).toString()) }
+            dispatcher().runOnce()
+            return log.sends.single().bodyKey!!
+        }
+
+        assertTrue(bodyKeyAfter(null).startsWith("not_started."))
+        assertTrue(bodyKeyAfter(40).startsWith("returning."))
+        assertTrue(bodyKeyAfter(3).startsWith("returning."))
+        assertTrue(bodyKeyAfter(2).startsWith("steady."))
+        assertTrue(bodyKeyAfter(1).startsWith("steady."))
+    }
+
+    /** One reminder a day for a pool's length of days carries every wording once, titles as bodies. */
+    @Test
+    fun `consecutive days rotate through the whole pool before repeating`() = runTest {
+        val bodies = pool(Voice.NOT_STARTED).bodies.size
+        repeat(bodies) { day ->
+            val date = today.plusDays(day.toLong())
+            dispatcher(FakeTimeSource(at(chosenHour, date = date), date)).runOnce()
+        }
+
+        val posted = log.sends.filter { it.posted }
+        assertEquals(bodies, posted.size)
+        assertEquals(bodies, posted.mapNotNull { it.bodyKey }.toSet().size)
+        val titles = pool(Voice.NOT_STARTED).titles.size
+        assertEquals(titles, posted.take(titles).mapNotNull { it.titleKey }.toSet().size)
+    }
+
+    /** Wording is never worth the reminder: a history that cannot be read still yields a post. */
+    @Test
+    fun `an unreadable wording history still posts`() = runTest {
+        val blind = object : NudgeSendLog by log {
+            override suspend fun shownSince(habitUuid: String, since: Long) = error("disk read")
+        }
+
+        assertEquals(listOf(Habit.SEED_ID), dispatcher(sendLog = { blind }).runOnce().map { it.id })
+        assertTrue(log.sends.single().bodyKey!!.startsWith("not_started."))
+    }
+
+    /** A wording nobody was shown has not been used, so a refusal does not push it to the back. */
+    @Test
+    fun `a refused post leaves its wording unused`() = runTest {
+        val bodies = pool(Voice.NOT_STARTED).bodies
+        bodies.dropLast(1).forEachIndexed { i, body ->
+            log.record(
+                seed.uuid,
+                Nudge.NOT_CHECKED_IN,
+                at(chosenHour, date = today.minusDays(20L - i)),
+                true,
+                null,
+                body.key,
+            )
+        }
+        log.record(
+            seed.uuid,
+            Nudge.NOT_CHECKED_IN,
+            at(chosenHour, date = today.minusDays(1)),
+            false,
+            null,
+            bodies.last().key,
+        )
+
+        dispatcher().runOnce()
+
+        assertEquals(bodies.last().key, log.sends.last().bodyKey)
     }
 
     /** A habit still owed a name — an updated install not yet opened — is reminded as before the update. */
@@ -230,10 +313,8 @@ class NudgeDispatcherTest {
 
         dispatcher.runOnce()
 
-        assertEquals(
-            "copy-${NudgeCatalog.copyFor(Nudge.NOT_CHECKED_IN).unnamedTitleRes}",
-            notifier.shown.single().title,
-        )
+        val unnamedTitles = pool(Voice.NOT_STARTED).titles.map { "copy-${it.unnamedTitleRes}" }
+        assertTrue(notifier.shown.single().title in unnamedTitles)
     }
 
     /**
@@ -319,7 +400,7 @@ class NudgeDispatcherTest {
     @Test
     fun `a refused attempt does not hold back another habit`() = runTest {
         val gym = newHabit("Gym", chosenHour)
-        log.record(seed.uuid, Nudge.NOT_CHECKED_IN, triggerHour - 10 * 60 * 1000L, posted = false)
+        log.record(seed.uuid, Nudge.NOT_CHECKED_IN, triggerHour - 10 * 60 * 1000L, posted = false, null, null)
 
         assertEquals(listOf(gym.id), dispatcher().runOnce().map { it.id })
     }
@@ -375,7 +456,7 @@ class NudgeDispatcherTest {
      */
     @Test
     fun `rearm does not retry a nudge whose post was refused`() = runTest {
-        log.record(seed.uuid, Nudge.NOT_CHECKED_IN, triggerHour, posted = false)
+        log.record(seed.uuid, Nudge.NOT_CHECKED_IN, triggerHour, posted = false, null, null)
 
         dispatcher(FakeTimeSource(triggerHour + 10 * 60 * 1000L, today)).rearm()
 
@@ -389,8 +470,14 @@ class NudgeDispatcherTest {
     @Test
     fun `a pass that throws arms later rather than now`() = runTest {
         val throwing = object : NudgeSendLog by log {
-            override suspend fun record(habitUuid: String, nudge: Nudge, atMillis: Long, posted: Boolean) =
-                error("disk full")
+            override suspend fun record(
+                habitUuid: String,
+                nudge: Nudge,
+                atMillis: Long,
+                posted: Boolean,
+                titleKey: String?,
+                bodyKey: String?,
+            ) = error("disk full")
         }
 
         assertTrue(dispatcher(sendLog = { throwing }).runOnce().isEmpty())
@@ -404,7 +491,7 @@ class NudgeDispatcherTest {
      */
     @Test
     fun `a pass straddling midnight reads one day`() = runTest {
-        log.record(seed.uuid, Nudge.NOT_CHECKED_IN, at(20), posted = true)
+        log.record(seed.uuid, Nudge.NOT_CHECKED_IN, at(20), posted = true, null, null)
         val lastMillisecond = at(0, date = today.plusDays(1)) - 1
 
         assertTrue(dispatcher(FakeTimeSource(lastMillisecond, today.plusDays(1))).runOnce().isEmpty())
