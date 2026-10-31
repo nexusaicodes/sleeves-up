@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Cold-start splash, on the app's own window background so the hand-over doesn't flash. -->
     <style name="Theme.CheckInApp.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/brand_window_background</item>
@@ -7,6 +7,9 @@
         <!-- Read by Android 12 only. -->
         <item name="windowSplashScreenAnimationDuration">680</item>
         <item name="postSplashScreenTheme">@style/Theme.CheckInApp</item>
+        <!-- The mark on every launch, a notification tap's or another app's included, which
+             otherwise get a plain background (Android 13+). -->
+        <item name="android:windowSplashScreenBehavior" tools:targetApi="33">icon_preferred</item>
     </style>
 
     <!-- Post-splash app theme. DayNight so the window background follows light/dark (no white

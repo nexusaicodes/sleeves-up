@@ -85,8 +85,8 @@ class ReportsViewModel(
 
     private val refresh = MutableStateFlow(0)
 
-    // The screen's one clock: the figures and nextMonth's guard both read it, so the arrow and the
-    // step it takes cannot disagree.
+    // The screen's one clock: the figures, nextMonth's guard and every return to the month in
+    // progress read it, so the arrow, the step it takes and the month landed on cannot disagree.
     private val day = timeSource.dayTrigger(refresh)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), timeSource.today())
 
@@ -273,7 +273,7 @@ class ReportsViewModel(
 
     /** The month in progress, from either scope: where the tab opens, and where a habit switch lands. */
     private fun showCurrentMonth() {
-        scope.value = ReportScope.Month(YearMonth.from(timeSource.today()))
+        scope.value = ReportScope.Month(YearMonth.from(day.value))
     }
 
     fun selectAllTime() {
@@ -283,8 +283,7 @@ class ReportsViewModel(
     private fun ReportScope.hasMonthAfter(today: LocalDate): Boolean =
         this is ReportScope.Month && ConsistencyStats.hasMonthAfter(month, today)
 
-    private fun displayedMonth(): YearMonth =
-        (scope.value as? ReportScope.Month)?.month ?: YearMonth.from(timeSource.today())
+    private fun displayedMonth(): YearMonth = (scope.value as? ReportScope.Month)?.month ?: YearMonth.from(day.value)
 
     /**
      * Exports whatever the screen is showing.
