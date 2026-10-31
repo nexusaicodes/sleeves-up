@@ -66,6 +66,12 @@ listing's first caption in IBM Plex Sans Arabic. Like the Arabic screenshots it 
 it needs the same Pillow (see Regenerating the screenshots); without raqm the English graphic still
 generates and the Arabic one stops with a message.
 
+**The file bytes depend on the Pillow version, the pixels do not.** Under the venv's Pillow 11.3,
+`feature-graphic.png` renders pixel-identical to the committed one but encodes to different PNG
+bytes, so git reports it modified. Render each graphic under the Pillow that produced it — the
+English one with `python3 … en-GB`, the Arabic one with `/tmp/assets-venv/bin/python … ar` — or
+`git checkout` the English file after a run of both; that diff changes nothing on screen.
+
 ## Regenerating the screenshots
 
 Shoot against the **release** build (`assembleRelease`, signed with the upload key), so the listing
