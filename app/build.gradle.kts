@@ -594,8 +594,10 @@ val manifestEntryKinds = listOf(
 
 /**
  * Manifest elements that put code in the APK, each listed by its `android:name` plus what decides
- * whether another app can reach it: `exported`, and the `permission` guarding it when one is set. A
- * library bump that exports a listed component or drops its guard therefore changes the line.
+ * whether another app can reach it: `exported`, the `permission` guarding it when one is set, and for
+ * a provider its `authorities` and `grantUriPermissions`. Each intent filter is a `filter` line of its
+ * own. A library bump that exports a listed component, drops its guard, widens a provider or adds a
+ * filter (a deep link, a new broadcast) therefore changes a line.
  */
 val manifestComponentKinds = listOf("activity", "activity-alias", "service", "receiver", "provider")
 
@@ -623,12 +625,40 @@ tasks.register("verifyMergedManifest") {
 
         val shipped = sortedSetOf<String>()
         manifestEntryKinds.forEach { kind -> elements(kind).forEach { shipped += "$kind ${it.androidName()}" } }
+        // Whether a feature is required decides which devices Play offers the app to.
+        elements("uses-feature").forEach { feature ->
+            shipped += "uses-feature ${feature.androidName()} required=" +
+                feature.getAttributeNS(androidNs, "required").ifEmpty { "unset" }
+        }
         manifestComponentKinds.forEach { kind ->
             elements(kind).forEach { component ->
                 val exported = component.getAttributeNS(androidNs, "exported").ifEmpty { "unset" }
-                val permission = component.getAttributeNS(androidNs, "permission")
-                shipped += "$kind ${component.androidName()} exported=$exported" +
-                    if (permission.isEmpty()) "" else " permission=$permission"
+                val guards = listOf("permission", "authorities", "grantUriPermissions").mapNotNull { attr ->
+                    component.getAttributeNS(androidNs, attr).takeIf { it.isNotEmpty() }?.let { "$attr=$it" }
+                }
+                shipped += (listOf("$kind ${component.androidName()} exported=$exported") + guards).joinToString(" ")
+                component.getElementsByTagName("intent-filter").let { filters ->
+                    (0 until filters.length).map { filters.item(it) as org.w3c.dom.Element }
+                }.forEach { filter ->
+                    fun values(tag: String, describe: (org.w3c.dom.Element) -> String) =
+                        filter.getElementsByTagName(tag).let { nodes ->
+                            (0 until nodes.length).map { describe(nodes.item(it) as org.w3c.dom.Element) }.sorted()
+                        }
+                    val parts = listOf(
+                        "action" to values("action") { it.androidName() },
+                        "category" to values("category") { it.androidName() },
+                        "data" to values("data") { data ->
+                            listOf(
+                                "scheme", "host", "port", "path", "pathPrefix", "pathSuffix", "pathPattern",
+                                "pathAdvancedPattern", "ssp", "sspPrefix", "sspSuffix", "sspPattern",
+                                "sspAdvancedPattern", "mimeType", "mimeGroup",
+                            ).mapNotNull { attr ->
+                                data.getAttributeNS(androidNs, attr).takeIf { it.isNotEmpty() }?.let { "$attr:$it" }
+                            }.joinToString("+")
+                        },
+                    ).filter { it.second.isNotEmpty() }.map { (key, list) -> "$key=${list.joinToString(",")}" }
+                    shipped += (listOf("filter ${component.androidName()}") + parts).joinToString(" ")
+                }
             }
         }
         // Startup initializers are meta-data under androidx.startup's provider, so the provider line
