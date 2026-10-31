@@ -18,18 +18,22 @@ app/src/main/res/font. That is the same split Type.kt makes on screen -- Outfit 
 sizes, Manrope on reading sizes -- and the files are committed, so this script needs no font
 fallback chain and renders identically on any machine.
 
-Run from the repo root:  python3 play-store-assets/generate_feature_graphic.py
+The Arabic graphic is the same composition mirrored, as an RTL reader scans it: the words on the
+right and the calendar running off the left edge. The wordmark stays in Latin script and in Outfit,
+as `app_name` does in the app; the tagline is the Arabic listing's first caption, set in IBM Plex
+Sans Arabic with raqm's right-to-left shaping, so that one needs a Pillow with raqm (see README.md).
+
+Run from the repo root:  python3 play-store-assets/generate_feature_graphic.py [en-GB|ar]
 """
 
 import sys
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, features
 
 sys.path.insert(0, "play-store-assets")
 from generate_icons import CORNER_FRAC  # noqa: E402  -- one source for the cell's shape
 
 W, H = 1024, 500
-OUT = "play-store-assets/feature-graphic.png"
 FONT_DIR = "app/src/main/res/font"
 
 # The app's palette (ui/theme/Color.kt): the field runs from ink, the launcher tile's colour, down
@@ -41,7 +45,16 @@ PAPER = (241, 230, 206)  # paper #F1E6CE: the cells and the wordmark
 MUTED = (167, 176, 194)  # dark inkMuted #A7B0C2: the tagline
 
 WORDMARK = "Sleeves Up"
-TAGLINE = "A day counts because you showed up."
+
+# Per locale: output, tagline, its face and size, layout, direction, and whether the composition is
+# mirrored. The Arabic tagline is the Arabic listing's first screenshot caption, as the English one
+# is the English listing's; Plex Arabic runs smaller on the em than Manrope, hence the larger size.
+LOCALES = {
+    "en-GB": ("play-store-assets/feature-graphic.png", "A day counts because you showed up.",
+              "manrope_medium", 29, ImageFont.Layout.BASIC, None, False),
+    "ar": ("play-store-assets/feature-graphic-ar.png", "يُحتسب اليوم لأنك حضرت.",
+           "plex_arabic_medium", 34, ImageFont.Layout.RAQM, "rtl", True),
+}
 
 # --- the calendar fragment -------------------------------------------------------------
 
@@ -87,14 +100,19 @@ def gradient():
     return small.resize((W, H), Image.BILINEAR)
 
 
-def main():
+def main(locale):
+    out, tagline, tag_face, tag_size, tag_layout, direction, mirrored = LOCALES[locale]
     img = gradient()
     draw = ImageDraw.Draw(img, "RGBA")
+
+    def x_of(x0, width):
+        # A left edge in the English composition, moved to its mirror image under RTL.
+        return W - x0 - width if mirrored else x0
 
     radius = int(CELL * CORNER_FRAC)
     for row in range(ROWS):
         for col in range(COLS):
-            x0 = GRID_X + col * (CELL + GAP)
+            x0 = x_of(GRID_X + col * (CELL + GAP), CELL)
             y0 = GRID_Y + row * (CELL + GAP)
             filled = (row, col) not in EMPTY
             draw.rounded_rectangle(
@@ -104,17 +122,23 @@ def main():
             )
 
     f_word = font("outfit_bold", 92)
-    f_tag = font("manrope_medium", 29)
+    f_tag = font(tag_face, tag_size, tag_layout)
 
     tx = 72
-    draw.text((tx, 186), WORDMARK, font=f_word, fill=(*PAPER, 255))
-    draw.text((tx + 3, 300), TAGLINE, font=f_tag, fill=(*MUTED, 255))
+    word_w = draw.textlength(WORDMARK, font=f_word)
+    tag_w = draw.textlength(tagline, font=f_tag, direction=direction)
+    word_xy = (x_of(tx, word_w), 186)
+    tag_xy = (x_of(tx + 3, tag_w), 300)
+    draw.text(word_xy, WORDMARK, font=f_word, fill=(*PAPER, 255))
+    draw.text(tag_xy, tagline, font=f_tag, fill=(*MUTED, 255), direction=direction)
 
     # The text must not collide with the grid. Asserted rather than eyeballed: the wordmark
     # is the one string here that a rename would lengthen, and a silent overlap in a 1024px
-    # graphic is the kind of thing that ships.
-    right = max(draw.textbbox((tx, 186), WORDMARK, font=f_word)[2],
-                draw.textbbox((tx + 3, 300), TAGLINE, font=f_tag)[2])
+    # graphic is the kind of thing that ships. Measured in the English frame, where the text
+    # runs rightwards towards the grid; a mirrored graphic is measured from the right edge.
+    boxes = [draw.textbbox(word_xy, WORDMARK, font=f_word),
+             draw.textbbox(tag_xy, tagline, font=f_tag, direction=direction)]
+    right = W - min(b[0] for b in boxes) if mirrored else max(b[2] for b in boxes)
     assert right < GRID_X - 24, f"text reaches {right}, grid starts at {GRID_X}"
 
     # The last column must begin on the canvas and end off it. Without the second half the
@@ -123,10 +147,14 @@ def main():
     last_x0 = GRID_X + (COLS - 1) * (CELL + GAP)
     assert last_x0 < W < last_x0 + CELL, f"last column {last_x0}..{last_x0 + CELL} does not straddle {W}"
 
-    img.save(OUT, "PNG")
-    print(f"wrote {OUT} {img.size}  text right edge {right} of {GRID_X}, "
+    img.save(out, "PNG")
+    print(f"wrote {out} {img.size}  text edge {right} of {GRID_X}, "
           f"last column {last_x0}..{last_x0 + CELL} across {W}")
 
 
 if __name__ == "__main__":
-    main()
+    chosen = sys.argv[1:] or list(LOCALES)
+    for name in chosen:
+        if LOCALES[name][4] == ImageFont.Layout.RAQM and not features.check("raqm"):
+            raise SystemExit(f"the {name} graphic needs Pillow with raqm, which this one lacks; see README.md.")
+        main(name)

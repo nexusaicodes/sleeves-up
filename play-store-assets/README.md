@@ -6,8 +6,9 @@ Graphics for the Google Play listing of **Sleeves Up**.
 |---|---|---|
 | `generate_icons.py` | — | **Source of truth for the brand mark.** Emits the `pathData` for the app's vector drawables and renders the 512px Play icon |
 | `../app/src/main/ic_launcher-playstore.png` | 512×512 PNG | App icon (generated — do not hand-edit) |
-| `generate_feature_graphic.py` | — | Renders `feature-graphic.png` |
-| `feature-graphic.png` | 1024×500 PNG | Feature graphic (generated) |
+| `generate_feature_graphic.py` | — | Renders `feature-graphic.png` and `feature-graphic-ar.png` |
+| `feature-graphic.png` | 1024×500 PNG | Feature graphic, en-GB (generated) |
+| `feature-graphic-ar.png` | 1024×500 PNG | Feature graphic, ar (generated) |
 | `LISTING.md` | — | Store listing copy, the rules governing it, and the vocabulary it must never use |
 | `screenshots/<locale>/raw/` | — | Device captures, uncaptioned; input to `generate_screenshots.py`. One folder per listing language: `en-GB`, `ar` |
 | `generate_screenshots.py` | — | Composites each `raw/` into its `phone/`, captions parsed from `LISTING.md` |
@@ -49,7 +50,7 @@ or `BrandGrid`'s settle timing. Sizing rules encoded in the script:
 ## Regenerating the feature graphic
 
 ```bash
-python3 play-store-assets/generate_feature_graphic.py
+python3 play-store-assets/generate_feature_graphic.py   # both languages, or name one: en-GB, ar
 ```
 
 It draws the wordmark, the tagline and a fragment of the binary calendar over a gradient from ink
@@ -59,7 +60,11 @@ theme's muted ink, so both the filled cells and the faint empty ones read agains
 screenshots' field and caption colour are imported from it, so the two stay one brand. Type
 is loaded from `app/src/main/res/font`, so output does not depend on the machine. The calendar runs
 off the right edge — asserted by the script — so it reads as a continuing record, not a complete
-object.
+object. The Arabic graphic is the same composition mirrored: the words on the right, the calendar
+off the left edge, the wordmark still in Latin script and Outfit, and the tagline the Arabic
+listing's first caption in IBM Plex Sans Arabic. Like the Arabic screenshots it is set with raqm, so
+it needs the same Pillow (see Regenerating the screenshots); without raqm the English graphic still
+generates and the Arabic one stops with a message.
 
 ## Regenerating the screenshots
 
