@@ -6,7 +6,7 @@ grade: a day counts because you turned up for it, not because its hours cleared 
 
 | | | | |
 | --- | --- | --- | --- |
-| ![Calendar](play-store-assets/screenshots/raw/01-calendar.png) | ![Face check](play-store-assets/screenshots/raw/02-face-check.png) | ![Session running](play-store-assets/screenshots/raw/04-running.png) | ![Reports](play-store-assets/screenshots/raw/03-summary.png) |
+| ![Calendar](play-store-assets/screenshots/en-GB/raw/01-calendar.png) | ![Face check](play-store-assets/screenshots/en-GB/raw/02-face-check.png) | ![Session running](play-store-assets/screenshots/en-GB/raw/05-running.png) | ![Reports](play-store-assets/screenshots/en-GB/raw/03-summary.png) |
 
 ## What it does
 

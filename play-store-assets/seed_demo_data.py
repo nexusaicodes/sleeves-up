@@ -11,7 +11,7 @@ Day *lengths* are still varied, but nothing renders them any more — the calend
 one mark per day shown up, whether it held 45 minutes or nine hours. They vary here
 only so the hours charts are not a flat line.
 
-Usage: python3 seed.py <path-to-_app>  (pulled after the app has opened it once, so the
+Usage: python3 seed.py <path-to-_app> [en-GB|ar]  (pulled after the app has opened it once, so the
 habits table and its seed row exist)
 """
 import random
@@ -28,13 +28,18 @@ TODAY = date(2026, 8, 28)
 START = (TODAY.replace(day=1) - timedelta(days=1)).replace(day=1)
 MISS_CHANCE = {5: 0.55, 6: 0.65}           # Sat/Sun are the days most often skipped
 WEEKDAY_MISS = 0.10
-DEMO_HABIT = "Writing"                     # the seed habit's name: the switcher and the button show it
+# Habit names per listing language, keyed by the screenshot set's folder; only the names change, so
+# both sets show the same record. "en-GB" first: the seed habit, then OTHER_HABITS in order.
+NAMES = {
+    "en-GB": ("Writing", "Gym", "Guitar"),
+    "ar": ("الكتابة", "الرياضة", "الغيتار"),
+}
 
-# (uuid, name, days a week it is usually done, session start range, length range), in minutes. The
+# (uuid, days a week it is usually done, session start range, length range), in minutes. The
 # uuids are fixed so a re-run writes the same rows; the channel id follows Habit.CHANNEL_PREFIX.
 OTHER_HABITS = (
-    ("5c0d1e2f-0000-4000-8000-00000000a002", "Gym", (0, 2, 4), (18 * 60, 19 * 60), (50, 80)),
-    ("5c0d1e2f-0000-4000-8000-00000000a003", "Guitar", (1, 3, 5, 6), (20 * 60, 21 * 60 + 30), (20, 45)),
+    ("5c0d1e2f-0000-4000-8000-00000000a002", (0, 2, 4), (18 * 60, 19 * 60), (50, 80)),
+    ("5c0d1e2f-0000-4000-8000-00000000a003", (1, 3, 5, 6), (20 * 60, 21 * 60 + 30), (20, 45)),
 )
 CHANNEL_PREFIX = "nudge_h_"
 
@@ -74,7 +79,8 @@ def sessions_for(d: date):
     return blocks
 
 
-def main(db_path: str) -> None:
+def main(db_path: str, locale: str) -> None:
+    demo_habit, *other_names = NAMES[locale]
     rows = []
     d = START
     while d < TODAY:
@@ -118,8 +124,8 @@ def main(db_path: str) -> None:
     # Every session lands in the seed habit (`habit_id` defaults to 1), which the app holds unnamed
     # until the first-run naming step asks — and a screenshot run that opens on that step shows none
     # of the above. Named here so the app opens straight onto the record.
-    conn.execute("UPDATE habits SET name = ? WHERE id = 1", (DEMO_HABIT,))
-    other_rows = other_habits(conn)
+    conn.execute("UPDATE habits SET name = ? WHERE id = 1", (demo_habit,))
+    other_rows = other_habits(conn, other_names)
     conn.commit()
     conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
     days = len({r[3] for r in rows})
@@ -130,14 +136,14 @@ def main(db_path: str) -> None:
     conn.close()
 
 
-def other_habits(conn) -> int:
+def other_habits(conn, names) -> int:
     """The extra habits and their closed sessions, from a Random of their own: drawing from the
     module's generator would shift the sequence the searched seed above depends on."""
     rng = random.Random(20261020)
     count = 0
     conn.execute("DELETE FROM habits WHERE id <> 1")
     conn.execute("DELETE FROM sessions WHERE habit_id <> 1")
-    for uuid, name, weekdays, (start_lo, start_hi), (len_lo, len_hi) in OTHER_HABITS:
+    for (uuid, weekdays, (start_lo, start_hi), (len_lo, len_hi)), name in zip(OTHER_HABITS, names):
         cur = conn.execute(
             "INSERT INTO habits (uuid, name, archived, created_at, channel_id) VALUES (?, ?, 0, ?, ?)",
             (uuid, name, millis(START, 8, 0), CHANNEL_PREFIX + uuid),
@@ -159,4 +165,4 @@ def other_habits(conn) -> int:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "en-GB")

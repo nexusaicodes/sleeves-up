@@ -9,14 +9,15 @@ Graphics for the Google Play listing of **Sleeves Up**.
 | `generate_feature_graphic.py` | — | Renders `feature-graphic.png` |
 | `feature-graphic.png` | 1024×500 PNG | Feature graphic (generated) |
 | `LISTING.md` | — | Store listing copy, the rules governing it, and the vocabulary it must never use |
-| `screenshots/raw/` | — | Device captures, uncaptioned; input to `generate_screenshots.py` |
-| `generate_screenshots.py` | — | Composites `raw/` into `screenshots/phone/`, captions parsed from `LISTING.md` |
-| `screenshots/phone/` | 1080×1920 PNG ×8 | Phone screenshots (generated) |
-| `screenshots/tablet/` | 2560×1600 PNG ×4 | Tablet screenshots — captured, uncaptioned, not composited |
+| `screenshots/<locale>/raw/` | — | Device captures, uncaptioned; input to `generate_screenshots.py`. One folder per listing language: `en-GB`, `ar` |
+| `generate_screenshots.py` | — | Composites each `raw/` into its `phone/`, captions parsed from `LISTING.md` |
+| `screenshots/<locale>/phone/` | 1080×1920 PNG ×8 | Phone screenshots (generated) |
+| `screenshots/en-GB/tablet/` | 2560×1600 PNG ×4 | Tablet screenshots — captured, uncaptioned, not composited. English only; Play shows them under every language |
 | `screenshots/all/` | — | Every screen of the last capture run, phone and tablet, for review. **Gitignored**: the listing files above are what ships |
 | `seed_demo_data.py` | — | Writes the demo history the screenshots are taken against |
 
-The generators need Pillow (`pip install Pillow`) and run from the repo root. Each is
+The generators need Pillow (`pip install Pillow`) and run from the repo root; the Arabic screenshots
+also need raqm (see Regenerating the screenshots). Each is
 deterministic, so re-running one is also the check: identical output means the committed file is
 current.
 
@@ -88,7 +89,7 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 P=com.nexusai.checkin.app; D=/data/data/$P/databases
 adb shell am force-stop $P
 for f in _app _app-wal _app-shm; do adb exec-out "cat $D/$f" > /tmp/$f; done
-python3 play-store-assets/seed_demo_data.py /tmp/_app     # checkpoints the WAL into _app
+python3 play-store-assets/seed_demo_data.py /tmp/_app en-GB   # or ar; checkpoints the WAL into _app
 U=$(adb shell stat -c %u /data/data/$P)
 adb push /tmp/_app $D/_app
 adb shell "rm -f $D/_app-wal $D/_app-shm; chown $U:$U $D/_app; chmod 660 $D/_app; restorecon $D/_app"
@@ -116,6 +117,19 @@ gate: no emulated camera finds a face, so wait for **Use device unlock** and ent
 A reinstall can come back in Arabic: Android 13 backs up and restores per-app locales with the app.
 Clear it with `adb shell cmd locale set-app-locales $P --locales ""` before the first run.
 
+**The Arabic set** is shot the same way, with three differences. Seed with `ar`, which names the habits
+الكتابة، الرياضة، الغيتار over the same record, so "24 of 31" still holds. Set the app to Arabic
+before its first run (`cmd locale set-app-locales $P --locales ar`). And run the whole device in
+Arabic, with Latin digits as the app uses, so the shade, the share sheet and the permission dialogs
+are Arabic too and the status bar mirrors:
+
+```bash
+adb shell "setprop persist.sys.locale ar-AE-u-nu-latn; setprop ctl.restart zygote"
+```
+
+The UAE region starts the week on Saturday, which History then shows. Set `persist.sys.locale` back
+to `en-US` (and restart zygote) afterwards.
+
 Easy to get wrong:
 
 - **Pull the WAL and shm files too.** Room keeps the schema in the write-ahead log, so `_app` alone
@@ -142,11 +156,23 @@ false`) so every shot carries the same clock and a full battery. Re-send `notifi
 capture: opening the shade restores the app's status-bar icon.
 
 Capture with `adb exec-out screencap -p > play-store-assets/screenshots/all/<device>/NN-name.png`,
-then copy the listing picks into `screenshots/raw/` (phone, named as LISTING.md's table) and
-`screenshots/tablet/`, and run `python3 play-store-assets/generate_screenshots.py`.
+then copy the listing picks into `screenshots/<locale>/raw/` (phone, named as LISTING.md's table) and
+`screenshots/en-GB/tablet/`, and run `python3 play-store-assets/generate_screenshots.py` (both
+languages, or name one: `en-GB`, `ar`). Re-set the clock and restart the app just before the shade
+shot: the timer notification's clock is fixed when it is posted.
 
-**Run it under a Pillow with the basic text layout** (`PIL.features.check("raqm")` false; the
-committed set reproduces exactly under Pillow 11.3 with basic layout). Under raqm, which current PyPI wheels bundle, every caption
-sets a few pixels narrower, so re-shooting one panel rewrites all eight and the strip stops
-matching. Before committing, compare pixels, not bytes: the panels you did not re-shoot must come
-out identical.
+**English captions are set with Pillow's basic layout and Arabic ones with raqm**, chosen per font,
+so one Pillow 11.3 with raqm produces both, and the English set reproduces pixel for pixel. raqm
+needs FriBiDi at runtime: Pillow's wheels load it if installed (`brew install fribidi`), but only in a
+Python of the same architecture, so on Apple silicon use Homebrew's Python:
+
+```bash
+/opt/homebrew/bin/python3.13 -m venv /tmp/assets-venv
+/tmp/assets-venv/bin/pip install "pillow==11.3.0"
+/tmp/assets-venv/bin/python play-store-assets/generate_screenshots.py
+```
+
+Without raqm the English set still generates, and the Arabic one stops with a message. Arabic
+captions break between sentences when each fits a line, else where the two lines are most even.
+Before committing, compare pixels, not bytes: a different PNG encoder rewrites identical images, and
+the panels you did not re-shoot must come out identical.

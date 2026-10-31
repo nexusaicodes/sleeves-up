@@ -70,8 +70,9 @@ EMPTY = frozenset({
 })
 
 
-def font(name, size):
-    return ImageFont.truetype(f"{FONT_DIR}/{name}.ttf", size)
+def font(name, size, layout=ImageFont.Layout.BASIC):
+    # Basic layout unless asked: Latin needs no shaping, and the committed output is basic's.
+    return ImageFont.truetype(f"{FONT_DIR}/{name}.ttf", size, layout_engine=layout)
 
 
 def gradient():
