@@ -1,0 +1,78 @@
+# Everything the merged release manifest declares, checked by :app:verifyMergedManifest in both
+# directions. One "<kind> <android:name>" per line, and for a component, what decides whether another
+# app can reach it: "exported=" (true, false or unset), "permission=" when one guards it, and a
+# provider's "authorities=" and "grantUriPermissions=". Each intent filter is a "filter" line naming
+# its component, then its actions, categories and data. A <uses-feature> carries "required=", which
+# decides the devices Play offers the app to. Meta-data under any element, <property> and <queries>
+# entries are listed too. '#' starts a comment. An entry
+# is added only after reading what it does: anything that reaches another app, a provider or the
+# network, or runs unasked, is removed in AndroidManifest.xml with tools:node="remove" instead. The merger report
+# (build/outputs/logs/manifest-merger-release-report.txt) names the library behind each line.
+
+# The app's own.
+uses-permission android.permission.CAMERA
+uses-permission android.permission.FOREGROUND_SERVICE
+uses-permission android.permission.FOREGROUND_SERVICE_SPECIAL_USE
+uses-permission android.permission.POST_NOTIFICATIONS
+uses-permission android.permission.RECEIVE_BOOT_COMPLETED
+uses-permission android.permission.USE_BIOMETRIC
+uses-feature android.hardware.camera required=false
+uses-feature android.hardware.camera.front required=false
+activity com.checkin.app.MainActivity exported=true
+filter com.checkin.app.MainActivity action=android.intent.action.MAIN category=android.intent.category.LAUNCHER
+service com.checkin.app.service.CheckInService exported=false
+property android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE
+receiver com.checkin.app.service.SessionAlarmReceiver exported=false
+filter com.checkin.app.service.SessionAlarmReceiver action=com.checkin.app.SESSION_DAY_BOUNDARY,com.checkin.app.SESSION_REMINDER_DUE
+receiver com.checkin.app.service.SessionRestoreReceiver exported=true
+filter com.checkin.app.service.SessionRestoreReceiver action=android.intent.action.BOOT_COMPLETED,android.intent.action.MY_PACKAGE_REPLACED
+receiver com.checkin.app.notify.nudge.NudgeAlarmReceiver exported=false
+filter com.checkin.app.notify.nudge.NudgeAlarmReceiver action=com.checkin.app.NUDGE_CHECKPOINT_DUE
+receiver com.checkin.app.widget.CheckInWidgetProvider exported=true
+filter com.checkin.app.widget.CheckInWidgetProvider action=android.appwidget.action.APPWIDGET_UPDATE
+meta-data android.appwidget.provider
+provider androidx.core.content.FileProvider exported=false authorities=com.nexusai.checkin.app.fileprovider grantUriPermissions=true
+meta-data android.support.FILE_PROVIDER_PATHS
+
+# androidx.core: the app-scoped permission guarding its non-exported dynamic receivers.
+permission com.nexusai.checkin.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+uses-permission com.nexusai.checkin.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+
+# androidx.biometric: declared unconditionally, dead at minSdk 31.
+uses-permission android.permission.USE_FINGERPRINT
+
+# androidx.startup and the initializers it runs at launch. emoji2's is removed in AndroidManifest.xml.
+provider androidx.startup.InitializationProvider exported=false authorities=com.nexusai.checkin.app.androidx-startup
+initializer androidx.lifecycle.ProcessLifecycleInitializer
+initializer androidx.profileinstaller.ProfileInstallerInitializer
+initializer androidx.work.WorkManagerInitializer
+
+# androidx.profileinstaller: lets Play's installer hand over the baseline profile.
+receiver androidx.profileinstaller.ProfileInstallReceiver exported=true permission=android.permission.DUMP
+filter androidx.profileinstaller.ProfileInstallReceiver action=androidx.profileinstaller.action.BENCHMARK_OPERATION
+filter androidx.profileinstaller.ProfileInstallReceiver action=androidx.profileinstaller.action.INSTALL_PROFILE
+filter androidx.profileinstaller.ProfileInstallReceiver action=androidx.profileinstaller.action.SAVE_PROFILE
+filter androidx.profileinstaller.ProfileInstallReceiver action=androidx.profileinstaller.action.SKIP_FILE
+
+# androidx.work (NudgeWorker): its scheduler services, receivers and permissions.
+uses-permission android.permission.ACCESS_NETWORK_STATE
+uses-permission android.permission.WAKE_LOCK
+service androidx.work.impl.background.systemjob.SystemJobService exported=true permission=android.permission.BIND_JOB_SERVICE
+service androidx.work.impl.foreground.SystemForegroundService exported=false
+receiver androidx.work.impl.background.systemalarm.RescheduleReceiver exported=false
+filter androidx.work.impl.background.systemalarm.RescheduleReceiver action=android.intent.action.BOOT_COMPLETED
+receiver androidx.work.impl.diagnostics.DiagnosticsReceiver exported=true permission=android.permission.DUMP
+filter androidx.work.impl.diagnostics.DiagnosticsReceiver action=androidx.work.diagnostics.REQUEST_DIAGNOSTICS
+receiver androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver exported=false
+
+# androidx.room: multi-instance invalidation (not enabled by the app; inert).
+service androidx.room.MultiInstanceInvalidationService exported=false
+
+# androidx.camera: the camera-core metadata holder, which CameraX reads its config from.
+service androidx.camera.core.impl.MetadataHolderService exported=false
+meta-data androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER
+
+# Play In-App Updates: the update dialog's host and the gms version stamp. Asks the Play Store app
+# over IPC; the one outside question the Privacy screen names.
+activity com.google.android.play.core.common.PlayCoreDialogWrapperActivity exported=false
+meta-data com.google.android.gms.version

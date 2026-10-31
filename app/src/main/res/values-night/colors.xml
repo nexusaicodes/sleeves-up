@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark launch window background; matches the brand dark surface. -->
-    <color name="brand_window_background">#1B1B1F</color>
+    <!-- Dark launch window background: the theme's dark paper background. -->
+    <color name="brand_window_background">#0E1830</color>
+    <color name="splash_mark">#EFE4CB</color>
 
     <!-- The widget's dark counterparts; see values/colors.xml. -->
-    <color name="widget_background">#1B1B1F</color>
-    <color name="widget_text">#E4E1E6</color>
-    <color name="widget_mark_rest">#66BAC3FF</color>
-    <color name="widget_mark_running">#BAC3FF</color>
+    <color name="widget_background">#0E1830</color>
+    <color name="widget_text">#EFE4CB</color>
+    <color name="widget_mark_rest">#66EFE4CB</color>
+    <color name="widget_mark_running">#EFE4CB</color>
 </resources>

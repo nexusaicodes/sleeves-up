@@ -14,7 +14,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -28,6 +27,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
 import com.checkin.app.ui.theme.CheckInAppTheme
 import kotlin.math.cos
 import kotlin.math.floor
@@ -93,7 +93,7 @@ fun BrandGrid(color: Color, modifier: Modifier = Modifier, settle: Boolean = fal
 fun BrandGrid(
     size: Dp,
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.primary,
+    color: Color = SparkTheme.colors.main,
     settle: Boolean = false,
 ) = BrandGrid(color = color, modifier = modifier.size(size), settle = settle)
 
@@ -214,7 +214,7 @@ private val FILLED_COUNT = FILLED_CELLS.size
 
 // --- the settle ----------------------------------------------------------------------------
 
-/** Milliseconds one cell takes to arrive, and the offset between one cell's start and the next. */
+/** Milliseconds one cell takes to arrive, and the offset between starts. The splash restates both. */
 private const val CELL_MS = 260
 private const val STAGGER_MS = 70
 

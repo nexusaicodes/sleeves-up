@@ -15,22 +15,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Login
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,12 +41,27 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.ButtonSize
+import com.adevinta.spark.components.buttons.Primary
+import com.adevinta.spark.components.icons.Icon
+import com.adevinta.spark.components.surface.Surface
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.ChevronHorizontalDown
+import com.adevinta.spark.icons.ChevronHorizontalUp
+import com.adevinta.spark.icons.Export
+import com.adevinta.spark.icons.Import
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.tokens.highlight
 import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.service.SessionClock
 import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.SessionIntervalRow
+import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.LocalTimePatterns
+import com.checkin.app.ui.theme.SparkColorScope
 import com.checkin.app.ui.theme.startActionColors
 import com.checkin.app.ui.theme.stopActionColors
 import com.checkin.app.util.TimeFormat
@@ -158,8 +162,8 @@ fun CheckInScreen(
         ) {
             Text(
                 text = TimeFormat.dateKeyWithWeekday(uiState.todayDateKey, LocalTimePatterns.current).orEmpty(),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = SparkTheme.typography.body2.highlight,
+                color = SparkTheme.colors.onBackgroundVariant,
             )
 
             // Splits the free space ~0.6 : 1 above and below the gauge, which drops it roughly 15%
@@ -185,7 +189,7 @@ fun CheckInScreen(
                 else -> EmptyState(
                     icon = painterResource(R.drawable.ic_stat_checkin),
                     title = stringResource(R.string.empty_checkin_title),
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = SparkTheme.colors.main,
                 )
             }
 
@@ -268,7 +272,7 @@ private fun CheckInOutButton(isRunning: Boolean, habitName: String?, onCheckIn: 
     val start = startActionColors()
     val stop = stopActionColors()
 
-    // Start/stop, read at a glance and without the label: green to check in, red to check out. The
+    // Start/stop, read at a glance and without the label: brass to check in, ink to check out. The
     // colour animates across the switch so the change reads as one control changing state rather
     // than two buttons swapping places.
     val containerColor by animateColorAsState(
@@ -280,39 +284,52 @@ private fun CheckInOutButton(isRunning: Boolean, habitName: String?, onCheckIn: 
         label = "checkButtonContent",
     )
 
-    Button(
-        onClick = if (isRunning) onCheckOut else onCheckIn,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(ACTION_HEIGHT),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = containerColor,
-            contentColor = contentColor,
-        ),
-        shape = RoundedCornerShape(16.dp),
-    ) {
-        Icon(
-            if (isRunning) Icons.AutoMirrored.Filled.Logout else Icons.AutoMirrored.Filled.Login,
-            contentDescription = null, // decorative — the button's text label conveys the action
-            modifier = Modifier.size(28.dp),
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        // Names the habit, because the switcher is the only other place that says which record this
-        // button writes to. One line, ellipsized: the button's height is a term in this screen's fit
-        // budget, so a long name gives way rather than growing it. Bare only for a habit still owed a
-        // name, which the first-run naming step keeps from ever reaching this screen.
-        Text(
-            text = when {
-                habitName == null && isRunning -> stringResource(R.string.check_out)
-                habitName == null -> stringResource(R.string.check_in)
-                isRunning -> stringResource(R.string.check_out_of, habitName)
-                else -> stringResource(R.string.check_in_to, habitName)
-            },
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+    // Spark buttons take no colours: Button.Primary draws in main/onMain, so a scoped copy of the
+    // theme's colours is how this one control takes the start/stop pair. Spark draws whatever colour
+    // it is handed without animating it again, so the transition above is the only one.
+    SparkColorScope(transform = { copy(main = containerColor, onMain = contentColor) }) {
+        Button.Primary(
+            onClick = if (isRunning) onCheckOut else onCheckIn,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(ACTION_HEIGHT),
+            size = ButtonSize.Large,
+        ) {
+            // In the content rather than Spark's icon slot, which draws 16dp: this is the screen's
+            // one action, and its mark is sized to the 64dp button.
+            Icon(
+                if (isRunning) LeboncoinIcons.Export else LeboncoinIcons.Import,
+                contentDescription = null, // decorative — the button's text label conveys the action
+                modifier = Modifier
+                    .size(28.dp)
+                    .align(Alignment.CenterVertically),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            // Names the habit, because the switcher is the only other place that says which record
+            // this button writes to. One line, ellipsized: the button's height is a term in this
+            // screen's fit budget, so a long name gives way rather than growing it. Bare only for a
+            // habit still owed a name, which the first-run naming step keeps from ever reaching this
+            // screen.
+            //
+            // Measured unbounded and centred: ButtonSize.Large pads 18dp above and below, leaving
+            // 28dp, which titleMedium's 24dp line outgrows from a font scale of about 1.17. Drawn
+            // past that padding, the line has the whole 64dp before the button's shape clips it.
+            Text(
+                text = when {
+                    habitName == null && isRunning -> stringResource(R.string.check_out)
+                    habitName == null -> stringResource(R.string.check_in)
+                    isRunning -> stringResource(R.string.check_out_of, habitName)
+                    else -> stringResource(R.string.check_in_to, habitName)
+                },
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .wrapContentHeight(unbounded = true),
+                style = LocalAppTypography.current.titleMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -340,9 +357,9 @@ private fun TodaySessions(
         // day's total reads as a figure this way instead of as a list header with a chevron.
         Surface(
             onClick = onToggle,
-            shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            shape = SparkTheme.shapes.extraLarge,
+            color = SparkTheme.colors.backgroundVariant,
+            contentColor = SparkTheme.colors.onBackgroundVariant,
             // Height goes on the Surface and the tighter padding inside it, so the pill can look
             // compact without its touch target dropping below the 48dp minimum.
             modifier = Modifier.heightIn(min = MIN_TOUCH_TARGET),
@@ -358,10 +375,14 @@ private fun TodaySessions(
                         pluralStringResource(R.plurals.sessions_count, sessions.size, sessions.size),
                         TimeFormat.durationShort(total, patterns),
                     ),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = SparkTheme.typography.body2,
                 )
                 Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    sparkIcon = if (expanded) {
+                        LeboncoinIcons.ChevronHorizontalUp
+                    } else {
+                        LeboncoinIcons.ChevronHorizontalDown
+                    },
                     contentDescription = stringResource(
                         if (expanded) R.string.cd_collapse_sessions else R.string.cd_expand_sessions,
                     ),

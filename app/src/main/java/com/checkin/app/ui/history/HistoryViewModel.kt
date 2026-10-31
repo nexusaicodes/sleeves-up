@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.checkin.app.CheckInApplication
+import com.checkin.app.data.ConsistencyStats
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.dayTrigger
 import com.checkin.app.data.local.CheckInSession
@@ -40,7 +41,10 @@ data class HistoryUiState(
     val summaries: Map<String, DailyAggregate> = emptyMap(),
     val selectedDateKey: String? = null,
     val selectedDaySessions: List<CheckInSession> = emptyList(),
-)
+) {
+    /** Whether a later month exists to step to: false on the month in progress. */
+    val hasNextMonth: Boolean get() = ConsistencyStats.hasMonthAfter(currentMonth, today)
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryViewModel(
@@ -88,7 +92,12 @@ class HistoryViewModel(
 
     // One day subscription drives the whole screen: the counting boundary and the today marker roll
     // together on refresh and at midnight.
-    val uiState: StateFlow<HistoryUiState> = combine(timeSource.dayTrigger(refresh), habitId) { today, habit ->
+    // The screen's one clock: the state's today and nextMonth's guard both read it, so the arrow
+    // and the step it takes cannot disagree.
+    private val day = timeSource.dayTrigger(refresh)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), timeSource.today())
+
+    val uiState: StateFlow<HistoryUiState> = combine(day, habitId) { today, habit ->
         today to habit
     }
         .flatMapLatest { (today, habit) -> repository.trackingStartFlow(habit).map { Triple(today, habit, it) } }
@@ -131,7 +140,9 @@ class HistoryViewModel(
         selectedDateKey.value = null
     }
 
+    /** Stops at the month in progress: a month that has not begun holds no day to look back on. */
     fun nextMonth() {
+        if (!ConsistencyStats.hasMonthAfter(currentMonth.value, day.value)) return
         currentMonth.value = currentMonth.value.plusMonths(1)
         selectedDateKey.value = null
     }

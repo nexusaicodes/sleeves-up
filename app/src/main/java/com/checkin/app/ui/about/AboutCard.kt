@@ -2,20 +2,18 @@ package com.checkin.app.ui.about
 
 import android.os.Build
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.text.Text
 import com.checkin.app.BuildConfig
 import com.checkin.app.R
 import com.checkin.app.ui.components.ActionRow
+import com.checkin.app.ui.components.AppIcons
 import com.checkin.app.ui.components.SectionCard
 import com.checkin.app.ui.components.SectionDivider
 
@@ -64,13 +62,13 @@ fun AboutCard(
     SectionCard(title = stringResource(R.string.about_section), modifier = modifier) {
         ActionRow(
             label = stringResource(R.string.about_privacy_on_device),
-            icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            icon = AppIcons.ChevronEnd,
             contentDescription = null,
             onClick = onOpenPrivacy,
         )
         ActionRow(
             label = privacyPolicyLabel,
-            icon = Icons.AutoMirrored.Filled.OpenInNew,
+            icon = AppIcons.OpenElsewhere,
             contentDescription = stringResource(R.string.about_open_link),
         ) {
             if (!ExternalLinks.openUrl(context, ExternalLinks.PRIVACY_POLICY_URL)) {
@@ -84,7 +82,7 @@ fun AboutCard(
         }
         ActionRow(
             label = feedbackLabel,
-            icon = Icons.AutoMirrored.Filled.OpenInNew,
+            icon = AppIcons.OpenElsewhere,
             contentDescription = stringResource(R.string.about_open_link),
         ) {
             if (!ExternalLinks.sendFeedback(context, draft)) {
@@ -95,7 +93,7 @@ fun AboutCard(
         }
         ActionRow(
             label = rateLabel,
-            icon = Icons.AutoMirrored.Filled.OpenInNew,
+            icon = AppIcons.OpenElsewhere,
             contentDescription = stringResource(R.string.about_open_link),
         ) {
             // Both the Play app and the web listing are missing on some emulators; the listing URL
@@ -111,7 +109,7 @@ fun AboutCard(
         }
         ActionRow(
             label = stringResource(R.string.about_licenses),
-            icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            icon = AppIcons.ChevronEnd,
             contentDescription = null,
             onClick = onOpenLicenses,
         )
@@ -127,22 +125,22 @@ fun AboutCard(
  * Last and centred because it is the only thing on the card that cannot be acted on: the links are
  * why someone opens About, while the version is reference material looked up when support asks for
  * it. Centring is what stops it reading as another row — the five above are left-aligned and
- * tappable, and identity is neither. Muted to `bodySmall` because it is the least useful line on the
+ * tappable, and identity is neither. Muted, in caption, because it is the least useful line on the
  * card.
  */
 @Composable
 private fun Identity() {
     Text(
         text = stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = SparkTheme.typography.caption,
+        color = SparkTheme.colors.onBackgroundVariant,
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth(),
     )
     Text(
         text = stringResource(R.string.about_developer),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = SparkTheme.typography.caption,
+        color = SparkTheme.colors.onBackgroundVariant,
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth(),
     )

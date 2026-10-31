@@ -20,14 +20,9 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.Widgets
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -39,6 +34,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Ghost
+import com.adevinta.spark.components.buttons.Tertiary
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.SparkIcon
 import com.checkin.app.R
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.FullScreenAction
@@ -99,7 +100,7 @@ fun WelcomeScreen(onFinished: () -> Unit, onSkipped: () -> Unit, onAddWidget: ((
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 if (!onLastPage) {
-                    TextButton(onClick = onSkipped) { Text(stringResource(R.string.welcome_skip)) }
+                    Button.Ghost(onClick = onSkipped, text = stringResource(R.string.welcome_skip))
                 }
             }
 
@@ -161,10 +162,11 @@ fun WidgetPageScreen(onAddWidget: (() -> Unit)?, onDone: () -> Unit) {
                 WelcomePageContent(WelcomePages.widget, onAddWidget, inlineAdd = false)
             }
             if (canAdd) {
-                TextButton(
+                Button.Ghost(
                     onClick = onDone,
+                    text = stringResource(R.string.presence_gate_cancel),
                     modifier = Modifier.align(Alignment.CenterHorizontally),
-                ) { Text(stringResource(R.string.presence_gate_cancel)) }
+                )
                 Spacer(modifier = Modifier.height(DOTS_TO_ACTION_GAP))
             }
             FullScreenAction(
@@ -196,13 +198,11 @@ private fun WelcomePageContent(page: WelcomePage, onAddWidget: (() -> Unit)?, in
             when {
                 onAddWidget == null -> Text(
                     text = stringResource(R.string.welcome_widget_manual),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = SparkTheme.typography.body2,
+                    color = SparkTheme.colors.onBackgroundVariant,
                     textAlign = TextAlign.Center,
                 )
-                inlineAdd -> OutlinedButton(onClick = onAddWidget) {
-                    Text(stringResource(R.string.welcome_widget_add))
-                }
+                inlineAdd -> Button.Tertiary(onClick = onAddWidget, text = stringResource(R.string.welcome_widget_add))
             }
         }
     }
@@ -214,8 +214,8 @@ private fun PageIcon(icon: WelcomeIcon) = when (icon) {
     WelcomeIcon.CHECK_IN_MARK -> MessageIcon(painterResource(R.drawable.ic_stat_checkin))
     // The camera disclosure's own icon, so the screen met at the first check-in reads as a
     // continuation of this one.
-    WelcomeIcon.FACE -> MessageIcon(Icons.Rounded.Face)
-    WelcomeIcon.WIDGET -> MessageIcon(Icons.Rounded.Widgets)
+    WelcomeIcon.FACE -> MessageIcon(SparkIcon.Vector(Icons.Rounded.Face))
+    WelcomeIcon.WIDGET -> MessageIcon(SparkIcon.Vector(Icons.Rounded.Widgets))
     // The habits being cycled through, the same carousel the naming step that follows opens on.
     WelcomeIcon.HABITS -> HabitExampleIcon(cyclingHabitExample())
 }
@@ -240,15 +240,14 @@ private fun PageDots(pageCount: Int, current: Int) {
                     .padding(horizontal = DOT_GAP)
                     .size(DOT_SIZE)
                     .background(
-                        // `outline`, not `outlineVariant`: the latter is the surface's own container
-                        // in the dark scheme and under 2:1 against the background in both, so the
-                        // companions of the active dot would not be there at all.
+                        // `outline`, the lightest line that still clears 3:1 on the page in both
+                        // themes, so the companions of the active dot are there to be counted.
                         color = if (page == current) {
-                            MaterialTheme.colorScheme.primary
+                            SparkTheme.colors.main
                         } else {
-                            MaterialTheme.colorScheme.outline
+                            SparkTheme.colors.outline
                         },
-                        shape = CircleShape,
+                        shape = SparkTheme.shapes.full,
                     ),
             )
         }

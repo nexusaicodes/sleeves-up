@@ -6,7 +6,7 @@ grade: a day counts because you turned up for it, not because its hours cleared 
 
 | | | | |
 | --- | --- | --- | --- |
-| ![Calendar](play-store-assets/screenshots/raw/01-calendar.png) | ![Face check](play-store-assets/screenshots/raw/02-face-check.png) | ![Session running](play-store-assets/screenshots/raw/04-running.png) | ![Reports](play-store-assets/screenshots/raw/03-summary.png) |
+| ![Calendar](play-store-assets/screenshots/en-GB/raw/01-calendar.png) | ![Face check](play-store-assets/screenshots/en-GB/raw/02-face-check.png) | ![Session running](play-store-assets/screenshots/en-GB/raw/05-running.png) | ![Reports](play-store-assets/screenshots/en-GB/raw/03-summary.png) |
 
 ## What it does
 
@@ -50,7 +50,7 @@ grade: a day counts because you turned up for it, not because its hours cleared 
 
 ## Build & run
 
-The Gradle wrapper is pinned to **Gradle 8.13**. In Android Studio, open the project and Run. For
+The Gradle wrapper is pinned to **Gradle 9.8.2**. In Android Studio, open the project and Run. For
 CLI builds, point Gradle at Android Studio's bundled JDK:
 
 ```bash
@@ -68,6 +68,8 @@ export JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew ktlintFormat                # auto-fix formatting
 ./gradlew :app:verifyDocMap           # CLAUDE.md and the source tree agree
 ./gradlew :app:verifyLicenseCoverage  # in-app licence list matches the release classpath
+./gradlew :app:verifyMergedManifest   # merged release manifest matches app/merged-manifest-allowlist.txt
+./gradlew :app:verifyPackagedFonts    # release APK carries only the app's own res/font typefaces
 ./gradlew :app:lintDebug              # Android lint
 ```
 
@@ -83,7 +85,7 @@ The hook only runs when Kotlin is staged, and always refuses to commit a keystor
 
 ## Tech
 
-Kotlin · Jetpack Compose (Material 3, fixed indigo theme, light + dark) · Room via KSP · a
+Kotlin · Jetpack Compose (Spark over Material 3, a fixed ink-and-brass theme, light + dark) · Room via KSP · a
 `specialUse` foreground service for the live timer notification · CameraX + Camera2 HAL face
 detection · BiometricPrompt fallback · WorkManager. MVVM, one reactive `UiState` per screen, manual
 DI (`AppContainer`). See [`CLAUDE.md`](CLAUDE.md) for architecture, conventions and non-obvious

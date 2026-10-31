@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Spark ships Nunito Sans as SparkTheme's default family. The app never draws in it, so the res/font
+  copy is discarded here, which holds even if the shrinker comes to see Spark's default-family code
+  as reachable. A discard acts only where resources are shrunk, so debug still carries the font. The
+  assets copy (Compose Resources) is stripped in app/build.gradle.kts. With both gone, every
+  SparkTheme must be given the app's own family; one left on the default fails to find its font in
+  release alone.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:discard="@font/nunito_sans_*" />

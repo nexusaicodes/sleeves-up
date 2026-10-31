@@ -43,8 +43,11 @@ import java.time.ZoneId
 /** Deterministic clock. [day] is mutable so tests can drive a midnight rollover. */
 class FakeTimeSource(private val now: Long, date: LocalDate, private val zone: ZoneId = ZoneId.of("UTC")) : TimeSource {
     val day = MutableStateFlow(date)
+
+    /** A date [today] reads ahead of [currentDay], as when the midnight emission stalls in deep sleep. */
+    var todayAhead: LocalDate? = null
     override fun nowMillis(): Long = now
-    override fun today(): LocalDate = day.value
+    override fun today(): LocalDate = todayAhead ?: day.value
 
     /** UTC by default so a test's start instants read back as the hour it wrote them at. */
     override fun zone(): ZoneId = zone

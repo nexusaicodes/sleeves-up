@@ -11,18 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.FileDownload
-import androidx.compose.material.icons.filled.Insights
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,10 +27,21 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Primary
+import com.adevinta.spark.components.segmentedcontrol.SegmentedControl
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.icons.DownloadFileOutline
+import com.adevinta.spark.icons.GraphOutline
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.tokens.highlight
 import com.checkin.app.R
 import com.checkin.app.data.SessionBand
 import com.checkin.app.data.StartBucket
 import com.checkin.app.platform.ExportResult
+import com.checkin.app.ui.components.AppIconButton
+import com.checkin.app.ui.components.AppIcons
 import com.checkin.app.ui.components.AxisLabel
 import com.checkin.app.ui.components.ChartCard
 import com.checkin.app.ui.components.EmptyState
@@ -54,8 +53,10 @@ import com.checkin.app.ui.components.charts.BarChart
 import com.checkin.app.ui.components.charts.DonutChart
 import com.checkin.app.ui.components.charts.DonutChartDefaults
 import com.checkin.app.ui.components.charts.LineChart
+import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.dayColor
+import com.checkin.app.ui.theme.descriptiveHues
 import com.checkin.app.util.TimeFormat
 import com.checkin.app.util.withLatinDigits
 import java.util.Locale
@@ -114,9 +115,11 @@ fun ReportsScreen(
         item {
             ScopeSelector(
                 scope = uiState.scope,
+                hasNextMonth = uiState.hasNextMonth,
                 onPrevious = { viewModel.previousMonth() },
                 onNext = { viewModel.nextMonth() },
-                onToggleAllTime = { viewModel.toggleAllTime() },
+                onSelectMonth = { viewModel.selectMonth() },
+                onSelectAllTime = { viewModel.selectAllTime() },
             )
         }
 
@@ -149,55 +152,62 @@ fun ReportsScreen(
 /**
  * What the screen is describing, and the only control on it.
  *
- * A month stepper with an all-time end-stop: two scope kinds, so each card has one rule per kind
- * rather than a matrix of them. Stepping is **unbounded**, exactly as History's navigator is — a
- * month before the record began is an empty state rather than a disabled arrow, because a disabled
- * control says "not allowed" where the honest answer is "nothing here".
+ * Two scope kinds, so each card has one rule per kind rather than a matrix of them: a segmented
+ * Month / All time choice, and under it a month stepper. Stepping back is **unbounded** — a month
+ * before the record began is an empty state rather than a disabled arrow, because a disabled control
+ * says "not allowed" where the honest answer is "nothing here". Stepping forward stops at the month in
+ * progress ([ReportsUiState.hasNextMonth]): a month that has not begun is not a record to read.
  */
 @Composable
 private fun ScopeSelector(
     scope: ReportScope,
+    hasNextMonth: Boolean,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
-    onToggleAllTime: () -> Unit,
+    onSelectMonth: () -> Unit,
+    onSelectAllTime: () -> Unit,
 ) {
     val allTime = scope is ReportScope.AllTime
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // The steppers hold their slot under all time rather than vanishing, so the row does not
-        // reflow around the toggle every time it is pressed.
-        IconButton(onClick = onPrevious, enabled = !allTime) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SegmentedControl.Horizontal(
+            selectedIndex = if (allTime) 1 else 0,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            singleLine(text = stringResource(R.string.scope_month), selected = !allTime, onClick = onSelectMonth)
+            singleLine(text = stringResource(R.string.scope_all_time), selected = allTime, onClick = onSelectAllTime)
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // The steppers hold their slot under all time rather than vanishing, so the row does not
+            // reflow around the choice every time it changes.
+            AppIconButton(
+                icon = AppIcons.ChevronStart,
                 contentDescription = stringResource(R.string.previous_month),
+                onClick = onPrevious,
+                enabled = !allTime,
             )
-        }
-        Text(
-            text = scopeLabel(scope),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            // Two lines rather than one: at a large font scale a single line clips "August 2026" to
-            // "Augus…", and a truncated month is not a date the user can read.
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-        IconButton(onClick = onNext, enabled = !allTime) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            Text(
+                text = scopeLabel(scope),
+                style = LocalAppTypography.current.titleLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                // Two lines rather than one: at a large font scale a single line clips "August 2026"
+                // to "Augus…", and a truncated month is not a date the user can read.
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            AppIconButton(
+                icon = AppIcons.ChevronEnd,
                 contentDescription = stringResource(R.string.next_month),
+                onClick = onNext,
+                enabled = hasNextMonth,
             )
         }
-        FilterChip(
-            selected = allTime,
-            onClick = onToggleAllTime,
-            label = { Text(stringResource(R.string.scope_all_time)) },
-        )
     }
 }
 
@@ -226,7 +236,7 @@ private fun scopeLabel(scope: ReportScope, inline: Boolean = false): String = wh
 @Composable
 private fun EmptyScope(scope: ReportScope) {
     EmptyState(
-        icon = Icons.Default.Insights,
+        icon = LeboncoinIcons.GraphOutline,
         title = stringResource(R.string.empty_scope_title),
         // The month copy sends the user to the arrows; under all time those arrows are disabled, so
         // it says what would actually fill the scope instead of naming a control that cannot move.
@@ -305,9 +315,9 @@ private fun DailyHoursCard(uiState: ReportsUiState) {
         LineChart(
             values = hours,
             referenceValue = average,
-            lineColor = MaterialTheme.colorScheme.primary,
-            fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
-            referenceColor = MaterialTheme.colorScheme.outline,
+            lineColor = SparkTheme.colors.main,
+            fillColor = SparkTheme.colors.main.copy(alpha = 0.25f),
+            referenceColor = SparkTheme.colors.outline,
             // States the window and nothing else. No superlative here: naming the window's longest
             // day ranks one of the user's days against the others, which nothing in the app does.
             contentDescription = pluralStringResource(
@@ -328,10 +338,9 @@ private fun DailyHoursCard(uiState: ReportsUiState) {
 @Composable
 private fun SplitCard(uiState: ReportsUiState) {
     val showedUp = dayColor()
-    // `outline`, not `outlineVariant`: the latter *is* `surfaceVariant` in the dark scheme, which is
-    // this card's own container, so the missed arc and its legend dot would be painted in the
-    // background and be invisible. Neutral, never red; a missed day is a fact, not a failure.
-    val missed = MaterialTheme.colorScheme.outline
+    // `outline`, which clears 3:1 on this card's raised paper in both themes, so the missed arc and its
+    // legend dot are seen. Neutral, never red; a missed day is a fact, not a failure.
+    val missed = SparkTheme.colors.outline
 
     ChartCard(title = stringResource(R.string.chart_split_title)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -385,8 +394,8 @@ private fun MonthlyHoursCard(uiState: ReportsUiState) {
     ChartCard(title = stringResource(R.string.chart_monthly_title)) {
         BarChart(
             values = hours,
-            barColor = MaterialTheme.colorScheme.primary,
-            baselineColor = MaterialTheme.colorScheme.outline,
+            barColor = SparkTheme.colors.main,
+            baselineColor = SparkTheme.colors.outline,
             contentDescription = stringResource(R.string.cd_monthly_chart, spoken),
             modifier = Modifier.fillMaxWidth().height(120.dp),
         )
@@ -402,8 +411,7 @@ private fun MonthlyHoursCard(uiState: ReportsUiState) {
                         AxisLabel(label(point))
                         Text(
                             text = TimeFormat.durationShort(point.workedMs, patterns),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            style = SparkTheme.typography.caption.highlight,
                         )
                     }
                 }
@@ -495,7 +503,7 @@ private fun SplitRow(values: List<Int>, colors: List<Color>, labels: List<String
             colors = colors,
             contentDescription = contentDescription,
             // Nothing recorded yet still has to read as a ring rather than as blank space.
-            emptyColor = MaterialTheme.colorScheme.outline,
+            emptyColor = SparkTheme.colors.outline,
             modifier = Modifier.size(DonutChartDefaults.size()),
         )
         Spacer(Modifier.width(20.dp))
@@ -506,20 +514,6 @@ private fun SplitRow(values: List<Int>, colors: List<Color>, labels: List<String
         }
     }
 }
-
-/**
- * Three hues of equal visual weight for a descriptive split.
- *
- * Deliberately not the day hue at three strengths: one colour at varying alpha is an intensity ramp,
- * and a ramp says one end is more than the other. These are three different colours saying three
- * different things.
- */
-@Composable
-private fun descriptiveHues(): List<Color> = listOf(
-    MaterialTheme.colorScheme.primary,
-    MaterialTheme.colorScheme.tertiary,
-    MaterialTheme.colorScheme.secondary,
-)
 
 /** One decimal place: the figure is a rhythm, and a second digit implies a precision it lacks. */
 private fun formatAverage(value: Float): String = String.format(Locale.getDefault().withLatinDigits(), "%.1f", value)
@@ -540,15 +534,12 @@ private fun daysPhrase(count: Int): String = pluralStringResource(R.plurals.days
 @Composable
 private fun ExportCard(scope: ReportScope, onExport: () -> Unit) {
     ChartCard(title = stringResource(R.string.export_title)) {
-        Button(
+        // Spark draws a button's icon with no description: the label conveys the action.
+        Button.Primary(
             onClick = onExport,
+            text = stringResource(R.string.export_scope, scopeLabel(scope, inline = true)),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-        ) {
-            // Icon is decorative — the button's text label conveys the action.
-            Icon(Icons.Default.FileDownload, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.export_scope, scopeLabel(scope, inline = true)))
-        }
+            icon = LeboncoinIcons.DownloadFileOutline,
+        )
     }
 }

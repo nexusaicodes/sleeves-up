@@ -1,18 +1,12 @@
 package com.checkin.app.ui.settings
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,10 +20,18 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.adevinta.spark.ExperimentalSparkApi
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.buttons.Button
+import com.adevinta.spark.components.buttons.Ghost
+import com.adevinta.spark.components.dialog.AlertDialog
+import com.adevinta.spark.components.text.Text
+import com.adevinta.spark.components.toggles.RadioButton
 import com.checkin.app.R
 import com.checkin.app.platform.LanguageSettings
 import com.checkin.app.platform.choose
 import com.checkin.app.ui.components.ActionRow
+import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.typographyFor
 import com.checkin.app.util.AppLanguage
 import java.util.Locale
@@ -87,14 +89,18 @@ internal fun LanguageRow(settings: LanguageSettings) {
 }
 
 /** [current] is null when the stored locale is none of the choices, so no option is selected. */
+@OptIn(ExperimentalSparkApi::class)
 @Composable
 private fun LanguageDialog(current: AppLanguage?, onChoose: (AppLanguage) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.language_app)) },
+        title = { Text(stringResource(R.string.language_app), style = LocalAppTypography.current.headlineSmall) },
         text = {
             Column(modifier = Modifier.selectableGroup()) {
                 AppLanguage.entries.forEach { language ->
+                    // Spark's RadioButtonLabelled spaces its row with Arrangement.Absolute, which
+                    // never mirrors, so under Arabic it would put the radio on the left. The row is
+                    // built here around Spark's bare radio; the whole row is the target, at the app's 48dp minimum.
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -105,9 +111,9 @@ private fun LanguageDialog(current: AppLanguage?, onChoose: (AppLanguage) -> Uni
                                 onClick = { onChoose(language) },
                             ),
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         RadioButton(selected = language == current, onClick = null)
-                        Spacer(modifier = Modifier.width(16.dp))
                         Text(text = language.label(), style = language.labelStyle())
                     }
                 }
@@ -115,7 +121,7 @@ private fun LanguageDialog(current: AppLanguage?, onChoose: (AppLanguage) -> Uni
         },
         // Choosing a row is the confirmation, so the dialog's one button only dismisses it.
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        dismissButton = { Button.Ghost(onClick = onDismiss, text = stringResource(R.string.action_cancel)) },
     )
 }
 
@@ -136,5 +142,5 @@ private fun AppLanguage.label(): String = stringResource(
 @Composable
 private fun AppLanguage.labelStyle(): TextStyle {
     val own = remember(locale) { locale?.let { typographyFor(it).bodyLarge } }
-    return own ?: MaterialTheme.typography.bodyLarge
+    return own ?: SparkTheme.typography.body1
 }

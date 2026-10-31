@@ -3,37 +3,35 @@ package com.checkin.app.ui.components
 import androidx.annotation.StringRes
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DirectionsRun
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Brush
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.vector.ImageVector
+import com.adevinta.spark.icons.DumbbellCriteria
+import com.adevinta.spark.icons.LeboncoinIcons
+import com.adevinta.spark.icons.LotusFlowerCriteria
+import com.adevinta.spark.icons.Music
+import com.adevinta.spark.icons.PaintPalette
+import com.adevinta.spark.icons.SparkIcon
 import com.checkin.app.R
 import kotlinx.coroutines.delay
 
 /** A common habit, as the icon and the word a screen about to name one shows for it. */
-class HabitExample(val icon: ImageVector, @StringRes val nameRes: Int)
+class HabitExample(val icon: SparkIcon, @StringRes val nameRes: Int)
 
 /**
  * Activities, never targets: "Running", not "Run 5k". An example with a number in it would suggest
  * a habit is something to clear, and this app has no bar to clear.
  */
 private val habitExamples = listOf(
-    HabitExample(Icons.AutoMirrored.Filled.DirectionsRun, R.string.habit_example_running),
-    HabitExample(Icons.AutoMirrored.Filled.MenuBook, R.string.habit_example_reading),
-    HabitExample(Icons.Filled.SelfImprovement, R.string.habit_example_meditation),
-    HabitExample(Icons.Filled.MusicNote, R.string.habit_example_guitar),
-    HabitExample(Icons.Filled.FitnessCenter, R.string.habit_example_gym),
-    HabitExample(Icons.Filled.Brush, R.string.habit_example_drawing),
+    HabitExample(AppIcons.Walking, R.string.habit_example_running),
+    HabitExample(AppIcons.Book, R.string.habit_example_reading),
+    HabitExample(LeboncoinIcons.LotusFlowerCriteria, R.string.habit_example_meditation),
+    HabitExample(LeboncoinIcons.Music, R.string.habit_example_guitar),
+    HabitExample(LeboncoinIcons.DumbbellCriteria, R.string.habit_example_gym),
+    HabitExample(LeboncoinIcons.PaintPalette, R.string.habit_example_drawing),
 )
 
 /**

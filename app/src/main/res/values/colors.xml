@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#3F51B5</color>
-    <!-- Launch window background; matches the brand surface (light). Overridden in values-night. -->
-    <color name="brand_window_background">#FEFBFF</color>
+    <!-- Ink: the adaptive icon's tile. Printed by play-store-assets/generate_icons.py, which
+         draws the Play icon in the same pair. -->
+    <color name="ic_launcher_background">#1B2A4A</color>
+    <!-- Launch window and splash background (light). Overridden in values-night. -->
+    <color name="brand_window_background">#F1E6CE</color>
+    <color name="splash_mark">#1B2A4A</color>
 
-    <!-- The home-screen widget, from the fixed brand scheme (no dynamic colour). The mark is the
+    <!-- The home-screen widget, in the theme's paper and ink (no dynamic colour). The mark is the
          gauge's convention — dimmed at rest, full colour while a session is open — with a rest
          stronger than the gauge's 0.15 track, since on a home screen it also has to say whose
          widget this is. -->
-    <color name="widget_background">#FEFBFF</color>
-    <color name="widget_text">#1B1B1F</color>
-    <color name="widget_mark_rest">#664355B9</color>
-    <color name="widget_mark_running">#4355B9</color>
+    <color name="widget_background">#F1E6CE</color>
+    <color name="widget_text">#1B2A4A</color>
+    <color name="widget_mark_rest">#661B2A4A</color>
+    <color name="widget_mark_running">#1B2A4A</color>
 </resources>

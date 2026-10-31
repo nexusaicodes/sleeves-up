@@ -4,10 +4,8 @@
   a cell or it is nothing, which is the product's whole thesis as a shape — what you read is
   density, never depth. Nothing here is shaded or ramped; there is no fraction in this file.
 
-  This single file is the launcher foreground, the themed (monochrome) layer and the splash
-  icon (windowSplashScreenAnimatedIcon in themes.xml). Keep it that way: a second copy of
-  the mark is a copy that can drift out of sync, which is exactly how a raster launcher icon
-  and a vector splash once shipped as two different logos under one name.
+  The launcher foreground and the themed (monochrome) layer. The splash (ic_splash_icon) is
+  generated from the same numbers.
 
   Geometry is authored in play-store-assets/generate_icons.py, which emits this pathData and
   the matching 512px Play icon from the same numbers. Edit there, not here. Corners are cubic
@@ -27,6 +25,6 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#F1E6CE"
         android:pathData="M35.30,32.40 L42.70,32.40 C44.30,32.40 45.60,33.70 45.60,35.30 L45.60,42.70 C45.60,44.30 44.30,45.60 42.70,45.60 L35.30,45.60 C33.70,45.60 32.40,44.30 32.40,42.70 L32.40,35.30 C32.40,33.70 33.70,32.40 35.30,32.40 Z M50.30,32.40 L57.70,32.40 C59.30,32.40 60.60,33.70 60.60,35.30 L60.60,42.70 C60.60,44.30 59.30,45.60 57.70,45.60 L50.30,45.60 C48.70,45.60 47.40,44.30 47.40,42.70 L47.40,35.30 C47.40,33.70 48.70,32.40 50.30,32.40 Z M65.30,32.40 L72.70,32.40 C74.30,32.40 75.60,33.70 75.60,35.30 L75.60,42.70 C75.60,44.30 74.30,45.60 72.70,45.60 L65.30,45.60 C63.70,45.60 62.40,44.30 62.40,42.70 L62.40,35.30 C62.40,33.70 63.70,32.40 65.30,32.40 Z M35.30,47.40 L42.70,47.40 C44.30,47.40 45.60,48.70 45.60,50.30 L45.60,57.70 C45.60,59.30 44.30,60.60 42.70,60.60 L35.30,60.60 C33.70,60.60 32.40,59.30 32.40,57.70 L32.40,50.30 C32.40,48.70 33.70,47.40 35.30,47.40 Z M50.30,47.40 L57.70,47.40 C59.30,47.40 60.60,48.70 60.60,50.30 L60.60,57.70 C60.60,59.30 59.30,60.60 57.70,60.60 L50.30,60.60 C48.70,60.60 47.40,59.30 47.40,57.70 L47.40,50.30 C47.40,48.70 48.70,47.40 50.30,47.40 Z M50.30,62.40 L57.70,62.40 C59.30,62.40 60.60,63.70 60.60,65.30 L60.60,72.70 C60.60,74.30 59.30,75.60 57.70,75.60 L50.30,75.60 C48.70,75.60 47.40,74.30 47.40,72.70 L47.40,65.30 C47.40,63.70 48.70,62.40 50.30,62.40 Z M65.30,62.40 L72.70,62.40 C74.30,62.40 75.60,63.70 75.60,65.30 L75.60,72.70 C75.60,74.30 74.30,75.60 72.70,75.60 L65.30,75.60 C63.70,75.60 62.40,74.30 62.40,72.70 L62.40,65.30 C62.40,63.70 63.70,62.40 65.30,62.40 Z" />
 </vector>

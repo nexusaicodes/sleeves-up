@@ -12,8 +12,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,6 +24,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.adevinta.spark.icons.CameraOutline
+import com.adevinta.spark.icons.LeboncoinIcons
 import com.checkin.app.CheckInApplication
 import com.checkin.app.R
 import com.checkin.app.notify.holdsNotificationPermission
@@ -128,7 +128,7 @@ fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
         cameraGranted -> PresenceCheckScreen(onAuthSuccess = onAuthSuccess, onDismiss = onDismiss)
 
         cameraRefused -> GateMessageScreen(
-            icon = Icons.Rounded.PhotoCamera,
+            icon = LeboncoinIcons.CameraOutline,
             title = stringResource(R.string.camera_permission_title),
             message = stringResource(R.string.camera_permission_message),
             actionLabel = stringResource(R.string.camera_permission_button),

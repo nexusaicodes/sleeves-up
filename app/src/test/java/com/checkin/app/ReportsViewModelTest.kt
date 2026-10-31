@@ -80,6 +80,25 @@ class ReportsViewModelTest {
         assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
     }
 
+    /** The switch lands on the month in progress from a stepped-to month too, not only from all time. */
+    @Test
+    fun `switching habits from a stepped-to month returns to the current month`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        val habitDao = FakeHabitDao()
+        val appState = FakeAppStateDao()
+        val time = FakeTimeSource(0L, LocalDate.of(2026, 6, 15))
+        val writing = (HabitRepository(habitDao, appState, dao, time).create("Writing") as HabitEdit.Saved).habit
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), time, habitDao, appState)
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        repeat(2) { viewModel.previousMonth() }
+        advanceUntilIdle()
+
+        appState.selected.value = writing.id
+        advanceUntilIdle()
+
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+    }
+
     /** The file is the habit's record alone, and names it, since nothing inside the file says which. */
     @Test
     fun `an export writes the selected habit's days and names it`() = runTest {
@@ -285,6 +304,72 @@ class ReportsViewModelTest {
         assertEquals(emptyList<MonthPoint>(), state.monthlySeries)
     }
 
+    @Test
+    fun `stepping forward stops at the month in progress`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-05-10", startedAt = 0L, durationMs = 3_600_000L)
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+        assertEquals(false, viewModel.uiState.value.hasNextMonth)
+
+        viewModel.nextMonth()
+        advanceUntilIdle()
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+
+        viewModel.previousMonth()
+        advanceUntilIdle()
+        assertEquals(true, viewModel.uiState.value.hasNextMonth)
+        repeat(2) { viewModel.nextMonth() }
+        advanceUntilIdle()
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+        assertEquals(false, viewModel.uiState.value.hasNextMonth)
+    }
+
+    /**
+     * The month in progress is read off the screen's own day, not a fresh clock: with the midnight
+     * emission stalled, a fresh read would land on a month the arrow then refuses to step back to.
+     */
+    @Test
+    fun `returning to the month in progress reads the screen's day`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-09-10", startedAt = 0L, durationMs = 3_600_000L)
+        val time = FakeTimeSource(0L, LocalDate.of(2026, 10, 31))
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), time)
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+        time.todayAhead = LocalDate.of(2026, 11, 1)
+
+        viewModel.selectAllTime()
+        viewModel.selectMonth()
+        advanceUntilIdle()
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 10)), viewModel.uiState.value.scope)
+        assertEquals(false, viewModel.uiState.value.hasNextMonth)
+
+        viewModel.previousMonth()
+        advanceUntilIdle()
+        assertEquals(true, viewModel.uiState.value.hasNextMonth)
+        viewModel.nextMonth()
+        advanceUntilIdle()
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 10)), viewModel.uiState.value.scope)
+    }
+
+    @Test
+    fun `all time has no next month`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-05-10", startedAt = 0L, durationMs = 3_600_000L)
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        viewModel.previousMonth()
+        viewModel.selectAllTime()
+        advanceUntilIdle()
+        assertEquals(false, viewModel.uiState.value.hasNextMonth)
+
+        viewModel.nextMonth()
+        advanceUntilIdle()
+        assertEquals(ReportScope.AllTime, viewModel.uiState.value.scope)
+    }
+
     /**
      * A month the record only partly covers opens at the first session, not at the 1st — the same
      * clamp the CSV export depends on, since gap-filling days before the user had ever opened the
@@ -306,27 +391,42 @@ class ReportsViewModelTest {
     }
 
     /**
-     * Two taps of the all-time chip land back on a month, even when nothing has re-rendered between
-     * them.
+     * All time then Month, tapped back to back, lands on the current month, even when nothing has
+     * re-rendered between them.
      *
-     * The toggle reads the scope the view-model holds rather than the one the screen is showing: the
+     * Month reads the scope the view-model holds rather than the one the screen is showing: the
      * rendered scope only catches up once the window's queries have emitted, so a decision taken
-     * from it sees the scope it has already left and repeats the move instead of undoing it.
+     * from it would see the month already left and stay on all time.
      */
     @Test
-    fun `toggling all time twice returns to a month scope`() = runTest {
+    fun `all time then month returns to the current month`() = runTest {
         val dao = FakeCheckInSessionDao()
         dao.seedCompleted("2026-06-10", startedAt = 0L, durationMs = 3_600_000L)
         val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
         backgroundScope.launch { viewModel.uiState.collect {} }
+        repeat(2) { viewModel.previousMonth() }
         advanceUntilIdle()
 
-        // Back to back, with no emission in between — the state is still reporting the month scope.
-        viewModel.toggleAllTime()
-        viewModel.toggleAllTime()
+        // Back to back, with no emission in between — the state is still reporting April.
+        viewModel.selectAllTime()
+        viewModel.selectMonth()
         advanceUntilIdle()
 
         assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+    }
+
+    /** Month on a month already is a no-op: it does not pull a stepped-to month back to today's. */
+    @Test
+    fun `month on a month keeps the month stepped to`() = runTest {
+        val dao = FakeCheckInSessionDao()
+        dao.seedCompleted("2026-04-10", startedAt = 0L, durationMs = 3_600_000L)
+        val viewModel = buildViewModel(dao, FakeCsvExporter(), FakeTimeSource(0L, LocalDate.of(2026, 6, 15)))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        repeat(2) { viewModel.previousMonth() }
+        viewModel.selectMonth()
+        advanceUntilIdle()
+
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 4)), viewModel.uiState.value.scope)
     }
 
     /** Stepping outside the record leaves an empty scope, not a set of zeros over invented days. */

@@ -32,6 +32,16 @@ enum class LibraryLicense(val displayName: String, val url: String, val bundled:
         bundled = true,
     ),
 
+    /**
+     * Spark and FileKit. Bundled text: MIT asks for the copyright and permission notice to be
+     * included with every copy, and both ship inside the APK.
+     */
+    MIT(
+        displayName = "MIT License",
+        url = "https://opensource.org/license/mit",
+        bundled = true,
+    ),
+
     /** Play In-App Updates and its core-common. Proprietary; linked, since nothing obliges a copy. */
     PLAY_CORE_TOS(
         displayName = "Play Core Software Development Kit Terms of Service",
@@ -65,7 +75,7 @@ data class OpenSourceLibrary(
 /**
  * Everything redistributed inside the app, grouped by project rather than by artifact.
  *
- * The release runtime classpath resolves to 54 group ids, which collapse into the projects below.
+ * The release runtime classpath resolves to 71 group ids, which collapse into the projects below.
  * Grouping is only sound because the license is uniform within each group — where it isn't, the
  * group carries both, as CameraX does: its camera-core POM declares BSD alongside Apache-2.0 for the
  * libyuv it embeds.
@@ -74,18 +84,20 @@ data class OpenSourceLibrary(
  * AutoValue's annotations and JSpecify are all redistributed in the APK without
  * appearing in `app/build.gradle.kts`, so a list built from that file alone would omit them.
  *
- * Every entry is Apache-2.0, the OFL, or the BSD that rides along with CameraX, except the in-app
- * update stack: Play In-App Updates (Play Core terms) and the two Play services artifacts it needs,
- * basement and tasks (Android SDK License). Presence detection runs on the camera hardware, so no
- * ML library is on the classpath, and no other Play services artifact; `OpenSourceLibrariesTest`
- * fails if either returns. The type keeps its name though not every entry is open source.
+ * Every entry is Apache-2.0, MIT (Spark and FileKit), the OFL, or the BSD that rides along with
+ * CameraX, except the in-app update stack: Play In-App Updates (Play Core terms) and the two Play
+ * services artifacts it needs, basement and tasks (Android SDK License). Presence detection runs
+ * on the camera hardware, so no ML library is on the classpath, and no other Play services
+ * artifact; `OpenSourceLibrariesTest` fails if either returns. The type keeps its name though not
+ * every entry is open source.
  *
  * Keeping this by hand means it can drift when a dependency is added, so drift detection is
  * automated while the wording stays human. Two checks cover it: `OpenSourceLibrariesTest` guards the
  * shape of the list but cannot see the Gradle graph, and **`./gradlew :app:verifyLicenseCoverage`**
  * (defined in `app/build.gradle.kts`, hooked to `check`, run in CI) resolves the release runtime
  * classpath and fails naming any group id no entry's `coordinates` covers. It checks `res/font/`
- * the same way, since a typeface is redistributed like a dependency but has no Maven coordinate.
+ * the same way, since a typeface is redistributed like a dependency but has no Maven coordinate,
+ * and fails on any typeface in the release build's final assets, where a library can slip one in.
  *
  * So a new dependency does not need anyone to remember: the build says which group is unattributed.
  * To write the entry, list the graph with
@@ -155,6 +167,55 @@ val OPEN_SOURCE_LIBRARIES: List<OpenSourceLibrary> = listOf(
         copyright = "Copyright © Google LLC",
         licenses = listOf(LibraryLicense.ANDROID_SDK_LICENSE),
         note = R.string.licenses_note_play_services,
+    ),
+    OpenSourceLibrary(
+        name = "Spark",
+        coordinates = "com.adevinta.spark:*",
+        copyright = "Copyright © 2023 Adevinta",
+        licenses = listOf(LibraryLicense.MIT),
+        note = R.string.licenses_note_spark,
+    ),
+    OpenSourceLibrary(
+        name = "Compose Multiplatform",
+        coordinates = "org.jetbrains.compose.*",
+        copyright = "Copyright © JetBrains s.r.o. and The Android Open Source Project",
+        licenses = listOf(LibraryLicense.APACHE_2_0),
+        note = R.string.licenses_note_compose_multiplatform,
+    ),
+    OpenSourceLibrary(
+        name = "JetBrains AndroidX",
+        coordinates = "org.jetbrains.androidx.*",
+        copyright = "Copyright © The Android Open Source Project",
+        licenses = listOf(LibraryLicense.APACHE_2_0),
+        note = R.string.licenses_note_jetbrains_androidx,
+    ),
+    OpenSourceLibrary(
+        name = "Coil",
+        coordinates = "io.coil-kt.coil3:*",
+        copyright = "Copyright © Coil Contributors",
+        licenses = listOf(LibraryLicense.APACHE_2_0),
+        note = R.string.licenses_note_coil,
+    ),
+    OpenSourceLibrary(
+        name = "Okio",
+        coordinates = "com.squareup.okio:*",
+        copyright = "Copyright © Square, Inc.",
+        licenses = listOf(LibraryLicense.APACHE_2_0),
+        note = R.string.licenses_note_okio,
+    ),
+    OpenSourceLibrary(
+        name = "Accompanist Drawable Painter",
+        coordinates = "com.google.accompanist:accompanist-drawablepainter",
+        copyright = "Copyright © The Android Open Source Project",
+        licenses = listOf(LibraryLicense.APACHE_2_0),
+        note = R.string.licenses_note_accompanist,
+    ),
+    OpenSourceLibrary(
+        name = "FileKit",
+        coordinates = "io.github.vinceglb:*",
+        copyright = "Copyright © 2026 Vincent Guillebaud",
+        licenses = listOf(LibraryLicense.MIT),
+        note = R.string.licenses_note_filekit,
     ),
     // The bundled typefaces. Not Maven artifacts, so their `coordinates` names the resource
     // instead — `verifyLicenseCoverage` matches these against res/font/ rather than the classpath.

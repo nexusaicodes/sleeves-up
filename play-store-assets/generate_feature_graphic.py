@@ -32,11 +32,13 @@ W, H = 1024, 500
 OUT = "play-store-assets/feature-graphic.png"
 FONT_DIR = "app/src/main/res/font"
 
-# Gradient endpoints, deliberately deeper than the launcher indigo (#3F51B5): the filled
-# cells are near-white and the empty ones are a whisper of it, so the field has to sit well
-# below both in value or the grid stops reading as two states.
-TOP = (46, 59, 132)      # #2E3B84
-BOT = (26, 33, 84)       # #1A2154
+# The app's palette (ui/theme/Color.kt): the field runs from ink, the launcher tile's colour, down
+# to the dark theme's paper, so the filled cells (paper) and the empty ones (a whisper of it) read
+# as two states against a field well below both in value.
+TOP = (27, 42, 74)       # ink #1B2A4A
+BOT = (14, 24, 48)       # dark paper #0E1830
+PAPER = (241, 230, 206)  # paper #F1E6CE: the cells and the wordmark
+MUTED = (167, 176, 194)  # dark inkMuted #A7B0C2: the tagline
 
 WORDMARK = "Sleeves Up"
 TAGLINE = "A day counts because you showed up."
@@ -68,8 +70,9 @@ EMPTY = frozenset({
 })
 
 
-def font(name, size):
-    return ImageFont.truetype(f"{FONT_DIR}/{name}.ttf", size)
+def font(name, size, layout=ImageFont.Layout.BASIC):
+    # Basic layout unless asked: Latin needs no shaping, and the committed output is basic's.
+    return ImageFont.truetype(f"{FONT_DIR}/{name}.ttf", size, layout_engine=layout)
 
 
 def gradient():
@@ -97,15 +100,15 @@ def main():
             draw.rounded_rectangle(
                 [x0, y0, x0 + CELL, y0 + CELL],
                 radius=radius,
-                fill=(255, 255, 255, 235) if filled else (255, 255, 255, 28),
+                fill=(*PAPER, 235) if filled else (*PAPER, 28),
             )
 
     f_word = font("outfit_bold", 92)
     f_tag = font("manrope_medium", 29)
 
     tx = 72
-    draw.text((tx, 186), WORDMARK, font=f_word, fill=(255, 255, 255, 255))
-    draw.text((tx + 3, 300), TAGLINE, font=f_tag, fill=(206, 214, 255, 255))
+    draw.text((tx, 186), WORDMARK, font=f_word, fill=(*PAPER, 255))
+    draw.text((tx + 3, 300), TAGLINE, font=f_tag, fill=(*MUTED, 255))
 
     # The text must not collide with the grid. Asserted rather than eyeballed: the wordmark
     # is the one string here that a rename would lengthen, and a silent overlap in a 1024px

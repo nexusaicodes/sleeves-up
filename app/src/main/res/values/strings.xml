@@ -178,7 +178,9 @@
     <string name="empty_day_sessions_message">No sessions recorded on this day.</string>
 
     <!-- Reports Screen -->
-    <!-- The scope selector's end-stop, read as a standalone label. -->
+    <!-- The scope selector's two segments, read as standalone labels: one month at a time, or the
+         whole record. -->
+    <string name="scope_month">Month</string>
     <string name="scope_all_time">All time</string>
     <!-- The same scope read inside a sentence ("Export all time"), where the Title Case form lands a
          capital mid-clause. A month name needs no such pair — it is a proper noun either way. -->
@@ -379,6 +381,13 @@
     <string name="licenses_note_outfit">Display, headline and title sizes.</string>
     <string name="licenses_note_manrope">Body and label sizes.</string>
     <string name="licenses_note_plex_arabic">All text when the app is in Arabic.</string>
+    <string name="licenses_note_spark">A design system for Jetpack Compose.</string>
+    <string name="licenses_note_compose_multiplatform">JetBrains\' builds of Compose, which Spark depends on.</string>
+    <string name="licenses_note_jetbrains_androidx">JetBrains\' builds of Lifecycle, SavedState and Window, which Spark depends on.</string>
+    <string name="licenses_note_coil">Image loading, which Spark depends on.</string>
+    <string name="licenses_note_okio">File and stream input and output, which Coil depends on.</string>
+    <string name="licenses_note_accompanist">Draws Android drawables in Compose, which Spark depends on.</string>
+    <string name="licenses_note_filekit">File pickers, which Spark depends on. The app opens none of them.</string>
     <string name="licenses_intro">Sleeves Up is built on these projects. Grouped by upstream project rather than by artifact.</string>
     <!-- Named after the licence it opens: these buttons sit below every library card, far from any
          context. The text is bundled rather than linked because Apache-2.0 section 4(a) and the OFL

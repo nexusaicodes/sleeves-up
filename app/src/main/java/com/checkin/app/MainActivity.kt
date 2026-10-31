@@ -7,17 +7,18 @@ import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
+import com.adevinta.spark.SparkTheme
+import com.adevinta.spark.components.surface.Surface
 import com.checkin.app.data.local.Habit
 import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.ui.AppRoot
 import com.checkin.app.ui.checkin.CheckOutSignal
+import com.checkin.app.ui.fadeIntoApp
 import com.checkin.app.ui.presence.PresenceCheckSignal
 import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import com.checkin.app.ui.presence.PresenceGate
@@ -25,6 +26,7 @@ import com.checkin.app.ui.presence.TapOutcome
 import com.checkin.app.ui.presence.TapRouting
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.util.latinDigitsOverride
+import com.checkin.app.util.useLatinDigitsByDefault
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
@@ -47,8 +49,12 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen().setKeepOnScreenCondition { PresenceCheckSignal.resolvingTaps.value > 0 }
+        installSplashScreen().apply {
+            setKeepOnScreenCondition { PresenceCheckSignal.resolvingTaps.value > 0 }
+            fadeIntoApp(this@MainActivity)
+        }
         super.onCreate(savedInstanceState)
+        useLatinDigitsByDefault()
         // Transparent bars on every level: below 35 the platform otherwise keeps the theme's opaque ones.
         enableEdgeToEdge()
 
@@ -60,7 +66,7 @@ class MainActivity : FragmentActivity() {
             CheckInAppTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
+                    color = SparkTheme.colors.background,
                 ) {
                     AppRoot(onGatePassed = ::onRootGatePassed, onHabitPicked = ::onHabitPicked)
                 }

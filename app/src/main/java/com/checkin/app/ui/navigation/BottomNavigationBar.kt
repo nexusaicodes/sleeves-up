@@ -1,20 +1,22 @@
 package com.checkin.app.ui.navigation
 
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
+import com.adevinta.spark.ExperimentalSparkApi
+import com.adevinta.spark.components.appbar.NavigationBar
+import com.adevinta.spark.components.appbar.NavigationBarItem
+import com.adevinta.spark.components.text.Text
 
+@OptIn(ExperimentalSparkApi::class)
 @Composable
 internal fun BottomNavigationBar(navController: NavController, currentScreen: Screen, selectedTab: Screen.Tab) {
     NavigationBar {
         tabs.forEach { screen ->
             val title = stringResource(screen.titleRes)
             NavigationBarItem(
-                icon = { Icon(screen.icon, contentDescription = title) },
+                // Spark draws the icon with no description: the label beneath names the tab.
+                icon = screen.icon,
                 label = { Text(title) },
                 selected = selectedTab == screen,
                 onClick = {
@@ -24,7 +26,7 @@ internal fun BottomNavigationBar(navController: NavController, currentScreen: Sc
                     // under Settings, or Habits (pushed from any tab's switcher, so often above a tab
                     // that is not its parent) reopening under that tab.
                     if (currentScreen is Screen.Detail) {
-                        while (navController.currentScreen() is Screen.Detail && navController.popBackStack()) Unit
+                        while (navController.currentScreen() is Screen.Detail && navController.popBackStack()) continue
                         // Popping already landed on the tapped tab; navigating again would re-save it.
                         if (navController.currentScreen() == screen) return@NavigationBarItem
                     }

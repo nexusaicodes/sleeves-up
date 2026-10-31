@@ -1,8 +1,13 @@
+import com.android.build.api.artifact.SingleArtifact
+import com.android.build.api.variant.BuiltArtifactsLoader
+import java.security.MessageDigest
 import java.util.Properties
+import java.util.zip.ZipFile
+import javax.inject.Inject
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
 }
 
@@ -18,7 +23,7 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.checkin.app"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.nexusai.checkin.app"
@@ -80,19 +85,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
         // Needed for BuildConfig.VERSION_NAME / VERSION_CODE, which the About card renders and the
         // feedback draft carries. Nothing reads BuildConfig.DEBUG — the app has no debug-only branch.
         buildConfig = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.4"
     }
 
     // Generates the manifest's localeConfig from the values-* folders, with res/resources.properties
@@ -134,31 +131,34 @@ android {
 
 dependencies {
     // Core
-    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-ktx:1.19.1")
     implementation("androidx.core:core-splashscreen:1.0.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
-    implementation("androidx.activity:activity-compose:1.9.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
+    implementation("androidx.activity:activity-compose:1.13.0")
 
     // Compose
-    implementation(platform("androidx.compose:compose-bom:2025.12.00"))
+    implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material3:material3-window-size-class")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation(platform("com.adevinta.spark:spark-bom:4.2.1"))
+    implementation("com.adevinta.spark:spark")
+    implementation("com.adevinta.spark:spark-icons")
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.navigation:navigation-compose:2.10.2")
 
     // Room Database
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-runtime:2.8.5")
+    implementation("androidx.room:room-ktx:2.8.5")
+    ksp("androidx.room:room-compiler:2.8.5")
 
     // ViewModel
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
 
     // CameraX
     implementation("androidx.camera:camera-core:1.5.0")
@@ -182,7 +182,7 @@ dependencies {
 
     // Hourly backstop pass: the session-service revive, the nudge re-arm and the send-ledger
     // prune all hang off it (see notify/nudge/NudgeWorker). Nudges are delivered by an alarm.
-    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
 
     // Flexible in-app update prompt (platform/AppUpdates). It asks the Play Store app over IPC and
     // declares no permission; it brings core-common and gms basement/tasks, all proprietary terms
@@ -190,16 +190,160 @@ dependencies {
     // Flow wrapper this needs none of.
     implementation("com.google.android.play:app-update:2.1.0")
 
+    // Floors for libraries that arrive only transitively, at the versions the Spark design system
+    // (com.adevinta.spark 4.2.1) resolves them to, so adopting it adds artifacts without moving any
+    // the app already ships. A constraint adds nothing to the graph by itself: each takes effect
+    // only on a library something else already brings.
+    constraints {
+        implementation("androidx.annotation:annotation-experimental:1.5.1")
+        implementation("androidx.appcompat:appcompat:1.8.0")
+        implementation("androidx.appcompat:appcompat-resources:1.8.0")
+        implementation("androidx.exifinterface:exifinterface:1.4.2")
+        implementation("androidx.profileinstaller:profileinstaller:1.4.1")
+        implementation("androidx.startup:startup-runtime:1.2.0")
+        implementation("androidx.window:window:1.5.1")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+        implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.11.0")
+    }
+
     // Testing
     // JUnit plus the coroutines test dispatcher, and nothing else: the suite is pure JVM and mocks
     // nothing, standing every seam up with a hand-written fake instead (app/src/test/.../Fakes.kt).
     // There is no androidTest source set, so no instrumentation dependency has anything to run.
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
 
-// The open-source licence list in ui/about/OpenSourceLibraries.kt is hand-written: it groups ~220
+// Spark's Compose Resources ship Nunito Sans a second time, as assets under
+// composeResources/com.adevinta.spark.core/font/, and assets are never shrunk. Nothing on Android
+// reads them: Spark draws its default family from res/font (discarded in res/raw/keep.xml), and the
+// app makes no Res.* read. So every variant's merged assets pass through this copy minus that
+// directory, as a transform of the ASSETS artifact rather than an edit of the merge task's output,
+// which keeps the merge cacheable and up to date.
+abstract class StripSparkFontAssets : DefaultTask() {
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val mergedAssets: DirectoryProperty
+
+    @get:OutputDirectory
+    abstract val strippedAssets: DirectoryProperty
+
+    @get:Inject
+    abstract val files: FileSystemOperations
+
+    @TaskAction
+    fun strip() {
+        files.sync {
+            from(mergedAssets)
+            into(strippedAssets)
+            exclude("composeResources/com.adevinta.spark.core/font/**")
+        }
+    }
+}
+
+// Every typeface the release APK carries must be one of the app's own res/font files, byte for
+// byte, and every one of those must ship. A library's font arrives two ways, and keeping both out is
+// what this checks: in its own res/font (Spark's Nunito, discarded only by res/raw/keep.xml) and in
+// its assets (Spark's Compose Resources copy, stripped by StripSparkFontAssets). Reading the packaged
+// APK sees both after shrinking, whatever either mechanism does. Entries are recognised by their
+// header rather than their path, since the release build may shorten resource paths.
+abstract class VerifyPackagedFonts : DefaultTask() {
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val apk: DirectoryProperty
+
+    @get:Internal
+    abstract val apkLoader: Property<BuiltArtifactsLoader>
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val ownFonts: DirectoryProperty
+
+    @get:OutputFile
+    abstract val stamp: RegularFileProperty
+
+    @TaskAction
+    fun verify() {
+        val artifacts = checkNotNull(apkLoader.get().load(apk.get())) { "No release APK in ${apk.get()}" }
+        val apkFile = File(artifacts.elements.single().outputFile)
+
+        val own = ownFonts.get().asFile.listFiles().orEmpty()
+            .filter { it.isFile && it.extension.lowercase() in setOf("ttf", "otf", "ttc") }
+            .associateBy { sha256(it.readBytes()) }
+        check(own.isNotEmpty()) { "Found no typeface in ${ownFonts.get()}; the check would pass by comparing nothing." }
+
+        val packaged = ZipFile(apkFile).use { zip ->
+            zip.entries().toList()
+                .filterNot { it.isDirectory }
+                .mapNotNull { entry ->
+                    zip.getInputStream(entry).use { stream ->
+                        val head = stream.readNBytes(4)
+                        if (isTypeface(head)) entry.name to sha256(head + stream.readBytes()) else null
+                    }
+                }
+        }
+
+        val foreign = packaged.filter { (_, hash) -> hash !in own }.map { it.first }.sorted()
+        check(foreign.isEmpty()) {
+            "These typefaces ship in ${apkFile.name} and are not the app's own res/font files:\n" +
+                foreign.joinToString("\n") { "  - $it" } +
+                "\n\nA library brought them. Discard a res/font copy in res/raw/keep.xml, strip an assets " +
+                "copy in StripSparkFontAssets (or a transform like it), or, if the app draws it, move it " +
+                "to res/font and attribute it."
+        }
+
+        val shipped = packaged.map { it.second }.toSet()
+        val missing = own.filterKeys { it !in shipped }.values.map { "res/font/${it.name}" }.sorted()
+        check(missing.isEmpty()) {
+            "These res/font typefaces are missing from ${apkFile.name}:\n" +
+                missing.joinToString("\n") { "  - $it" } +
+                "\n\nThe shrinker dropped them as unused, or a build step altered them. Delete a font " +
+                "nothing draws (and its licence entry); otherwise find what changed the bytes."
+        }
+
+        val summary = "Packaged fonts: ${packaged.size} in ${apkFile.name}, each one of ${own.size} res/font files."
+        logger.lifecycle(summary)
+        stamp.get().asFile.apply { parentFile.mkdirs() }.writeText("$summary\n")
+    }
+
+    // A font file's first four bytes: the sfnt version tags, TrueType (0x00010000 or 'true'), CFF
+    // OpenType ('OTTO') and a collection ('ttcf'), plus the web wrappers WOFF ('wOFF') and WOFF2
+    // ('wOF2'). res/font holds no web font, so one of those is always foreign.
+    private fun isTypeface(head: ByteArray): Boolean {
+        if (head.size < 4) return false
+        return head.contentEquals(byteArrayOf(0, 1, 0, 0)) ||
+            String(head, Charsets.ISO_8859_1) in setOf("true", "OTTO", "ttcf", "wOFF", "wOF2")
+    }
+
+    private fun sha256(bytes: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+}
+
+tasks.register<VerifyPackagedFonts>("verifyPackagedFonts") {
+    group = "verification"
+    description = "Fails unless the release APK's typefaces are exactly the app's own res/font files."
+    ownFonts.set(layout.projectDirectory.dir("src/main/res/font"))
+    stamp.set(layout.buildDirectory.file("reports/packagedFonts.txt"))
+}
+
+androidComponents {
+    onVariants { variant ->
+        val taskName = "strip${variant.name.replaceFirstChar { it.uppercase() }}SparkFontAssets"
+        val strip = tasks.register<StripSparkFontAssets>(taskName)
+        variant.artifacts.use(strip)
+            .wiredWithDirectories(StripSparkFontAssets::mergedAssets, StripSparkFontAssets::strippedAssets)
+            .toTransform(SingleArtifact.ASSETS)
+        if (variant.buildType == "release") {
+            tasks.named<VerifyPackagedFonts>("verifyPackagedFonts") {
+                apk.set(variant.artifacts.get(SingleArtifact.APK))
+                apkLoader.set(variant.artifacts.getBuiltArtifactsLoader())
+            }
+        }
+    }
+}
+
+// The open-source licence list in ui/about/OpenSourceLibraries.kt is hand-written: it groups ~240
 // resolved artifacts into the upstream projects a reader can act on, and carries the corrections a
 // generator reading POMs alone gets wrong where a POM is silent — today that is CameraX's embedded
 // libyuv BSD, the one non-Apache row among the Maven groups — the two bundled typefaces carry the
@@ -288,7 +432,7 @@ tasks.register("verifyLicenseCoverage") {
                 "from the font's own name table rather than guessing."
         }
 
-        // The reverse direction. The two checks above fail on something shipped with no entry;
+        // The reverse direction. The checks above fail on something shipped with no entry;
         // neither fails on an entry covering nothing shipped, so a dependency that leaves the graph
         // strands its attribution and the screen keeps crediting a library the APK does not carry.
         // That is not a licence risk, but it is a false statement in the one screen whose whole job
@@ -426,4 +570,156 @@ tasks.register("verifyDocMap") {
     }
 }
 
-tasks.named("check") { dependsOn("verifyLicenseCoverage", "verifyDocMap") }
+// A library's manifest merges into the app's and can run code nobody calls: a startup initializer, a
+// provider or service another app binds to. None needs a permission or a networking class, so the
+// permission grep and the dex grep both pass it (emoji2's initializer, which asks Play services for
+// a font at every launch, is one). So everything the merged release manifest declares is
+// listed in merged-manifest-allowlist.txt, and anything new fails the build until someone decides
+// whether it stays (listed) or goes (`tools:node="remove"` in the app's manifest).
+val manifestAllowlistFile = layout.projectDirectory.file("merged-manifest-allowlist.txt")
+val releaseMergedManifest = objects.fileProperty()
+
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        releaseMergedManifest.set(variant.artifacts.get(SingleArtifact.MERGED_MANIFEST))
+    }
+}
+
+/** Manifest elements that put a capability in the APK, each listed by its `android:name`. */
+val manifestEntryKinds = listOf(
+    "uses-permission",
+    "uses-permission-sdk-23",
+    "permission",
+)
+
+/**
+ * Manifest elements that put code in the APK, each listed by its `android:name` plus what decides
+ * whether another app can reach it: `exported`, the `permission` guarding it when one is set, and for
+ * a provider its `authorities` and `grantUriPermissions`. Each intent filter is a `filter` line of its
+ * own. A library bump that exports a listed component, drops its guard, widens a provider or adds a
+ * filter (a deep link, a new broadcast) therefore changes a line.
+ */
+val manifestComponentKinds = listOf("activity", "activity-alias", "service", "receiver", "provider")
+
+tasks.register("verifyMergedManifest") {
+    group = "verification"
+    description = "Fails if the merged release manifest and merged-manifest-allowlist.txt disagree."
+
+    val allowlist = manifestAllowlistFile
+    val manifest = releaseMergedManifest
+    val stamp = layout.buildDirectory.file("reports/mergedManifest.txt")
+    inputs.file(allowlist)
+    inputs.file(manifest)
+    outputs.file(stamp)
+
+    doLast {
+        val androidNs = "http://schemas.android.com/apk/res/android"
+        val document = javax.xml.parsers.DocumentBuilderFactory.newInstance()
+            .apply { isNamespaceAware = true }
+            .newDocumentBuilder()
+            .parse(manifest.get().asFile)
+        fun elements(tag: String) = document.getElementsByTagName(tag).let { nodes ->
+            (0 until nodes.length).map { nodes.item(it) as org.w3c.dom.Element }
+        }
+        fun org.w3c.dom.Element.androidName() = getAttributeNS(androidNs, "name")
+
+        val shipped = sortedSetOf<String>()
+        manifestEntryKinds.forEach { kind -> elements(kind).forEach { shipped += "$kind ${it.androidName()}" } }
+        // Whether a feature is required decides which devices Play offers the app to.
+        elements("uses-feature").forEach { feature ->
+            shipped += "uses-feature ${feature.androidName()} required=" +
+                feature.getAttributeNS(androidNs, "required").ifEmpty { "unset" }
+        }
+        manifestComponentKinds.forEach { kind ->
+            elements(kind).forEach { component ->
+                val exported = component.getAttributeNS(androidNs, "exported").ifEmpty { "unset" }
+                val guards = listOf("permission", "authorities", "grantUriPermissions").mapNotNull { attr ->
+                    component.getAttributeNS(androidNs, attr).takeIf { it.isNotEmpty() }?.let { "$attr=$it" }
+                }
+                shipped += (listOf("$kind ${component.androidName()} exported=$exported") + guards).joinToString(" ")
+                component.getElementsByTagName("intent-filter").let { filters ->
+                    (0 until filters.length).map { filters.item(it) as org.w3c.dom.Element }
+                }.forEach { filter ->
+                    fun values(tag: String, describe: (org.w3c.dom.Element) -> String) =
+                        filter.getElementsByTagName(tag).let { nodes ->
+                            (0 until nodes.length).map { describe(nodes.item(it) as org.w3c.dom.Element) }.sorted()
+                        }
+                    val parts = listOf(
+                        "action" to values("action") { it.androidName() },
+                        "category" to values("category") { it.androidName() },
+                        "data" to values("data") { data ->
+                            listOf(
+                                "scheme", "host", "port", "path", "pathPrefix", "pathSuffix", "pathPattern",
+                                "pathAdvancedPattern", "ssp", "sspPrefix", "sspSuffix", "sspPattern",
+                                "sspAdvancedPattern", "mimeType", "mimeGroup",
+                            ).mapNotNull { attr ->
+                                data.getAttributeNS(androidNs, attr).takeIf { it.isNotEmpty() }?.let { "$attr:$it" }
+                            }.joinToString("+")
+                        },
+                    ).filter { it.second.isNotEmpty() }.map { (key, list) -> "$key=${list.joinToString(",")}" }
+                    shipped += (listOf("filter ${component.androidName()}") + parts).joinToString(" ")
+                }
+            }
+        }
+        // Startup initializers are meta-data under androidx.startup's provider, so the provider line
+        // alone would admit every initializer any later library registers.
+        elements("meta-data").forEach { meta ->
+            val parent = meta.parentNode as org.w3c.dom.Element
+            val startup = parent.androidName() == "androidx.startup.InitializationProvider"
+            val kind = if (startup) "initializer" else "meta-data"
+            shipped += "$kind ${meta.androidName()}"
+        }
+        elements("property").forEach { shipped += "property ${it.androidName()}" }
+        // Package visibility: each <queries> child widens what the app can see of other apps.
+        elements("queries").forEach { queries ->
+            val children = queries.childNodes
+            (0 until children.length).mapNotNull { children.item(it) as? org.w3c.dom.Element }.forEach { child ->
+                val target = when (child.tagName) {
+                    "provider" -> child.getAttributeNS(androidNs, "authorities")
+                    "intent" -> child.getElementsByTagName("action").let { actions ->
+                        (0 until actions.length).joinToString(",") {
+                            (actions.item(it) as org.w3c.dom.Element).androidName()
+                        }
+                    }
+                    else -> child.androidName()
+                }
+                shipped += "queries ${child.tagName} $target"
+            }
+        }
+
+        val listed = allowlist.asFile.readLines()
+            .map { it.substringBefore('#').trim() }
+            .filter { it.isNotEmpty() }
+            .toSortedSet()
+        check(listed.isNotEmpty() && shipped.isNotEmpty()) {
+            "Parsed nothing to compare (allowlist ${listed.size} lines, manifest ${shipped.size} entries). " +
+                "A format changed, and this check would otherwise pass by finding nothing."
+        }
+
+        val unlisted = shipped - listed
+        check(unlisted.isEmpty()) {
+            "The merged release manifest declares entries ${allowlist.asFile.name} does not list:\n" +
+                unlisted.joinToString("\n") { "  - $it" } +
+                "\n\nbuild/outputs/logs/manifest-merger-release-report.txt names the library each came " +
+                "from. Read what it does. If it reaches outside the app (another app, a provider, the " +
+                "network) or runs unasked, remove it with tools:node=\"remove\" in AndroidManifest.xml; " +
+                "otherwise list it, with a comment saying where it comes from."
+        }
+
+        // The reverse direction: an entry whose library left would otherwise stay listed, and the
+        // list would go on vouching for something the APK no longer carries.
+        val stale = listed - shipped
+        check(stale.isEmpty()) {
+            "${allowlist.asFile.name} lists entries the merged release manifest no longer declares:\n" +
+                stale.joinToString("\n") { "  - $it" } + "\n\nDelete them."
+        }
+
+        val summary = "Merged manifest: ${shipped.size} entries, all listed."
+        logger.lifecycle(summary)
+        stamp.get().asFile.apply { parentFile.mkdirs() }.writeText("$summary\n")
+    }
+}
+
+tasks.named("check") {
+    dependsOn("verifyLicenseCoverage", "verifyDocMap", "verifyMergedManifest", "verifyPackagedFonts")
+}

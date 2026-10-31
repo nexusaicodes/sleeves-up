@@ -69,13 +69,20 @@ class OpenSourceLibrariesTest {
     }
 
     /**
-     * Both of these ship a copy because their terms require it: Apache-2.0 section 4(a) for the code,
-     * and the OFL for the two bundled typefaces. Everything else links out.
+     * These ship a copy because their terms require it: Apache-2.0 section 4(a) and MIT's notice
+     * clause for the code, and the OFL for the bundled typefaces. Everything else links out.
      */
     @Test
     fun `exactly the licenses obliging a shipped copy are bundled`() {
         val bundled = LibraryLicense.entries.filter { it.bundled }.toSet()
-        assertEquals(setOf(LibraryLicense.APACHE_2_0, LibraryLicense.OFL_1_1), bundled)
+        assertEquals(setOf(LibraryLicense.APACHE_2_0, LibraryLicense.OFL_1_1, LibraryLicense.MIT), bundled)
+    }
+
+    /** res/raw/mit.txt holds exactly these two projects' notices, so a third MIT entry needs its own. */
+    @Test
+    fun `mit covers spark and filekit and nothing else`() {
+        val underMit = OPEN_SOURCE_LIBRARIES.filter { LibraryLicense.MIT in it.licenses }
+        assertEquals(listOf("Spark", "FileKit"), underMit.map { it.name })
     }
 
     @Test
