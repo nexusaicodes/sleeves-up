@@ -23,8 +23,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * device: it existed only on development builds, which the backstop rebuilds — and skipping the
  * number is what makes them rebuild, since a file at the same version with a different schema fails
  * Room's identity check outright rather than falling back.
+ *
+ * Version 4 adds the wording a post carried ([NudgeSend.titleKey], [NudgeSend.bodyKey]) through
+ * [MIGRATION_3_4]; a version 1 file reaches it through both migrations in turn.
  */
-@Database(entities = [NudgeSend::class], version = 3, exportSchema = false)
+@Database(entities = [NudgeSend::class], version = 4, exportSchema = false)
 abstract class NudgeSendDatabase : RoomDatabase() {
     abstract fun nudgeSendDao(): NudgeSendDao
 
@@ -43,6 +46,14 @@ abstract class NudgeSendDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_nudge_sends_habit_uuid_at` ON `nudge_sends` (`habit_uuid`, `at`)",
                 )
+            }
+        }
+
+        /** Every earlier row has no recorded wording, which the rotation reads as never shown. */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `nudge_sends` ADD COLUMN `title_key` TEXT")
+                db.execSQL("ALTER TABLE `nudge_sends` ADD COLUMN `body_key` TEXT")
             }
         }
 
@@ -75,7 +86,7 @@ abstract class NudgeSendDatabase : RoomDatabase() {
             cached ?: Room.databaseBuilder(context.applicationContext, NudgeSendDatabase::class.java, DB_NAME)
                 // Backstop only, and safe here in a way it would never be for `_app`: no session
                 // record is at risk, and the most a wipe costs is one duplicate nudge that day.
-                .addMigrations(MIGRATION_1_3)
+                .addMigrations(MIGRATION_1_3, MIGRATION_3_4)
                 .fallbackToDestructiveMigration(dropAllTables = false)
                 .build()
                 .also { cached = it }

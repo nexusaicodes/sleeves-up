@@ -101,6 +101,9 @@ class FakeCheckInSessionDao : CheckInSessionDao {
     override fun getFirstDateKeyFlow(habitId: Long): Flow<String?> =
         store.map { list -> list.filter { it.habitId == habitId }.minOfOrNull { it.dateKey } }
 
+    override suspend fun getLastDateKeyBefore(habitId: Long, beforeDateKey: String): String? =
+        store.value.filter { it.habitId == habitId && it.dateKey < beforeDateKey }.maxOfOrNull { it.dateKey }
+
     private fun aggregate(habitId: Long, startDate: String, endDate: String): List<DailyAggregate> = store.value
         .filter { it.habitId == habitId && it.stoppedAt != null && it.dateKey in startDate..endDate }
         .groupBy { it.dateKey }

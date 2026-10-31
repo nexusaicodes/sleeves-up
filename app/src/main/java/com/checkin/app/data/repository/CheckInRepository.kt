@@ -180,6 +180,13 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
 
     suspend fun trackingStart(habitId: Long): LocalDate? = parseDateKey(dao.getFirstDateKey(habitId))
 
+    /**
+     * The last day before [today] holding a session of [habitId]'s, or null if none does. Never
+     * displayed: it picks the tone of a reminder's copy (see `NudgeVoice`).
+     */
+    suspend fun lastSessionDayBefore(habitId: Long, today: LocalDate): LocalDate? =
+        parseDateKey(dao.getLastDateKeyBefore(habitId, today.format(dateFormatter)))
+
     /** Days holding a completed session of [habitId]'s. Never displayed: it times a one-time page. */
     suspend fun daysWithSession(habitId: Long): Int = dao.countDaysWithSession(habitId)
 

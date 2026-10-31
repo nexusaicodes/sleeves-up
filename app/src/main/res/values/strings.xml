@@ -102,16 +102,78 @@
     <string name="nudge_channel_name">Check-In Reminders</string>
     <string name="nudge_channel_description">Reminds you to check in on days you haven\'t yet. Once a day at most.</string>
 
-    <!-- One wording, no variants: nothing in the app can tell two arms apart, so a second one is only
-         a second string to keep in step. The title names the habit, because a reminder that does
-         not say which habit it is about is one a user with two cannot act on; the unnamed title is
-         for a habit still owed a name. Copy never warms or grows urgent — that would invent a
-         deadline this app does not have, and grade a day that is not over. Time-neutral, because the
-         user picks the time. No notification names the time: delivery is best-effort, so a stated
-         time is a punctuality promise the app cannot keep. -->
+    <!-- The daily reminder, in three voices (not started, steady, returning) of four titles and
+         twelve bodies each, chosen by NudgeVoice and rotated least recently shown first. The voice
+         only picks the pool: no line may say how long it has been, name a missed day, count
+         anything or read as noticing a lapse, so every line reads naturally to anyone. A lapse
+         lowers the ask and never raises the energy. Titles name the habit, because a reminder that
+         does not say which habit it is about is one a user with two cannot act on; each unnamed
+         twin is for a habit still owed a name. Copy never warms or grows urgent, and never names
+         the time: delivery is best-effort, so a stated time is a punctuality promise the app cannot
+         keep. NudgeCatalog holds the names under frozen ledger keys, so append and never renumber;
+         NudgeCopyRulesTest pins the vocabulary. -->
+    <string name="nudge_not_started_title_1">%1$s: ready when you are</string>
+    <string name="nudge_not_started_title_unnamed_1">Ready when you are</string>
+    <string name="nudge_not_started_title_2">%1$s: the first session is the whole step</string>
+    <string name="nudge_not_started_title_unnamed_2">The first session is the whole step</string>
+    <string name="nudge_not_started_title_3">%1$s: start with a short one</string>
+    <string name="nudge_not_started_title_unnamed_3">Start with a short one</string>
+    <string name="nudge_not_started_title_4">%1$s: today could be the first day</string>
+    <string name="nudge_not_started_title_unnamed_4">Today could be the first day</string>
+    <string name="nudge_not_started_body_1">Check in for a few minutes. That\'s all a first day needs.</string>
+    <string name="nudge_not_started_body_2">Nothing left to set up. One check-in starts the record.</string>
+    <string name="nudge_not_started_body_3">A short session counts exactly as much as a long one. Start with whichever fits.</string>
+    <string name="nudge_not_started_body_4">The hardest session is the first. Make it a small one.</string>
+    <string name="nudge_not_started_body_5">Nothing to prepare. Check in, and you\'ve begun.</string>
+    <string name="nudge_not_started_body_6">Ten minutes is a real start.</string>
+    <string name="nudge_not_started_body_7">You don\'t need a plan for today, just a start.</string>
+    <string name="nudge_not_started_body_8">Pick the smallest version of this you can do, and do that.</string>
+    <string name="nudge_not_started_body_9">Every record begins with one day. This one is open.</string>
+    <string name="nudge_not_started_body_10">Start before it feels ready. Showing up is what counts.</string>
+    <string name="nudge_not_started_body_11">One session today gives the calendar its first mark.</string>
+    <string name="nudge_not_started_body_12">However long it turns out to be, today can count.</string>
+
     <string name="nudge_not_checked_in_title">%1$s: no session yet today</string>
     <string name="nudge_not_checked_in_unnamed_title">No session yet today</string>
+    <string name="nudge_steady_title_2">%1$s: today\'s still open</string>
+    <string name="nudge_steady_title_unnamed_2">Today\'s still open</string>
+    <string name="nudge_steady_title_3">%1$s: time to show up</string>
+    <string name="nudge_steady_title_unnamed_3">Time to show up</string>
+    <string name="nudge_steady_title_4">%1$s: a good moment to start</string>
+    <string name="nudge_steady_title_unnamed_4">A good moment to start</string>
     <string name="nudge_not_checked_in_body">Whenever you start, it counts — a short day is still a day shown up for.</string>
+    <string name="nudge_steady_body_2">Any length counts. Start where you are.</string>
+    <string name="nudge_steady_body_3">Today doesn\'t need to be big. It just needs a start.</string>
+    <string name="nudge_steady_body_4">Show up for a few minutes and see where it goes.</string>
+    <string name="nudge_steady_body_5">A quick session now is a whole day shown up for.</string>
+    <string name="nudge_steady_body_6">You know the drill: check in, then begin.</string>
+    <string name="nudge_steady_body_7">The day still has room for a session.</string>
+    <string name="nudge_steady_body_8">Short and done counts as much as long and done.</string>
+    <string name="nudge_steady_body_9">Start small. You can always keep going.</string>
+    <string name="nudge_steady_body_10">Showing up is the whole job today.</string>
+    <string name="nudge_steady_body_11">No need to feel ready. Starting is enough.</string>
+    <string name="nudge_steady_body_12">Check in, even briefly, and today counts.</string>
+
+    <string name="nudge_returning_title_1">%1$s: today starts fresh</string>
+    <string name="nudge_returning_title_unnamed_1">Today starts fresh</string>
+    <string name="nudge_returning_title_2">%1$s: just a few minutes</string>
+    <string name="nudge_returning_title_unnamed_2">Just a few minutes</string>
+    <string name="nudge_returning_title_3">%1$s: a small start counts</string>
+    <string name="nudge_returning_title_unnamed_3">A small start counts</string>
+    <string name="nudge_returning_title_4">%1$s: whenever suits you</string>
+    <string name="nudge_returning_title_unnamed_4">Whenever suits you</string>
+    <string name="nudge_returning_body_1">Every day starts fresh. A short session today counts in full.</string>
+    <string name="nudge_returning_body_2">Ten minutes counts as much as any day ever did.</string>
+    <string name="nudge_returning_body_3">Nothing is owed. Just today, at whatever length suits it.</string>
+    <string name="nudge_returning_body_4">The smallest session still counts. Start with that.</string>
+    <string name="nudge_returning_body_5">Today is its own day. Check in for a few minutes.</string>
+    <string name="nudge_returning_body_6">No ground to make up — the record only asks about today.</string>
+    <string name="nudge_returning_body_7">Five minutes is a whole day shown up for.</string>
+    <string name="nudge_returning_body_8">Make it as small as you like. Starting is what counts.</string>
+    <string name="nudge_returning_body_9">Today can count, whatever shape it takes.</string>
+    <string name="nudge_returning_body_10">Easy does it. One short session is enough.</string>
+    <string name="nudge_returning_body_11">There\'s no perfect moment. Now works.</string>
+    <string name="nudge_returning_body_12">A short check-in today is a full day in the record.</string>
 
     <!--
       The first-run welcome tour, shown once before anything is asked for. The order is the point:
