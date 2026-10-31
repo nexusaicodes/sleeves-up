@@ -11,6 +11,7 @@ import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +30,7 @@ import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.typographyFor
 import com.checkin.app.util.TimeFormat
+import com.checkin.app.util.useLatinDigitsByDefault
 
 /**
  * A habit's reminder time as the user reads it: "Around 10:15 AM". One function for every place the
@@ -95,6 +97,10 @@ private fun PickerDialog(state: TimePickerState, inRange: Boolean, onConfirm: ()
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                // The dial formats its numbers with Locale.getDefault(), which the platform can reset
+                // while this dialog is open. Keyed on the selection, this recomposes ahead of the dial
+                // on each hour/minute switch and re-asserts Latin digits before the dial redraws.
+                key(state.selection) { useLatinDigitsByDefault() }
                 TimePicker(
                     state = state,
                     colors = TimePickerDefaults.colors(

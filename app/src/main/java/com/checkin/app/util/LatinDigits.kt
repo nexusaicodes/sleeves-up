@@ -21,6 +21,19 @@ import java.util.Locale
 fun Locale.withLatinDigits(): Locale = Locale.Builder().setLocale(this).setUnicodeLocaleKeyword("nu", "latn").build()
 
 /**
+ * Sets the JVM's default locale to number in Latin digits. Libraries that format with
+ * `Locale.getDefault()` rather than the activity's configuration (Material 3's time picker among
+ * them) would otherwise print Arabic-Indic digits. The platform resets the default whenever it
+ * applies a configuration: at process start, before an activity is created or recreated, and on
+ * changes that reach no app callback. So `CheckInApplication` calls this at start and on every
+ * configuration change, `MainActivity.onCreate` after each (re)creation, and `ReminderTimePicker`
+ * ahead of its dial, for a reset landing while the dialog is open.
+ */
+fun useLatinDigitsByDefault() {
+    Locale.setDefault(Locale.getDefault().withLatinDigits())
+}
+
+/**
  * An override [Configuration] carrying [base]'s locales, each numbering in Latin digits — for
  * `applyOverrideConfiguration`, so every resource the activity formats picks it up.
  */
