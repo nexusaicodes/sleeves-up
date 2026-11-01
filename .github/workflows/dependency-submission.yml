@@ -1,0 +1,41 @@
+name: Dependency submission
+
+# Submits the shipped Gradle classpath so Dependabot can alert on it; GitHub cannot read Gradle scripts.
+on:
+  push:
+    branches: [ main, 'v[0-9]*' ]
+  workflow_dispatch:
+
+concurrency:
+  group: dependency-submission-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    name: Submit Gradle dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      # Required by the Dependency Submission API.
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Set up JetBrains Runtime 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: jetbrains
+          java-version: '21'
+
+      - name: Install the compileSdk platform
+        run: >-
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-37.0"
+
+      # Stays on v5: v6 bundles a proprietary caching component.
+      - name: Generate and submit the dependency graph
+        uses: gradle/actions/dependency-submission@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+        with:
+          dependency-graph-include-configurations: '^releaseRuntimeClasspath$'
+          additional-arguments: -Dorg.gradle.java.installations.paths=${{ env.JAVA_HOME }}
