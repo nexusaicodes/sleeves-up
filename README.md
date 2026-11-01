@@ -73,7 +73,9 @@ export JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew :app:lintDebug              # Android lint
 ```
 
-CI runs all of these on push and PR to `main` and to every version branch, cheapest first. To run `staticAnalysis` before each
+CI runs all of these on push and PR to `main` and to every version branch, cheapest first. A second workflow submits the
+release dependency graph, so Dependabot can raise alerts for Gradle libraries. To report a security problem, see
+[SECURITY.md](SECURITY.md). To run `staticAnalysis` before each
 commit (once per clone):
 
 ```bash
