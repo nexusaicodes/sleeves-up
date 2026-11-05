@@ -133,10 +133,10 @@
     <string name="nudge_not_started_body_11">One session today gives the calendar its first mark.</string>
     <string name="nudge_not_started_body_12">However long it turns out to be, today can count.</string>
 
-    <string name="nudge_not_checked_in_title">%1$s: no session yet today</string>
-    <string name="nudge_not_checked_in_unnamed_title">No session yet today</string>
-    <string name="nudge_steady_title_2">%1$s: today\'s still open</string>
-    <string name="nudge_steady_title_unnamed_2">Today\'s still open</string>
+    <string name="nudge_not_checked_in_title">%1$s: make a start</string>
+    <string name="nudge_not_checked_in_unnamed_title">Make a start</string>
+    <string name="nudge_steady_title_2">%1$s: worth showing up for</string>
+    <string name="nudge_steady_title_unnamed_2">Worth showing up for</string>
     <string name="nudge_steady_title_3">%1$s: time to show up</string>
     <string name="nudge_steady_title_unnamed_3">Time to show up</string>
     <string name="nudge_steady_title_4">%1$s: a good moment to start</string>
@@ -156,12 +156,12 @@
 
     <string name="nudge_returning_title_1">%1$s: today starts fresh</string>
     <string name="nudge_returning_title_unnamed_1">Today starts fresh</string>
-    <string name="nudge_returning_title_2">%1$s: just a few minutes</string>
-    <string name="nudge_returning_title_unnamed_2">Just a few minutes</string>
+    <string name="nudge_returning_title_2">%1$s: one session makes the day</string>
+    <string name="nudge_returning_title_unnamed_2">One session makes the day</string>
     <string name="nudge_returning_title_3">%1$s: a small start counts</string>
     <string name="nudge_returning_title_unnamed_3">A small start counts</string>
-    <string name="nudge_returning_title_4">%1$s: whenever suits you</string>
-    <string name="nudge_returning_title_unnamed_4">Whenever suits you</string>
+    <string name="nudge_returning_title_4">%1$s: today can count</string>
+    <string name="nudge_returning_title_unnamed_4">Today can count</string>
     <string name="nudge_returning_body_1">Every day starts fresh. A short session today counts in full.</string>
     <string name="nudge_returning_body_2">Ten minutes counts as much as any day ever did.</string>
     <string name="nudge_returning_body_3">Nothing is owed. Just today, at whatever length suits it.</string>
