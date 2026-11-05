@@ -6,8 +6,9 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * One nudge attempt for one habit — posted, or refused by [com.checkin.app.notify.Notifier]. The
- * whole row, because the frequency rules ask nothing else of it.
+ * One nudge attempt for one habit — posted, or refused by [com.checkin.app.notify.Notifier] — and
+ * the wording it carried. Every column is read: the frequency rules read the attempt, the rotation
+ * reads the wording.
  *
  * [nudge] is the enum's name rather than its ordinal, so reordering [Nudge] cannot silently
  * reinterpret history — and rather than a [Nudge] itself, because a key an earlier build wrote must
@@ -44,4 +45,15 @@ data class NudgeSend(
      */
     @ColumnInfo(name = "habit_uuid", defaultValue = "''")
     val habitUuid: String,
+
+    /**
+     * The [NudgeCatalog] keys of the title and body the post carried, read back by
+     * [NudgeSendDao.shownSince] so the next one rotates. Null on rows written before variants
+     * existed.
+     */
+    @ColumnInfo(name = "title_key")
+    val titleKey: String? = null,
+
+    @ColumnInfo(name = "body_key")
+    val bodyKey: String? = null,
 )

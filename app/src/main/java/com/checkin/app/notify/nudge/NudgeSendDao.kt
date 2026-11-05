@@ -5,7 +5,7 @@ import androidx.room.Insert
 import androidx.room.Query
 
 /**
- * Three statements, and every one of them drives behaviour. Nothing here exists to be read back
+ * Four statements, and every one of them drives behaviour. Nothing here exists to be read back
  * later by a person — see [NudgeSendLog].
  */
 @Dao
@@ -26,6 +26,13 @@ interface NudgeSendDao {
      */
     @Query("SELECT * FROM nudge_sends WHERE at >= :since ORDER BY at ASC, id ASC")
     suspend fun attemptsSince(since: Long): List<NudgeSend>
+
+    /**
+     * [habitUuid]'s posts since [since], for rotating its wording. Refused attempts are left out:
+     * a wording nobody was shown has not been used.
+     */
+    @Query("SELECT * FROM nudge_sends WHERE habit_uuid = :habitUuid AND at >= :since AND posted = 1")
+    suspend fun shownSince(habitUuid: String, since: Long): List<NudgeSend>
 
     @Query("DELETE FROM nudge_sends WHERE at < :before")
     suspend fun deleteOlderThan(before: Long)

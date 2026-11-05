@@ -14,6 +14,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.Instant
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
 
@@ -139,9 +140,17 @@ class NudgeDispatcher(
         NotificationIds.RETIRED_NUDGES.forEach { notifier.cancel(it) }
     }
 
-    /** Posts [nudge] for [habit], records the attempt, and reports whether it reached the tray. */
+    /**
+     * Posts [nudge] for [habit] in the voice its record calls for, records the attempt and its
+     * wording, and reports whether it reached the tray.
+     */
     private suspend fun send(habit: Habit, nudge: Nudge, nowMillis: Long): Boolean {
-        val copy = NudgeCatalog.copyFor(nudge)
+        val today = Instant.ofEpochMilli(nowMillis).atZone(timeSource.zone()).toLocalDate()
+        val copy = NudgeCatalog.copyFor(nudge, voiceOf(habit, today))
+        val shown = shownWording(habit.uuid, nowMillis)
+        val seed = NudgeVoice.seedFor(habit.uuid, today)
+        val title = NudgeVoice.pick(copy.titles, shown, seed)
+        val body = NudgeVoice.pick(copy.bodies, shown, seed)
         // A post to a channel that does not exist is discarded — and recorded below as a refusal,
         // spending the habit's day. The channels are reconciled off the habits table, but on a
         // process this alarm just started that collector may not have run yet.
@@ -151,8 +160,8 @@ class NudgeDispatcher(
             NotificationSpec(
                 id = nudge.notificationIdFor(habit.id),
                 channelId = habit.channelId,
-                title = name?.let { strings.format(copy.titleRes, it) } ?: strings.get(copy.unnamedTitleRes),
-                body = strings.get(copy.bodyRes),
+                title = name?.let { strings.format(title.titleRes, it) } ?: strings.get(title.unnamedTitleRes),
+                body = strings.get(body.bodyRes),
                 launchExtra = LaunchExtras.CHECK_IN,
                 launchHabitUuid = habit.uuid,
             ),
@@ -160,8 +169,38 @@ class NudgeDispatcher(
         // Notifications can be refused (permission revoked, notifications off, the habit's channel or
         // their group blocked). The attempt is recorded either way, flagged, so the habit's day is
         // spent without spacing any other habit's reminder off a notification nobody was shown.
-        sendLog().record(habit.uuid, nudge, nowMillis, posted)
+        sendLog().record(habit.uuid, nudge, nowMillis, posted, title.key, body.key)
         return posted
+    }
+
+    /**
+     * The voice for [habit]'s reminder on [today]. A failed read falls back to the steady voice: the
+     * wording is never worth the reminder itself.
+     */
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    private suspend fun voiceOf(habit: Habit, today: LocalDate): NudgeVoice.Voice = try {
+        NudgeVoice.voiceFor(repository.lastSessionDayBefore(habit.id, today), today)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        NudgeVoice.Voice.STEADY
+    }
+
+    /**
+     * When each wording [habitUuid]'s reminders carried was last shown, within
+     * [NudgeVoice.HISTORY_MS]. Title and body keys share one map, since no key is both. A failed read
+     * is an empty history, which still yields a seeded pick.
+     */
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    private suspend fun shownWording(habitUuid: String, nowMillis: Long): Map<String, Long> = try {
+        sendLog().shownSince(habitUuid, nowMillis - NudgeVoice.HISTORY_MS)
+            .flatMap { row -> listOfNotNull(row.titleKey, row.bodyKey).map { it to row.atMillis } }
+            .groupingBy { it.first }
+            .fold(Long.MIN_VALUE) { latest, (_, at) -> maxOf(latest, at) }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        emptyMap()
     }
 
     /** Must be called holding [passLock]. Reads afresh, so it sees whatever the pass just recorded. */
