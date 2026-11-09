@@ -1,4 +1,4 @@
-package com.checkin.app.ui.presence
+package com.checkin.app.launch
 
 import com.checkin.app.data.local.Habit
 

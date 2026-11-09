@@ -1,8 +1,8 @@
 package com.checkin.app
 
 import com.checkin.app.data.local.Habit
-import com.checkin.app.ui.presence.TapOutcome
-import com.checkin.app.ui.presence.TapRouting
+import com.checkin.app.launch.TapOutcome
+import com.checkin.app.launch.TapRouting
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

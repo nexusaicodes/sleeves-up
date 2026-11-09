@@ -7,6 +7,7 @@ import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.CheckInSessionDao
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.local.DailyAggregate
+import com.checkin.app.data.local.byDateKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -120,7 +121,7 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
         dao.getDailyAggregatesFlow(habitId, startDate, endDate)
 
     suspend fun getDailySummaries(habitId: Long, startDate: String, endDate: String): Map<String, DailyAggregate> =
-        byDateKey(dao.getDailyAggregates(habitId, startDate, endDate))
+        dao.getDailyAggregates(habitId, startDate, endDate).byDateKey()
 
     /**
      * Where [habitId]'s windows end on [today] ([ConsistencyStats.countedThrough]), off a one-day
@@ -129,7 +130,7 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
     fun countedThroughFlow(habitId: Long, today: LocalDate): Flow<LocalDate> {
         val todayKey = today.format(dateFormatter)
         return dailyAggregatesFlow(habitId, todayKey, todayKey)
-            .map { ConsistencyStats.countedThrough(byDateKey(it), today) }
+            .map { ConsistencyStats.countedThrough(it.byDateKey(), today) }
             .distinctUntilChanged()
     }
 
@@ -138,12 +139,6 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
         val todayKey = today.format(dateFormatter)
         return ConsistencyStats.countedThrough(getDailySummaries(habitId, todayKey, todayKey), today)
     }
-
-    /**
-     * Keys aggregates by their day. A day present in the map is a day the user showed up; a day
-     * absent from it is one they didn't — which is the whole of what the app decides about a day.
-     */
-    fun byDateKey(aggregates: List<DailyAggregate>): Map<String, DailyAggregate> = aggregates.associateBy { it.dateKey }
 
     fun sessionsForDateFlow(habitId: Long, dateKey: String): Flow<List<CheckInSession>> =
         dao.getSessionsByDateFlow(habitId, dateKey)

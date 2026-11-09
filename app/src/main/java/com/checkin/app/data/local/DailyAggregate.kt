@@ -27,3 +27,9 @@ data class DailyAggregate(
     val reminderNotificationCheckOuts: Int,
     val widgetCheckOuts: Int,
 )
+
+/**
+ * Keys aggregates by their day. A day present in the map is a day the user showed up; a day absent
+ * from it is one they didn't — which is the whole of what the app decides about a day.
+ */
+fun List<DailyAggregate>.byDateKey(): Map<String, DailyAggregate> = associateBy { it.dateKey }

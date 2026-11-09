@@ -2,6 +2,7 @@ package com.checkin.app.platform
 
 import com.checkin.app.data.local.DailyAggregate
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -13,9 +14,9 @@ import java.util.Locale
  * pin — [DefaultCsvExporter] needs a `Context` and cannot be. The frozen column order belongs with
  * the functions that spell it, not inside a file about file I/O and share sheets.
  *
- * What is *not* here is the range: the exporter is handed two `date_key` strings already clamped by
- * `ReportScope.resolve`, so the file and the screen it was exported from cannot describe different
- * days.
+ * What is *not* decided here is the range: [csvLines] is handed two `date_key` strings already
+ * clamped by `ReportScope.resolve`, so the file and the screen it was exported from cannot describe
+ * different days.
  */
 
 /**
@@ -73,6 +74,19 @@ private fun csvClock(epochMillis: Long): String =
  * bytes a test pins and the bytes a file gets are the same expression.
  */
 internal fun csvHeader(): String = CSV_HEADER
+
+/**
+ * Every line of the file, header first, then one row per day from [startKey] to [endKey] inclusive.
+ * A day with no summary is a row of zeros, not a missing row: a script reading the file counts
+ * days, and a gap would read as a day the export forgot. The keys are `date_key`s (ISO dates).
+ */
+internal fun csvLines(startKey: String, endKey: String, summaries: Map<String, DailyAggregate>): Sequence<String> {
+    val end = LocalDate.parse(endKey, DateTimeFormatter.ISO_LOCAL_DATE)
+    val days = generateSequence(LocalDate.parse(startKey, DateTimeFormatter.ISO_LOCAL_DATE)) { it.plusDays(1) }
+        .takeWhile { !it.isAfter(end) }
+        .map { day -> day.format(DateTimeFormatter.ISO_LOCAL_DATE).let { key -> csvRow(key, summaries[key]) } }
+    return sequenceOf(csvHeader()) + days
+}
 
 /**
  * The exported file's name: `checkin_<habit>_<start>_<end>.csv`, the habit reduced to letters, their

@@ -6,11 +6,12 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.checkin.app.CheckInApplication
-import com.checkin.app.data.ConsistencyStats
+import com.checkin.app.data.MonthSteps
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.dayTrigger
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.DailyAggregate
+import com.checkin.app.data.local.byDateKey
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.HabitRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,7 +44,7 @@ data class HistoryUiState(
     val selectedDaySessions: List<CheckInSession> = emptyList(),
 ) {
     /** Whether a later month exists to step to: false on the month in progress. */
-    val hasNextMonth: Boolean get() = ConsistencyStats.hasMonthAfter(currentMonth, today)
+    val hasNextMonth: Boolean get() = MonthSteps.hasMonthAfter(currentMonth, today)
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -75,7 +76,7 @@ class HistoryViewModel(
                 habit,
                 month.atDay(1).format(dateFormatter),
                 month.atEndOfMonth().format(dateFormatter),
-            ).map { month to repository.byDateKey(it) }
+            ).map { month to it.byDateKey() }
         }
 
     // The key travels **with** its rows. Read as two combine sources, a tap on a new day emits the
@@ -142,7 +143,7 @@ class HistoryViewModel(
 
     /** Stops at the month in progress: a month that has not begun holds no day to look back on. */
     fun nextMonth() {
-        if (!ConsistencyStats.hasMonthAfter(currentMonth.value, day.value)) return
+        if (!MonthSteps.hasMonthAfter(currentMonth.value, day.value)) return
         currentMonth.value = currentMonth.value.plusMonths(1)
         selectedDateKey.value = null
     }

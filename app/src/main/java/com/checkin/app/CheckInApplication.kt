@@ -27,8 +27,8 @@ class CheckInApplication : Application() {
         // Alarms do not survive a force stop, a package replace or a reboot, and every one of those is
         // followed by a process start — the receivers for boot and replace run in one — so the habits
         // collector's first emission is the single site that puts the nudge alarm back. It runs off
-        // the main thread and never throws; see AppContainer.launchHabitSync.
-        container.launchHabitSync()
+        // the main thread and never throws; see HabitSync.
+        container.habitSync.start()
         // Same pattern, same reason: a placed widget follows the tables from the process start onward.
         container.widgetSync.start()
         // Off the main thread: blocking filesystem work nothing waits on, and every path that reaches

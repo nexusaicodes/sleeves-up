@@ -1,6 +1,7 @@
 package com.checkin.app
 
 import com.checkin.app.data.ConsistencyStats
+import com.checkin.app.data.MonthSteps
 import com.checkin.app.data.local.DailyAggregate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -80,8 +81,8 @@ class ConsistencyStatsTest {
     @Test
     fun `a month stepper stops at the month today falls in, across a year end`() {
         val today = LocalDate.of(2027, 1, 1)
-        assertTrue(ConsistencyStats.hasMonthAfter(YearMonth.of(2026, 12), today))
-        assertFalse(ConsistencyStats.hasMonthAfter(YearMonth.of(2027, 1), today))
-        assertFalse(ConsistencyStats.hasMonthAfter(YearMonth.of(2027, 2), today))
+        assertTrue(MonthSteps.hasMonthAfter(YearMonth.of(2026, 12), today))
+        assertFalse(MonthSteps.hasMonthAfter(YearMonth.of(2027, 1), today))
+        assertFalse(MonthSteps.hasMonthAfter(YearMonth.of(2027, 2), today))
     }
 }
