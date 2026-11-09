@@ -167,7 +167,7 @@ class SessionLifecycle(
      * between keeps its alarms. Cancels nothing if nothing was closed. Returns the closed row.
      */
     suspend fun close(closedBy: ClosedBy): CheckInSession? = lock.withLock {
-        repository.checkOutActiveSession(closedBy)?.also {
+        repository.checkOut(closedBy)?.also {
             alarms.cancelAll()
             zones.clear()
         }
