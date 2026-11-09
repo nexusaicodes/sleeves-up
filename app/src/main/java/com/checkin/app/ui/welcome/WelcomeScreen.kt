@@ -211,7 +211,7 @@ private fun WelcomePageContent(page: WelcomePage, onAddWidget: (() -> Unit)?, in
 /** An expression, so adding a [WelcomeIcon] fails to compile rather than falling through to a bell. */
 @Composable
 private fun PageIcon(icon: WelcomeIcon) = when (icon) {
-    WelcomeIcon.CHECK_IN_MARK -> MessageIcon(painterResource(R.drawable.ic_stat_checkin))
+    WelcomeIcon.CHECK_IN_MARK -> MessageIcon(painterResource(R.drawable.ic_stat_check_in))
     // The camera disclosure's own icon, so the screen met at the first check-in reads as a
     // continuation of this one.
     WelcomeIcon.FACE -> MessageIcon(SparkIcon.Vector(Icons.Rounded.Face))

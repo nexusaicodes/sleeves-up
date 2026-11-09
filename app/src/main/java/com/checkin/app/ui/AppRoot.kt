@@ -20,7 +20,7 @@ import androidx.navigation.compose.rememberNavController
 import com.checkin.app.CheckInApplication
 import com.checkin.app.notify.holdsNotificationPermission
 import com.checkin.app.notify.notificationsNeedRuntimeGrant
-import com.checkin.app.platform.PromptSettings
+import com.checkin.app.platform.SeenPrompts
 import com.checkin.app.ui.checkin.CheckOutCelebration
 import com.checkin.app.ui.checkin.CheckOutSignal
 import com.checkin.app.ui.habits.HabitPickerScreen
@@ -69,7 +69,7 @@ import com.checkin.app.ui.welcome.rememberWidgetPage
 fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
     val context = LocalContext.current
     val container = remember(context) { (context.applicationContext as CheckInApplication).container }
-    val settings = container.settings
+    val settings = container.prompts
     val gateRequest by PresenceCheckSignal.request.collectAsStateWithLifecycle()
     val resolvingTaps by PresenceCheckSignal.resolvingTaps.collectAsStateWithLifecycle()
     val completed by CheckOutSignal.completed.collectAsStateWithLifecycle()
@@ -78,7 +78,7 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
     val habitsViewModel: HabitsViewModel = viewModel(factory = HabitsViewModel.Factory)
     val habits by habitsViewModel.uiState.collectAsStateWithLifecycle()
 
-    // Both mirrored so ending the welcome recomposes: PromptSettings is a synchronous prefs read
+    // Both mirrored so ending the welcome recomposes: SeenPrompts is a synchronous prefs read
     // with no Flow behind it, so the writes alone would leave the tour on screen — and a skip
     // resolves the notification ask too, which the step below has to see on the same frame.
     var seenWelcome by rememberSaveable { mutableStateOf(settings.hasSeenWelcome()) }
@@ -224,7 +224,7 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
  * [onAsked] runs once the flag is written: first run has ended, so the nudge chain it held can start.
  */
 @Composable
-private fun NotificationPermissionOnFirstOpen(settings: PromptSettings, onAsked: () -> Unit) {
+private fun NotificationPermissionOnFirstOpen(settings: SeenPrompts, onAsked: () -> Unit) {
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         // The outcome is deliberately unused: the grant is re-read wherever it matters, and a

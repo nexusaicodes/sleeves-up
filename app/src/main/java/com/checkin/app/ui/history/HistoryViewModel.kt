@@ -156,7 +156,7 @@ class HistoryViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val container = (this[APPLICATION_KEY] as CheckInApplication).container
-                HistoryViewModel(container.repository, container.habitRepository, container.timeSource)
+                HistoryViewModel(container.checkInRepository, container.habitRepository, container.timeSource)
             }
         }
     }

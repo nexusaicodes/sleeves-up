@@ -223,7 +223,7 @@
          and arrives here as a phrase. -->
     <string name="cd_start_time_split">Start times: %1$s in the morning, %2$s in the afternoon, %3$s in the evening</string>
     <string name="cd_sessions_per_day_split">Sessions per day: %1$s with one session, %2$s with two, %3$s with three or more. Average %4$s.</string>
-    <!-- The gauge is the open session, never the day's total (see TimerGauge), so this must name the
+    <!-- The gauge is the open session, never the day's total (see SessionTimer), so this must name the
          session rather than the day. Its ring sweeps hourly and means nothing as a fraction, so this
          states the time and only the time — a sweep position read as progress would invent a goal. -->
     <string name="cd_timer_gauge">%1$s this session</string>

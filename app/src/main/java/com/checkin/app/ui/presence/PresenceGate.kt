@@ -58,7 +58,7 @@ private fun presencePermissions(): Array<String> = if (notificationsNeedRuntimeG
 fun PresenceGate(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val settings = remember(context) {
-        (context.applicationContext as CheckInApplication).container.settings
+        (context.applicationContext as CheckInApplication).container.prompts
     }
 
     var disclosureSeen by rememberSaveable { mutableStateOf(settings.hasSeenCameraDisclosure()) }

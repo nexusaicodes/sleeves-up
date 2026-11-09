@@ -117,7 +117,7 @@
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/check_in_widget_info" />
+                android:resource="@xml/widget_check_in_info" />
         </receiver>
 
         <provider

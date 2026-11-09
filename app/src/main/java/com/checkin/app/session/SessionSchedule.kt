@@ -20,7 +20,7 @@ object SessionSchedule {
      *
      * Two hours: close enough together that a session forgotten in the morning is caught in the
      * afternoon, far enough apart that one deliberately left running is not harassed. Only the first
-     * of a session alerts — see [SessionLifecycleRunner.onReminderFired].
+     * of a session alerts — see [SessionLifecycle.onReminderFired].
      */
     const val REMINDER_INTERVAL_MS = 120L * MILLIS_PER_MINUTE
 
@@ -41,7 +41,7 @@ object SessionSchedule {
      * The local midnight that ends the day named by an ISO `date_key`.
      *
      * Derived from the session's own day rather than from when the alarm fired, since an inexact
-     * alarm may land hours late (see [SessionLifecycleRunner.onDayBoundaryFired]). Returns null on a
+     * alarm may land hours late (see [SessionLifecycle.onDayBoundaryFired]). Returns null on a
      * malformed key rather than throwing, matching how the rest of the app treats `date_key`.
      */
     @Suppress("SwallowedException")

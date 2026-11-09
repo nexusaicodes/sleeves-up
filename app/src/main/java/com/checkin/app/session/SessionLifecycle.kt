@@ -59,7 +59,7 @@ import java.time.ZoneId
  * **Every entry point holds one lock** across its session read and alarm writes: `onStart`'s
  * [ensureArmed] runs beside a check-in's [arm], and unlocked could cancel the alarms just set.
  */
-class SessionLifecycleRunner(
+class SessionLifecycle(
     private val repository: CheckInRepository,
     private val notifier: Notifier,
     private val strings: StringResolver,
@@ -167,7 +167,7 @@ class SessionLifecycleRunner(
      * between keeps its alarms. Cancels nothing if nothing was closed. Returns the closed row.
      */
     suspend fun close(closedBy: ClosedBy): CheckInSession? = lock.withLock {
-        repository.checkOutActiveSession(closedBy)?.also {
+        repository.checkOut(closedBy)?.also {
             alarms.cancelAll()
             zones.clear()
         }

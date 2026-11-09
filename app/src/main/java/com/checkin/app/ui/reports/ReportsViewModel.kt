@@ -282,7 +282,7 @@ class ReportsViewModel(
             initializer {
                 val container = (this[APPLICATION_KEY] as CheckInApplication).container
                 ReportsViewModel(
-                    container.repository,
+                    container.checkInRepository,
                     container.habitRepository,
                     container.timeSource,
                     container.csvExporter,

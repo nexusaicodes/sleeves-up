@@ -22,7 +22,7 @@ import androidx.core.content.edit
  * in two files, and missing either restores onto a device asserting a prompt was raised where it
  * never was. A key added later defaults false and so is shown to everyone once, by design.
  */
-interface PromptSettings {
+interface SeenPrompts {
     /** Whether the camera prominent-disclosure screen has already been shown and accepted. */
     fun hasSeenCameraDisclosure(): Boolean
 
@@ -59,7 +59,7 @@ interface PromptSettings {
     fun markUpdateOffered(versionCode: Int)
 }
 
-class SharedPrefsPromptSettings(private val prefs: SharedPreferences) : PromptSettings {
+class SharedPrefsSeenPrompts(private val prefs: SharedPreferences) : SeenPrompts {
 
     companion object {
         const val NAME = "prompt_prefs"
@@ -70,7 +70,7 @@ class SharedPrefsPromptSettings(private val prefs: SharedPreferences) : PromptSe
         private const val KEY_WIDGET_PAGE_SEEN = "widget_page_seen"
         private const val KEY_UPDATE_OFFERED_VERSION_CODE = "update_offered_version_code"
 
-        fun create(context: Context) = SharedPrefsPromptSettings(
+        fun create(context: Context) = SharedPrefsSeenPrompts(
             context.applicationContext.getSharedPreferences(NAME, Context.MODE_PRIVATE),
         )
     }

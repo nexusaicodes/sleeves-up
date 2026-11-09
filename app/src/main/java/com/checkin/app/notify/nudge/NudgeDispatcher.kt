@@ -21,6 +21,8 @@ import java.time.temporal.ChronoField
 
 /**
  * Assembles a snapshot per active habit, asks [NudgeEligibility] what to send, and posts the result.
+ * Callers outside the nudge layer reach it through [GuardedNudges], which never throws and falls
+ * back to a fixed alarm when this cannot be built.
  *
  * [runOnce] is the only way a nudge is ever posted — there is no bypass and no forced send, so the
  * copy a device shows is whatever eligibility produces.
@@ -163,7 +165,7 @@ class NudgeDispatcher(
                 channelId = habit.channelId,
                 title = name?.let { strings.format(title.titleRes, it) } ?: strings.get(title.unnamedTitleRes),
                 body = strings.get(body.bodyRes),
-                launchExtra = LaunchExtras.CHECK_IN,
+                launchExtra = LaunchExtras.NUDGE_TAP,
                 launchHabitUuid = habit.uuid,
             ),
         )

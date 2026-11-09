@@ -7,7 +7,7 @@ import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.CheckInResult
 import com.checkin.app.notify.StringResolver
 import com.checkin.app.session.SessionActions
-import com.checkin.app.session.SessionLifecycleRunner
+import com.checkin.app.session.SessionLifecycle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -34,7 +34,7 @@ class SessionActionsTest {
         val actions = SessionActions(
             repository = repo,
             serviceController = service,
-            lifecycle = SessionLifecycleRunner(
+            lifecycle = SessionLifecycle(
                 repo,
                 FakeNotifier(),
                 StringResolver {

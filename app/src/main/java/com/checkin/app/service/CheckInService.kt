@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
  * Shows the ongoing timer for an active session, and only that.
  *
  * The platform draws the elapsed time from a single post (see [NotificationSpec.chronometerBase]),
- * and the session's reminder and day-boundary close run off alarms ([SessionLifecycleRunner]), so
+ * and the session's reminder and day-boundary close run off alarms ([SessionLifecycle]), so
  * this posts on state changes only — a handful of times per session. **Do not add a ticker.** A
  * per-second re-post is tens of thousands of main-thread binder calls into the system over a long
  * session, as many chances for one to throw, and the behavioural signature OEM background management
@@ -63,7 +63,7 @@ class CheckInService : Service() {
     )
 
     private val container by lazy { (application as CheckInApplication).container }
-    private val repository by lazy { container.repository }
+    private val repository by lazy { container.checkInRepository }
     private val notifier: Notifier by lazy { container.notifier }
     private val notificationFactory: NotificationFactory by lazy { container.notificationFactory }
 
@@ -327,7 +327,7 @@ class CheckInService : Service() {
         }
     }
 
-    /** Clears the render mirror but leaves the alarm state to [SessionLifecycleRunner.close]. */
+    /** Clears the render mirror but leaves the alarm state to [SessionLifecycle.close]. */
     private fun clearState() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit {
             remove(KEY_SESSION_ID)

@@ -14,7 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LifecycleStartEffect
 import com.checkin.app.di.AppContainer
-import com.checkin.app.platform.PromptSettings
+import com.checkin.app.platform.SeenPrompts
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -26,7 +26,7 @@ import kotlinx.coroutines.withContext
  */
 @Stable
 class WidgetPageState internal constructor(
-    private val settings: PromptSettings,
+    private val settings: SeenPrompts,
     private val seenState: MutableState<Boolean>,
     private val dueState: MutableState<Boolean>,
     private val canPinState: State<Boolean?>,
@@ -57,7 +57,7 @@ class WidgetPageState internal constructor(
  */
 @Composable
 fun rememberWidgetPage(container: AppContainer, step: FirstRun.Step, seenWelcome: Boolean): WidgetPageState {
-    val settings = container.settings
+    val settings = container.prompts
     val widgets = container.homeWidgets
     val seen = rememberSaveable { mutableStateOf(settings.hasSeenWidgetPage()) }
     val due = remember { mutableStateOf(false) }
@@ -92,7 +92,7 @@ fun rememberWidgetPage(container: AppContainer, step: FirstRun.Step, seenWelcome
             return@LaunchedEffect
         }
         val days = try {
-            container.repository.daysWithSession(container.habitRepository.selectedHabitIdFlow().first())
+            container.checkInRepository.daysWithSession(container.habitRepository.selectedHabitIdFlow().first())
         } catch (e: CancellationException) {
             throw e
         } catch (@Suppress("TooGenericExceptionCaught") _: Exception) {

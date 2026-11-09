@@ -100,10 +100,11 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
         dao.getSessionById(sessionId)?.let { close(it, atMillis, closedBy) }
 
     /**
-     * Checks out whatever session is open, for callers that don't hold its id. Returns the closed
-     * row, or null when nothing was open.
+     * Closes whatever session is open, at now — the counterpart of [checkIn], and every gated
+     * check-out's write (through `SessionLifecycle.close`). A person checking out holds no id, only
+     * "the open one". Returns the closed row, or null when nothing was open.
      */
-    suspend fun checkOutActiveSession(closedBy: ClosedBy): CheckInSession? =
+    suspend fun checkOut(closedBy: ClosedBy): CheckInSession? =
         dao.getActiveSession()?.let { close(it, timeSource.nowMillis(), closedBy) }
 
     /** The write behind every check-out, on [session] as already read; null if it closed since. */

@@ -17,7 +17,7 @@ import com.checkin.app.time.TimeSource
  * force stop and a package replace cancel a package's alarms; a plain process kill does not. So the
  * service running says nothing about whether the day-boundary close is still standing, and the
  * alarms are ensured on every pass, before the service is even looked at — see
- * [SessionLifecycleRunner.ensureArmed] for what that repair costs to skip.
+ * [SessionLifecycle.ensureArmed] for what that repair costs to skip.
  *
  * The revive is best-effort by necessity. Starting a foreground service from the background is
  * restricted, so the call can be refused outright depending on where it is invoked from. There are
@@ -30,7 +30,7 @@ import com.checkin.app.time.TimeSource
 class SessionWatchdog(
     private val repository: CheckInRepository,
     private val serviceController: ServiceController,
-    private val sessionLifecycleRunner: SessionLifecycleRunner,
+    private val sessionLifecycle: SessionLifecycle,
     private val timeSource: TimeSource,
     /** Injected so the decision is testable without a live service. */
     private val serviceRunning: () -> Boolean = { CheckInService.isRunning },
@@ -57,7 +57,7 @@ class SessionWatchdog(
         // open and the service perfectly able to restart itself, so gating this on the service
         // being down is exactly how a session loses its day-boundary close and keeps its timer.
         // Reports false when there is no open session, in which case it has dropped the alarms.
-        if (!sessionLifecycleRunner.ensureArmed(timeSource.nowMillis())) return false
+        if (!sessionLifecycle.ensureArmed(timeSource.nowMillis())) return false
 
         if (serviceRunning()) return false
         val active = repository.getActiveSession() ?: return false

@@ -11,7 +11,7 @@ import java.util.Locale
  * The CSV's shape, kept apart from the class that writes and shares the file.
  *
  * This is a data contract people script against, and it is pure, so it is the half a JVM test can
- * pin — [DefaultCsvExporter] needs a `Context` and cannot be. The frozen column order belongs with
+ * pin — [AndroidCsvExporter] needs a `Context` and cannot be. The frozen column order belongs with
  * the functions that spell it, not inside a file about file I/O and share sheets.
  *
  * What is *not* decided here is the range: [csvLines] is handed two `date_key` strings already
