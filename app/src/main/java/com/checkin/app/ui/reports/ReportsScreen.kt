@@ -20,9 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -40,20 +37,18 @@ import com.checkin.app.R
 import com.checkin.app.data.SessionBand
 import com.checkin.app.data.StartBucket
 import com.checkin.app.platform.ExportResult
-import com.checkin.app.ui.components.AppIconButton
-import com.checkin.app.ui.components.AppIcons
 import com.checkin.app.ui.components.AxisLabel
 import com.checkin.app.ui.components.ChartCard
 import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.LegendRow
 import com.checkin.app.ui.components.LocalSnackbarHostState
+import com.checkin.app.ui.components.MonthStepper
 import com.checkin.app.ui.components.SectionDivider
 import com.checkin.app.ui.components.StatsRow
 import com.checkin.app.ui.components.charts.BarChart
 import com.checkin.app.ui.components.charts.DonutChart
 import com.checkin.app.ui.components.charts.DonutChartDefaults
 import com.checkin.app.ui.components.charts.LineChart
-import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.ui.theme.dayColor
 import com.checkin.app.ui.theme.descriptiveHues
@@ -177,37 +172,15 @@ private fun ScopeSelector(
             singleLine(text = stringResource(R.string.scope_month), selected = !allTime, onClick = onSelectMonth)
             singleLine(text = stringResource(R.string.scope_all_time), selected = allTime, onClick = onSelectAllTime)
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // The steppers hold their slot under all time rather than vanishing, so the row does not
-            // reflow around the choice every time it changes.
-            AppIconButton(
-                icon = AppIcons.ChevronStart,
-                contentDescription = stringResource(R.string.previous_month),
-                onClick = onPrevious,
-                enabled = !allTime,
-            )
-            Text(
-                text = scopeLabel(scope),
-                style = LocalAppTypography.current.titleLarge,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                // Two lines rather than one: at a large font scale a single line clips "August 2026"
-                // to "Augus…", and a truncated month is not a date the user can read.
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            AppIconButton(
-                icon = AppIcons.ChevronEnd,
-                contentDescription = stringResource(R.string.next_month),
-                onClick = onNext,
-                enabled = hasNextMonth,
-            )
-        }
+        // The steppers hold their slot under all time rather than vanishing, so the row does not
+        // reflow around the choice every time it changes.
+        MonthStepper(
+            label = scopeLabel(scope),
+            previousEnabled = !allTime,
+            nextEnabled = hasNextMonth,
+            onPrevious = onPrevious,
+            onNext = onNext,
+        )
     }
 }
 

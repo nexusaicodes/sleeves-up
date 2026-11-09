@@ -1,4 +1,4 @@
-package com.checkin.app.ui.components
+package com.checkin.app.ui.habits
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
