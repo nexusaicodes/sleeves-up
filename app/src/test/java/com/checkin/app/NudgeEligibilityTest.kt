@@ -30,7 +30,6 @@ class NudgeEligibilityTest {
         hasCheckedInToday: Boolean = false,
         spentToday: Set<Nudge> = emptySet(),
         lastShownAtMs: Long? = null,
-        config: NudgeConfig = NudgeConfig(),
         nowMillis: Long = 100 * hour,
         minute: Int = 0,
         reminderMinute: Int = 0,
@@ -41,7 +40,6 @@ class NudgeEligibilityTest {
         hasCheckedInToday = hasCheckedInToday,
         spentToday = spentToday,
         lastShownAtMs = lastShownAtMs,
-        config = config,
     )
 
     /**
@@ -117,7 +115,7 @@ class NudgeEligibilityTest {
     @Test
     fun `a nudge is refused until the minimum gap after any habit's has passed`() {
         val now = 100 * hour
-        val gap = NudgeConfig().minGapMs
+        val gap = NudgeConfig.MIN_GAP_MS
 
         assertNull(NudgeEligibility.select(eligible(hourOfDay = 12, lastShownAtMs = now - gap + 1, nowMillis = now)))
         assertEquals(
@@ -179,7 +177,7 @@ class NudgeEligibilityTest {
         val snapshot = live(at(chosen), lastShownAtMs = lastShown)
 
         assertNull(NudgeEligibility.select(snapshot))
-        assertEquals(lastShown + NudgeConfig().minGapMs, NudgeEligibility.nextEligibleAt(snapshot, utc))
+        assertEquals(lastShown + NudgeConfig.MIN_GAP_MS, NudgeEligibility.nextEligibleAt(snapshot, utc))
     }
 
     @Test
@@ -201,7 +199,7 @@ class NudgeEligibilityTest {
         val lastShown = now + 3 * hour
 
         assertEquals(
-            lastShown + NudgeConfig().minGapMs,
+            lastShown + NudgeConfig.MIN_GAP_MS,
             NudgeEligibility.nextEligibleAt(live(now, lastShownAtMs = lastShown), utc),
         )
     }
@@ -288,7 +286,7 @@ class NudgeEligibilityTest {
 
     // --- nextAlarmAt ---
 
-    private val delay = NudgeConfig().dueNowDelayMs
+    private val delay = NudgeConfig.DUE_NOW_DELAY_MS
 
     /**
      * The alarm never fires straight away. A due nudge is armed off the back of a process start or a
@@ -355,7 +353,7 @@ class NudgeEligibilityTest {
         val heldBack = live(now, lastShownAtMs = at(9), reminderHour = 9)
 
         assertEquals(
-            at(9) + NudgeConfig().minGapMs,
+            at(9) + NudgeConfig.MIN_GAP_MS,
             NudgeEligibility.nextAlarmAcross(listOf(reminded, heldBack), utc),
         )
     }

@@ -383,7 +383,7 @@ class NudgeDispatcherTest {
         val reminded = dispatcher().runOnce()
 
         assertEquals(listOf(Habit.SEED_ID), reminded.map { it.id })
-        assertEquals(listOf(triggerHour + NudgeConfig().minGapMs), alarms.armed)
+        assertEquals(listOf(triggerHour + NudgeConfig.MIN_GAP_MS), alarms.armed)
     }
 
     @Test
@@ -391,7 +391,7 @@ class NudgeDispatcherTest {
         val gym = newHabit("Gym", chosenHour)
         dispatcher().runOnce()
 
-        val later = dispatcher(FakeTimeSource(triggerHour + NudgeConfig().minGapMs, today)).runOnce()
+        val later = dispatcher(FakeTimeSource(triggerHour + NudgeConfig.MIN_GAP_MS, today)).runOnce()
 
         assertEquals(listOf(gym.id), later.map { it.id })
     }
@@ -447,7 +447,7 @@ class NudgeDispatcherTest {
 
         dispatcher(FakeTimeSource(now, today)).rearm()
 
-        assertEquals(listOf(now + NudgeConfig().dueNowDelayMs), alarms.armed)
+        assertEquals(listOf(now + NudgeConfig.DUE_NOW_DELAY_MS), alarms.armed)
     }
 
     /**
@@ -481,7 +481,7 @@ class NudgeDispatcherTest {
         }
 
         assertTrue(dispatcher(sendLog = { throwing }).runOnce().isEmpty())
-        assertEquals(listOf(triggerHour + NudgeConfig().dueNowDelayMs), alarms.armed)
+        assertEquals(listOf(triggerHour + NudgeConfig.DUE_NOW_DELAY_MS), alarms.armed)
     }
 
     /**

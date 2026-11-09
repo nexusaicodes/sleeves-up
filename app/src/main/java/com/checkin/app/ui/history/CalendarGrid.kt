@@ -257,16 +257,18 @@ private const val DAYS_PER_WEEK = 7
 /**
  * The column [month]'s first day falls into, under [locale]'s week start — the theme's resolved
  * locale, so the grid and the dates around it agree on which language they are in.
- *
- * Shared with `HistoryScreen`, which needs the row count below to size a cell *before* this grid is
- * composed. Two derivations of the same geometry is how the height gets computed for a different
- * number of rows than the grid then draws.
  */
-internal fun startOffsetIn(month: YearMonth, locale: Locale): Int {
+private fun startOffsetIn(month: YearMonth, locale: Locale): Int {
     val firstDayOfWeek = WeekFields.of(locale).firstDayOfWeek
     return (month.atDay(1).dayOfWeek.value - firstDayOfWeek.value + DAYS_PER_WEEK) % DAYS_PER_WEEK
 }
 
-/** Week rows [month] occupies — 4 to 6. A partial trailing week still takes a row, so this rounds up. */
+/**
+ * Week rows [month] occupies — 4 to 6. A partial trailing week still takes a row, so this rounds up.
+ *
+ * Shared with `HistoryScreen`, which needs the row count to size a cell *before* this grid is
+ * composed. Two derivations of the same geometry is how the height gets computed for a different
+ * number of rows than the grid then draws.
+ */
 internal fun weekRowsIn(month: YearMonth, locale: Locale): Int =
     (startOffsetIn(month, locale) + month.lengthOfMonth() + DAYS_PER_WEEK - 1) / DAYS_PER_WEEK

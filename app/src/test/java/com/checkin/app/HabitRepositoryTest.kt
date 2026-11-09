@@ -49,6 +49,14 @@ class HabitRepositoryTest {
         assertEquals(2, habitDao.habits.size)
     }
 
+    /** An unknown id is not a name problem: nothing is wrong with the name, there is just no habit. */
+    @Test
+    fun `renaming or restoring an unknown habit writes nothing and says so`() = runTest {
+        assertEquals(HabitEdit.Missing, habits.rename(999L, "Gym"))
+        assertEquals(HabitEdit.Missing, habits.restore(999L))
+        assertEquals(1, habitDao.habits.size)
+    }
+
     @Test
     fun `selecting stores the choice`() = runTest {
         val gym = (habits.create("Gym") as HabitEdit.Saved).habit
@@ -95,7 +103,7 @@ class HabitRepositoryTest {
         val job = launch { habits.selectedHabitIdFlow().toList(emitted) }
 
         val session = checkIns.open(Habit.SEED_ID)
-        checkIns.checkOut(session.id, ClosedBy.IN_APP)
+        checkIns.checkOutAt(session.id, 5_000L, ClosedBy.IN_APP)
         habits.create("Gym")
 
         assertEquals(listOf(Habit.SEED_ID), emitted)

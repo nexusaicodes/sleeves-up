@@ -107,11 +107,12 @@ class HabitsViewModel(
     fun save(habitId: Long?, name: String, minute: Int, onResult: (NameProblem?) -> Unit = {}) {
         viewModelScope.launch {
             val edit = if (habitId == null) habits.create(name) else habits.rename(habitId, name)
-            if (edit is HabitEdit.Rejected) {
-                onResult(edit.problem)
-                return@launch
+            val saved = when (edit) {
+                is HabitEdit.Saved -> edit.habit
+                is HabitEdit.Rejected -> return@launch onResult(edit.problem)
+                // Nothing to rename and no problem with the name: the dialog has nothing left to do.
+                HabitEdit.Missing -> return@launch onResult(null)
             }
-            val saved = (edit as HabitEdit.Saved).habit
             if (habitId == null) {
                 // Stored outright and re-armed unconditionally: a new habit is a new band whatever
                 // its time, and the re-arm the insert itself triggers may have read the prefs before
@@ -149,10 +150,7 @@ class HabitsViewModel(
 
     fun restore(habit: Habit) {
         viewModelScope.launch {
-            if (habits.restore(
-                    habit.id,
-                ) is HabitEdit.Rejected
-            ) {
+            if (habits.restore(habit.id) is HabitEdit.Rejected) {
                 eventChannel.send(HabitsEvent.RestoreRefused(habit.name))
             }
         }

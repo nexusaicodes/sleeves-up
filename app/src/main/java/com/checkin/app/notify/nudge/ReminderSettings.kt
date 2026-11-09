@@ -133,7 +133,7 @@ class SharedPrefsReminderSettings(private val prefs: SharedPreferences) : Remind
  * at a time the user just moved away from. [rearm] is expected to be `NudgeCoordinator.launchRearm`,
  * which runs [NudgeDispatcher.rearm] off the main thread: that call reads the day's sends, so the
  * re-arm keeps a reminder the gap is holding and arms a band the new time has just opened (put off
- * by [NudgeConfig.dueNowDelayMs], so it does not post over the screen the time was chosen on), and it
+ * by [NudgeConfig.DUE_NOW_DELAY_MS], so it does not post over the screen the time was chosen on), and it
  * re-reads the times under the dispatcher's lock, so it arms for the value stored here even when a
  * checkpoint pass is running alongside.
  */

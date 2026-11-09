@@ -40,9 +40,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 /**
- * The four surfaces that can occupy the whole window, in the order they outrank each other:
- * the first-run welcome, the naming step for a habit with no name, the presence gate (with the habit
- * picker that can precede it), then the app — with the celebration over whichever is showing.
+ * The six surfaces that can occupy the whole window, in the order they outrank each other: the
+ * first-run welcome, the naming step for a habit with no name, the habit picker (the widget's first
+ * stage), the presence gate, the widget page, then the app — with the celebration over whichever is
+ * showing.
  *
  * **The welcome outranks the gate**, because an introduction the app owes is worth more than the
  * few seconds it delays an action, and the reverse ordering delivers the tour *after* the user

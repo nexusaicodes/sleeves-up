@@ -31,7 +31,7 @@ object NudgeSchedule {
     /**
      * How much of the day a band must keep before midnight. An inexact alarm may land up to an hour
      * after its trigger, and a habit whose band opens just after another habit's reminder went out
-     * is held back by [NudgeConfig.minGapMs] — ninety minutes — on top of that. A band narrower than
+     * is held back by [NudgeConfig.MIN_GAP_MS] — ninety minutes — on top of that. A band narrower than
      * the two together could close before either delivery lands, and after midnight the question
      * is about a day that has already ended.
      */

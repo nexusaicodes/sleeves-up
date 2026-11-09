@@ -1,5 +1,6 @@
 package com.checkin.app.widget
 
+import com.checkin.app.util.MILLIS_PER_SECOND
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -102,6 +103,6 @@ class WidgetSync(
 
     companion object {
         /** How long the collector waits before re-subscribing after a failed read. */
-        const val RETRY_DELAY_MS = 30_000L
+        const val RETRY_DELAY_MS = 30 * MILLIS_PER_SECOND
     }
 }

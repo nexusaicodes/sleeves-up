@@ -16,7 +16,10 @@ import java.time.format.DateTimeFormatter
 sealed interface ExportResult {
     data object Success : ExportResult
 
-    /** The requested range holds no completed day. Not a failure — there is simply nothing to write. */
+    /**
+     * The requested range holds no completed day. Not a failure — there is simply nothing to write.
+     * Decided by the caller before it asks for an export; [CsvExporter.export] never returns it.
+     */
     data object Nothing : ExportResult
     data class Failure(val message: String?) : ExportResult
 }

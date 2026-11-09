@@ -61,12 +61,12 @@ object NudgeEligibility {
 
     /**
      * What the checkpoint alarm is armed for on this habit's account: [nextEligibleAt], except that a
-     * nudge already due is put off by [NudgeConfig.dueNowDelayMs] — still inside its band, or
+     * nudge already due is put off by [NudgeConfig.DUE_NOW_DELAY_MS] — still inside its band, or
      * tomorrow's if the delay runs past midnight. An instant still ahead is left exactly where it is,
      * so an on-time reminder and a gap-deferred one both arrive when the rules allow them.
      */
     fun nextAlarmAt(snapshot: NudgeSnapshot, zone: ZoneId): Long =
-        earliest(snapshot, zone, dueAt = snapshot.nowMillis + snapshot.config.dueNowDelayMs)
+        earliest(snapshot, zone, dueAt = snapshot.nowMillis + NudgeConfig.DUE_NOW_DELAY_MS)
 
     /**
      * The instant the one checkpoint alarm is armed for: the soonest [nextAlarmAt] of any habit, or
@@ -80,7 +80,7 @@ object NudgeEligibility {
     /** The shared body of [nextEligibleAt] and [nextAlarmAt]: [dueAt] stands in for any instant already reached. */
     private fun earliest(snapshot: NudgeSnapshot, zone: ZoneId, dueAt: Long): Long {
         val today = Instant.ofEpochMilli(snapshot.nowMillis).atZone(zone).toLocalDate()
-        val gapClearsAt = snapshot.lastShownAtMs?.let { it + snapshot.config.minGapMs } ?: Long.MIN_VALUE
+        val gapClearsAt = snapshot.lastShownAtMs?.let { it + NudgeConfig.MIN_GAP_MS } ?: Long.MIN_VALUE
         val todays = Nudge.entries
             .filter { stillSendable(snapshot, it) }
             .mapNotNull {
@@ -101,7 +101,7 @@ object NudgeEligibility {
      */
     private fun spacedFarEnough(snapshot: NudgeSnapshot): Boolean {
         val last = snapshot.lastShownAtMs ?: return true
-        return snapshot.nowMillis - last >= snapshot.config.minGapMs
+        return snapshot.nowMillis - last >= NudgeConfig.MIN_GAP_MS
     }
 
     /**

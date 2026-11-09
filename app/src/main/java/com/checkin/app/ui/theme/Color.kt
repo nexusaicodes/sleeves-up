@@ -10,7 +10,7 @@ import com.adevinta.spark.tokens.lightSparkColors
 
 /**
  * Mudda's roles for one theme, plus the values derived from them for slots mudda has no colour for
- * (`docs/spark-migration.md` 2.2 holds both tables, with the contrast of every pair that carries text).
+ * (`docs/palette.md` holds both tables, with the contrast of every pair that carries text).
  *
  * Mudda is the source and nothing gates the copy: a change in mudda is a change here by hand.
  */

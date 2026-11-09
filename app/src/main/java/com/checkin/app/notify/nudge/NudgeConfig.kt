@@ -8,13 +8,13 @@ import com.checkin.app.util.MILLIS_PER_MINUTE
  * values but does not own them, [NudgeSchedule], which owns the bands, and [NudgeCatalog], which
  * owns the copy — are all dead ends.
  *
- * Frequency is bounded two ways and the band is **not** one of them: this type holds the gap,
+ * Frequency is bounded two ways and the band is **not** one of them: this object holds the gap,
  * and [NudgeSnapshot.spentToday] is the other — one nudge per habit per day. **There is no daily
  * cap across habits**, deliberately: a user with four habits asked for four reminders, and a cap
  * would decide on their behalf which habits go unmentioned. The gap is what stops those reminders
  * arriving as a burst.
  */
-data class NudgeConfig(
+object NudgeConfig {
     /**
      * The minimum spacing between two nudges, **whichever habits they belong to**.
      *
@@ -28,7 +28,8 @@ data class NudgeConfig(
      * band is still open. That is what keeps the rule from silently costing a habit its reminder,
      * and why [NudgeSchedule]'s latest choosable time leaves room for it before midnight.
      */
-    val minGapMs: Long = DEFAULT_MIN_GAP_MS,
+    const val MIN_GAP_MS = 90L * MILLIS_PER_MINUTE
+
     /**
      * How long the alarm waits when the nudge it is armed for is already due — see
      * [NudgeEligibility.nextAlarmAt].
@@ -40,10 +41,5 @@ data class NudgeConfig(
      * what keeps a pass that throws every time from re-arming itself at the alarm's minimum
      * futurity, a wake every few seconds for the rest of the band.
      */
-    val dueNowDelayMs: Long = DEFAULT_DUE_NOW_DELAY_MS,
-) {
-    companion object {
-        const val DEFAULT_MIN_GAP_MS = 90L * MILLIS_PER_MINUTE
-        const val DEFAULT_DUE_NOW_DELAY_MS = 30L * MILLIS_PER_MINUTE
-    }
+    const val DUE_NOW_DELAY_MS = 30L * MILLIS_PER_MINUTE
 }

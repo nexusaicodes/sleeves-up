@@ -120,7 +120,7 @@ class SessionWatchdogTest {
     @Test
     fun `a session already checked out is not revived`() = runTest {
         val session = repository.open()
-        repository.checkOut(session.id, ClosedBy.IN_APP)
+        repository.checkOutAt(session.id, now, ClosedBy.IN_APP)
 
         val acted = watchdog(serviceRunning = false).reviveIfNeeded()
 

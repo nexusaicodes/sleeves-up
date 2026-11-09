@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
@@ -32,11 +33,7 @@ import java.time.format.DateTimeFormatter
  * the same actions for a check requested from a notification — with check-out split in two, one
  * value per `ClosedBy`.
  */
-sealed class PresenceAction {
-    data object None : PresenceAction()
-    data object CheckIn : PresenceAction()
-    data object CheckOut : PresenceAction()
-}
+enum class PresenceAction { CHECK_IN, CHECK_OUT }
 
 /** Immutable snapshot the Check-In screen renders. Elapsed time is screen-driven, not held here. */
 data class CheckInUiState(
@@ -50,7 +47,6 @@ data class CheckInUiState(
     val todaySessions: List<CheckInSession> = emptyList(),
     val hasEverTracked: Boolean = false,
     val showPresenceGate: Boolean = false,
-    val presenceAction: PresenceAction = PresenceAction.None,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -64,8 +60,9 @@ class CheckInViewModel(
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
     private val refresh = MutableStateFlow(0)
-    private val showGate = MutableStateFlow(false)
-    private val presenceAction = MutableStateFlow<PresenceAction>(PresenceAction.None)
+
+    /** What the open gate is for; null when no gate is open. */
+    private val pendingAction = MutableStateFlow<PresenceAction?>(null)
 
     // One subscription each to the open session and the selected habit, shared by everything below:
     // the habit's id keys the rebuild and the habit itself draws the label, so the two are always
@@ -89,13 +86,13 @@ class CheckInViewModel(
             combine(
                 activeSession,
                 repository.sessionsForDateFlow(habitId, todayKey),
-                combine(showGate, presenceAction) { show, action -> show to action },
+                pendingAction,
                 // "Has ever tracked" is "has ever checked in to this habit", so it is read off the
                 // sessions themselves — the same reactive emission that opens the first one closes
                 // the welcome, with no refresh to remember.
                 repository.trackingStartFlow(habitId),
                 selectedHabit,
-            ) { active, sessions, gate, trackingStart, habit ->
+            ) { active, sessions, action, trackingStart, habit ->
                 // The running flag, completed total, and live-ticker basis all derive from this single
                 // sessions emission (via `ticker`), so a check-out moves the closing session into the
                 // total in one atomic step — no one-frame dip or flash of zero. A session still open
@@ -115,8 +112,7 @@ class CheckInViewModel(
                     todayDateKey = todayKey,
                     todaySessions = sessions,
                     hasEverTracked = trackingStart != null,
-                    showPresenceGate = gate.first,
-                    presenceAction = gate.second,
+                    showPresenceGate = action != null,
                 )
             }
         }.stateIn(
@@ -134,29 +130,24 @@ class CheckInViewModel(
     }
 
     fun requestCheckIn() {
-        presenceAction.value = PresenceAction.CheckIn
-        showGate.value = true
+        pendingAction.value = PresenceAction.CHECK_IN
     }
 
     fun requestCheckOut() {
-        presenceAction.value = PresenceAction.CheckOut
-        showGate.value = true
+        pendingAction.value = PresenceAction.CHECK_OUT
     }
 
     fun dismissPresenceGate() {
-        showGate.value = false
-        presenceAction.value = PresenceAction.None
+        pendingAction.value = null
     }
 
     /** Called once the presence gate (face detection or its device-unlock fallback) has passed. */
     fun onAuthSuccess() {
-        showGate.value = false
-        when (presenceAction.value) {
-            PresenceAction.CheckIn -> executeCheckIn()
-            PresenceAction.CheckOut -> executeCheckOut()
-            PresenceAction.None -> {}
+        when (pendingAction.getAndUpdate { null }) {
+            PresenceAction.CHECK_IN -> executeCheckIn()
+            PresenceAction.CHECK_OUT -> executeCheckOut()
+            null -> {}
         }
-        presenceAction.value = PresenceAction.None
     }
 
     private fun executeCheckIn() {

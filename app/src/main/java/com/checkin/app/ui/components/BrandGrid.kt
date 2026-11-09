@@ -46,8 +46,8 @@ import kotlin.math.pow
  *
  * [settle] runs the arrival once and then rests: the cells land in reading order and the last one
  * overshoots slightly, so a mark that was already there reads as a mark that has just gained an
- * entry. It never repeats and there is nothing to retire — see [CheckOutCelebration] for why the
- * one moment it plays in is the one moment the app has to spend on motion. With the system
+ * entry. It never repeats and there is nothing to retire; its one caller is the check-out
+ * celebration, the one moment the app spends on motion. With the system
  * animation scale off it is drawn at rest immediately, like every other animation in the app.
  */
 @Composable
