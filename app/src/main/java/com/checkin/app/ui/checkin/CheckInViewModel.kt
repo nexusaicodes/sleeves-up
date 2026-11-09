@@ -30,8 +30,8 @@ import java.time.format.DateTimeFormatter
 /**
  * What the gate is being opened for, so that passing it performs the action the user asked for
  * rather than a fixed one. The root gate's equivalent is `PresenceCheckSignal.Reason`, which covers
- * the same actions for a check requested from a notification — with check-out split in two, one
- * value per `ClosedBy`.
+ * the same actions for a check requested from a notification or the widget — with check-out split
+ * three ways (timer, reminder, widget), one value per `ClosedBy`.
  */
 enum class PresenceAction { CHECK_IN, CHECK_OUT }
 

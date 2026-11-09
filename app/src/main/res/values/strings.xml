@@ -353,6 +353,7 @@
     <string name="habit_archive_running">Check out of %1$s before archiving it</string>
     <string name="habit_archive_last">Keep at least one habit</string>
     <string name="habit_restore_duplicate">Another habit is already called %1$s</string>
+    <string name="habit_save_missing">That habit is no longer here, so nothing was saved</string>
     <!-- The switcher in the top bar. While a session runs it is locked to that habit on every tab. -->
     <string name="habit_switcher_cd">Habit: %1$s. Switch habit</string>
     <string name="habit_switch_locked">Check out of %1$s to switch or manage habits</string>

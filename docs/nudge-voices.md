@@ -151,7 +151,7 @@ flowchart TD
     A[Pool of the chosen voice] --> B{Any variant never shown?}
     B -- yes --> C[Candidates = the never-shown ones]
     B -- no --> D[Candidates = the ones shown longest ago]
-    C & D --> E["Pick candidates[ seed mod count ]<br/>seed = hash(habit uuid) × 31 + epoch day"]
+    C & D --> E["Pick candidates[ seed mod count ]<br/>title seed = hash(habit uuid) × 31 + epoch day<br/>body seed = title seed ÷ title count"]
 ```
 
 What follows from that:
@@ -163,7 +163,8 @@ What follows from that:
 - **Each voice rotates on its own.** Keys are per voice (`steady.*` vs `returning.*`), so moving
   between voices neither resets nor spends the other pool.
 - **The seed only breaks ties.** It's stable within a day and differs across days and habits, so two
-  habits, or a fresh install, don't all open on variant 1.
+  habits, or a fresh install, don't all open on variant 1. The title takes the seed's remainder and
+  the body its quotient, so tied histories open on every title/body pairing.
 - **An unreadable history** counts as empty: the seed alone picks, and the reminder still posts.
 
 ## 5. Worked example

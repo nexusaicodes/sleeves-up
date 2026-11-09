@@ -71,5 +71,12 @@ object NudgeVoice {
     fun seedFor(habitUuid: String, today: LocalDate): Long =
         habitUuid.hashCode().toLong() * SEED_PRIME + today.toEpochDay()
 
+    /**
+     * The body's tie-break, from the title's [seed] and the title pool's size: the title takes the
+     * seed's remainder and the body its quotient, so tied histories open on every title/body pairing
+     * rather than the bodies congruent to the title's index.
+     */
+    fun bodySeed(seed: Long, titleCount: Int): Long = Math.floorDiv(seed, titleCount.toLong())
+
     private const val SEED_PRIME = 31L
 }

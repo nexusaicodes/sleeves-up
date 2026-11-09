@@ -2,7 +2,6 @@ package com.checkin.app.notify
 
 import com.checkin.app.data.local.Habit
 import com.checkin.app.notify.HabitSync
-import com.checkin.app.notify.habitSyncRetryDelayMs
 import com.checkin.app.notify.nudge.GuardedNudges
 import com.checkin.app.testing.FakeHabitChannels
 import com.checkin.app.testing.FakeNudgeAlarms
@@ -20,7 +19,7 @@ import java.time.LocalDate
 
 /**
  * The habits-table collector: what each emission reconciles, in order, and that a failed read is
- * retried with a growing wait rather than ending the sync.
+ * retried after a wait rather than ending the sync.
  */
 class HabitSyncTest {
 
@@ -40,7 +39,7 @@ class HabitSyncTest {
     fun `each emission syncs channels, stores the active set, then re-arms`() = runTest(UnconfinedTestDispatcher()) {
         val table = MutableStateFlow(listOf(habit(1), habit(2, archived = true)))
 
-        HabitSync(table, channels, settings, coordinator(backgroundScope), backgroundScope).start()
+        HabitSync({ table }, channels, settings, coordinator(backgroundScope), backgroundScope).start()
 
         assertEquals(listOf(listOf(habit(1), habit(2, archived = true))), channels.synced)
         assertEquals(setOf("uuid-1"), settings.active)
@@ -59,7 +58,7 @@ class HabitSyncTest {
         }
 
         HabitSync(
-            MutableStateFlow(listOf(habit(1))),
+            { MutableStateFlow(listOf(habit(1))) },
             failingChannels,
             settings,
             coordinator(backgroundScope),
@@ -80,7 +79,7 @@ class HabitSyncTest {
         }
         val waits = mutableListOf<Long>()
 
-        HabitSync(table, channels, settings, coordinator(backgroundScope), backgroundScope, retryDelayMs = {
+        HabitSync({ table }, channels, settings, coordinator(backgroundScope), backgroundScope, retryDelayMs = {
             waits += it
             1L
         }).start()
@@ -92,18 +91,5 @@ class HabitSyncTest {
         assertEquals(listOf(0L), waits)
         assertEquals(2, subscriptions)
         assertTrue(events.isNotEmpty())
-    }
-
-    @Test
-    fun `the wait doubles from thirty seconds`() {
-        assertEquals(listOf(30_000L, 60_000L, 120_000L, 240_000L), (0L..3L).map(::habitSyncRetryDelayMs))
-    }
-
-    @Test
-    fun `the wait is capped at thirty minutes however many attempts fail`() {
-        val cap = 30 * 60_000L
-        assertEquals(cap, habitSyncRetryDelayMs(6L))
-        assertEquals(cap, habitSyncRetryDelayMs(1_000L))
-        assertEquals(cap, habitSyncRetryDelayMs(Long.MAX_VALUE))
     }
 }

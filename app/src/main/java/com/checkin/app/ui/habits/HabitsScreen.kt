@@ -88,6 +88,7 @@ fun HabitsScreen(
                     R.string.habit_restore_duplicate,
                     event.name ?: unnamed,
                 )
+                HabitsEvent.SaveMissing -> resources.getString(R.string.habit_save_missing)
             }
             snackbarHostState.showSnackbar(message)
         }

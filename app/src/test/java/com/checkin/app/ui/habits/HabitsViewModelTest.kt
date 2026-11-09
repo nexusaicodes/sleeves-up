@@ -72,11 +72,15 @@ class HabitsViewModelTest {
     }
 
     @Test
-    fun `renaming a habit that is gone reports nothing wrong with the name`() = runTest {
+    fun `renaming a habit that is gone says so and reports nothing wrong with the name`() = runTest {
         var called = false
         var result: NameProblem? = NameProblem.BLANK
+        val viewModel = viewModel()
+        val events = mutableListOf<HabitsEvent>()
+        // Unconfined, so each event lands as it is sent: advanceUntilIdle does not wait on background work.
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.events.collect { events += it } }
 
-        viewModel().save(habitId = 999L, name = "Gym", minute = 7 * 60) {
+        viewModel.save(habitId = 999L, name = "Gym", minute = 7 * 60) {
             called = true
             result = it
         }
@@ -84,6 +88,8 @@ class HabitsViewModelTest {
 
         assertTrue(called)
         assertNull(result)
+        assertEquals(listOf<HabitsEvent>(HabitsEvent.SaveMissing), events)
+        assertEquals(0, rearms)
     }
 
     @Test

@@ -26,7 +26,7 @@ class WidgetSyncTest {
     private val running = WidgetFace.Running("Writing")
 
     private fun TestScope.syncOver(widgets: FakeHomeWidgets, faces: () -> Flow<WidgetFace>) =
-        WidgetSync(widgets, faces, backgroundScope, retryDelayMs = 1_000L)
+        WidgetSync(widgets, faces, backgroundScope, retryDelayMs = { 1_000L })
 
     @Test
     fun `the collector draws each change once, skipping identical faces`() = runTest(UnconfinedTestDispatcher()) {
