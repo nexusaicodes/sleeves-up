@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.combine
  * home screen all day is read as a score.
  *
  * It is a picture only. The widget's one button is routed at the tap by
- * [TapRouting][com.checkin.app.ui.presence.TapRouting] against the rows as they are then, so a face
+ * [TapRouting][com.checkin.app.launch.TapRouting] against the rows as they are then, so a face
  * drawn before a change it has not caught up with can mislead nobody into a wrong write.
  *
  * A name of `null` is a habit still owed one, drawn as plain "Check In". Names keep the order they

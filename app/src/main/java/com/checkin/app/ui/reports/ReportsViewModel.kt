@@ -7,12 +7,13 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.checkin.app.CheckInApplication
 import com.checkin.app.data.ConsistencyStats
+import com.checkin.app.data.MonthSteps
 import com.checkin.app.data.SessionBand
 import com.checkin.app.data.SessionRhythm
 import com.checkin.app.data.StartBucket
 import com.checkin.app.data.TimeSource
 import com.checkin.app.data.dayTrigger
-import com.checkin.app.data.local.DailyAggregate
+import com.checkin.app.data.local.byDateKey
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.HabitRepository
 import com.checkin.app.platform.CsvExporter
@@ -165,7 +166,7 @@ class ReportsViewModel(
             repository.dailyAggregatesFlow(habitId, startKey, endKey),
             repository.sessionStartsFlow(habitId, startKey, endKey),
         ) { aggregates, sessionStarts ->
-            val summaries = repository.byDateKey(aggregates)
+            val summaries = aggregates.byDateKey()
             val showedUp = ConsistencyStats.showedUpDays(summaries)
             val totalWorkedMs = ConsistencyStats.totalWorkedMs(summaries)
             ReportsUiState(
@@ -194,55 +195,6 @@ class ReportsViewModel(
             )
         }
     }
-
-    /**
-     * The days plotted by the daily chart, gap-filled: a day without sessions is emitted as a real
-     * zero, since a hole in a line reads as missing data rather than as an absence.
-     *
-     * A month scope plots the whole month; all time plots the trailing [DAILY_WINDOW_DAYS], because
-     * a line with a point per day of a multi-year record is a solid block.
-     */
-    private fun dailySeries(
-        summaries: Map<String, DailyAggregate>,
-        activeScope: ReportScope,
-        window: ReportWindow,
-    ): List<DayPoint> {
-        val from = when (activeScope) {
-            is ReportScope.Month -> window.start
-            ReportScope.AllTime -> maxOf(window.start, window.end.minusDays((DAILY_WINDOW_DAYS - 1).toLong()))
-        }
-        return generateSequence(from) { it.plusDays(1) }
-            .takeWhile { !it.isAfter(window.end) }
-            .map { day -> DayPoint(day, summaries[day.format(dateFormatter)]?.totalDurationMs ?: 0L) }
-            .toList()
-    }
-
-    /**
-     * Worked time per calendar month across the window, oldest first — **all time only**.
-     *
-     * A month scope spans one month, and a single bar states nothing a chart adds over the total
-     * already printed above it, so the card is not rendered at all rather than rendered degenerate.
-     */
-    private fun monthlySeries(
-        summaries: Map<String, DailyAggregate>,
-        activeScope: ReportScope,
-        window: ReportWindow,
-    ): List<MonthPoint> {
-        if (activeScope !is ReportScope.AllTime) return emptyList()
-        // A malformed date_key is dropped rather than thrown on, matching how the repository and the
-        // formatters read that column: one unparseable row must not strand the whole screen in
-        // loading, on a table the app gives no way to edit.
-        val totals = summaries.values.groupBy { monthOf(it.dateKey) }
-            .filterKeys { it != null }
-            .mapValues { (_, days) -> days.sumOf { it.totalDurationMs } }
-        return generateSequence(YearMonth.from(window.start)) { it.plusMonths(1) }
-            .takeWhile { !it.isAfter(YearMonth.from(window.end)) }
-            .map { month -> MonthPoint(month, totals[month] ?: 0L) }
-            .toList()
-    }
-
-    private fun monthOf(dateKey: String): YearMonth? =
-        runCatching { YearMonth.from(LocalDate.parse(dateKey, dateFormatter)) }.getOrNull()
 
     fun onResumed() {
         refresh.value++
@@ -281,7 +233,7 @@ class ReportsViewModel(
     }
 
     private fun ReportScope.hasMonthAfter(today: LocalDate): Boolean =
-        this is ReportScope.Month && ConsistencyStats.hasMonthAfter(month, today)
+        this is ReportScope.Month && MonthSteps.hasMonthAfter(month, today)
 
     private fun displayedMonth(): YearMonth = (scope.value as? ReportScope.Month)?.month ?: YearMonth.from(day.value)
 
@@ -326,8 +278,6 @@ class ReportsViewModel(
     }
 
     companion object {
-        const val DAILY_WINDOW_DAYS = 30
-
         val Factory = viewModelFactory {
             initializer {
                 val container = (this[APPLICATION_KEY] as CheckInApplication).container

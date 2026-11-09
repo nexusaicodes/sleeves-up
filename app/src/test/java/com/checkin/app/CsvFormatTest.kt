@@ -2,6 +2,7 @@ package com.checkin.app
 
 import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.platform.csvHeader
+import com.checkin.app.platform.csvLines
 import com.checkin.app.platform.csvRow
 import com.checkin.app.platform.exportFileName
 import org.junit.After
@@ -130,6 +131,42 @@ class CsvFormatTest {
         assertEquals(
             "checkin_قِراءة_2026-06-01_2026-06-30.csv",
             exportFileName("قِراءة", "2026-06-01", "2026-06-30"),
+        )
+    }
+
+    @Test
+    fun `the file is the header then one row per day, both ends included, gaps as zeros`() {
+        val worked = DailyAggregate(
+            dateKey = "2026-06-30",
+            totalDurationMs = 3_600_000L,
+            sessionCount = 1,
+            firstCheckIn = 0L,
+            lastCheckOut = 0L,
+            dayBoundaryCheckOuts = 0,
+            inAppCheckOuts = 1,
+            timerNotificationCheckOuts = 0,
+            reminderNotificationCheckOuts = 0,
+            widgetCheckOuts = 0,
+        )
+
+        val lines = csvLines("2026-06-29", "2026-07-01", mapOf(worked.dateKey to worked)).toList()
+
+        assertEquals(
+            listOf(
+                csvHeader(),
+                csvRow("2026-06-29", null),
+                csvRow("2026-06-30", worked),
+                csvRow("2026-07-01", null),
+            ),
+            lines,
+        )
+    }
+
+    @Test
+    fun `a one-day range is the header and that day`() {
+        assertEquals(
+            listOf(csvHeader(), csvRow("2026-06-15", null)),
+            csvLines("2026-06-15", "2026-06-15", emptyMap()).toList(),
         )
     }
 }

@@ -14,7 +14,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import com.adevinta.spark.SparkTheme
 import com.adevinta.spark.components.surface.Surface
-import com.checkin.app.data.local.Habit
+import com.checkin.app.launch.TapNotices
+import com.checkin.app.launch.TapResolver
 import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.ui.AppRoot
 import com.checkin.app.ui.checkin.CheckOutSignal
@@ -22,20 +23,31 @@ import com.checkin.app.ui.fadeIntoApp
 import com.checkin.app.ui.presence.PresenceCheckSignal
 import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import com.checkin.app.ui.presence.PresenceGate
-import com.checkin.app.ui.presence.TapOutcome
-import com.checkin.app.ui.presence.TapRouting
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.util.latinDigitsOverride
 import com.checkin.app.util.useLatinDigitsByDefault
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class MainActivity : FragmentActivity() {
 
     private val container by lazy { (application as CheckInApplication).container }
+
+    /** Decides every tap from outside the app; the toasts it needs are this activity's. */
+    private val tapResolver by lazy {
+        TapResolver(
+            habits = container.habitRepository,
+            sessions = container.repository,
+            postedNudges = container.postedNudges,
+            timeSource = container.timeSource,
+            scope = container.applicationScope,
+            notices = object : TapNotices {
+                override fun runningElsewhere(runningName: String?) = showRunningElsewhere(runningName)
+                override fun notResolved() = showTapNotResolved()
+            },
+            noticeContext = Dispatchers.Main,
+        )
+    }
 
     /**
      * Every string this activity formats numbers in Latin digits, whatever the language — see
@@ -68,7 +80,7 @@ class MainActivity : FragmentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = SparkTheme.colors.background,
                 ) {
-                    AppRoot(onGatePassed = ::onRootGatePassed, onHabitPicked = ::onHabitPicked)
+                    AppRoot(onGatePassed = ::onRootGatePassed, onHabitPicked = tapResolver::habitPicked)
                 }
             }
         }
@@ -119,108 +131,16 @@ class MainActivity : FragmentActivity() {
                 intent.removeExtra(LaunchExtras.CHECK_IN)
                 val habitUuid = intent.getStringExtra(LaunchExtras.HABIT_UUID)
                 intent.removeExtra(LaunchExtras.HABIT_UUID)
-                resolveTap { onNudgeTapped(habitUuid) }
+                tapResolver.nudgeTapped(habitUuid)
             }
             intent?.getBooleanExtra(LaunchExtras.WIDGET_TAP, false) == true -> {
                 intent.removeExtra(LaunchExtras.WIDGET_TAP)
-                resolveTap { onWidgetTapped() }
+                tapResolver.widgetTapped()
             }
-        }
-    }
-
-    /**
-     * Reads the database to decide what a tap from outside the app opens, then applies it. Every such
-     * tap is decided here, at the moment of the tap, by [TapRouting] — never by what the tapped surface
-     * showed, which can be hours stale.
-     *
-     * [PresenceCheckSignal.resolvingTaps] is raised before the launch, so not one frame of the nav host
-     * is drawn in between (and the splash screen stays up on a cold start). Failures are swallowed:
-     * the application scope has no handler.
-     */
-    @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    private fun resolveTap(decide: suspend () -> TapOutcome) {
-        PresenceCheckSignal.resolvingTaps.update { it + 1 }
-        container.applicationScope.launch {
-            try {
-                applyTap(decide())
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                // Nothing raised and nothing written: the tap can be made again (a nudge is still
-                // posted, since its retire follows the reads).
-                withContext(Dispatchers.Main) { showTapNotResolved() }
-            } finally {
-                PresenceCheckSignal.resolvingTaps.update { it - 1 }
-            }
-        }
-    }
-
-    /**
-     * A nudge was tapped, about one habit. The nudge is retired on the tap rather than after the gate
-     * resolves: it has served its purpose the moment it is tapped, whether or not the check-in that
-     * follows completes, and nothing the app posts is autoCancel. A nudge posted before habits existed
-     * carries no habit and is about the seed habit.
-     */
-    private suspend fun onNudgeTapped(habitUuid: String?): TapOutcome {
-        val habits = container.habitRepository
-        val habit = if (habitUuid == null) habits.byId(Habit.SEED_ID) else habits.byUuid(habitUuid)
-        // Reads before the retire, so a failed read leaves the nudge to tap again.
-        val runningHabitId = container.repository.getActiveSession()?.habitId
-        habit?.let { container.postedNudges.retire(it.id) }
-        return TapRouting.forHabit(habit, runningHabitId)
-    }
-
-    /**
-     * The home-screen widget's button, which names no habit: the open session's check-out, the gate
-     * for the only habit, or the picker — read off the rows now, whatever the widget was showing.
-     */
-    private suspend fun onWidgetTapped(): TapOutcome = TapRouting.forWidget(
-        container.habitRepository.activeHabits(),
-        container.repository.getActiveSession()?.habitId,
-    )
-
-    /**
-     * A habit was picked in the picker: routed exactly as a nudge for that habit would be, so the
-     * same checks run against the rows as they are now. The picker's request is dropped first — the
-     * root draws nothing while the pick resolves — so an outcome that opens no gate lands in the app
-     * rather than leaving the picker up.
-     */
-    private fun onHabitPicked(habitId: Long) {
-        // A second tap landing before the picker is taken down would race the first to the gate.
-        if (PresenceCheckSignal.resolvingTaps.value > 0) return
-        resolveTap {
-            PresenceCheckSignal.clear()
-            TapRouting.forHabit(
-                container.habitRepository.byId(habitId),
-                container.repository.getActiveSession()?.habitId,
-            )
         }
     }
 
     private fun Intent.launchedFromHistory() = (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
-
-    private suspend fun applyTap(outcome: TapOutcome) {
-        when (outcome) {
-            TapOutcome.NoAction -> Unit
-            is TapOutcome.RunningElsewhere -> {
-                val runningName = container.habitRepository.byId(outcome.runningHabitId)?.name
-                withContext(Dispatchers.Main) { showRunningElsewhere(runningName) }
-            }
-            is TapOutcome.CheckIn -> {
-                // Selected before the gate opens, so the screen behind it — and the one the user lands
-                // on after it — is the habit the tap was about. A refusal means a session opened since
-                // the routing read; the repository's own check would refuse the check-in anyway.
-                if (container.habitRepository.select(outcome.habitId)) {
-                    PresenceCheckSignal.raise(Reason.CHECK_IN, container.timeSource.nowMillis(), outcome.habitId)
-                } else {
-                    withContext(Dispatchers.Main) { showTapNotResolved() }
-                }
-            }
-            TapOutcome.CheckOut ->
-                PresenceCheckSignal.raise(Reason.CHECK_OUT_FROM_WIDGET, container.timeSource.nowMillis())
-            TapOutcome.ChooseHabit -> PresenceCheckSignal.choose(container.timeSource.nowMillis())
-        }
-    }
 
     /**
      * A toast rather than a snackbar: the tap can land on any surface, including the welcome tour and

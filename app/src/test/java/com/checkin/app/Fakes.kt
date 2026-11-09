@@ -216,7 +216,8 @@ class FakeReminderSettings(vararg minutes: Pair<String, Int>) : ReminderSettings
         stored.value = stored.value + (habitUuid to NudgeSchedule.clampMinute(minute))
     }
 
-    private var active: Set<String>? = null
+    var active: Set<String>? = null
+        private set
 
     override fun earliestMinute(): Int = SharedPrefsReminderSettings.earliest(stored.value, active)
 

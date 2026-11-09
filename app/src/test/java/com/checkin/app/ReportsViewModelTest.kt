@@ -7,6 +7,7 @@ import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.HabitEdit
 import com.checkin.app.data.repository.HabitRepository
 import com.checkin.app.platform.ExportResult
+import com.checkin.app.ui.reports.DAILY_WINDOW_DAYS
 import com.checkin.app.ui.reports.DayPoint
 import com.checkin.app.ui.reports.MonthPoint
 import com.checkin.app.ui.reports.ReportScope
@@ -273,7 +274,7 @@ class ReportsViewModelTest {
         advanceUntilIdle()
 
         val series = viewModel.uiState.value.dailySeries
-        assertEquals(ReportsViewModel.DAILY_WINDOW_DAYS, series.size)
+        assertEquals(DAILY_WINDOW_DAYS, series.size)
         assertEquals(LocalDate.of(2026, 6, 14), series.last().date)
     }
 
