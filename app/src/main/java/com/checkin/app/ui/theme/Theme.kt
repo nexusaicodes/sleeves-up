@@ -28,7 +28,7 @@ import com.checkin.app.util.displayLocale
 private val AppSparkFlags = SparkFeatureFlag(useRebrandedButtons = true, isContainingActivityEdgeToEdge = true)
 
 /** Luminance above which a background takes dark system-bar icons. */
-private const val LIGHT_BACKGROUND_LUMINANCE = 0.5f
+internal const val LIGHT_BACKGROUND_LUMINANCE = 0.5f
 
 @Composable
 fun CheckInAppTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -17,7 +16,6 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
@@ -35,15 +33,13 @@ import com.adevinta.spark.icons.LeboncoinIcons
 import com.adevinta.spark.tokens.highlight
 import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
-import com.checkin.app.ui.components.AppIconButton
-import com.checkin.app.ui.components.AppIcons
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.EmptyState
+import com.checkin.app.ui.components.MonthStepper
 import com.checkin.app.ui.components.SessionIntervalRow
 import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.util.TimeFormat
-import java.time.YearMonth
 
 /**
  * The History tab: a calendar, and the sessions of whichever day you tap. It derives nothing — no
@@ -152,9 +148,9 @@ private fun HistoryContent(
 
 private fun LazyListScope.calendarItems(uiState: HistoryUiState, viewModel: HistoryViewModel, cellHeight: Dp) {
     item {
-        MonthSelector(
-            currentMonth = uiState.currentMonth,
-            hasNextMonth = uiState.hasNextMonth,
+        MonthStepper(
+            label = TimeFormat.monthYear(uiState.currentMonth, LocalTimePatterns.current),
+            nextEnabled = uiState.hasNextMonth,
             onPrevious = { viewModel.previousMonth() },
             onNext = { viewModel.nextMonth() },
         )
@@ -282,33 +278,6 @@ private fun DayHeader(dateKey: String, sessions: List<CheckInSession>) {
             ),
             style = SparkTheme.typography.caption.highlight,
             color = SparkTheme.colors.onBackgroundVariant,
-        )
-    }
-}
-
-@Composable
-private fun MonthSelector(currentMonth: YearMonth, hasNextMonth: Boolean, onPrevious: () -> Unit, onNext: () -> Unit) {
-    val patterns = LocalTimePatterns.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        AppIconButton(
-            icon = AppIcons.ChevronStart,
-            contentDescription = stringResource(R.string.previous_month),
-            onClick = onPrevious,
-        )
-        Text(
-            text = TimeFormat.monthYear(currentMonth, patterns),
-            style = LocalAppTypography.current.titleLarge,
-            fontWeight = FontWeight.Bold,
-        )
-        AppIconButton(
-            icon = AppIcons.ChevronEnd,
-            contentDescription = stringResource(R.string.next_month),
-            onClick = onNext,
-            enabled = hasNextMonth,
         )
     }
 }

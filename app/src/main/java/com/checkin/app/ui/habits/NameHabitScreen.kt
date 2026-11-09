@@ -8,16 +8,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.checkin.app.R
-import com.checkin.app.data.NameProblem
 import com.checkin.app.ui.components.ConstrainedContent
 import com.checkin.app.ui.components.FullScreenAction
 import com.checkin.app.ui.components.FullScreenMessage
@@ -39,23 +32,12 @@ import com.checkin.app.ui.components.cyclingHabitExample
  */
 @Composable
 fun NameHabitScreen(entry: HabitEntry, viewModel: HabitsViewModel) {
-    var name by rememberSaveable { mutableStateOf("") }
-    var minute by rememberSaveable { mutableIntStateOf(entry.reminderMinute) }
-    var showProblem by rememberSaveable { mutableStateOf(false) }
-    // A refusal at the write, shown until the name is edited; see HabitEditorDialog.
-    var refused by rememberSaveable { mutableStateOf<NameProblem?>(null) }
-    var saving by remember { mutableStateOf(false) }
-    val problem = refused ?: viewModel.nameProblem(name, entry.habit.id)
-    val save = {
-        showProblem = true
-        if (problem == null && !saving) {
-            saving = true
-            viewModel.save(entry.habit.id, name, minute) { result ->
-                saving = false
-                refused = result
-            }
-        }
-    }
+    val form = rememberHabitForm(
+        initialName = "",
+        initialMinute = entry.reminderMinute,
+        nameProblem = { viewModel.nameProblem(it, entry.habit.id) },
+        onSave = { name, minute, onResult -> viewModel.save(entry.habit.id, name, minute, onResult) },
+    )
 
     // One example drives both the icon and the placeholder, so the runner is never captioned "Guitar".
     val example = cyclingHabitExample()
@@ -75,25 +57,15 @@ fun NameHabitScreen(entry: HabitEntry, viewModel: HabitsViewModel) {
                 actions = {
                     Spacer(modifier = Modifier.height(MESSAGE_BODY_TO_ACTION_GAP))
                     HabitFields(
-                        name = name,
-                        onNameChange = {
-                            name = it
-                            refused = null
-                            showProblem = true
-                        },
-                        minute = minute,
-                        onMinuteChange = { minute = it },
-                        problem = problem,
-                        showProblem = showProblem,
-                        onDone = save,
-                        placeholder = stringResource(example.nameRes),
+                        form = form,
+                        style = HabitFieldsStyle.Title(placeholder = stringResource(example.nameRes)),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 },
             )
             // Pinned below the scrolling message, where the tour's button was a moment ago, and
             // carried above the keyboard by the column's imePadding.
-            FullScreenAction(text = stringResource(R.string.name_habit_continue), onClick = save)
+            FullScreenAction(text = stringResource(R.string.name_habit_continue), onClick = form::save)
         }
     }
 }

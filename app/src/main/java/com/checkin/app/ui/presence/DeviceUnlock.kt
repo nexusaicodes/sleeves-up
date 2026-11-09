@@ -1,6 +1,11 @@
 package com.checkin.app.ui.presence
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import android.util.Log
+import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
@@ -12,6 +17,36 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 
 private const val TAG = "DeviceUnlock"
+
+/**
+ * The credentials the fallback accepts. One value for both the question ([deviceUnlockStatus]) and
+ * the prompt, because a status asked of one set and a prompt raised for another would offer a prompt
+ * that fails, or send someone to set up a screen lock they already have.
+ */
+private const val ALLOWED_AUTHENTICATORS = BIOMETRIC_STRONG or DEVICE_CREDENTIAL
+
+/**
+ * Whether the device has a credential to fall back to. Re-read on resume by the screen, never
+ * cached at first composition: the recovery for "none enrolled" is a round trip through system
+ * settings, which returns no result and recreates no activity.
+ */
+internal fun deviceUnlockStatus(context: Context): Int =
+    BiometricManager.from(context).canAuthenticate(ALLOWED_AUTHENTICATORS)
+
+/**
+ * Opens the system screen that sets up a screen lock — the fallback's fallback, when there is no
+ * credential to unlock with. False when nothing on the device handles the intent, so the caller can
+ * say so instead.
+ */
+internal fun openScreenLockSettings(context: Context): Boolean = try {
+    context.startActivity(
+        Intent(Settings.ACTION_SECURITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    )
+    true
+} catch (e: ActivityNotFoundException) {
+    Log.e(TAG, "No screen-lock settings activity", e)
+    false
+}
 
 /**
  * How long the gate looks without finding a face before device unlock is offered.
@@ -34,7 +69,8 @@ internal const val DEVICE_UNLOCK_OFFERED_AFTER_MS = 10_000L
  * [BiometricPrompt] and returns the function that raises it.
  *
  * Everything about the fallback is here: when it is offered
- * ([DEVICE_UNLOCK_OFFERED_AFTER_MS]), how it is raised, and what each outcome means.
+ * ([DEVICE_UNLOCK_OFFERED_AFTER_MS]), whether the device has one ([deviceUnlockStatus]), how it is
+ * raised, what each outcome means, and the route to set one up ([openScreenLockSettings]).
  *
  * **The prompt is built here, in composition, and never on the button tap.** It registers its
  * callback against the host activity and outlives a recreation of that activity beneath it, so a
@@ -94,7 +130,7 @@ internal fun rememberDeviceUnlock(
         BiometricPrompt.PromptInfo.Builder()
             .setTitle(promptTitle)
             .setSubtitle(promptSubtitle)
-            .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+            .setAllowedAuthenticators(ALLOWED_AUTHENTICATORS)
             .build()
     }
 
