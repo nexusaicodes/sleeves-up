@@ -14,7 +14,7 @@ import java.time.ZoneId
  *
  * A reminder time is a **minute of the day** (0–1439, local), so 10:15 is 615. Every function takes
  * the habit's chosen minute as a parameter rather than reading it, so this stays pure, like
- * [com.checkin.app.service.SessionSchedule]: `java.time` only, no clock, no `Context`, and the zone
+ * [com.checkin.app.session.SessionSchedule]: `java.time` only, no clock, no `Context`, and the zone
  * threaded through explicitly. The stored value lives in [ReminderSettings], which is also where it
  * is clamped: every function here takes the minute as already valid.
  */

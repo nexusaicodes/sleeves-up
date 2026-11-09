@@ -6,8 +6,8 @@ import android.os.LocaleList
 import com.checkin.app.di.AppContainer
 import com.checkin.app.di.DefaultAppContainer
 import com.checkin.app.notify.NotificationChannels
-import com.checkin.app.notify.nudge.NudgeSendDatabase
 import com.checkin.app.notify.nudge.NudgeWorker
+import com.checkin.app.notify.nudge.ledger.NudgeSendDatabase
 import com.checkin.app.util.useLatinDigitsByDefault
 import kotlinx.coroutines.launch
 

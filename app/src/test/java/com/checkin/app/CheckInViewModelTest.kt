@@ -5,8 +5,8 @@ import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.HabitEdit
 import com.checkin.app.data.repository.HabitRepository
 import com.checkin.app.notify.StringResolver
-import com.checkin.app.service.SessionActions
-import com.checkin.app.service.SessionLifecycleRunner
+import com.checkin.app.session.SessionActions
+import com.checkin.app.session.SessionLifecycleRunner
 import com.checkin.app.ui.checkin.CheckInViewModel
 import com.checkin.app.ui.checkin.CheckOutSignal
 import com.checkin.app.ui.checkin.raiseCheckOutCelebration

@@ -1,11 +1,11 @@
-package com.checkin.app.service
+package com.checkin.app.session
 
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.CheckInResult
 import com.checkin.app.notify.nudge.PostedNudges
-import com.checkin.app.platform.ServiceController
+import com.checkin.app.service.ServiceController
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch

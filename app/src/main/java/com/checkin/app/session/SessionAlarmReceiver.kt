@@ -1,9 +1,10 @@
-package com.checkin.app.service
+package com.checkin.app.session
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.checkin.app.CheckInApplication
+import com.checkin.app.service.CheckInService
 import kotlinx.coroutines.launch
 
 /**

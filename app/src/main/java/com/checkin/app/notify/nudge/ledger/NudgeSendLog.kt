@@ -1,4 +1,6 @@
-package com.checkin.app.notify.nudge
+package com.checkin.app.notify.nudge.ledger
+
+import com.checkin.app.notify.nudge.Nudge
 
 /**
  * One nudge attempt, reduced to what the frequency rules and the rotation read: which habit, which

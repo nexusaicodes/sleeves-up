@@ -11,9 +11,9 @@ import com.checkin.app.notify.nudge.Nudge
 import com.checkin.app.notify.nudge.NudgeCatalog
 import com.checkin.app.notify.nudge.NudgeConfig
 import com.checkin.app.notify.nudge.NudgeDispatcher
-import com.checkin.app.notify.nudge.NudgeSendLog
-import com.checkin.app.notify.nudge.NudgeSending
 import com.checkin.app.notify.nudge.NudgeVoice.Voice
+import com.checkin.app.notify.nudge.ledger.NudgeSendLog
+import com.checkin.app.notify.nudge.ledger.NudgeSending
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

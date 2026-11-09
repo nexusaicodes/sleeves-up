@@ -1,6 +1,6 @@
 package com.checkin.app
 
-import com.checkin.app.service.SessionClock
+import com.checkin.app.session.SessionClock
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

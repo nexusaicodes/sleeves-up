@@ -1,4 +1,4 @@
-package com.checkin.app.ui
+package com.checkin.app.ui.update
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect

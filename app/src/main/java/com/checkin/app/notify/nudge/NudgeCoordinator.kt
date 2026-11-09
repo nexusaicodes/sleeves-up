@@ -1,6 +1,6 @@
 package com.checkin.app.notify.nudge
 
-import com.checkin.app.data.TimeSource
+import com.checkin.app.time.TimeSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch

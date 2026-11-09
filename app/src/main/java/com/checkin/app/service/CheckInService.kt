@@ -7,7 +7,6 @@ import android.os.IBinder
 import androidx.core.content.edit
 import com.checkin.app.CheckInApplication
 import com.checkin.app.R
-import com.checkin.app.data.TimeSource
 import com.checkin.app.notify.LaunchExtras
 import com.checkin.app.notify.NotificationAction
 import com.checkin.app.notify.NotificationChannels
@@ -15,6 +14,8 @@ import com.checkin.app.notify.NotificationFactory
 import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
+import com.checkin.app.session.SessionClock
+import com.checkin.app.time.TimeSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope

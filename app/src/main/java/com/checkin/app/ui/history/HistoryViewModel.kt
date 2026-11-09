@@ -7,13 +7,13 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.checkin.app.CheckInApplication
 import com.checkin.app.data.MonthSteps
-import com.checkin.app.data.TimeSource
-import com.checkin.app.data.dayTrigger
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.data.local.byDateKey
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.HabitRepository
+import com.checkin.app.time.TimeSource
+import com.checkin.app.time.dayTrigger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

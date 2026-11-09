@@ -1,4 +1,4 @@
-package com.checkin.app.data
+package com.checkin.app.time
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow

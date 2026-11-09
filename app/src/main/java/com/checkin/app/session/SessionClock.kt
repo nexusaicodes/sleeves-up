@@ -1,4 +1,4 @@
-package com.checkin.app.service
+package com.checkin.app.session
 
 /**
  * The two numbers a session's elapsed time is drawn from, kept out of [CheckInService] so they are

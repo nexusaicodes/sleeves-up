@@ -1,10 +1,10 @@
 package com.checkin.app.launch
 
-import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.Habit
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.HabitRepository
 import com.checkin.app.notify.nudge.PostedNudges
+import com.checkin.app.time.TimeSource
 import com.checkin.app.ui.presence.PresenceCheckSignal
 import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import kotlinx.coroutines.CancellationException

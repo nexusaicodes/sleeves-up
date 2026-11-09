@@ -30,6 +30,8 @@ import com.checkin.app.ui.navigation.AppNavScaffold
 import com.checkin.app.ui.presence.PresenceCheckSignal
 import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import com.checkin.app.ui.presence.PresenceGate
+import com.checkin.app.ui.update.ForfeitUpdateCheck
+import com.checkin.app.ui.update.UpdateCheckTurn
 import com.checkin.app.ui.welcome.FirstRun
 import com.checkin.app.ui.welcome.WelcomeScreen
 import com.checkin.app.ui.welcome.WidgetPageScreen

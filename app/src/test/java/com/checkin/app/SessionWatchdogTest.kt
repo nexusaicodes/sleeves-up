@@ -3,8 +3,8 @@ package com.checkin.app
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.StringResolver
-import com.checkin.app.service.SessionLifecycleRunner
-import com.checkin.app.service.SessionWatchdog
+import com.checkin.app.session.SessionLifecycleRunner
+import com.checkin.app.session.SessionWatchdog
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

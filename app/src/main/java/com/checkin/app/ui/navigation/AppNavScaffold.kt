@@ -21,9 +21,6 @@ import com.adevinta.spark.components.snackbars.SnackbarHost
 import com.adevinta.spark.components.snackbars.SnackbarHostState
 import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
-import com.checkin.app.ui.AppUpdateOffer
-import com.checkin.app.ui.ForfeitUpdateCheck
-import com.checkin.app.ui.UpdateCheckTurn
 import com.checkin.app.ui.checkin.CheckInViewModel
 import com.checkin.app.ui.components.AppIconButton
 import com.checkin.app.ui.components.AppIcons
@@ -31,6 +28,9 @@ import com.checkin.app.ui.components.LocalSnackbarHostState
 import com.checkin.app.ui.habits.HabitsViewModel
 import com.checkin.app.ui.presence.PresenceGate
 import com.checkin.app.ui.theme.LocalAppTypography
+import com.checkin.app.ui.update.AppUpdateOffer
+import com.checkin.app.ui.update.ForfeitUpdateCheck
+import com.checkin.app.ui.update.UpdateCheckTurn
 import kotlinx.coroutines.launch
 
 /**

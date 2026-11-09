@@ -1,4 +1,4 @@
-package com.checkin.app.service
+package com.checkin.app.session
 
 import android.content.BroadcastReceiver
 import android.content.Context
