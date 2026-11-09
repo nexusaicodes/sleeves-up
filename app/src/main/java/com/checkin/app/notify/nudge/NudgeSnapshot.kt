@@ -24,8 +24,8 @@ data class NudgeSnapshot(
      *
      * This is the only presence question the rules ask, and it is deliberately about *today's record*
      * rather than about whether a session is open right now. A session still open from an earlier day
-     * is not evidence the user is here: it is a session whose day-boundary close was lost to a force
-     * stop or a package replace. Suppressing on "a row is open" would let such a session silence every
+     * is not evidence the user is here: it is a session whose day-boundary close was lost, to a force
+     * stop or a reboot the repair has not yet run after. Suppressing on "a row is open" would let such a session silence every
      * nudge indefinitely, on exactly the device that has stopped being opened — and the nudge it
      * silenced would be the one that surfaces the problem.
      *

@@ -124,9 +124,10 @@ class SessionLifecycle(
      * Returns whether there was a session to arm.
      *
      * This exists because **an alarm is less durable than the row it belongs to**. A force stop and
-     * a package replace both cancel a package's alarms and leave the open session untouched, and
-     * `START_STICKY` restoring the service does not restore them — so without a repair path a
-     * session that survives an app update keeps no reminder and, far worse, no day-boundary close,
+     * a reboot both clear a package's alarms and leave the open session untouched; an update keeps
+     * them (per AOSP's `AlarmManagerService`) unless a receiver's path moved, which strands them; and
+     * `START_STICKY` restoring the service does not restore them — so without a repair path such a
+     * session keeps no reminder and, far worse, no day-boundary close,
      * running until the user notices and writing a multi-day duration onto a row nothing can edit.
      *
      * Separate from [arm] rather than folded into it, because [arm] is written for a *fresh* session:

@@ -20,7 +20,8 @@ import kotlinx.coroutines.launch
  *
  * Driven off the table rather than called by each write, so no write path can forget either: a habit
  * created, renamed, archived or restored is one emission, and the first emission is the process start
- * itself, which is what puts the alarm back after a boot, a package replace or a force stop.
+ * itself, which is what puts the alarm back after a boot or a force stop (which clear alarms) and
+ * after an update (which keeps them, but not one armed under a receiver path that has since moved).
  *
  * Never throws: a database that will not open still arms the fallback, and a failed channel write
  * costs that emission's channels, which the dispatcher re-ensures before it posts. A failed read
