@@ -17,10 +17,10 @@ import java.time.ZoneId
  * fires again, and the failure is self-reinforcing: the user this feature exists for is precisely the one
  * whose worker has stopped running. A time-of-day trigger needs a time-of-day primitive.
  *
- * Inexact, for the reasons set out on [com.checkin.app.service.SessionAlarms] — and with more room
+ * Inexact, for the reasons set out on [com.checkin.app.session.SessionAlarms] — and with more room
  * to spare here, since encouragement has no deadline at all.
  *
- * **Deliberately stateless, unlike [com.checkin.app.service.SessionAlarms].** That seam persists its
+ * **Deliberately stateless, unlike [com.checkin.app.session.SessionAlarms].** That seam persists its
  * armed instants because they are derived from a session and cannot be recomputed without it. The
  * next nudge instant is derivable from now, the chosen times and the day's sends, so there is nothing
  * to store and nothing to reconcile against `AlarmManager` (which cannot be asked what is still set).

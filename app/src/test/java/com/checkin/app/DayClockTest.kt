@@ -1,6 +1,6 @@
 package com.checkin.app
 
-import com.checkin.app.data.DayClock
+import com.checkin.app.time.DayClock
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

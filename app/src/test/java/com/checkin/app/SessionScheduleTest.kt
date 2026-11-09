@@ -1,6 +1,6 @@
 package com.checkin.app
 
-import com.checkin.app.service.SessionSchedule
+import com.checkin.app.session.SessionSchedule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

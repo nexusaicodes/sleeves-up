@@ -1,4 +1,4 @@
-package com.checkin.app.ui
+package com.checkin.app.ui.update
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts

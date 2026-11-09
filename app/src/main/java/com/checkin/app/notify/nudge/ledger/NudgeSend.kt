@@ -1,4 +1,4 @@
-package com.checkin.app.notify.nudge
+package com.checkin.app.notify.nudge.ledger
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

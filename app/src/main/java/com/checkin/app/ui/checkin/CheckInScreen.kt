@@ -56,7 +56,7 @@ import com.adevinta.spark.icons.LeboncoinIcons
 import com.adevinta.spark.tokens.highlight
 import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
-import com.checkin.app.service.SessionClock
+import com.checkin.app.session.SessionClock
 import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.SessionIntervalRow
 import com.checkin.app.ui.theme.LocalAppTypography

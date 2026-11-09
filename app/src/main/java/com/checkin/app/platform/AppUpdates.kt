@@ -13,6 +13,12 @@ import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 
 /**
+ * What the Play Store reported about a newer build, reduced to the three facts [UpdatePrompt.decide]
+ * reads. [availableVersionCode] is null when no update is available.
+ */
+data class UpdateStatus(val availableVersionCode: Int?, val flexibleAllowed: Boolean, val downloaded: Boolean)
+
+/**
  * Seam over Play In-App Updates, flexible flow only.
  *
  * The library asks the Play Store app over IPC and declares no permission; the Play Store does the

@@ -1,4 +1,4 @@
-package com.checkin.app.data
+package com.checkin.app.time
 
 import com.checkin.app.util.MILLIS_PER_HOUR
 import java.time.Duration

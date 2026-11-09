@@ -1,7 +1,7 @@
 package com.checkin.app
 
-import com.checkin.app.data.TimeSource
-import com.checkin.app.data.dayTrigger
+import com.checkin.app.time.TimeSource
+import com.checkin.app.time.dayTrigger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

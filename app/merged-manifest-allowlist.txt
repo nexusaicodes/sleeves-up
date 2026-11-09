@@ -22,10 +22,10 @@ activity com.checkin.app.MainActivity exported=true
 filter com.checkin.app.MainActivity action=android.intent.action.MAIN category=android.intent.category.LAUNCHER
 service com.checkin.app.service.CheckInService exported=false
 property android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE
-receiver com.checkin.app.service.SessionAlarmReceiver exported=false
-filter com.checkin.app.service.SessionAlarmReceiver action=com.checkin.app.SESSION_DAY_BOUNDARY,com.checkin.app.SESSION_REMINDER_DUE
-receiver com.checkin.app.service.SessionRestoreReceiver exported=true
-filter com.checkin.app.service.SessionRestoreReceiver action=android.intent.action.BOOT_COMPLETED,android.intent.action.MY_PACKAGE_REPLACED
+receiver com.checkin.app.session.SessionAlarmReceiver exported=false
+filter com.checkin.app.session.SessionAlarmReceiver action=com.checkin.app.SESSION_DAY_BOUNDARY,com.checkin.app.SESSION_REMINDER_DUE
+receiver com.checkin.app.session.SessionRestoreReceiver exported=true
+filter com.checkin.app.session.SessionRestoreReceiver action=android.intent.action.BOOT_COMPLETED,android.intent.action.MY_PACKAGE_REPLACED
 receiver com.checkin.app.notify.nudge.NudgeAlarmReceiver exported=false
 filter com.checkin.app.notify.nudge.NudgeAlarmReceiver action=com.checkin.app.NUDGE_CHECKPOINT_DUE
 receiver com.checkin.app.widget.CheckInWidgetProvider exported=true

@@ -66,27 +66,3 @@ class CameraReadings {
         nonDetecting.set(0)
     }
 }
-
-/** The decisions [PresenceCheckScreen] makes over the readings, the clock and the prompt. */
-object PresenceCheckRules {
-
-    /**
-     * Whether the check passes now. Never while the device-unlock prompt is up: the camera streams
-     * behind it, and a face found mid-prompt would pass under a dialog the user is still answering.
-     */
-    fun passes(facePresent: Boolean, usingDeviceUnlock: Boolean): Boolean = facePresent && !usingDeviceUnlock
-
-    /**
-     * What is left of the wait before device unlock is offered, from the gate opening ([startedAtMs],
-     * saved across rotation). Clamped at both ends: a reboot resets the clock [nowMs] reads.
-     */
-    fun remainingWaitMs(startedAtMs: Long, nowMs: Long): Long =
-        (DEVICE_UNLOCK_OFFERED_AFTER_MS - (nowMs - startedAtMs)).coerceIn(0L, DEVICE_UNLOCK_OFFERED_AFTER_MS)
-
-    /**
-     * Whether the fallback button shows: once [searchTimedOut] (latched by the screen), and not after
-     * the check passed or while a prompt is up, so no second authentication is raised.
-     */
-    fun offersFallback(passed: Boolean, usingDeviceUnlock: Boolean, searchTimedOut: Boolean): Boolean =
-        !passed && !usingDeviceUnlock && searchTimedOut
-}

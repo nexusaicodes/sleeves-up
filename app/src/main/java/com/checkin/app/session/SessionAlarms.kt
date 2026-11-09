@@ -1,10 +1,11 @@
-package com.checkin.app.service
+package com.checkin.app.session
 
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.edit
+import com.checkin.app.service.CheckInService
 
 /**
  * The two wake-ups an open session keeps standing: the periodic "still going?" reminder, and the

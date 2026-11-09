@@ -1,8 +1,9 @@
-package com.checkin.app.service
+package com.checkin.app.session
 
-import com.checkin.app.data.TimeSource
 import com.checkin.app.data.repository.CheckInRepository
-import com.checkin.app.platform.ServiceController
+import com.checkin.app.service.CheckInService
+import com.checkin.app.service.ServiceController
+import com.checkin.app.time.TimeSource
 
 /**
  * Puts back whatever an open session has lost: its foreground service, its alarms, or both.

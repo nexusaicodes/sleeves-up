@@ -1,4 +1,4 @@
-package com.checkin.app.platform
+package com.checkin.app.service
 
 import android.content.Context
 import android.content.Intent
@@ -16,7 +16,7 @@ interface ServiceController {
      * [revive] for one already running; the two take their timing from different places and are not
      * interchangeable. Returns false when the platform refused the start, since background
      * foreground-service starts are restricted. Neither writer inspects it — the row is written
-     * either way, and [com.checkin.app.service.SessionWatchdog] is what repairs a session left with no service.
+     * either way, and [com.checkin.app.session.SessionWatchdog] is what repairs a session left with no service.
      */
     fun startTimer(sessionId: Long, startedAt: Long): Boolean
 

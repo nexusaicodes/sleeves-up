@@ -1,13 +1,13 @@
 package com.checkin.app.data.repository
 
 import com.checkin.app.data.ConsistencyStats
-import com.checkin.app.data.SystemTimeSource
-import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.CheckInSessionDao
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.data.local.byDateKey
+import com.checkin.app.time.SystemTimeSource
+import com.checkin.app.time.TimeSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map

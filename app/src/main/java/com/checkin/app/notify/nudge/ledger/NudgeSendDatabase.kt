@@ -1,4 +1,4 @@
-package com.checkin.app.notify.nudge
+package com.checkin.app.notify.nudge.ledger
 
 import android.content.Context
 import androidx.room.Database

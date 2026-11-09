@@ -1,7 +1,6 @@
-package com.checkin.app.service
+package com.checkin.app.session
 
 import com.checkin.app.R
-import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
@@ -12,6 +11,7 @@ import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.StringResolver
+import com.checkin.app.time.TimeSource
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.ZoneId
@@ -22,6 +22,31 @@ import java.time.ZoneId
  *
  * The closing job is the load-bearing one: [onDayBoundaryFired] is the app's only un-gated
  * check-out and the only write to `sessions` no person asked for.
+ *
+ * ### Reading the `session` package
+ *
+ * Everything that happens to a session, none of which needs the foreground service — an alarm can
+ * land in a process the broadcast just created, and the watchdog exists for when the service is gone.
+ * The `Session` prefix discriminates nothing; what separates the files is their layer:
+ *
+ * - **Pure math**, no Android, unit-tested: [SessionSchedule] (cadence and the two midnight
+ *   derivations) and [SessionClock] (the notification's chronometer base and elapsed time). Neither
+ *   schedules anything; both are asked what an instant should be.
+ * - **Platform seams**, each an interface plus its Android implementation: [SessionAlarms], which
+ *   is what actually reaches `AlarmManager`, and which persists the armed instants and the reminder
+ *   count; [SessionZones], the zone the open session was checked in under, which a backup carries
+ *   so a restored session still finds its own midnight.
+ * - **Orchestration**, where the decisions live: [SessionActions] (the gated check-in and check-out,
+ *   every side effect in order, shared by both writers), this class (arms both alarms, handles the
+ *   reminder, **and closes the session at the day boundary**), and [SessionWatchdog] (repairs a
+ *   service or alarms lost to a kill; called from `MainActivity.onStart`, [SessionRestoreReceiver]
+ *   and the hourly `com.checkin.app.notify.nudge.NudgeWorker`).
+ * - **Receivers**: [SessionAlarmReceiver] (both alarms, handled without waking the service) and
+ *   [SessionRestoreReceiver] (boot, package replaced).
+ *
+ * The service itself is in `com.checkin.app.service`: `CheckInService`, which owns the ongoing
+ * notification and nothing else, `ServiceReconciler` (whether a live service still has a row behind
+ * it, pure) and `ServiceController`, the seam the orchestration above starts and stops it through.
  *
  * Nothing here verifies anything and nothing is deducted — the reminder only asks, and ignoring it
  * costs nothing at all. **Never make it stop the clock**: a question nobody saw would then silently
