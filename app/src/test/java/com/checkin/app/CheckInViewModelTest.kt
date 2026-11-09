@@ -6,7 +6,7 @@ import com.checkin.app.data.repository.HabitEdit
 import com.checkin.app.data.repository.HabitRepository
 import com.checkin.app.notify.StringResolver
 import com.checkin.app.session.SessionActions
-import com.checkin.app.session.SessionLifecycleRunner
+import com.checkin.app.session.SessionLifecycle
 import com.checkin.app.ui.checkin.CheckInViewModel
 import com.checkin.app.ui.checkin.CheckOutSignal
 import com.checkin.app.ui.checkin.raiseCheckOutCelebration
@@ -44,7 +44,7 @@ class CheckInViewModelTest {
         val habits = HabitRepository(habitDao, appState, dao, time)
         // The real runner over fakes rather than a stand-in: the check-in writer owns the session's
         // alarm lifetime, and a stub would let the two drift without a test noticing.
-        val reminder = SessionLifecycleRunner(
+        val reminder = SessionLifecycle(
             repository = repo,
             notifier = FakeNotifier(),
             strings = StringResolver { "copy-$it" },

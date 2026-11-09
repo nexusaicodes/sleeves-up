@@ -162,7 +162,7 @@ class HabitsViewModel(
                 val container = (this[APPLICATION_KEY] as CheckInApplication).container
                 HabitsViewModel(
                     container.habitRepository,
-                    container.repository,
+                    container.checkInRepository,
                     container.reminderSettings,
                     container.nudges::launchRearm,
                 )

@@ -37,7 +37,7 @@ interface CsvExporter {
     ): ExportResult
 }
 
-class DefaultCsvExporter(private val context: Context) : CsvExporter {
+class AndroidCsvExporter(private val context: Context) : CsvExporter {
 
     // Every failure mode here — file I/O, a FileProvider misconfiguration, no app able to receive
     // the share — is reported to the user the same way, as a Failure carrying the message. Catching

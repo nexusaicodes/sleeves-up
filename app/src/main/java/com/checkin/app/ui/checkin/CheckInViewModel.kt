@@ -167,7 +167,7 @@ class CheckInViewModel(
             initializer {
                 val container = (this[APPLICATION_KEY] as CheckInApplication).container
                 CheckInViewModel(
-                    container.repository,
+                    container.checkInRepository,
                     container.habitRepository,
                     container.timeSource,
                     container.sessionActions,

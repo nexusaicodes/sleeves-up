@@ -192,7 +192,7 @@ class NudgeDispatcherTest {
         val spec = notifier.shown.single()
         assertEquals(Nudge.NOT_CHECKED_IN.notificationIdFor(Habit.SEED_ID), spec.id)
         assertEquals(seed.channelId, spec.channelId)
-        assertEquals(LaunchExtras.CHECK_IN, spec.launchExtra)
+        assertEquals(LaunchExtras.NUDGE_TAP, spec.launchExtra)
         assertEquals(seed.uuid, spec.launchHabitUuid)
     }
 

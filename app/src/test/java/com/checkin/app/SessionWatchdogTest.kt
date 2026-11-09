@@ -3,7 +3,7 @@ package com.checkin.app
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.notify.StringResolver
-import com.checkin.app.session.SessionLifecycleRunner
+import com.checkin.app.session.SessionLifecycle
 import com.checkin.app.session.SessionWatchdog
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -33,7 +33,7 @@ class SessionWatchdogTest {
     private val controller = FakeServiceController()
     private val alarms = FakeSessionAlarms()
 
-    private val reminder = SessionLifecycleRunner(
+    private val reminder = SessionLifecycle(
         repository = repository,
         notifier = FakeNotifier(),
         strings = StringResolver { "copy-$it" },

@@ -14,8 +14,8 @@ import com.checkin.app.notify.NotificationFactory
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.holdsNotificationPermission
 import com.checkin.app.notify.nudge.AndroidNudgeAlarms
+import com.checkin.app.notify.nudge.GuardedNudges
 import com.checkin.app.notify.nudge.NudgeAlarms
-import com.checkin.app.notify.nudge.NudgeCoordinator
 import com.checkin.app.notify.nudge.NudgeDispatcher
 import com.checkin.app.notify.nudge.PostedNudges
 import com.checkin.app.notify.nudge.ReminderSettings
@@ -23,22 +23,22 @@ import com.checkin.app.notify.nudge.SharedPrefsReminderSettings
 import com.checkin.app.notify.nudge.ledger.NudgeSendDatabase
 import com.checkin.app.notify.nudge.ledger.NudgeSendLog
 import com.checkin.app.notify.nudge.ledger.RoomNudgeSendLog
+import com.checkin.app.platform.AndroidCsvExporter
 import com.checkin.app.platform.AppUpdates
 import com.checkin.app.platform.CsvExporter
-import com.checkin.app.platform.DefaultCsvExporter
 import com.checkin.app.platform.LanguageSettings
 import com.checkin.app.platform.LocaleManagerLanguageSettings
 import com.checkin.app.platform.PlayAppUpdates
-import com.checkin.app.platform.PromptSettings
-import com.checkin.app.platform.SharedPrefsPromptSettings
+import com.checkin.app.platform.SeenPrompts
+import com.checkin.app.platform.SharedPrefsSeenPrompts
+import com.checkin.app.service.AndroidServiceController
 import com.checkin.app.service.CheckInService
-import com.checkin.app.service.DefaultServiceController
 import com.checkin.app.service.ServiceController
 import com.checkin.app.session.AndroidSessionAlarms
 import com.checkin.app.session.AndroidSessionZones
 import com.checkin.app.session.SessionActions
 import com.checkin.app.session.SessionAlarms
-import com.checkin.app.session.SessionLifecycleRunner
+import com.checkin.app.session.SessionLifecycle
 import com.checkin.app.session.SessionWatchdog
 import com.checkin.app.time.SystemTimeSource
 import com.checkin.app.time.TimeSource
@@ -56,14 +56,14 @@ import kotlinx.coroutines.launch
 
 /**
  * Minimal manual DI: the single place that builds the repositories, the side-effect seams
- * ([PromptSettings], [LanguageSettings], [ServiceController], [CsvExporter], [HomeWidgets]), and the
+ * ([SeenPrompts], [LanguageSettings], [ServiceController], [CsvExporter], [HomeWidgets]), and the
  * app-wide coroutine scope.
  * ViewModels receive these via their factories, so they stay pure and unit-testable with fakes.
  */
 interface AppContainer {
-    val repository: CheckInRepository
+    val checkInRepository: CheckInRepository
     val habitRepository: HabitRepository
-    val settings: PromptSettings
+    val prompts: SeenPrompts
     val reminderSettings: ReminderSettings
     val languageSettings: LanguageSettings?
     val serviceController: ServiceController
@@ -88,8 +88,8 @@ interface AppContainer {
     val postedNudges: PostedNudges
     val nudgeAlarms: NudgeAlarms
 
-    // The fire-and-forget entry points to the dispatcher, guarded; see NudgeCoordinator.
-    val nudges: NudgeCoordinator
+    // The fire-and-forget entry points to the dispatcher, guarded; see GuardedNudges.
+    val nudges: GuardedNudges
 
     /** Follows the habits table for channels, the reminder fallback and the nudge alarm; see [HabitSync]. */
     val habitSync: HabitSync
@@ -113,7 +113,7 @@ interface AppContainer {
     // work in a process where no service is running: an alarm can be delivered into a process the
     // broadcast just created, and the watchdog exists precisely for when the service is gone. The
     // alarm seam itself is not exposed — everything goes through the runner, which owns the ordering.
-    val sessionLifecycleRunner: SessionLifecycleRunner
+    val sessionLifecycle: SessionLifecycle
     val sessionWatchdog: SessionWatchdog
 
     // The gated check-in and check-out, shared by the Check-In screen and the root gate.
@@ -129,7 +129,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
     // a screen leaving composition, such as a check-out written from a notification action.
     override val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    override val settings: PromptSettings = SharedPrefsPromptSettings.create(appContext)
+    override val prompts: SeenPrompts = SharedPrefsSeenPrompts.create(appContext)
 
     override val reminderSettings: ReminderSettings = SharedPrefsReminderSettings.create(appContext)
 
@@ -137,7 +137,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val languageSettings: LanguageSettings? =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) LocaleManagerLanguageSettings(appContext) else null
 
-    override val repository: CheckInRepository by lazy {
+    override val checkInRepository: CheckInRepository by lazy {
         CheckInRepository(AppDatabase.getDatabase(appContext).checkInSessionDao(), timeSource)
     }
 
@@ -146,9 +146,9 @@ class DefaultAppContainer(context: Context) : AppContainer {
         HabitRepository(db.habitDao(), db.appStateDao(), db.checkInSessionDao(), timeSource)
     }
 
-    override val serviceController: ServiceController = DefaultServiceController(appContext)
+    override val serviceController: ServiceController = AndroidServiceController(appContext)
 
-    override val csvExporter: CsvExporter = DefaultCsvExporter(appContext)
+    override val csvExporter: CsvExporter = AndroidCsvExporter(appContext)
 
     override val appUpdates: AppUpdates = PlayAppUpdates(appContext)
 
@@ -160,7 +160,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
             faces = {
                 WidgetFace.faces(
                     activeHabits = habitRepository.activeHabitsFlow(),
-                    runningHabitId = repository.activeSessionFlow().map { it?.habitId },
+                    runningHabitId = checkInRepository.activeSessionFlow().map { it?.habitId },
                     animationsOn = homeWidgets.animationsOn(),
                 )
             },
@@ -181,7 +181,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val nudgeDispatcher: NudgeDispatcher by lazy {
         NudgeDispatcher(
             strings = AndroidStringResolver(appContext),
-            repository = repository,
+            repository = checkInRepository,
             habits = habitRepository,
             notifier = notifier,
             sendLog = { nudgeSendLog },
@@ -200,8 +200,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     // decides the instant: it is the fallback arm when the dispatcher cannot be built.
     override val nudgeAlarms: NudgeAlarms = AndroidNudgeAlarms(appContext)
 
-    override val nudges: NudgeCoordinator by lazy {
-        NudgeCoordinator(
+    override val nudges: GuardedNudges by lazy {
+        GuardedNudges(
             runOnce = { nudgeDispatcher.runOnce() },
             rearm = { nudgeDispatcher.rearm() },
             alarms = nudgeAlarms,
@@ -209,7 +209,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
             timeSource = timeSource,
             scope = applicationScope,
             // Held only while a post would be refused for a permission never asked; below API 33, never.
-            firstRunPending = { !settings.hasAskedNotifications() && !appContext.holdsNotificationPermission() },
+            firstRunPending = { !prompts.hasAskedNotifications() && !appContext.holdsNotificationPermission() },
         )
     }
 
@@ -220,9 +220,9 @@ class DefaultAppContainer(context: Context) : AppContainer {
     // Held by the runner alone; the watchdog repairs alarms through the runner, not through this.
     private val sessionAlarms: SessionAlarms = AndroidSessionAlarms(appContext)
 
-    override val sessionLifecycleRunner: SessionLifecycleRunner by lazy {
-        SessionLifecycleRunner(
-            repository = repository,
+    override val sessionLifecycle: SessionLifecycle by lazy {
+        SessionLifecycle(
+            repository = checkInRepository,
             notifier = notifier,
             strings = AndroidStringResolver(appContext),
             alarms = sessionAlarms,
@@ -233,18 +233,18 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val sessionActions: SessionActions by lazy {
         SessionActions(
-            repository = repository,
+            repository = checkInRepository,
             serviceController = serviceController,
-            lifecycle = sessionLifecycleRunner,
+            lifecycle = sessionLifecycle,
             postedNudges = postedNudges,
             scope = applicationScope,
             onCheckedOut = { closed ->
-                raiseCheckOutCelebration(repository, habitRepository, closed, timeSource.nowMillis())
+                raiseCheckOutCelebration(checkInRepository, habitRepository, closed, timeSource.nowMillis())
             },
         )
     }
 
     override val sessionWatchdog: SessionWatchdog by lazy {
-        SessionWatchdog(repository, serviceController, sessionLifecycleRunner, timeSource)
+        SessionWatchdog(checkInRepository, serviceController, sessionLifecycle, timeSource)
     }
 }

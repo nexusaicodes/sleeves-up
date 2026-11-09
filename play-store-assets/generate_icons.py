@@ -12,7 +12,7 @@ Emits, from the same geometry:
   * pathData for res/drawable/ic_launcher_foreground.xml -- the launcher foreground and the
     themed/monochrome layer
   * res/drawable/ic_splash_icon.xml, the splash's animated mark, and its two interpolators
-  * pathData for res/drawable/ic_stat_checkin.xml (24dp notification silhouette)
+  * pathData for res/drawable/ic_stat_check_in.xml (24dp notification silhouette)
   * app/src/main/ic_launcher-playstore.png (512x512 Play listing icon)
 
 WHY NOT A ROLLED SLEEVE. The name suggests one, and it was tried: as a constant-width
@@ -295,7 +295,7 @@ if __name__ == "__main__":
     print(path_data())
     print()
 
-    print("--- ic_stat_checkin.xml (viewport 24) ---")
+    print("--- ic_stat_check_in.xml (viewport 24) ---")
     print("fillColor #FFFFFF")
     print(stat_path_data())
     print()

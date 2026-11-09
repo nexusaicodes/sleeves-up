@@ -116,7 +116,7 @@ fun BrandGrid(
  * but still unmistakably not the rest state, which is the one property that must survive.
  */
 @Composable
-fun BrandGridGauge(running: Boolean, color: Color, trackColor: Color, modifier: Modifier = Modifier) {
+fun BrandGridPulse(running: Boolean, color: Color, trackColor: Color, modifier: Modifier = Modifier) {
     val animated = animationsEnabled()
     // Null rather than a settled value: the transition is composed only while it has something to
     // drive, so nothing redraws the rest state's seven track-coloured cells sixty times a second on

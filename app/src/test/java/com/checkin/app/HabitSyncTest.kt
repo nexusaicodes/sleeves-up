@@ -3,7 +3,7 @@ package com.checkin.app
 import com.checkin.app.data.local.Habit
 import com.checkin.app.notify.HabitSync
 import com.checkin.app.notify.habitSyncRetryDelayMs
-import com.checkin.app.notify.nudge.NudgeCoordinator
+import com.checkin.app.notify.nudge.GuardedNudges
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -30,7 +30,7 @@ class HabitSyncTest {
         Habit(id = id, uuid = "uuid-$id", name = "H$id", archived = archived, createdAt = 0L, channelId = "c$id")
 
     private fun coordinator(scope: kotlinx.coroutines.CoroutineScope) =
-        NudgeCoordinator({}, { events += "rearm:${settings.active}" }, alarms, settings, time, scope) { false }
+        GuardedNudges({}, { events += "rearm:${settings.active}" }, alarms, settings, time, scope) { false }
 
     @Test
     fun `each emission syncs channels, stores the active set, then re-arms`() = runTest(UnconfinedTestDispatcher()) {

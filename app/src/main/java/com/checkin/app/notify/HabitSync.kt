@@ -1,7 +1,7 @@
 package com.checkin.app.notify
 
 import com.checkin.app.data.local.Habit
-import com.checkin.app.notify.nudge.NudgeCoordinator
+import com.checkin.app.notify.nudge.GuardedNudges
 import com.checkin.app.notify.nudge.ReminderSettings
 import com.checkin.app.util.MILLIS_PER_MINUTE
 import com.checkin.app.util.MILLIS_PER_SECOND
@@ -31,7 +31,7 @@ class HabitSync(
     private val habits: Flow<List<Habit>>,
     private val channels: HabitChannels,
     private val reminderSettings: ReminderSettings,
-    private val nudges: NudgeCoordinator,
+    private val nudges: GuardedNudges,
     private val scope: CoroutineScope,
     private val retryDelayMs: (attempt: Long) -> Long = ::habitSyncRetryDelayMs,
 ) {

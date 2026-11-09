@@ -37,7 +37,7 @@ class MainActivity : FragmentActivity() {
     private val tapResolver by lazy {
         TapResolver(
             habits = container.habitRepository,
-            sessions = container.repository,
+            sessions = container.checkInRepository,
             postedNudges = container.postedNudges,
             timeSource = container.timeSource,
             scope = container.applicationScope,
@@ -127,8 +127,8 @@ class MainActivity : FragmentActivity() {
                 intent.removeExtra(LaunchExtras.CHECK_OUT_FROM_REMINDER)
                 requestPresenceCheck(Reason.CHECK_OUT_FROM_REMINDER)
             }
-            intent?.getBooleanExtra(LaunchExtras.CHECK_IN, false) == true -> {
-                intent.removeExtra(LaunchExtras.CHECK_IN)
+            intent?.getBooleanExtra(LaunchExtras.NUDGE_TAP, false) == true -> {
+                intent.removeExtra(LaunchExtras.NUDGE_TAP)
                 val habitUuid = intent.getStringExtra(LaunchExtras.HABIT_UUID)
                 intent.removeExtra(LaunchExtras.HABIT_UUID)
                 tapResolver.nudgeTapped(habitUuid)

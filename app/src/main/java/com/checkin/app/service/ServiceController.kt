@@ -34,7 +34,7 @@ interface ServiceController {
     fun refreshFromDb()
 }
 
-class DefaultServiceController(private val context: Context) : ServiceController {
+class AndroidServiceController(private val context: Context) : ServiceController {
 
     override fun startTimer(sessionId: Long, startedAt: Long): Boolean =
         startForeground(CheckInService.ACTION_START, sessionId, startedAt)

@@ -17,12 +17,12 @@ import kotlinx.coroutines.launch
  * Runs on the application [scope], so leaving the screen cannot cancel the work between the write
  * and its alarms, and **never throws** (that scope has no handler); what a failure leaves half-done,
  * `SessionWatchdog` repairs at the next start. The un-gated day-boundary close lives in
- * [SessionLifecycleRunner.onDayBoundaryFired].
+ * [SessionLifecycle.onDayBoundaryFired].
  */
 class SessionActions(
     private val repository: CheckInRepository,
     private val serviceController: ServiceController,
-    private val lifecycle: SessionLifecycleRunner,
+    private val lifecycle: SessionLifecycle,
     private val postedNudges: PostedNudges,
     private val scope: CoroutineScope,
     /** Called with the row a person closed, for the celebration. */

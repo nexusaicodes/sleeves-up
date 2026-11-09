@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.adevinta.spark.SparkTheme
 import com.adevinta.spark.components.text.Text
 import com.checkin.app.R
-import com.checkin.app.ui.components.BrandGridGauge
+import com.checkin.app.ui.components.BrandGridPulse
 import com.checkin.app.ui.theme.CheckInAppTheme
 import com.checkin.app.ui.theme.LocalAppTypography
 import com.checkin.app.ui.theme.LocalTimePatterns
@@ -66,7 +66,7 @@ private const val READOUT_SHRINK_SCALE = 1.5f
  * here". The day's total is stated directly below, by `TodaySessions`.
  *
  * **The lattice is motion, not measurement**: it says only whether a session is open (see
- * [BrandGridGauge]). The description states the elapsed time and nothing about the mark.
+ * [BrandGridPulse]). The description states the elapsed time and nothing about the mark.
  *
  * **The readout sits below the mark rather than inside it, and it gives up size before it gives up
  * a line.** Enclosing it in the mark would bound `sp` text by a `dp` box, so a raised font scale
@@ -76,7 +76,7 @@ private const val READOUT_SHRINK_SCALE = 1.5f
  * clock is a wrong number on screen rather than a small one.
  */
 @Composable
-internal fun TimerGauge(elapsedMs: Long, running: Boolean, markSize: Dp = MARK_MAX) {
+internal fun SessionTimer(elapsedMs: Long, running: Boolean, markSize: Dp = MARK_MAX) {
     val patterns = LocalTimePatterns.current
     val description = stringResource(R.string.cd_timer_gauge, TimeFormat.durationShort(elapsedMs, patterns))
 
@@ -87,7 +87,7 @@ internal fun TimerGauge(elapsedMs: Long, running: Boolean, markSize: Dp = MARK_M
         // the readout arrives without the phrase that says which clock it is.
         modifier = Modifier.clearAndSetSemantics { contentDescription = description },
     ) {
-        BrandGridGauge(
+        BrandGridPulse(
             running = running,
             color = SparkTheme.colors.main,
             trackColor = SparkTheme.colors.main.copy(alpha = TRACK_ALPHA),
@@ -115,10 +115,10 @@ private const val TRACK_ALPHA = 0.15f
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun TimerGaugeRunningPreview() {
+private fun SessionTimerRunningPreview() {
     CheckInAppTheme {
         Box(modifier = Modifier.padding(16.dp)) {
-            TimerGauge(elapsedMs = 5 * MILLIS_PER_HOUR + 45 * MILLIS_PER_MINUTE, running = true)
+            SessionTimer(elapsedMs = 5 * MILLIS_PER_HOUR + 45 * MILLIS_PER_MINUTE, running = true)
         }
     }
 }
@@ -127,10 +127,10 @@ private fun TimerGaugeRunningPreview() {
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun TimerGaugeAtRestPreview() {
+private fun SessionTimerAtRestPreview() {
     CheckInAppTheme {
         Box(modifier = Modifier.padding(16.dp)) {
-            TimerGauge(elapsedMs = 0L, running = false)
+            SessionTimer(elapsedMs = 0L, running = false)
         }
     }
 }

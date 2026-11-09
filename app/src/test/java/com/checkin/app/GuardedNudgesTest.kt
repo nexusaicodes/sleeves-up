@@ -1,6 +1,6 @@
 package com.checkin.app
 
-import com.checkin.app.notify.nudge.NudgeCoordinator
+import com.checkin.app.notify.nudge.GuardedNudges
 import com.checkin.app.notify.nudge.NudgeSchedule
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -18,7 +18,7 @@ import java.time.ZoneId
  * process, and a failure that arms nothing ends the checkpoint alarm's chain for good.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class NudgeCoordinatorTest {
+class GuardedNudgesTest {
 
     private val time = FakeTimeSource(1_000L, LocalDate.of(2026, 6, 15))
     private val settings = FakeReminderSettings()
@@ -30,7 +30,7 @@ class NudgeCoordinatorTest {
         runOnce: suspend () -> Unit = {},
         rearm: suspend () -> Unit = {},
         firstRunPending: Boolean = false,
-    ) = NudgeCoordinator(runOnce, rearm, alarms, settings, time, scope) { firstRunPending }
+    ) = GuardedNudges(runOnce, rearm, alarms, settings, time, scope) { firstRunPending }
 
     @Test
     fun `a pass that reaches the dispatcher arms nothing of its own`() = runTest(UnconfinedTestDispatcher()) {
@@ -114,7 +114,7 @@ class NudgeCoordinatorTest {
             var pending = true
             var rearms = 0
             val coordinator =
-                NudgeCoordinator({}, { rearms++ }, alarms, settings, time, backgroundScope) { pending }
+                GuardedNudges({}, { rearms++ }, alarms, settings, time, backgroundScope) { pending }
 
             coordinator.rearmNow()
             pending = false

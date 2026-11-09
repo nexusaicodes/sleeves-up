@@ -6,6 +6,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
+ * The guarded facade over [NudgeDispatcher], which does the work: everything outside the nudge layer
+ * calls this, never the dispatcher.
+ *
  * The fire-and-forget entry points to the nudge layer: the receiver and worker run a pass, the
  * habits collector and time choosers re-arm. Each **never throws except to cancel** — callers launch
  * on the application scope, which has no handler.
@@ -18,7 +21,7 @@ import kotlinx.coroutines.launch
  * never asked, and the refusal recorded, spending the habit's day under the tour. Below API 33 there
  * is nothing to ask and it never holds. First run's end calls [launchRearm], which starts the chain.
  */
-class NudgeCoordinator(
+class GuardedNudges(
     private val runOnce: suspend () -> Unit,
     private val rearm: suspend () -> Unit,
     private val alarms: NudgeAlarms,

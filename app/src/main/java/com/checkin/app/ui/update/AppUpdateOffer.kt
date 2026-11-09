@@ -40,7 +40,7 @@ internal fun AppUpdateOffer(turn: UpdateCheckTurn, sessionOpen: Boolean) {
     val context = LocalContext.current
     val container = remember(context) { (context.applicationContext as CheckInApplication).container }
     val updates = container.appUpdates
-    val settings = container.settings
+    val settings = container.prompts
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val snackbarHostState = LocalSnackbarHostState.current
     val message = stringResource(R.string.update_downloaded)

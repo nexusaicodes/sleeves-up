@@ -15,7 +15,7 @@ import java.util.Locale
  * The CSV's column order, pinned.
  *
  * People write scripts against this file, so the contract is that columns are **appended** — never
- * renamed, retyped or moved. `DefaultCsvExporter` needs a `Context` and so cannot be tested here,
+ * renamed, retyped or moved. `AndroidCsvExporter` needs a `Context` and so cannot be tested here,
  * which is exactly how a reorder could otherwise land with nothing failing.
  */
 class CsvFormatTest {
