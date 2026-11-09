@@ -14,7 +14,8 @@ import com.checkin.app.time.TimeSource
  * cheerfully running timer with no service behind it.
  *
  * **The service and the alarms are repaired independently, because they are lost independently.** A
- * force stop and a package replace cancel a package's alarms; a plain process kill does not. So the
+ * force stop and a reboot clear a package's alarms, and an update leaves one armed under a since-moved
+ * receiver path firing at nothing; a plain process kill touches none of them. So the
  * service running says nothing about whether the day-boundary close is still standing, and the
  * alarms are ensured on every pass, before the service is even looked at — see
  * [SessionLifecycle.ensureArmed] for what that repair costs to skip.
@@ -53,8 +54,8 @@ class SessionWatchdog(
     }
 
     private suspend fun attemptRevive(): Boolean {
-        // Alarms first, and unconditionally: a package replace clears them while leaving the row
-        // open and the service perfectly able to restart itself, so gating this on the service
+        // Alarms first, and unconditionally: a force stop clears them while leaving the row open,
+        // and START_STICKY can bring the service back without them, so gating this on the service
         // being down is exactly how a session loses its day-boundary close and keeps its timer.
         // Reports false when there is no open session, in which case it has dropped the alarms.
         if (!sessionLifecycle.ensureArmed(timeSource.nowMillis())) return false

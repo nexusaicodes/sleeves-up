@@ -58,7 +58,7 @@ export JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew :app:testDebugUnitTest -Dorg.gradle.java.installations.paths="$JBR"  # JVM unit tests
 ./gradlew :app:assembleDebug     -Dorg.gradle.java.installations.paths="$JBR"  # debug APK
 ./gradlew :app:installDebug      -Dorg.gradle.java.installations.paths="$JBR"  # install on a device
-./gradlew :app:testDebugUnitTest --tests "com.checkin.app.ConsistencyStatsTest"  # one test class
+./gradlew :app:testDebugUnitTest --tests "com.checkin.app.data.ConsistencyStatsTest"  # one test class
 ```
 
 ## Checks
