@@ -63,7 +63,7 @@ class CheckInRepositoryTest {
         val repo = CheckInRepository(dao, FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
 
         val first = repo.open()
-        repo.checkOut(first.id, ClosedBy.IN_APP)
+        repo.checkOutAt(first.id, 1000L, ClosedBy.IN_APP)
         val second = repo.open()
 
         assertEquals(2, dao.sessions.size)
@@ -77,7 +77,7 @@ class CheckInRepositoryTest {
         val id = CheckInRepository(dao, FakeTimeSource(1000L, checkInDay)).open().id
 
         // Check out the next calendar day: attribution stays on the check-in day (immutable).
-        CheckInRepository(dao, FakeTimeSource(6000L, checkInDay.plusDays(1))).checkOut(id, ClosedBy.IN_APP)
+        CheckInRepository(dao, FakeTimeSource(6000L, checkInDay.plusDays(1))).checkOutAt(id, 6000L, ClosedBy.IN_APP)
         val session = dao.getSessionById(id)!!
 
         assertEquals(5000L, session.duration)
@@ -145,7 +145,10 @@ class CheckInRepositoryTest {
         val dao = FakeCheckInSessionDao()
         val repo = CheckInRepository(dao, FakeTimeSource(1000L, LocalDate.of(2026, 6, 15)))
         val first = repo.open()
-        assertEquals(ClosedBy.TIMER_NOTIFICATION, repo.checkOut(first.id, ClosedBy.TIMER_NOTIFICATION)!!.closedBy)
+        assertEquals(
+            ClosedBy.TIMER_NOTIFICATION,
+            repo.checkOutAt(first.id, 1000L, ClosedBy.TIMER_NOTIFICATION)!!.closedBy,
+        )
 
         val second = repo.open()
         assertEquals(

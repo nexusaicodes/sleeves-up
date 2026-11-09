@@ -40,20 +40,21 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
 
     /**
      * Opens a session for [habitId], unless one is already open — for it or for any other habit.
-     * Two gated paths reach a check-in — the Check-In screen and a nudge tap — and either can resolve
-     * while the other's gate is still on screen, so the one-open-session invariant is enforced here
-     * rather than at each call site, under [checkInLock]: `AppContainer` builds one repository, and
-     * the two writers run on different dispatchers. A second open row would never be closed
+     * Every gated check-in reaches this through `SessionActions.open`: the Check-In screen, and the
+     * root gate after a nudge tap, a widget tap or the widget's habit picker. Any of them can resolve
+     * while another's gate is still on screen, and each runs as its own coroutine on the application
+     * scope, so the one-open-session invariant is enforced here rather than at each call site, under
+     * [checkInLock] (`AppContainer` builds one repository). A second open row would never be closed
      * (`getActiveSession()` returns one) and its hours would never reach `duration`. The switcher
-     * locks while a session runs, so [CheckInResult.OtherHabitOpen] is the backstop for that lock rather than an expected
-     * outcome.
+     * locks while a session runs, so [CheckInResult.OtherHabitOpen] is the backstop for that lock
+     * rather than an expected outcome.
      *
      * **Writing the row is half of a check-in; the caller owns the other half.** This does not start
      * the foreground service and does not arm either session alarm — whoever writes the row arms it,
      * because a service start can be refused (a restricted standby bucket, an OEM declining a
      * `specialUse` foreground start) while a row write cannot, so arming behind the start would let
-     * a refusal silently produce a session with no day-boundary close. Both writers do it:
-     * `CheckInViewModel.executeCheckIn` and `MainActivity.onRootGatePassed`. A new caller must too.
+     * a refusal silently produce a session with no day-boundary close. `SessionActions.open` does
+     * both; a new writer goes through it rather than calling this directly.
      */
     suspend fun checkIn(habitId: Long): CheckInResult = checkInLock.withLock {
         dao.getActiveSession()?.let { open ->
@@ -70,9 +71,6 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
         )
         CheckInResult.Opened(session.copy(id = dao.insertSession(session)))
     }
-
-    suspend fun checkOut(sessionId: Long, closedBy: ClosedBy): CheckInSession? =
-        checkOutAt(sessionId, timeSource.nowMillis(), closedBy)
 
     /**
      * Closes [sessionId] stamped at [atMillis] rather than now, returning the closed row, or null

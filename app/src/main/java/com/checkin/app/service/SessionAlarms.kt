@@ -27,8 +27,7 @@ import androidx.core.content.edit
  * This is an interface plus its Android implementation, which is the shape `platform/` holds — and
  * it lives here anyway, on purpose. The seams in `platform/` are general-purpose and say nothing
  * about sessions; this one persists a session's armed instants and its reminder count, so it is
- * inseparable from the session mechanics around it. `platform/ServiceController` is the boundary
- * that stayed general.
+ * inseparable from the session mechanics around it.
  */
 interface SessionAlarms {
     /** Arms the next reminder at [atMillis], replacing any already set. */

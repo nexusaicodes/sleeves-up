@@ -5,7 +5,11 @@ import android.content.Intent
 import androidx.core.content.ContextCompat
 import com.checkin.app.service.CheckInService
 
-/** Seam over the [CheckInService] foreground-service intents so ViewModels don't hold a Context. */
+/**
+ * Seam over the [CheckInService] foreground-service intents, so the session code that starts,
+ * revives and stops the service (`SessionActions`, `SessionWatchdog`, `SessionAlarmReceiver`) is
+ * testable without a Context.
+ */
 interface ServiceController {
     /**
      * Starts the timer service for a session that has just begun. **Not the revive path** — see

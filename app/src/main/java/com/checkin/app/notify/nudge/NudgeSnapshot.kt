@@ -47,5 +47,4 @@ data class NudgeSnapshot(
      * Refusals excluded: the gap spaces what the user was shown.
      */
     val lastShownAtMs: Long? = null,
-    val config: NudgeConfig = NudgeConfig(),
 )

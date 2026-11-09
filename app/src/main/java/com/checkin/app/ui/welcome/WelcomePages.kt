@@ -4,8 +4,8 @@ import com.checkin.app.R
 
 /**
  * Which mark a page carries. Named rather than held as an `ImageVector` so this file stays free of
- * Compose and the unit suite can read it — one is a drawable the app ships, one a Material vector and
- * one a carousel of them, which is a difference only the composable needs to know.
+ * Compose and the unit suite can read it — one is a drawable the app ships, two are Material vectors
+ * and one cycles example habit names, which is a difference only the composable needs to know.
  */
 enum class WelcomeIcon { CHECK_IN_MARK, FACE, WIDGET, HABITS }
 

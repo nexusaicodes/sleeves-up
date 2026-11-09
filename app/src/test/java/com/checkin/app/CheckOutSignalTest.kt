@@ -150,7 +150,7 @@ class CheckOutSignalTest {
         val session = repo.open()
         // Closed on the following day, while the row still carries 06-15 as its date_key.
         val closed = CheckInRepository(dao, FakeTimeSource(2 * hour, startDay.plusDays(1)))
-            .checkOut(session.id, ClosedBy.IN_APP)
+            .checkOutAt(session.id, 2 * hour, ClosedBy.IN_APP)
 
         raiseCheckOutCelebration(repo, habitsOver(dao), closed!!, nowMillis = 0L)
 

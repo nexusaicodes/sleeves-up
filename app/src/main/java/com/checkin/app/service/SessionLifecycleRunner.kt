@@ -21,7 +21,7 @@ import java.time.ZoneId
  * still running, and closing it at the day boundary.
  *
  * The closing job is the load-bearing one: [onDayBoundaryFired] is the app's only un-gated
- * check-out and the only write to `sessions` anywhere in this package.
+ * check-out and the only write to `sessions` no person asked for.
  *
  * Nothing here verifies anything and nothing is deducted — the reminder only asks, and ignoring it
  * costs nothing at all. **Never make it stop the clock**: a question nobody saw would then silently
