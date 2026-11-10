@@ -258,6 +258,7 @@
     <string name="habit_archive_running">سجّل انصرافك من %1$s قبل أرشفتها</string>
     <string name="habit_archive_last">أبقِ عادة واحدة على الأقل</string>
     <string name="habit_restore_duplicate">توجد عادة أخرى باسم %1$s</string>
+    <string name="habit_save_missing">لم تعد هذه العادة موجودة، فلم يُحفظ شيء</string>
     <string name="habit_switcher_cd">العادة: %1$s. تبديل العادة</string>
     <string name="habit_switch_locked">سجّل انصرافك من %1$s للتبديل أو لإدارة العادات</string>
     <string name="update_downloaded">إصدار جديد جاهز للتثبيت</string>

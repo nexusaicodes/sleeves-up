@@ -395,7 +395,7 @@ fun PresenceCheckScreen(onAuthSuccess: () -> Unit, onDismiss: () -> Unit) {
  */
 @Composable
 private fun OverPreview(shape: Shape, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    SparkColorScope(transform = { SparkDark }) {
+    SparkColorScope(transform = { SparkDark }, darkPalette = true) {
         Box(modifier = modifier.background(SparkTheme.colors.scrim.copy(alpha = SCRIM_ALPHA), shape)) {
             content()
         }

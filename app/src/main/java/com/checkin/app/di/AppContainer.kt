@@ -214,7 +214,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
     }
 
     override val habitSync: HabitSync by lazy {
-        HabitSync(habitRepository.allHabitsFlow(), habitChannels, reminderSettings, nudges, applicationScope)
+        HabitSync({ habitRepository.allHabitsFlow() }, habitChannels, reminderSettings, nudges, applicationScope)
     }
 
     // Held by the runner alone; the watchdog repairs alarms through the runner, not through this.

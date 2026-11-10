@@ -153,7 +153,7 @@ class NudgeDispatcher(
         val shown = shownWording(habit.uuid, nowMillis)
         val seed = NudgeVoice.seedFor(habit.uuid, today)
         val title = NudgeVoice.pick(copy.titles, shown, seed)
-        val body = NudgeVoice.pick(copy.bodies, shown, seed)
+        val body = NudgeVoice.pick(copy.bodies, shown, NudgeVoice.bodySeed(seed, copy.titles.size))
         // A post to a channel that does not exist is discarded — and recorded below as a refusal,
         // spending the habit's day. The channels are reconciled off the habits table, but on a
         // process this alarm just started that collector may not have run yet.

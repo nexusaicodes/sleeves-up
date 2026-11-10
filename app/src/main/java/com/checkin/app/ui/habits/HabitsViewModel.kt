@@ -47,6 +47,9 @@ sealed interface HabitsEvent {
     data class Archived(val name: String?) : HabitsEvent
     data class ArchiveRefused(val result: ArchiveResult, val name: String?) : HabitsEvent
     data class RestoreRefused(val name: String?) : HabitsEvent
+
+    /** The habit being saved no longer exists; nothing was written. */
+    data object SaveMissing : HabitsEvent
 }
 
 /**
@@ -98,8 +101,9 @@ class HabitsViewModel(
     /**
      * Creates a habit when [habitId] is null, otherwise renames it, and stores [minute] as its
      * reminder time, then calls [onResult] with null — or with the problem the repository refused
-     * the name for, storing nothing. A new habit is not selected: adding one on the Habits screen
-     * leaves the current one showing, and switching is a tap on its row.
+     * the name for, storing nothing. A habit that no longer exists stores nothing, sends
+     * [HabitsEvent.SaveMissing] and calls [onResult] with null. A new habit is not selected: adding
+     * one on the Habits screen leaves the current one showing, and switching is a tap on its row.
      *
      * The result comes back because [nameProblem] reads the last emitted list, which a write
      * elsewhere can have overtaken: the caller keeps its fields until the write has landed.
@@ -110,8 +114,11 @@ class HabitsViewModel(
             val saved = when (edit) {
                 is HabitEdit.Saved -> edit.habit
                 is HabitEdit.Rejected -> return@launch onResult(edit.problem)
-                // Nothing to rename and no problem with the name: the dialog has nothing left to do.
-                HabitEdit.Missing -> return@launch onResult(null)
+                // Nothing to rename and no problem with the name: the dialog closes and the screen says why.
+                HabitEdit.Missing -> {
+                    eventChannel.send(HabitsEvent.SaveMissing)
+                    return@launch onResult(null)
+                }
             }
             if (habitId == null) {
                 // Stored outright and re-armed unconditionally: a new habit is a new band whatever

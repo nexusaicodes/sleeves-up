@@ -2,9 +2,8 @@ package com.checkin.app.ui.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
-import com.adevinta.spark.SparkTheme
 import com.adevinta.spark.tokens.SparkColors
 import com.adevinta.spark.tokens.darkSparkColors
 import com.adevinta.spark.tokens.lightSparkColors
@@ -187,14 +186,19 @@ internal val SparkLight: SparkColors = Light.slots(lightSparkColors())
 internal val SparkDark: SparkColors = Dark.slots(darkSparkColors())
 
 /**
+ * Whether the Spark scheme in force is [SparkDark]: provided by [CheckInAppTheme] and by any
+ * [SparkColorScope] that swaps the scheme, so the app tokens are told which palette applies.
+ */
+internal val LocalDarkPalette = staticCompositionLocalOf { false }
+
+/**
  * The app tokens matching the Spark scheme in force, so they follow [CheckInAppTheme]'s `darkTheme`
  * and any [SparkColorScope] subtree (the presence check draws its overlay in [SparkDark] whatever the
  * system theme) rather than the system setting alone.
  */
 @Composable
 @ReadOnlyComposable
-private fun palette(): Palette =
-    if (SparkTheme.colors.background.luminance() > LIGHT_BACKGROUND_LUMINANCE) Light else Dark
+private fun palette(): Palette = if (LocalDarkPalette.current) Dark else Light
 
 /**
  * Theme-aware colour for a day the user showed up: brass, mudda's colour for marks.

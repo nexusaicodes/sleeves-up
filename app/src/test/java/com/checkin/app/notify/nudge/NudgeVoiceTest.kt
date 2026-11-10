@@ -88,4 +88,14 @@ class NudgeVoiceTest {
         assertNotEquals(NudgeVoice.seedFor(uuid, today), NudgeVoice.seedFor(uuid, today.plusDays(1)))
         assertNotEquals(NudgeVoice.seedFor(uuid, today), NudgeVoice.seedFor("b7e9d4", today))
     }
+
+    @Test
+    fun `tied histories open on every title and body pairing`() {
+        val titles = (1..4).map { V("p.t$it") }
+        val pairs = (0L until titles.size * pool.size).map { seed ->
+            NudgeVoice.pick(titles, emptyMap(), seed) to
+                NudgeVoice.pick(pool, emptyMap(), NudgeVoice.bodySeed(seed, titles.size))
+        }.toSet()
+        assertEquals(titles.size * pool.size, pairs.size)
+    }
 }

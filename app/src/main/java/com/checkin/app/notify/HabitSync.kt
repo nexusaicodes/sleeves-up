@@ -3,13 +3,14 @@ package com.checkin.app.notify
 import com.checkin.app.data.local.Habit
 import com.checkin.app.notify.nudge.GuardedNudges
 import com.checkin.app.notify.nudge.ReminderSettings
-import com.checkin.app.util.MILLIS_PER_MINUTE
-import com.checkin.app.util.MILLIS_PER_SECOND
+import com.checkin.app.util.syncRetryDelayMs
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 
@@ -25,21 +26,24 @@ import kotlinx.coroutines.launch
  *
  * Never throws: a database that will not open still arms the fallback, and a failed channel write
  * costs that emission's channels, which the dispatcher re-ensures before it posts. A failed read
- * re-subscribes with backoff ([habitSyncRetryDelayMs]) rather than ending the sync.
+ * re-subscribes with backoff ([syncRetryDelayMs]) rather than ending the sync.
  */
 class HabitSync(
-    /** Every habit, archived ones included: an archived habit's channel is deleted. */
-    private val habits: Flow<List<Habit>>,
+    /**
+     * Every habit, archived ones included: an archived habit's channel is deleted. Called on the
+     * collector, so opening the database stays off the main thread and inside the retry.
+     */
+    private val habits: () -> Flow<List<Habit>>,
     private val channels: HabitChannels,
     private val reminderSettings: ReminderSettings,
     private val nudges: GuardedNudges,
     private val scope: CoroutineScope,
-    private val retryDelayMs: (attempt: Long) -> Long = ::habitSyncRetryDelayMs,
+    private val retryDelayMs: (attempt: Long) -> Long = ::syncRetryDelayMs,
 ) {
 
     /** Starts following the table; call once, at process start. */
     fun start(): Job = scope.launch {
-        habits
+        flow { emitAll(habits()) }
             .retryWhen { cause, attempt ->
                 if (cause is CancellationException) return@retryWhen false
                 nudges.armFallback()
@@ -54,14 +58,3 @@ class HabitSync(
             }
     }
 }
-
-private const val HABIT_SYNC_RETRY_MS = 30 * MILLIS_PER_SECOND
-private const val HABIT_SYNC_RETRY_MAX_MS = 30 * MILLIS_PER_MINUTE
-
-/** Enough to pass the cap; few enough that the shift cannot overflow. */
-private const val HABIT_SYNC_MAX_DOUBLINGS = 6L
-
-/** [HabitSync]'s wait after a failed read: doubling from 30s, capped at 30min. */
-internal fun habitSyncRetryDelayMs(attempt: Long): Long =
-    (HABIT_SYNC_RETRY_MS shl attempt.coerceAtMost(HABIT_SYNC_MAX_DOUBLINGS).toInt())
-        .coerceAtMost(HABIT_SYNC_RETRY_MAX_MS)

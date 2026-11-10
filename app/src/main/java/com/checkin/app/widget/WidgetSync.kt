@@ -1,6 +1,6 @@
 package com.checkin.app.widget
 
-import com.checkin.app.util.MILLIS_PER_SECOND
+import com.checkin.app.util.syncRetryDelayMs
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -24,13 +24,14 @@ import kotlinx.coroutines.sync.withLock
  * - an unchanged face costs no `updateAppWidget`, which would restart the names' cycle.
  *
  * Never throws except to cancel: its callers launch on the application scope, which has no exception
- * handler. A failed read is retried by the collector; a failed draw leaves the face already shown.
+ * handler. A failed read is retried by the collector with backoff ([syncRetryDelayMs]); a failed draw
+ * leaves the face already shown.
  */
 class WidgetSync(
     private val widgets: HomeWidgets,
     private val faces: () -> Flow<WidgetFace>,
     private val scope: CoroutineScope,
-    private val retryDelayMs: Long = RETRY_DELAY_MS,
+    private val retryDelayMs: (attempt: Long) -> Long = ::syncRetryDelayMs,
 ) {
     private val lock = Mutex()
     private var drawn: WidgetFace? = null
@@ -50,9 +51,9 @@ class WidgetSync(
                 faces()
                     // A transient read failure must not end the sync for the life of the process: in
                     // one a broadcast created, no activity start would ever redraw the widget.
-                    .retryWhen { cause, _ ->
+                    .retryWhen { cause, attempt ->
                         if (cause is CancellationException) return@retryWhen false
-                        delay(retryDelayMs)
+                        delay(retryDelayMs(attempt))
                         true
                     }
                     .collect { face -> drawGuarded(face, force = false) }
@@ -100,9 +101,4 @@ class WidgetSync(
 
     // Unknown counts as placed: following the tables for nothing is cheaper than a widget left stale.
     private fun placed(): Boolean = runCatching { widgets.placed() }.getOrDefault(true)
-
-    companion object {
-        /** How long the collector waits before re-subscribing after a failed read. */
-        const val RETRY_DELAY_MS = 30 * MILLIS_PER_SECOND
-    }
 }

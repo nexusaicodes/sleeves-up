@@ -20,7 +20,7 @@ package com.checkin.app.notify
  * |---|---|---|
  * | 1_000+ | `NotificationFactory.CONTENT_REQUEST_BASE` | a notification's tap target |
  * | 10_000+ | `NotificationFactory.ACTION_REQUEST_BASE` | its action buttons, `MAX_ACTIONS` apiece |
- * | 20_000, 20_001 | `service.SessionAlarms` | the session reminder and the day boundary |
+ * | 20_000, 20_001 | `session.SessionAlarms` | the session reminder and the day boundary |
  * | 20_010 | `notify.nudge.NudgeAlarms` | the nudge checkpoint |
  * | 30_000 | `NotificationFactory.NUDGE_TAP_REQUEST_CODE` | every habit's nudge tap target |
  * | 40_000 | `widget.WidgetViews.TAP_REQUEST_CODE` | the home-screen widget's button, every face |
