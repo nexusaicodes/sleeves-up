@@ -37,7 +37,7 @@ written under the same two rules and the vocabulary table's Arabic column.
    claim nothing at all leaves the device about the app. **The record is in Android's own backup**
    (`data_extraction_rules.xml`): the app sends nothing, but the copy names that backup as the
    second way the record leaves the phone, beside the CSV, and never says it stays or never leaves.
-   **Data safety: "No data collected, no data shared", re-checked for 4.0.** Spark, new in 4.0, adds no permission, its four unasked manifest entries are removed, and its dex references no networking class (CLAUDE.md's networking entry). Play defines collection
+   **Data safety: "No data collected, no data shared", re-checked for 4.1** against the release merger report: the same eleven `uses-permission` lines, no `INTERNET`. Spark, new in 4.0, adds no permission, its four unasked manifest entries are removed, and its dex references no networking class (CLAUDE.md's networking entry). Play defines collection
    as data "transmitted from your app off a user's device", including by its libraries
    (support.google.com/googleplay/android-developer/answer/10787469). Neither new path is the app's:
    - *In-app updates.* The Play Store app sends Google the device metadata, app version and installed
@@ -132,12 +132,12 @@ Sleeves Up is a self-discipline tool, not a substitute for any employer or legal
 
 ## What's new (500 max, per release)
 
-Play keeps these per version code, so the text below is 4.0's and is replaced wholesale at the next
+Play keeps these per version code, so the text below is 4.1's and is replaced wholesale at the next
 release rather than appended to. **500 is a hard limit and this section has been over it**, which
 Play rejects at submission rather than truncating — count the block before pasting it, em dash and
 blank lines included.
 
-**4.0 follows 3.2.** Confirm that against a Play install before pasting: write each note against the
+**4.1 follows 4.0.** Confirm that against a Play install before pasting: write each note against the
 version actually live, not the last tag — a tag can precede its upload, and a release prepared but
 never uploaded leaves everything it meant to say still unsaid.
 
@@ -146,11 +146,9 @@ it binds a *denial* as much as a boast. It is written for someone updating, who 
 screens already.
 
 ```
-A new look: warm paper and deep ink, with new type, across every screen, the widget and the app icon.
+Each habit's daily reminder now varies its wording, and works through every line before it repeats one.
 
-Sleeves Up no longer asks Google Play services for an emoji font each time it opens.
-
-History and Reports now stop at the current month instead of stepping into months that have not happened yet.
+On History, the month name no longer runs out of room at large text sizes.
 ```
 
 ---
@@ -226,11 +224,9 @@ Sleeves Up أداة للانضباط الذاتي، وليس بديلًا عن �
 ### What's new (500 max)
 
 ```
-مظهر جديد: ورق دافئ وحبر داكن وخطوط جديدة في كل الشاشات، وفي التطبيق المصغّر وأيقونة التطبيق.
+صار تذكير كل عادة اليومي يتنوّع في صياغته، ولا يكرر سطرًا قبل أن يمرّ على كل أسطره.
 
-لم يعد Sleeves Up يطلب من خدمات Google Play خطًّا للرموز التعبيرية في كل مرة يُفتح فيها.
-
-يتوقف السجل والتقارير الآن عند الشهر الحالي بدل الانتقال إلى أشهر لم تأتِ بعد.
+في السجل، لم يعد اسم الشهر يتجاوز مساحته عند أحجام الخط الكبيرة.
 ```
 
 ### Screenshot captions
