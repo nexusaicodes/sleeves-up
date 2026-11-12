@@ -1,13 +1,8 @@
 package com.checkin.app.data.local
 
 import androidx.room.ColumnInfo
-import androidx.room.Dao
 import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
-import androidx.room.Query
-import kotlinx.coroutines.flow.Flow
 
 /**
  * App-wide state that belongs with the record rather than in prefs: one row, [id] always [ROW_ID].
@@ -28,16 +23,4 @@ data class AppState(
     companion object {
         const val ROW_ID = 0
     }
-}
-
-@Dao
-interface AppStateDao {
-    @Query("SELECT selected_habit_id FROM app_state WHERE id = 0")
-    fun selectedHabitIdFlow(): Flow<Long?>
-
-    @Query("SELECT selected_habit_id FROM app_state WHERE id = 0")
-    suspend fun selectedHabitId(): Long?
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun put(state: AppState)
 }

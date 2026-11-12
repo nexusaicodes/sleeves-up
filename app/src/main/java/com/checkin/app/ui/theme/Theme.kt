@@ -28,7 +28,7 @@ import com.checkin.app.util.displayLocale
 private val AppSparkFlags = SparkFeatureFlag(useRebrandedButtons = true, isContainingActivityEdgeToEdge = true)
 
 /** Luminance above which a background takes dark system-bar icons. */
-private const val LIGHT_BACKGROUND_LUMINANCE = 0.5f
+internal const val LIGHT_BACKGROUND_LUMINANCE = 0.5f
 
 @Composable
 fun CheckInAppTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
@@ -97,6 +97,7 @@ fun CheckInAppTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Compos
             LocalTimePatterns provides patterns,
             LocalAppTypography provides appTypography,
             LocalAppSparkFontFamily provides fontFamily,
+            LocalDarkPalette provides darkTheme,
             content = content,
         )
     }
@@ -105,6 +106,8 @@ fun CheckInAppTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Compos
 /**
  * The content under a copy of the current Spark colours, changed by [transform] — the one way to
  * give a Spark component colours it takes no parameter for (its button reads `main`/`onMain`).
+ * [darkPalette] says which palette the transformed scheme is, for the app tokens; it stays the
+ * enclosing one unless [transform] swaps the scheme.
  *
  * Every other value is the app's, read from the enclosing [CheckInAppTheme]: a `SparkTheme` called
  * bare re-defaults its font family to Nunito Sans, which the build discards, so it would crash, and
@@ -112,15 +115,20 @@ fun CheckInAppTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Compos
  * [CheckInAppTheme] are the only `SparkTheme` calls in the app (`SparkThemeCallSitesTest`).
  */
 @Composable
-fun SparkColorScope(transform: SparkColors.() -> SparkColors, content: @Composable () -> Unit) {
+fun SparkColorScope(
+    transform: SparkColors.() -> SparkColors,
+    darkPalette: Boolean = LocalDarkPalette.current,
+    content: @Composable () -> Unit,
+) {
     SparkTheme(
         colors = SparkTheme.colors.transform(),
         shapes = SparkTheme.shapes,
         typography = SparkTheme.typography,
         sparkFeatureFlag = SparkTheme.featureFlag,
         fontFamily = LocalAppSparkFontFamily.current,
-        content = content,
-    )
+    ) {
+        CompositionLocalProvider(LocalDarkPalette provides darkPalette, content = content)
+    }
 }
 
 /** The family [CheckInAppTheme] passed to Spark, for [SparkColorScope] to pass again. */

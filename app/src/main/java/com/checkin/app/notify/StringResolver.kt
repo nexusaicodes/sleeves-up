@@ -11,7 +11,7 @@ import java.util.Locale
  * reading them from dragging a `Context` into the classes that decide what to post, so those stay
  * JVM-testable. Two consumers, in different packages:
  * [com.checkin.app.notify.nudge.NudgeDispatcher] and
- * [com.checkin.app.service.SessionLifecycleRunner]. It lives here rather than in `platform/` because
+ * [com.checkin.app.session.SessionLifecycle]. It lives here rather than in `platform/` because
  * both of them resolve notification copy and nothing else does.
  */
 fun interface StringResolver {

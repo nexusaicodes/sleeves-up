@@ -22,8 +22,8 @@ import kotlinx.coroutines.launch
 class NudgeAlarmReceiver : BroadcastReceiver() {
 
     /**
-     * Goes through `NudgeCoordinator.runPass` rather than the dispatcher directly, and that is
-     * load-bearing, exactly as the `catch` in [com.checkin.app.service.SessionAlarmReceiver] is — a
+     * Goes through `GuardedNudges.runPass` rather than the dispatcher directly, and that is
+     * load-bearing, exactly as the `catch` in [com.checkin.app.session.SessionAlarmReceiver] is — a
      * throw here would take down any running session's notification, which has nothing to do with
      * nudges. [NudgeDispatcher.runOnce] arms on every path it reaches, a throwing pass included, so
      * what can still throw is building the dispatcher itself, and `runPass` arms the plain

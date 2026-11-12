@@ -92,3 +92,6 @@ __pycache__/
 
 # Every screen of the last screenshot run, for review; only the listing files ship.
 play-store-assets/screenshots/all/
+
+# Kotlin 2.x compiler session and error logs
+.kotlin/

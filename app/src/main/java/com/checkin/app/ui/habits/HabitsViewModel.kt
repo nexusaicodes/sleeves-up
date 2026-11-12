@@ -47,6 +47,9 @@ sealed interface HabitsEvent {
     data class Archived(val name: String?) : HabitsEvent
     data class ArchiveRefused(val result: ArchiveResult, val name: String?) : HabitsEvent
     data class RestoreRefused(val name: String?) : HabitsEvent
+
+    /** The habit being saved no longer exists; nothing was written. */
+    data object SaveMissing : HabitsEvent
 }
 
 /**
@@ -98,8 +101,9 @@ class HabitsViewModel(
     /**
      * Creates a habit when [habitId] is null, otherwise renames it, and stores [minute] as its
      * reminder time, then calls [onResult] with null — or with the problem the repository refused
-     * the name for, storing nothing. A new habit is not selected: adding one on the Habits screen
-     * leaves the current one showing, and switching is a tap on its row.
+     * the name for, storing nothing. A habit that no longer exists stores nothing, sends
+     * [HabitsEvent.SaveMissing] and calls [onResult] with null. A new habit is not selected: adding
+     * one on the Habits screen leaves the current one showing, and switching is a tap on its row.
      *
      * The result comes back because [nameProblem] reads the last emitted list, which a write
      * elsewhere can have overtaken: the caller keeps its fields until the write has landed.
@@ -107,11 +111,15 @@ class HabitsViewModel(
     fun save(habitId: Long?, name: String, minute: Int, onResult: (NameProblem?) -> Unit = {}) {
         viewModelScope.launch {
             val edit = if (habitId == null) habits.create(name) else habits.rename(habitId, name)
-            if (edit is HabitEdit.Rejected) {
-                onResult(edit.problem)
-                return@launch
+            val saved = when (edit) {
+                is HabitEdit.Saved -> edit.habit
+                is HabitEdit.Rejected -> return@launch onResult(edit.problem)
+                // Nothing to rename and no problem with the name: the dialog closes and the screen says why.
+                HabitEdit.Missing -> {
+                    eventChannel.send(HabitsEvent.SaveMissing)
+                    return@launch onResult(null)
+                }
             }
-            val saved = (edit as HabitEdit.Saved).habit
             if (habitId == null) {
                 // Stored outright and re-armed unconditionally: a new habit is a new band whatever
                 // its time, and the re-arm the insert itself triggers may have read the prefs before
@@ -149,10 +157,7 @@ class HabitsViewModel(
 
     fun restore(habit: Habit) {
         viewModelScope.launch {
-            if (habits.restore(
-                    habit.id,
-                ) is HabitEdit.Rejected
-            ) {
+            if (habits.restore(habit.id) is HabitEdit.Rejected) {
                 eventChannel.send(HabitsEvent.RestoreRefused(habit.name))
             }
         }
@@ -164,7 +169,7 @@ class HabitsViewModel(
                 val container = (this[APPLICATION_KEY] as CheckInApplication).container
                 HabitsViewModel(
                     container.habitRepository,
-                    container.repository,
+                    container.checkInRepository,
                     container.reminderSettings,
                     container.nudges::launchRearm,
                 )

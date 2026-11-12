@@ -17,10 +17,10 @@ import java.time.ZoneId
  * fires again, and the failure is self-reinforcing: the user this feature exists for is precisely the one
  * whose worker has stopped running. A time-of-day trigger needs a time-of-day primitive.
  *
- * Inexact, for the reasons set out on [com.checkin.app.service.SessionAlarms] — and with more room
+ * Inexact, for the reasons set out on [com.checkin.app.session.SessionAlarms] — and with more room
  * to spare here, since encouragement has no deadline at all.
  *
- * **Deliberately stateless, unlike [com.checkin.app.service.SessionAlarms].** That seam persists its
+ * **Deliberately stateless, unlike [com.checkin.app.session.SessionAlarms].** That seam persists its
  * armed instants because they are derived from a session and cannot be recomputed without it. The
  * next nudge instant is derivable from now, the chosen times and the day's sends, so there is nothing
  * to store and nothing to reconcile against `AlarmManager` (which cannot be asked what is still set).
@@ -28,7 +28,7 @@ import java.time.ZoneId
  * **This seam only sets an instant; [NudgeDispatcher] decides it.** The alarm is one `PendingIntent`,
  * so whatever arms last wins, and a caller arming a plain band opening would replace a retry the gap
  * was holding or skip a band that is open but unsent. Arming sites therefore go through
- * [NudgeDispatcher] — via `NudgeCoordinator.runPass` and `NudgeCoordinator.rearmNow`, which fall back
+ * [NudgeDispatcher] — via `GuardedNudges.runPass` and `GuardedNudges.rearmNow`, which fall back
  * to [armFallback] when the dispatcher cannot be built — never through [arm] directly.
  */
 interface NudgeAlarms {

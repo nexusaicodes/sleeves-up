@@ -14,7 +14,7 @@ import java.time.ZoneId
  *
  * A reminder time is a **minute of the day** (0–1439, local), so 10:15 is 615. Every function takes
  * the habit's chosen minute as a parameter rather than reading it, so this stays pure, like
- * [com.checkin.app.service.SessionSchedule]: `java.time` only, no clock, no `Context`, and the zone
+ * [com.checkin.app.session.SessionSchedule]: `java.time` only, no clock, no `Context`, and the zone
  * threaded through explicitly. The stored value lives in [ReminderSettings], which is also where it
  * is clamped: every function here takes the minute as already valid.
  */
@@ -31,7 +31,7 @@ object NudgeSchedule {
     /**
      * How much of the day a band must keep before midnight. An inexact alarm may land up to an hour
      * after its trigger, and a habit whose band opens just after another habit's reminder went out
-     * is held back by [NudgeConfig.minGapMs] — ninety minutes — on top of that. A band narrower than
+     * is held back by [NudgeConfig.MIN_GAP_MS] — ninety minutes — on top of that. A band narrower than
      * the two together could close before either delivery lands, and after midnight the question
      * is about a day that has already ended.
      */

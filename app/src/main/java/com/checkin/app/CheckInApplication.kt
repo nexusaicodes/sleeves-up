@@ -6,8 +6,8 @@ import android.os.LocaleList
 import com.checkin.app.di.AppContainer
 import com.checkin.app.di.DefaultAppContainer
 import com.checkin.app.notify.NotificationChannels
-import com.checkin.app.notify.nudge.NudgeSendDatabase
 import com.checkin.app.notify.nudge.NudgeWorker
+import com.checkin.app.notify.nudge.ledger.NudgeSendDatabase
 import com.checkin.app.util.useLatinDigitsByDefault
 import kotlinx.coroutines.launch
 
@@ -24,11 +24,12 @@ class CheckInApplication : Application() {
         // post to it — the hourly pass can run without the service ever having started.
         NotificationChannels.ensureAll(this)
         NudgeWorker.schedule(this)
-        // Alarms do not survive a force stop, a package replace or a reboot, and every one of those is
-        // followed by a process start — the receivers for boot and replace run in one — so the habits
-        // collector's first emission is the single site that puts the nudge alarm back. It runs off
-        // the main thread and never throws; see AppContainer.launchHabitSync.
-        container.launchHabitSync()
+        // Alarms do not survive a force stop or a reboot, and an update keeps them only while their
+        // receiver's path is unchanged. Every one of those is followed by a process start — the
+        // receivers for boot and replace run in one — so the habits collector's first emission is
+        // the single site that puts the nudge alarm back. It runs off
+        // the main thread and never throws; see HabitSync.
+        container.habitSync.start()
         // Same pattern, same reason: a placed widget follows the tables from the process start onward.
         container.widgetSync.start()
         // Off the main thread: blocking filesystem work nothing waits on, and every path that reaches

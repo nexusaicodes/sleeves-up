@@ -28,8 +28,11 @@ object LaunchExtras {
     // Never reuse "check_out" for a new extra: older builds posted it, and an extra rides an
     // already-posted notification's PendingIntent across an update.
 
-    /** Set by a nudge tap. Opens a session for [HABIT_UUID]'s habit once the gate passes. */
-    const val CHECK_IN = "check_in"
+    /**
+     * Set by a nudge tap. Opens a session for [HABIT_UUID]'s habit once the gate passes. Its value is
+     * frozen: an already-posted nudge carries it across an update.
+     */
+    const val NUDGE_TAP = "check_in"
 
     /**
      * Which habit a nudge tap is about, by uuid. **Absent on a nudge posted before habits existed** —

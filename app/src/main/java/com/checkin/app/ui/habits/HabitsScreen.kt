@@ -44,7 +44,6 @@ import com.checkin.app.ui.components.AppIconButton
 import com.checkin.app.ui.components.LocalSnackbarHostState
 import com.checkin.app.ui.components.SectionCard
 import com.checkin.app.ui.components.SectionDivider
-import com.checkin.app.ui.components.reminderTimeSummary
 
 /**
  * The habits: each one's name and reminder time, a way to add one, and the archived ones with a way
@@ -89,6 +88,7 @@ fun HabitsScreen(
                     R.string.habit_restore_duplicate,
                     event.name ?: unnamed,
                 )
+                HabitsEvent.SaveMissing -> resources.getString(R.string.habit_save_missing)
             }
             snackbarHostState.showSnackbar(message)
         }

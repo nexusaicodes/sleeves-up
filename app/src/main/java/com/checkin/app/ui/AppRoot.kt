@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -21,7 +20,7 @@ import androidx.navigation.compose.rememberNavController
 import com.checkin.app.CheckInApplication
 import com.checkin.app.notify.holdsNotificationPermission
 import com.checkin.app.notify.notificationsNeedRuntimeGrant
-import com.checkin.app.platform.PromptSettings
+import com.checkin.app.platform.SeenPrompts
 import com.checkin.app.ui.checkin.CheckOutCelebration
 import com.checkin.app.ui.checkin.CheckOutSignal
 import com.checkin.app.ui.habits.HabitPickerScreen
@@ -31,18 +30,18 @@ import com.checkin.app.ui.navigation.AppNavScaffold
 import com.checkin.app.ui.presence.PresenceCheckSignal
 import com.checkin.app.ui.presence.PresenceCheckSignal.Reason
 import com.checkin.app.ui.presence.PresenceGate
+import com.checkin.app.ui.update.ForfeitUpdateCheck
+import com.checkin.app.ui.update.UpdateCheckTurn
 import com.checkin.app.ui.welcome.FirstRun
 import com.checkin.app.ui.welcome.WelcomeScreen
 import com.checkin.app.ui.welcome.WidgetPageScreen
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
+import com.checkin.app.ui.welcome.rememberWidgetPage
 
 /**
- * The four surfaces that can occupy the whole window, in the order they outrank each other:
- * the first-run welcome, the naming step for a habit with no name, the presence gate (with the habit
- * picker that can precede it), then the app — with the celebration over whichever is showing.
+ * The six surfaces that can occupy the whole window, in the order they outrank each other: the
+ * first-run welcome, the naming step for a habit with no name, the habit picker (the widget's first
+ * stage), the presence gate, the widget page, then the app — with the celebration over whichever is
+ * showing.
  *
  * **The welcome outranks the gate**, because an introduction the app owes is worth more than the
  * few seconds it delays an action, and the reverse ordering delivers the tour *after* the user
@@ -70,7 +69,7 @@ import kotlinx.coroutines.withContext
 fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
     val context = LocalContext.current
     val container = remember(context) { (context.applicationContext as CheckInApplication).container }
-    val settings = container.settings
+    val settings = container.prompts
     val gateRequest by PresenceCheckSignal.request.collectAsStateWithLifecycle()
     val resolvingTaps by PresenceCheckSignal.resolvingTaps.collectAsStateWithLifecycle()
     val completed by CheckOutSignal.completed.collectAsStateWithLifecycle()
@@ -79,7 +78,7 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
     val habitsViewModel: HabitsViewModel = viewModel(factory = HabitsViewModel.Factory)
     val habits by habitsViewModel.uiState.collectAsStateWithLifecycle()
 
-    // Both mirrored so ending the welcome recomposes: PromptSettings is a synchronous prefs read
+    // Both mirrored so ending the welcome recomposes: SeenPrompts is a synchronous prefs read
     // with no Flow behind it, so the writes alone would leave the tour on screen — and a skip
     // resolves the notification ask too, which the step below has to see on the same frame.
     var seenWelcome by rememberSaveable { mutableStateOf(settings.hasSeenWelcome()) }
@@ -90,13 +89,12 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
         askedNotifications = askedNotifications,
     )
 
-    // The tour carries the widget page, so ending it either way has shown or passed it.
-    var seenWidgetPage by rememberSaveable { mutableStateOf(settings.hasSeenWidgetPage()) }
+    val widgetPage = rememberWidgetPage(container, step, seenWelcome)
     val endWelcome = { exit: FirstRun.Exit ->
         settings.markWelcomeSeen()
         seenWelcome = true
-        settings.markWidgetPageSeen()
-        seenWidgetPage = true
+        // The tour carries the widget page, so ending it either way has shown or passed it.
+        widgetPage.markSeen()
         if (!FirstRun.asksNotificationsAfter(exit)) {
             // Recorded as raised without raising it: the flag's job is to keep the launch-time
             // dialog from appearing twice, and a skip has decided it should not appear at all.
@@ -115,57 +113,6 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
         updateTurn.onStart()
         onStopOrDispose { }
     }
-    val widgets = container.homeWidgets
-    // Every question to the widget service is a binder call, so each is asked off the main thread.
-    // Null until answered; the widget page waits for it.
-    var canPin by remember { mutableStateOf<Boolean?>(null) }
-    LaunchedEffect(widgets) {
-        canPin = withContext(Dispatchers.IO) { runCatching { widgets.canRequestPin() }.getOrDefault(false) }
-    }
-    // Null where the launcher cannot place a widget for the app; the page then says how to by hand.
-    val onAddWidget: (() -> Unit)? = remember(canPin) {
-        if (canPin == true) {
-            { runCatching { widgets.requestPin() } }
-        } else {
-            null
-        }
-    }
-    // Decided at each start, never mid-use: a check-out that brings the second day would otherwise
-    // swap the page in over the screen the user is on.
-    var starts by remember { mutableIntStateOf(0) }
-    LifecycleStartEffect(Unit) {
-        starts++
-        onStopOrDispose { }
-    }
-    var widgetPageDue by remember { mutableStateOf(false) }
-    LaunchedEffect(starts, step) {
-        if (step != FirstRun.Step.NONE || seenWidgetPage) return@LaunchedEffect
-        val placed = withContext(Dispatchers.IO) { runCatching { widgets.placed() }.getOrNull() }
-        // Unknown counts as placed for this start: a page about a widget the user may already have
-        // is the worse miss.
-        if (placed != false) {
-            // A widget seen placed settles the page for good, so no later start asks again.
-            if (placed == true) {
-                settings.markWidgetPageSeen()
-                seenWidgetPage = true
-            }
-            return@LaunchedEffect
-        }
-        val days = try {
-            container.repository.daysWithSession(container.habitRepository.selectedHabitIdFlow().first())
-        } catch (e: CancellationException) {
-            throw e
-        } catch (@Suppress("TooGenericExceptionCaught") _: Exception) {
-            // Not owed this start; the next one asks again.
-            0
-        }
-        widgetPageDue = FirstRun.widgetPageOwed(seenWelcome, seenWidgetPage, days, widgetPlaced = false)
-    }
-    val endWidgetPage = {
-        settings.markWidgetPageSeen()
-        seenWidgetPage = true
-        widgetPageDue = false
-    }
     var showingScaffold = false
     when {
         step == FirstRun.Step.WELCOME -> {
@@ -175,7 +122,7 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
             WelcomeScreen(
                 onFinished = { endWelcome(FirstRun.Exit.FINISHED) },
                 onSkipped = { endWelcome(FirstRun.Exit.SKIPPED) },
-                onAddWidget = onAddWidget,
+                onAddWidget = widgetPage.onAddWidget,
             )
         }
 
@@ -216,9 +163,9 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
         }
 
         // Below the gate, which answers a tap the user just made, and never under the celebration.
-        widgetPageDue && canPin != null && completed == null -> {
-            BackHandler(onBack = endWidgetPage)
-            WidgetPageScreen(onAddWidget = onAddWidget, onDone = endWidgetPage)
+        widgetPage.due && completed == null -> {
+            BackHandler(onBack = widgetPage::markSeen)
+            WidgetPageScreen(onAddWidget = widgetPage.onAddWidget, onDone = widgetPage::markSeen)
         }
 
         else -> {
@@ -277,7 +224,7 @@ fun AppRoot(onGatePassed: () -> Unit, onHabitPicked: (habitId: Long) -> Unit) {
  * [onAsked] runs once the flag is written: first run has ended, so the nudge chain it held can start.
  */
 @Composable
-private fun NotificationPermissionOnFirstOpen(settings: PromptSettings, onAsked: () -> Unit) {
+private fun NotificationPermissionOnFirstOpen(settings: SeenPrompts, onAsked: () -> Unit) {
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         // The outcome is deliberately unused: the grant is re-read wherever it matters, and a

@@ -144,4 +144,11 @@ interface CheckInSessionDao {
 
     @Query("SELECT MIN(date_key) FROM sessions WHERE habit_id = :habitId")
     fun getFirstDateKeyFlow(habitId: Long): Flow<String?>
+
+    /**
+     * The day of the habit's latest session before [beforeDateKey], or null when it has none. Open
+     * sessions count, as they do for the tracking start: a check-in is a day the user showed up.
+     */
+    @Query("SELECT MAX(date_key) FROM sessions WHERE habit_id = :habitId AND date_key < :beforeDateKey")
+    suspend fun getLastDateKeyBefore(habitId: Long, beforeDateKey: String): String?
 }

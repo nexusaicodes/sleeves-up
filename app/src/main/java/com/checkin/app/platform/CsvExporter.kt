@@ -9,14 +9,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileWriter
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 /** Outcome of a CSV export — a typed result so no user-facing strings live in the ViewModel. */
 sealed interface ExportResult {
     data object Success : ExportResult
 
-    /** The requested range holds no completed day. Not a failure — there is simply nothing to write. */
+    /**
+     * The requested range holds no completed day. Not a failure — there is simply nothing to write.
+     * Decided by the caller before it asks for an export; [CsvExporter.export] never returns it.
+     */
     data object Nothing : ExportResult
     data class Failure(val message: String?) : ExportResult
 }
@@ -36,9 +37,7 @@ interface CsvExporter {
     ): ExportResult
 }
 
-class DefaultCsvExporter(private val context: Context) : CsvExporter {
-
-    private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+class AndroidCsvExporter(private val context: Context) : CsvExporter {
 
     // Every failure mode here — file I/O, a FileProvider misconfiguration, no app able to receive
     // the share — is reported to the user the same way, as a Failure carrying the message. Catching
@@ -58,7 +57,7 @@ class DefaultCsvExporter(private val context: Context) : CsvExporter {
         ExportResult.Failure(e.message)
     }
 
-    /** Writes one row per day across the range, gap-filling days with no sessions as zeros. */
+    /** Writes [csvLines] to a file in the cache's exports folder. */
     private fun writeCsv(
         habitName: String?,
         startKey: String,
@@ -68,17 +67,7 @@ class DefaultCsvExporter(private val context: Context) : CsvExporter {
         val exportDir = File(context.cacheDir, "exports").also { it.mkdirs() }
         val file = File(exportDir, exportFileName(habitName, startKey, endKey))
 
-        FileWriter(file).use { writer ->
-            writer.write(csvHeader())
-
-            var current = LocalDate.parse(startKey, dateFormatter)
-            val end = LocalDate.parse(endKey, dateFormatter)
-            while (!current.isAfter(end)) {
-                val key = current.format(dateFormatter)
-                writer.write(csvRow(key, summaries[key]))
-                current = current.plusDays(1)
-            }
-        }
+        FileWriter(file).use { writer -> csvLines(startKey, endKey, summaries).forEach(writer::write) }
         return file
     }
 

@@ -24,7 +24,7 @@ class NotificationFactory(private val context: Context) {
         val builder = NotificationCompat.Builder(context, spec.channelId)
             // The brand mark is the small icon for every notification the app sends, never platform
             // stock. Status-bar icons keep only their alpha, so this one is white-on-transparent.
-            .setSmallIcon(R.drawable.ic_stat_checkin)
+            .setSmallIcon(R.drawable.ic_stat_check_in)
             .setContentTitle(spec.title)
             .setContentText(spec.body)
             .setContentIntent(contentIntent(spec))

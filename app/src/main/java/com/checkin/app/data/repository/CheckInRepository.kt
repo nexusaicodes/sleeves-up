@@ -1,12 +1,13 @@
 package com.checkin.app.data.repository
 
 import com.checkin.app.data.ConsistencyStats
-import com.checkin.app.data.SystemTimeSource
-import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.CheckInSessionDao
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.local.DailyAggregate
+import com.checkin.app.data.local.byDateKey
+import com.checkin.app.time.SystemTimeSource
+import com.checkin.app.time.TimeSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -40,20 +41,21 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
 
     /**
      * Opens a session for [habitId], unless one is already open — for it or for any other habit.
-     * Two gated paths reach a check-in — the Check-In screen and a nudge tap — and either can resolve
-     * while the other's gate is still on screen, so the one-open-session invariant is enforced here
-     * rather than at each call site, under [checkInLock]: `AppContainer` builds one repository, and
-     * the two writers run on different dispatchers. A second open row would never be closed
+     * Every gated check-in reaches this through `SessionActions.open`: the Check-In screen, and the
+     * root gate after a nudge tap, a widget tap or the widget's habit picker. Any of them can resolve
+     * while another's gate is still on screen, and each runs as its own coroutine on the application
+     * scope, so the one-open-session invariant is enforced here rather than at each call site, under
+     * [checkInLock] (`AppContainer` builds one repository). A second open row would never be closed
      * (`getActiveSession()` returns one) and its hours would never reach `duration`. The switcher
-     * locks while a session runs, so [CheckInResult.OtherHabitOpen] is the backstop for that lock rather than an expected
-     * outcome.
+     * locks while a session runs, so [CheckInResult.OtherHabitOpen] is the backstop for that lock
+     * rather than an expected outcome.
      *
      * **Writing the row is half of a check-in; the caller owns the other half.** This does not start
      * the foreground service and does not arm either session alarm — whoever writes the row arms it,
      * because a service start can be refused (a restricted standby bucket, an OEM declining a
      * `specialUse` foreground start) while a row write cannot, so arming behind the start would let
-     * a refusal silently produce a session with no day-boundary close. Both writers do it:
-     * `CheckInViewModel.executeCheckIn` and `MainActivity.onRootGatePassed`. A new caller must too.
+     * a refusal silently produce a session with no day-boundary close. `SessionActions.open` does
+     * both; a new writer goes through it rather than calling this directly.
      */
     suspend fun checkIn(habitId: Long): CheckInResult = checkInLock.withLock {
         dao.getActiveSession()?.let { open ->
@@ -70,9 +72,6 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
         )
         CheckInResult.Opened(session.copy(id = dao.insertSession(session)))
     }
-
-    suspend fun checkOut(sessionId: Long, closedBy: ClosedBy): CheckInSession? =
-        checkOutAt(sessionId, timeSource.nowMillis(), closedBy)
 
     /**
      * Closes [sessionId] stamped at [atMillis] rather than now, returning the closed row, or null
@@ -101,10 +100,11 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
         dao.getSessionById(sessionId)?.let { close(it, atMillis, closedBy) }
 
     /**
-     * Checks out whatever session is open, for callers that don't hold its id. Returns the closed
-     * row, or null when nothing was open.
+     * Closes whatever session is open, at now — the counterpart of [checkIn], and every gated
+     * check-out's write (through `SessionLifecycle.close`). A person checking out holds no id, only
+     * "the open one". Returns the closed row, or null when nothing was open.
      */
-    suspend fun checkOutActiveSession(closedBy: ClosedBy): CheckInSession? =
+    suspend fun checkOut(closedBy: ClosedBy): CheckInSession? =
         dao.getActiveSession()?.let { close(it, timeSource.nowMillis(), closedBy) }
 
     /** The write behind every check-out, on [session] as already read; null if it closed since. */
@@ -122,7 +122,7 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
         dao.getDailyAggregatesFlow(habitId, startDate, endDate)
 
     suspend fun getDailySummaries(habitId: Long, startDate: String, endDate: String): Map<String, DailyAggregate> =
-        byDateKey(dao.getDailyAggregates(habitId, startDate, endDate))
+        dao.getDailyAggregates(habitId, startDate, endDate).byDateKey()
 
     /**
      * Where [habitId]'s windows end on [today] ([ConsistencyStats.countedThrough]), off a one-day
@@ -131,7 +131,7 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
     fun countedThroughFlow(habitId: Long, today: LocalDate): Flow<LocalDate> {
         val todayKey = today.format(dateFormatter)
         return dailyAggregatesFlow(habitId, todayKey, todayKey)
-            .map { ConsistencyStats.countedThrough(byDateKey(it), today) }
+            .map { ConsistencyStats.countedThrough(it.byDateKey(), today) }
             .distinctUntilChanged()
     }
 
@@ -140,12 +140,6 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
         val todayKey = today.format(dateFormatter)
         return ConsistencyStats.countedThrough(getDailySummaries(habitId, todayKey, todayKey), today)
     }
-
-    /**
-     * Keys aggregates by their day. A day present in the map is a day the user showed up; a day
-     * absent from it is one they didn't — which is the whole of what the app decides about a day.
-     */
-    fun byDateKey(aggregates: List<DailyAggregate>): Map<String, DailyAggregate> = aggregates.associateBy { it.dateKey }
 
     fun sessionsForDateFlow(habitId: Long, dateKey: String): Flow<List<CheckInSession>> =
         dao.getSessionsByDateFlow(habitId, dateKey)
@@ -179,6 +173,13 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
         dao.getFirstDateKeyFlow(habitId).map(::parseDateKey).distinctUntilChanged()
 
     suspend fun trackingStart(habitId: Long): LocalDate? = parseDateKey(dao.getFirstDateKey(habitId))
+
+    /**
+     * The last day before [today] holding a session of [habitId]'s, or null if none does. Never
+     * displayed: it picks the tone of a reminder's copy (see `NudgeVoice`).
+     */
+    suspend fun lastSessionDayBefore(habitId: Long, today: LocalDate): LocalDate? =
+        parseDateKey(dao.getLastDateKeyBefore(habitId, today.format(dateFormatter)))
 
     /** Days holding a completed session of [habitId]'s. Never displayed: it times a one-time page. */
     suspend fun daysWithSession(habitId: Long): Int = dao.countDaysWithSession(habitId)

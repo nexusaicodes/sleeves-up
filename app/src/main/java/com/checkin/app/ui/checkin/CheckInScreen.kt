@@ -56,7 +56,7 @@ import com.adevinta.spark.icons.LeboncoinIcons
 import com.adevinta.spark.tokens.highlight
 import com.checkin.app.R
 import com.checkin.app.data.local.CheckInSession
-import com.checkin.app.service.SessionClock
+import com.checkin.app.session.SessionClock
 import com.checkin.app.ui.components.EmptyState
 import com.checkin.app.ui.components.SessionIntervalRow
 import com.checkin.app.ui.theme.LocalAppTypography
@@ -109,7 +109,7 @@ fun CheckInScreen(
     }
 
     // The gauge is the open session alone, and zero between sessions — never the day's total; see
-    // TimerGauge for why. The day's total is stated below instead, and the notification's chronometer
+    // SessionTimer for why. The day's total is stated below instead, and the notification's chronometer
     // counts this same figure.
     val sessionElapsed = if (uiState.isRunning) elapsed else 0L
 
@@ -176,7 +176,7 @@ fun CheckInScreen(
                 // started" at a user with months of history, every time they open the app.
                 uiState.loading -> Spacer(Modifier.height(markSize + MARK_TO_READOUT_GAP + READOUT_HEIGHT))
 
-                uiState.hasEverTracked -> TimerGauge(
+                uiState.hasEverTracked -> SessionTimer(
                     elapsedMs = sessionElapsed,
                     running = uiState.isRunning,
                     markSize = markSize,
@@ -187,7 +187,7 @@ fun CheckInScreen(
                 // one moment on the screen that introduces the app instead of asking for something,
                 // and the button below already states the action.
                 else -> EmptyState(
-                    icon = painterResource(R.drawable.ic_stat_checkin),
+                    icon = painterResource(R.drawable.ic_stat_check_in),
                     title = stringResource(R.string.empty_checkin_title),
                     tint = SparkTheme.colors.main,
                 )
@@ -265,7 +265,7 @@ private val SESSION_LIST_MAX = 180.dp
 private val SESSION_LIST_MIN = 96.dp
 
 // The mark's three sizes, the gap and the readout's height are the remaining terms in this budget
-// and live in TimerGauge.kt, beside the composable they size.
+// and live in SessionTimer.kt, beside the composable they size.
 
 @Composable
 private fun CheckInOutButton(isRunning: Boolean, habitName: String?, onCheckIn: () -> Unit, onCheckOut: () -> Unit) {

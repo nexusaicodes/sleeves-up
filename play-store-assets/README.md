@@ -32,7 +32,7 @@ month".
 python3 play-store-assets/generate_icons.py
 ```
 
-It prints the `pathData` for `res/drawable/ic_launcher_foreground.xml` and `ic_stat_checkin.xml`,
+It prints the `pathData` for `res/drawable/ic_launcher_foreground.xml` and `ic_stat_check_in.xml`,
 and writes the 512px Play icon. After changing the geometry, paste the printed paths into those two
 drawables (never hand-edit a path), and update the same constants in the app's `BrandGrid.kt`, which
 draws the mark cell by cell in Compose. `verify()` asserts the adaptive-icon safe circle on every

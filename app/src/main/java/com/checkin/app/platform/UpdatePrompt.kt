@@ -1,11 +1,5 @@
 package com.checkin.app.platform
 
-/**
- * What the Play Store reported about a newer build, reduced to the three facts [UpdatePrompt.decide]
- * reads. [availableVersionCode] is null when no update is available.
- */
-data class UpdateStatus(val availableVersionCode: Int?, val flexibleAllowed: Boolean, val downloaded: Boolean)
-
 /** What the update offer shows for one [UpdateStatus]. */
 sealed interface UpdateOffer {
     data object None : UpdateOffer

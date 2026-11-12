@@ -2,14 +2,14 @@ package com.checkin.app.data.repository
 
 import com.checkin.app.data.HabitRules
 import com.checkin.app.data.NameProblem
-import com.checkin.app.data.SystemTimeSource
-import com.checkin.app.data.TimeSource
 import com.checkin.app.data.local.AppState
 import com.checkin.app.data.local.AppStateDao
 import com.checkin.app.data.local.CheckInSession
 import com.checkin.app.data.local.CheckInSessionDao
 import com.checkin.app.data.local.Habit
 import com.checkin.app.data.local.HabitDao
+import com.checkin.app.time.SystemTimeSource
+import com.checkin.app.time.TimeSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -21,6 +21,12 @@ import java.util.UUID
 sealed interface HabitEdit {
     data class Saved(val habit: Habit) : HabitEdit
     data class Rejected(val problem: NameProblem) : HabitEdit
+
+    /**
+     * No habit has the id; nothing was written. Habits are never deleted, so only a caller holding an
+     * id from some other database (a rebuilt `_app`) can see it.
+     */
+    data object Missing : HabitEdit
 }
 
 /** What [HabitRepository.archive] did. */
@@ -118,7 +124,7 @@ class HabitRepository(
     }
 
     suspend fun rename(habitId: Long, name: String): HabitEdit {
-        val habit = habitDao.byId(habitId) ?: return HabitEdit.Rejected(NameProblem.BLANK)
+        val habit = habitDao.byId(habitId) ?: return HabitEdit.Missing
         HabitRules.nameProblem(name, habitDao.activeHabits(), forId = habitId)?.let { return HabitEdit.Rejected(it) }
         val normalised = HabitRules.normalise(name)
         habitDao.rename(habitId, normalised)
@@ -146,7 +152,7 @@ class HabitRepository(
      * a name another active habit has since taken is refused rather than duplicated.
      */
     suspend fun restore(habitId: Long): HabitEdit {
-        val habit = habitDao.byId(habitId) ?: return HabitEdit.Rejected(NameProblem.BLANK)
+        val habit = habitDao.byId(habitId) ?: return HabitEdit.Missing
         val name = habit.name
         if (name != null) {
             HabitRules.nameProblem(name, habitDao.activeHabits(), forId = habitId)
