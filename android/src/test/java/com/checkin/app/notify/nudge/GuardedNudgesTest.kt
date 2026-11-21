@@ -10,11 +10,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.TimeZone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
-import java.time.ZoneId
 
 /**
  * Every entry point runs on the application scope, which has no exception handler: a throw kills the
@@ -25,7 +25,7 @@ class GuardedNudgesTest {
 
     private val time = FakeTimeSource(1_000L, LocalDate.of(2026, 6, 15))
     private val settings = FakeReminderSettings()
-    private val fallbackAt = NudgeSchedule.nextBandAfter(1_000L, ZoneId.of("UTC"), settings.earliestMinute())
+    private val fallbackAt = NudgeSchedule.nextBandAfter(1_000L, TimeZone.UTC, settings.earliestMinute())
 
     private fun coordinator(
         alarms: FakeNudgeAlarms,

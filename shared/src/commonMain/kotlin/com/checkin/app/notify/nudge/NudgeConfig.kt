@@ -5,8 +5,8 @@ import com.checkin.app.util.MILLIS_PER_MINUTE
 /**
  * How often a nudge may be sent. Its own file because this is what anyone tuning nudge cadence is
  * looking for, and the three files they would try first — [NudgeEligibility], which reads these
- * values but does not own them, [NudgeSchedule], which owns the bands, and [NudgeCatalog], which
- * owns the copy — are all dead ends.
+ * values but does not own them, [NudgeSchedule], which owns the bands, and the Android app's
+ * `NudgeCatalog`, which owns the copy — are all dead ends.
  *
  * Frequency is bounded two ways and the band is **not** one of them: this object holds the gap,
  * and [NudgeSnapshot.spentToday] is the other — one nudge per habit per day. **There is no daily

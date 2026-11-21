@@ -1,12 +1,13 @@
 package com.checkin.app.notify.nudge
 
-import com.checkin.app.notify.nudge.NudgeVariant
-import com.checkin.app.notify.nudge.NudgeVoice
 import com.checkin.app.notify.nudge.NudgeVoice.Voice
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
-import org.junit.Test
-import java.time.LocalDate
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 /**
  * The voice decides only which pool the copy comes from, and the pick only which line in it. Both are
@@ -15,7 +16,7 @@ import java.time.LocalDate
  */
 class NudgeVoiceTest {
 
-    private val today = LocalDate.of(2026, 11, 2)
+    private val today = LocalDate(2026, 11, 2)
 
     private data class V(override val key: String) : NudgeVariant
 
@@ -28,16 +29,16 @@ class NudgeVoiceTest {
 
     @Test
     fun `a session within two days is steady and from three is returning`() {
-        assertEquals(Voice.STEADY, NudgeVoice.voiceFor(today.minusDays(1), today))
-        assertEquals(Voice.STEADY, NudgeVoice.voiceFor(today.minusDays(2), today))
-        assertEquals(Voice.RETURNING, NudgeVoice.voiceFor(today.minusDays(3), today))
-        assertEquals(Voice.RETURNING, NudgeVoice.voiceFor(today.minusDays(30), today))
+        assertEquals(Voice.STEADY, NudgeVoice.voiceFor(today.minus(1, DateTimeUnit.DAY), today))
+        assertEquals(Voice.STEADY, NudgeVoice.voiceFor(today.minus(2, DateTimeUnit.DAY), today))
+        assertEquals(Voice.RETURNING, NudgeVoice.voiceFor(today.minus(3, DateTimeUnit.DAY), today))
+        assertEquals(Voice.RETURNING, NudgeVoice.voiceFor(today.minus(30, DateTimeUnit.DAY), today))
     }
 
     /** A clock moved back can leave the last session "after" today; that is no lapse. */
     @Test
     fun `a last session after today reads as steady`() {
-        assertEquals(Voice.STEADY, NudgeVoice.voiceFor(today.plusDays(1), today))
+        assertEquals(Voice.STEADY, NudgeVoice.voiceFor(today.plus(1, DateTimeUnit.DAY), today))
     }
 
     @Test
@@ -48,7 +49,7 @@ class NudgeVoiceTest {
     }
 
     @Test
-    fun `with every variant shown, the one shown longest ago is picked`() {
+    fun `with every variant shown the one shown longest ago is picked`() {
         val shown = pool.mapIndexed { i, v -> v.key to (1_000L - i) }.toMap()
 
         assertEquals(pool.last(), NudgeVoice.pick(pool, shown, seed = 7))
@@ -63,7 +64,7 @@ class NudgeVoiceTest {
     }
 
     @Test
-    fun `ties fall to the seed, deterministically`() {
+    fun `ties fall to the seed deterministically`() {
         assertEquals(NudgeVoice.pick(pool, emptyMap(), seed = 42), NudgeVoice.pick(pool, emptyMap(), seed = 42))
         val picks = (0L until pool.size).map { NudgeVoice.pick(pool, emptyMap(), seed = it) }.toSet()
         assertEquals(pool.toSet(), picks)
@@ -85,8 +86,18 @@ class NudgeVoiceTest {
     fun `the seed is stable within a day and moves across days`() {
         val uuid = "a3f1c2"
         assertEquals(NudgeVoice.seedFor(uuid, today), NudgeVoice.seedFor(uuid, today))
-        assertNotEquals(NudgeVoice.seedFor(uuid, today), NudgeVoice.seedFor(uuid, today.plusDays(1)))
+        assertNotEquals(NudgeVoice.seedFor(uuid, today), NudgeVoice.seedFor(uuid, today.plus(1, DateTimeUnit.DAY)))
         assertNotEquals(NudgeVoice.seedFor(uuid, today), NudgeVoice.seedFor("b7e9d4", today))
+    }
+
+    /**
+     * The seed is the uuid's `String.hashCode` folded with the day, so the tie-break, and with it the
+     * line a fresh habit opens on, is the same on every platform only while each hashes a string
+     * alike. The figure is the one the Android app computes, worked out on the JVM.
+     */
+    @Test
+    fun `the seed matches the JVM figure for a known habit and day`() {
+        assertEquals(-45_500_266_069L, NudgeVoice.seedFor("a3f1c2", today))
     }
 
     @Test

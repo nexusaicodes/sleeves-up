@@ -1,12 +1,16 @@
 package com.checkin.app.notify.nudge
 
-import com.checkin.app.notify.nudge.NudgeSchedule
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * The alarm and the eligibility rule both read this object, and a disagreement between them is
@@ -15,22 +19,32 @@ import java.time.ZoneId
  */
 class NudgeScheduleTest {
 
-    private val utc: ZoneId = ZoneId.of("UTC")
-    private val day: LocalDate = LocalDate.of(2026, 6, 15)
+    private val utc = TimeZone.UTC
+    private val day = LocalDate(2026, 6, 15)
+    private val nextDay = day.plus(1, DateTimeUnit.DAY)
     private val hour = 8
 
     /** [hour] o'clock as the minute of the day the schedule takes. */
     private val minute = hour * 60
 
-    private fun at(zone: ZoneId, date: LocalDate, hour: Int, minute: Int = 0): Long =
-        date.atTime(hour, minute).atZone(zone).toInstant().toEpochMilli()
+    /** A UTC wall time as epoch millis; UTC has no transitions, so this cannot disagree with `java.time`. */
+    private fun at(date: LocalDate, hour: Int, minute: Int = 0): Long =
+        LocalDateTime(date, LocalTime(hour, minute)).toInstant(utc).toEpochMilliseconds()
+
+    // Instants in zones with an offset or a transition, computed with `java.time` so the schedule is
+    // checked against an independent reading of the zone rules rather than against itself.
+    private val kolkataJun15At0700 = 1_781_487_000_000L
+    private val kolkataJun15At0800 = 1_781_490_600_000L
+    private val newYorkMar8At0100 = 1_772_949_600_000L
+    private val newYorkMar8At0800 = 1_772_971_200_000L
+    private val newYorkMar9Midnight = 1_773_028_800_000L
 
     // --- inBand ---
 
     /** One band, from the chosen hour to the end of the day. */
     @Test
     fun `the band runs from the chosen hour to midnight`() {
-        for (h in hour..23) assertTrue("hour $h", NudgeSchedule.inBand(h * 60, minute))
+        for (h in hour..23) assertTrue(NudgeSchedule.inBand(h * 60, minute), "hour $h")
     }
 
     /**
@@ -39,7 +53,7 @@ class NudgeScheduleTest {
      */
     @Test
     fun `hours before the chosen hour are outside it`() {
-        for (h in 0 until hour) assertFalse("hour $h", NudgeSchedule.inBand(h * 60, minute))
+        for (h in 0 until hour) assertFalse(NudgeSchedule.inBand(h * 60, minute), "hour $h")
     }
 
     /**
@@ -49,7 +63,7 @@ class NudgeScheduleTest {
      */
     @Test
     fun `every choosable band keeps three hours before midnight`() {
-        NudgeSchedule.minuteRange.forEach { chosen -> assertTrue("chosen minute $chosen", 24 * 60 - chosen >= 3 * 60) }
+        NudgeSchedule.minuteRange.forEach { chosen -> assertTrue(24 * 60 - chosen >= 3 * 60, "chosen minute $chosen") }
     }
 
     /** A stored value from outside the range is read as the nearest valid time, never used as-is. */
@@ -78,45 +92,45 @@ class NudgeScheduleTest {
         assertFalse(NudgeSchedule.inBand(quarterPast - 1, quarterPast))
         assertTrue(NudgeSchedule.inBand(quarterPast, quarterPast))
         assertEquals(
-            at(utc, day, hour, 15) until at(utc, day.plusDays(1), 0),
+            at(day, hour, 15) until at(nextDay, 0),
             NudgeSchedule.bandOn(day, utc, quarterPast),
         )
-        assertEquals(at(utc, day, hour, 15), NudgeSchedule.nextBandAfter(at(utc, day, hour), utc, quarterPast))
+        assertEquals(at(day, hour, 15), NudgeSchedule.nextBandAfter(at(day, hour), utc, quarterPast))
     }
 
     // --- nextBandAfter ---
 
     @Test
     fun `before the chosen hour the next band is today's`() {
-        assertEquals(at(utc, day, hour), NudgeSchedule.nextBandAfter(at(utc, day, hour - 2), utc, minute))
+        assertEquals(at(day, hour), NudgeSchedule.nextBandAfter(at(day, hour - 2), utc, minute))
     }
 
     /**
      * Strictly after, and that is load-bearing: the fallback can be armed from inside the pass the
-     * alarm just triggered (see [com.checkin.app.notify.nudge.armFallback]), so an inclusive
+     * alarm just triggered (see the Android app's `armFallback`), so an inclusive
      * comparison would schedule the instant that had only just fired and spin on it.
      */
     @Test
     fun `an instant exactly on the band's opening yields tomorrow's`() {
-        assertEquals(at(utc, day.plusDays(1), hour), NudgeSchedule.nextBandAfter(at(utc, day, hour), utc, minute))
+        assertEquals(at(nextDay, hour), NudgeSchedule.nextBandAfter(at(day, hour), utc, minute))
     }
 
     @Test
     fun `inside or after the band it rolls to tomorrow's`() {
-        assertEquals(at(utc, day.plusDays(1), hour), NudgeSchedule.nextBandAfter(at(utc, day, 23, 59), utc, minute))
+        assertEquals(at(nextDay, hour), NudgeSchedule.nextBandAfter(at(day, 23, 59), utc, minute))
     }
 
     /** Changing the time moves the next alarm with it — the reason every chooser re-arms at once. */
     @Test
     fun `a different chosen hour arms a different instant`() {
-        assertEquals(at(utc, day, 15), NudgeSchedule.nextBandAfter(at(utc, day, 6), utc, 15 * 60))
+        assertEquals(at(day, 15), NudgeSchedule.nextBandAfter(at(day, 6), utc, 15 * 60))
     }
 
     /** The alarm is armed in local wall time, so the zone has to reach the calculation. */
     @Test
     fun `the zone decides which instant the band opens at`() {
-        val kolkata = ZoneId.of("Asia/Kolkata")
-        assertEquals(at(kolkata, day, hour), NudgeSchedule.nextBandAfter(at(kolkata, day, hour - 1), kolkata, minute))
+        val kolkata = TimeZone.of("Asia/Kolkata")
+        assertEquals(kolkataJun15At0800, NudgeSchedule.nextBandAfter(kolkataJun15At0700, kolkata, minute))
     }
 
     /**
@@ -125,17 +139,11 @@ class NudgeScheduleTest {
      */
     @Test
     fun `a DST day still opens the band at its stated local hour`() {
-        val newYork = ZoneId.of("America/New_York")
-        val springForward = LocalDate.of(2026, 3, 8)
+        val newYork = TimeZone.of("America/New_York")
+        val springForward = LocalDate(2026, 3, 8)
 
-        assertEquals(
-            at(newYork, springForward, hour),
-            NudgeSchedule.nextBandAfter(at(newYork, springForward, 1), newYork, minute),
-        )
-        assertEquals(
-            at(newYork, springForward, hour) until at(newYork, springForward.plusDays(1), 0),
-            NudgeSchedule.bandOn(springForward, newYork, minute),
-        )
+        assertEquals(newYorkMar8At0800, NudgeSchedule.nextBandAfter(newYorkMar8At0100, newYork, minute))
+        assertEquals(newYorkMar8At0800 until newYorkMar9Midnight, NudgeSchedule.bandOn(springForward, newYork, minute))
     }
 
     // --- bandOn ---
@@ -143,13 +151,13 @@ class NudgeScheduleTest {
     /** The same band [NudgeSchedule.inBand] reads by minute, so the alarm and the rule mean the same span. */
     @Test
     fun `the band's instants run from the chosen hour to midnight`() {
-        assertEquals(at(utc, day, hour) until at(utc, day.plusDays(1), 0), NudgeSchedule.bandOn(day, utc, minute))
+        assertEquals(at(day, hour) until at(nextDay, 0), NudgeSchedule.bandOn(day, utc, minute))
     }
 
     /** Re-arming repeatedly must converge rather than walk the alarm forward a day at a time. */
     @Test
     fun `re-arming from the result is stable within the day`() {
-        val next = NudgeSchedule.nextBandAfter(at(utc, day, 6), utc, minute)
+        val next = NudgeSchedule.nextBandAfter(at(day, 6), utc, minute)
 
         assertEquals(next, NudgeSchedule.nextBandAfter(next - 1, utc, minute))
         assertTrue(NudgeSchedule.nextBandAfter(next, utc, minute) > next)

@@ -1,23 +1,19 @@
 package com.checkin.app.notify.nudge
 
-import com.checkin.app.notify.NotificationIds
-
 /**
  * The kinds of nudge the app can send, **per habit**. One today: a habit that has no session yet
  * today is reminded once, around the time chosen for it. Names are persisted in the send ledger, so
  * renaming a constant orphans its history — and with it the once-a-day dedup for any send already
  * recorded — unless the old name is added to [LEGACY_KEYS].
  *
- * [slot] places the nudge inside its habit's block of notification ids (see
- * [NotificationIds.habitNudge]); it must be a fixed number, never this enum's ordinal, so reordering
- * the enum cannot move an id a posted notification already holds.
+ * [slot] places the nudge inside its habit's block of notification ids (the Android app's
+ * `notificationIdFor`, over `NotificationIds.habitNudge`); it must be a fixed number, never this
+ * enum's ordinal, so reordering the enum cannot move an id a posted notification already holds.
  */
 enum class Nudge(val slot: Int) {
     /** The habit has no session today. One per habit per day; there is no follow-up. */
     NOT_CHECKED_IN(0),
     ;
-
-    fun notificationIdFor(habitId: Long): Int = NotificationIds.habitNudge(habitId, slot)
 
     companion object {
         /**

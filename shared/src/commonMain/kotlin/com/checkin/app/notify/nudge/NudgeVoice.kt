@@ -1,8 +1,7 @@
 package com.checkin.app.notify.nudge
 
 import com.checkin.app.util.MILLIS_PER_HOUR
-import java.time.LocalDate
-import java.time.temporal.ChronoUnit
+import kotlinx.datetime.LocalDate
 
 /** A wording a nudge can take, identified by the stable [key] the send ledger records. */
 interface NudgeVariant {
@@ -50,7 +49,7 @@ object NudgeVoice {
      */
     fun voiceFor(lastSessionDay: LocalDate?, today: LocalDate): Voice = when {
         lastSessionDay == null -> Voice.NOT_STARTED
-        ChronoUnit.DAYS.between(lastSessionDay, today) < RETURNING_AFTER_DAYS -> Voice.STEADY
+        today.toEpochDays() - lastSessionDay.toEpochDays() < RETURNING_AFTER_DAYS -> Voice.STEADY
         else -> Voice.RETURNING
     }
 
@@ -64,19 +63,19 @@ object NudgeVoice {
         require(pool.isNotEmpty()) { "Empty nudge pool" }
         val oldest = pool.minOf { lastShownAt[it.key] ?: Long.MIN_VALUE }
         val candidates = pool.filter { (lastShownAt[it.key] ?: Long.MIN_VALUE) == oldest }
-        return candidates[Math.floorMod(seed, candidates.size.toLong()).toInt()]
+        return candidates[seed.mod(candidates.size.toLong()).toInt()]
     }
 
     /** The tie-break for [habitUuid]'s nudge on [today]: stable within the day, different across days. */
     fun seedFor(habitUuid: String, today: LocalDate): Long =
-        habitUuid.hashCode().toLong() * SEED_PRIME + today.toEpochDay()
+        habitUuid.hashCode().toLong() * SEED_PRIME + today.toEpochDays()
 
     /**
      * The body's tie-break, from the title's [seed] and the title pool's size: the title takes the
      * seed's remainder and the body its quotient, so tied histories open on every title/body pairing
      * rather than the bodies congruent to the title's index.
      */
-    fun bodySeed(seed: Long, titleCount: Int): Long = Math.floorDiv(seed, titleCount.toLong())
+    fun bodySeed(seed: Long, titleCount: Int): Long = seed.floorDiv(titleCount.toLong())
 
     private const val SEED_PRIME = 31L
 }

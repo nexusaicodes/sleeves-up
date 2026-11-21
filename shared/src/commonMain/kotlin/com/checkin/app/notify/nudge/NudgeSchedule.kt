@@ -1,8 +1,15 @@
 package com.checkin.app.notify.nudge
 
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 
 /**
  * When a habit's check-in nudge may be sent, and the pure maths for finding the next instant.
@@ -14,9 +21,9 @@ import java.time.ZoneId
  *
  * A reminder time is a **minute of the day** (0–1439, local), so 10:15 is 615. Every function takes
  * the habit's chosen minute as a parameter rather than reading it, so this stays pure, like
- * [com.checkin.app.session.SessionSchedule]: `java.time` only, no clock, no `Context`, and the zone
- * threaded through explicitly. The stored value lives in [ReminderSettings], which is also where it
- * is clamped: every function here takes the minute as already valid.
+ * [com.checkin.app.session.SessionSchedule]: `kotlinx-datetime` only, no clock, no `Context`, and the
+ * zone threaded through explicitly. The stored value lives in the Android app's `ReminderSettings`,
+ * which is also where it is clamped: every function here takes the minute as already valid.
  */
 object NudgeSchedule {
 
@@ -63,20 +70,21 @@ object NudgeSchedule {
      * Strictly after, so it can never re-arm the instant that just fired and spin. It reads the
      * instants off [bandOn], so the fallback and the rules cannot disagree about where a band opens.
      */
-    fun nextBandAfter(fromMs: Long, zone: ZoneId, reminderMinute: Int): Long {
-        val today = Instant.ofEpochMilli(fromMs).atZone(zone).toLocalDate()
+    fun nextBandAfter(fromMs: Long, zone: TimeZone, reminderMinute: Int): Long {
+        val today = Instant.fromEpochMilliseconds(fromMs).toLocalDateTime(zone).date
         return bandOn(today, zone, reminderMinute).first.takeIf { it > fromMs }
-            ?: bandOn(today.plusDays(1), zone, reminderMinute).first
+            ?: bandOn(today.plus(1, DateTimeUnit.DAY), zone, reminderMinute).first
     }
 
     /**
      * The instants a habit's band covers on [date]: from its minute up to midnight. The same band
      * [inBand] reads by minute, as instants, for asking *when* it opens rather than *whether* it is
-     * open now. It goes through the calendar (`atTime(...).atZone(zone)`) rather than adding minutes
-     * to an epoch, so a DST day still opens the band at its stated local time.
+     * open now. It goes through the calendar (a `LocalDateTime` resolved in [zone]) rather than adding
+     * minutes to an epoch, so a DST day still opens the band at its stated local time, and a day whose
+     * midnight is skipped ends at the first instant after it.
      */
-    fun bandOn(date: LocalDate, zone: ZoneId, reminderMinute: Int): LongRange =
-        date.atTime(reminderMinute / MINUTES_PER_HOUR, reminderMinute % MINUTES_PER_HOUR)
-            .atZone(zone).toInstant().toEpochMilli() until
-            date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+    fun bandOn(date: LocalDate, zone: TimeZone, reminderMinute: Int): LongRange =
+        LocalDateTime(date, LocalTime(reminderMinute / MINUTES_PER_HOUR, reminderMinute % MINUTES_PER_HOUR))
+            .toInstant(zone).toEpochMilliseconds() until
+            date.plus(1, DateTimeUnit.DAY).atStartOfDayIn(zone).toEpochMilliseconds()
 }

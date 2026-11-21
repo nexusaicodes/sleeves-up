@@ -1,10 +1,12 @@
 package com.checkin.app.notify
 
+import com.checkin.app.notify.nudge.Nudge
+
 /**
  * Every notification id the app posts under, including nudges: posting twice under one id replaces
  * rather than adds, so every sender's ids must be visible in one place.
  *
- * A [com.checkin.app.notify.nudge.Nudge]'s id comes from [habitNudge] — its habit's block plus the
+ * A [Nudge]'s id comes from [habitNudge], through [notificationIdFor] — its habit's block plus the
  * nudge's fixed slot, never the enum's ordinal or position — so reordering the enum cannot change any
  * existing id, and two habits can never share one.
  *
@@ -76,3 +78,6 @@ object NotificationIds {
      */
     val RETIRED_NUDGES: List<Int> = listOf(10, 11, 12)
 }
+
+/** The id this nudge posts under for [habitId]: its habit's block plus its fixed [Nudge.slot]. */
+fun Nudge.notificationIdFor(habitId: Long): Int = NotificationIds.habitNudge(habitId, slot)

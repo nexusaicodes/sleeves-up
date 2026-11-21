@@ -1,9 +1,7 @@
 package com.checkin.app.notify.nudge
 
-import com.checkin.app.notify.nudge.NudgeConfig
-import com.checkin.app.notify.nudge.NudgeSchedule
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertTrue
 
 /**
  * Joins the two files that between them decide when a nudge can be sent.
@@ -23,9 +21,9 @@ class NudgeConfigTest {
         val latestBandMs = (MINUTES_PER_DAY - NudgeSchedule.minuteRange.last) * MINUTE_MS
         val needed = ALARM_SLIP_MS + NudgeConfig.MIN_GAP_MS
         assertTrue(
+            latestBandMs >= needed,
             "the latest band (${latestBandMs}ms) must outlast an alarm slip plus the gap (${needed}ms), " +
                 "or a habit held back behind another's reminder is deferred into tomorrow",
-            latestBandMs >= needed,
         )
     }
 

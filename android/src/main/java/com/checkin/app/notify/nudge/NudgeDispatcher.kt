@@ -9,11 +9,14 @@ import com.checkin.app.notify.NotificationIds
 import com.checkin.app.notify.NotificationSpec
 import com.checkin.app.notify.Notifier
 import com.checkin.app.notify.StringResolver
+import com.checkin.app.notify.notificationIdFor
 import com.checkin.app.notify.nudge.ledger.NudgeSendLog
 import com.checkin.app.time.TimeSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.toKotlinLocalDate
+import kotlinx.datetime.toKotlinTimeZone
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -151,7 +154,7 @@ class NudgeDispatcher(
         val today = Instant.ofEpochMilli(nowMillis).atZone(timeSource.zone()).toLocalDate()
         val copy = NudgeCatalog.copyFor(nudge, voiceOf(habit, today))
         val shown = shownWording(habit.uuid, nowMillis)
-        val seed = NudgeVoice.seedFor(habit.uuid, today)
+        val seed = NudgeVoice.seedFor(habit.uuid, today.toKotlinLocalDate())
         val title = NudgeVoice.pick(copy.titles, shown, seed)
         val body = NudgeVoice.pick(copy.bodies, shown, NudgeVoice.bodySeed(seed, copy.titles.size))
         // A post to a channel that does not exist is discarded — and recorded below as a refusal,
@@ -182,7 +185,10 @@ class NudgeDispatcher(
      */
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
     private suspend fun voiceOf(habit: Habit, today: LocalDate): NudgeVoice.Voice = try {
-        NudgeVoice.voiceFor(repository.lastSessionDayBefore(habit.id, today), today)
+        NudgeVoice.voiceFor(
+            repository.lastSessionDayBefore(habit.id, today)?.toKotlinLocalDate(),
+            today.toKotlinLocalDate(),
+        )
     } catch (e: CancellationException) {
         throw e
     } catch (_: Exception) {
@@ -209,7 +215,7 @@ class NudgeDispatcher(
     /** Must be called holding [passLock]. Reads afresh, so it sees whatever the pass just recorded. */
     private suspend fun armFromLedger() {
         val at = readStates()?.let { states ->
-            NudgeEligibility.nextAlarmAcross(states.map { it.snapshot }, timeSource.zone())
+            NudgeEligibility.nextAlarmAcross(states.map { it.snapshot }, timeSource.zone().toKotlinTimeZone())
         }
         if (at == null) armFallback() else runCatching { alarms.arm(at) }
     }
