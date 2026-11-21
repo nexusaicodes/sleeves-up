@@ -13,7 +13,7 @@ package com.checkin.app.data.local
  * constant if you must; never the value.
  *
  * The five are the app's five ways a session can end, and each has exactly one writer — see
- * [com.checkin.app.data.repository.CheckInRepository.checkOutAt], which takes this with no default.
+ * the Android app's `CheckInRepository.checkOutAt`, which takes this with no default.
  */
 enum class ClosedBy(val storedValue: String) {
     /** The Check-In screen's own button. */

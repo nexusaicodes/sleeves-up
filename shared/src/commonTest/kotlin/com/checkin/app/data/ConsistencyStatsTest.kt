@@ -1,10 +1,9 @@
 package com.checkin.app.data
 
-import com.checkin.app.data.ConsistencyStats
 import com.checkin.app.data.local.DailyAggregate
-import org.junit.Assert.assertEquals
-import org.junit.Test
-import java.time.LocalDate
+import kotlinx.datetime.LocalDate
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 /**
  * Showing up is the unit. These pin the thing that makes it worth counting: a short day counts
@@ -20,12 +19,12 @@ class ConsistencyStatsTest {
     private val minutes45 = 45 * 60_000L
     private val hours9 = 9 * 3_600_000L
 
-    private fun day(n: Int) = LocalDate.of(2026, 6, n)
+    private fun day(n: Int) = LocalDate(2026, 6, n)
 
     // --- Totals ---
 
     @Test
-    fun `showed-up days counts entries, whatever their length`() {
+    fun `showed-up days counts entries whatever their length`() {
         val summaries = days(day(1) to minutes45, day(2) to hours9)
 
         assertEquals(2, ConsistencyStats.showedUpDays(summaries))
@@ -39,7 +38,7 @@ class ConsistencyStatsTest {
     }
 
     @Test
-    fun `total sessions counts every session, not every day`() {
+    fun `total sessions counts every session and not every day`() {
         val summaries = mapOf(
             "2026-06-01" to DailyAggregate("2026-06-01", minutes45, 3, 0L, null, 0, 3, 0, 0, 0),
             "2026-06-02" to DailyAggregate("2026-06-02", hours9, 1, 0L, null, 0, 1, 0, 0, 0),

@@ -1,14 +1,13 @@
 package com.checkin.app.data
 
-import com.checkin.app.data.SessionBand
-import com.checkin.app.data.SessionRhythm
-import com.checkin.app.data.StartBucket
 import com.checkin.app.data.local.DailyAggregate
-import org.junit.Assert.assertEquals
-import org.junit.Test
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.ZoneId
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 /**
  * The two descriptive splits. Nothing here ranks anything, so what is worth pinning is the shape:
@@ -17,10 +16,11 @@ import java.time.ZoneId
  */
 class SessionRhythmTest {
 
-    private val zone: ZoneId = ZoneId.of("UTC")
+    private val zone = TimeZone.UTC
 
+    /** A UTC wall time as epoch millis; UTC has no transitions, so this cannot disagree with `java.time`. */
     private fun at(hour: Int, minute: Int = 0): Long =
-        LocalDate.of(2026, 6, 15).atTime(LocalTime.of(hour, minute)).atZone(zone).toInstant().toEpochMilli()
+        LocalDateTime(LocalDate(2026, 6, 15), LocalTime(hour, minute)).toInstant(zone).toEpochMilliseconds()
 
     private fun day(key: String, sessions: Int) =
         key to DailyAggregate(key, 3_600_000L, sessions, 0L, 0L, 0, sessions, 0, 0, 0)
@@ -71,7 +71,7 @@ class SessionRhythmTest {
         val nineUtc = at(9)
 
         assertEquals(StartBucket.MORNING, SessionRhythm.bucketOf(nineUtc, zone))
-        assertEquals(StartBucket.EVENING, SessionRhythm.bucketOf(nineUtc, ZoneId.of("Asia/Tokyo")))
+        assertEquals(StartBucket.EVENING, SessionRhythm.bucketOf(nineUtc, TimeZone.of("Asia/Tokyo")))
     }
 
     // --- Sessions per day ---
@@ -110,12 +110,12 @@ class SessionRhythmTest {
     fun `the average divides by the days that had sessions`() {
         val summaries = mapOf(day("2026-06-01", 3), day("2026-06-02", 1), day("2026-06-03", 2))
 
-        assertEquals(2f, SessionRhythm.averageSessionsPerDay(summaries), 0.001f)
+        assertEquals(2f, SessionRhythm.averageSessionsPerDay(summaries), absoluteTolerance = 0.001f)
     }
 
     /** The state every install starts in, and the one that would divide by zero. */
     @Test
     fun `an empty record averages zero rather than dividing by zero`() {
-        assertEquals(0f, SessionRhythm.averageSessionsPerDay(emptyMap()), 0.001f)
+        assertEquals(0f, SessionRhythm.averageSessionsPerDay(emptyMap()), absoluteTolerance = 0.001f)
     }
 }

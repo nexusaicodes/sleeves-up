@@ -36,6 +36,8 @@ import com.checkin.app.ui.theme.dayColor
 import com.checkin.app.ui.theme.descriptiveHues
 import com.checkin.app.util.TimeFormat
 import com.checkin.app.util.withLatinDigits
+import kotlinx.datetime.toJavaLocalDate
+import kotlinx.datetime.toJavaYearMonth
 import java.util.Locale
 
 /*
@@ -127,8 +129,16 @@ internal fun DailyHoursCard(uiState: ReportsUiState) {
         )
         Spacer(Modifier.height(8.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            AxisLabel(uiState.dailySeries.firstOrNull()?.date?.let { TimeFormat.axisDay(it, patterns) }.orEmpty())
-            AxisLabel(uiState.dailySeries.lastOrNull()?.date?.let { TimeFormat.axisDay(it, patterns) }.orEmpty())
+            AxisLabel(
+                uiState.dailySeries.firstOrNull()?.date?.let {
+                    TimeFormat.axisDay(it.toJavaLocalDate(), patterns)
+                }.orEmpty(),
+            )
+            AxisLabel(
+                uiState.dailySeries.lastOrNull()?.date?.let {
+                    TimeFormat.axisDay(it.toJavaLocalDate(), patterns)
+                }.orEmpty(),
+            )
         }
     }
 }
@@ -182,7 +192,7 @@ internal fun MonthlyHoursCard(uiState: ReportsUiState) {
     val hours = uiState.monthlySeries.map { it.workedMs / MILLIS_PER_HOUR }
     // Asked once for the series rather than per label, so every bar in one chart is formatted alike.
     val multiYear = uiState.monthlySeries.map { it.month.year }.distinct().size > 1
-    val label = { point: MonthPoint -> TimeFormat.axisMonth(point.month, multiYear, patterns) }
+    val label = { point: MonthPoint -> TimeFormat.axisMonth(point.month.toJavaYearMonth(), multiYear, patterns) }
     val entry = stringResource(R.string.cd_monthly_chart_entry)
     val spoken = uiState.monthlySeries.joinToString(stringResource(R.string.list_separator)) {
         val duration = TimeFormat.durationShort(it.workedMs, patterns)

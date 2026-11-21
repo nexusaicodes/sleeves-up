@@ -1,8 +1,9 @@
 package com.checkin.app.data
 
 import com.checkin.app.data.local.DailyAggregate
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
 
 /**
  * Pure statistics over a date-keyed map of days that had sessions.
@@ -16,10 +17,8 @@ import java.time.format.DateTimeFormatter
  */
 object ConsistencyStats {
 
-    private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
-
     private fun showedUp(summaries: Map<String, DailyAggregate>, date: LocalDate): Boolean =
-        summaries.containsKey(date.format(dateFormatter))
+        summaries.containsKey(date.toString())
 
     /**
      * The last day that counts: [today] once it holds a completed session, otherwise yesterday.
@@ -38,7 +37,7 @@ object ConsistencyStats {
      * [totalWorkedMs] and [showedUpDays] need no range of their own.
      */
     fun countedThrough(summaries: Map<String, DailyAggregate>, today: LocalDate): LocalDate =
-        if (showedUp(summaries, today)) today else today.minusDays(1)
+        if (showedUp(summaries, today)) today else today.minus(1, DateTimeUnit.DAY)
 
     fun showedUpDays(summaries: Map<String, DailyAggregate>): Int = summaries.size
 
