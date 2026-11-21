@@ -4,8 +4,8 @@ There is no iOS app here yet. This folder is where it will go.
 
 What exists today is the shared Kotlin Multiplatform module in [`../shared`](../shared). It builds
 for `iosArm64` (devices) and `iosSimulatorArm64` (Apple-silicon simulators) as well as for the JVM
-that the Android app uses. It holds six pure-core files with no platform code: `ChartGeometry`,
-`PresenceCheckRules`, `FaceDetectSupport`, `ReportScope`, `MonthSteps` and `TimeUnits`.
+that the Android app uses. It holds pure-core files with no platform code; CLAUDE.md's Key Source Paths
+lists which.
 
 ## Building the shared code for iOS
 

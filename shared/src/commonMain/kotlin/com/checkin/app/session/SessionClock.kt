@@ -1,7 +1,7 @@
 package com.checkin.app.session
 
 /**
- * The two numbers a session's elapsed time is drawn from, kept out of [CheckInService] so they are
+ * The two numbers a session's elapsed time is drawn from, kept out of `CheckInService` so they are
  * JVM-unit-testable — a `Service` is not, and this is the most visible figure the app has, the one a
  * user reads to decide whether to check out.
  *

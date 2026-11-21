@@ -2,10 +2,10 @@ package com.checkin.app.ui.welcome
 
 import com.checkin.app.ui.welcome.FirstRun
 import com.checkin.app.ui.welcome.FirstRun.Step
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * The order is the feature, and the defect it fixes is a system permission dialog arriving as the
@@ -167,7 +167,7 @@ class FirstRunTest {
     }
 
     @Test
-    fun `the widget page is shown once, and not to whoever has a widget placed`() {
+    fun `the widget page is shown once and not to whoever has a widget placed`() {
         assertFalse(
             FirstRun.widgetPageOwed(
                 seenWelcome = true,
