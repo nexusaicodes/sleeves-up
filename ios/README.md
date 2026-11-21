@@ -22,5 +22,8 @@ binary. The second also runs it, which needs an iOS simulator runtime: install o
 `xcodebuild -downloadPlatform iOS`. The first Kotlin/Native build downloads its toolchain into
 `~/.konan`.
 
+The product decisions an iOS app needs before its code is written, where iOS can't do what the
+Android app relies on, are proposed in [`../docs/ios-decisions.md`](../docs/ios-decisions.md).
+
 CI runs on Linux and does not build these targets, so run them before merging a change to
 `shared/`.
