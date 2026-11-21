@@ -1,17 +1,19 @@
 package com.checkin.app.notify.nudge
 
-import com.checkin.app.notify.nudge.Nudge
-import com.checkin.app.notify.nudge.NudgeConfig
-import com.checkin.app.notify.nudge.NudgeEligibility
-import com.checkin.app.notify.nudge.NudgeSchedule
-import com.checkin.app.notify.nudge.NudgeSnapshot
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class NudgeEligibilityTest {
 
@@ -57,9 +59,9 @@ class NudgeEligibilityTest {
     fun `any hour from the chosen one to midnight is eligible`() {
         for (h in chosen..23) {
             assertEquals(
-                "hour $h",
                 Nudge.NOT_CHECKED_IN,
                 NudgeEligibility.select(eligible(hourOfDay = h)),
+                "hour $h",
             )
         }
     }
@@ -132,11 +134,13 @@ class NudgeEligibilityTest {
 
     // --- nextEligibleAt ---
 
-    private val utc: ZoneId = ZoneId.of("UTC")
-    private val day: LocalDate = LocalDate.of(2026, 6, 15)
+    private val utc = TimeZone.UTC
+    private val day = LocalDate(2026, 6, 15)
+    private val nextDay = day.plus(1, DateTimeUnit.DAY)
 
+    /** A UTC wall time as epoch millis; UTC has no transitions, so this cannot disagree with `java.time`. */
     private fun at(hour: Int, minute: Int = 0, date: LocalDate = day): Long =
-        date.atTime(hour, minute).atZone(utc).toInstant().toEpochMilli()
+        LocalDateTime(date, LocalTime(hour, minute)).toInstant(utc).toEpochMilliseconds()
 
     /** A snapshot whose minute of the day is derived from its instant, as the dispatcher builds one. */
     private fun live(
@@ -146,8 +150,8 @@ class NudgeEligibilityTest {
         hasCheckedInToday: Boolean = false,
         reminderHour: Int = chosen,
     ) = eligible(
-        hourOfDay = Instant.ofEpochMilli(nowMs).atZone(utc).hour,
-        minute = Instant.ofEpochMilli(nowMs).atZone(utc).minute,
+        hourOfDay = Instant.fromEpochMilliseconds(nowMs).toLocalDateTime(utc).hour,
+        minute = Instant.fromEpochMilliseconds(nowMs).toLocalDateTime(utc).minute,
         reminderHour = reminderHour,
         hasCheckedInToday = hasCheckedInToday,
         spentToday = spentToday,
@@ -182,7 +186,7 @@ class NudgeEligibilityTest {
 
     @Test
     fun `nothing left today arms tomorrow's band`() {
-        val tomorrow = at(chosen, date = day.plusDays(1))
+        val tomorrow = at(chosen, date = nextDay)
 
         assertEquals(tomorrow, NudgeEligibility.nextEligibleAt(live(at(20), setOf(Nudge.NOT_CHECKED_IN)), utc))
         assertEquals(tomorrow, NudgeEligibility.nextEligibleAt(live(at(chosen), hasCheckedInToday = true), utc))
@@ -225,8 +229,8 @@ class NudgeEligibilityTest {
                 val snapshot = state(now)
                 val next = NudgeEligibility.nextEligibleAt(snapshot, utc)
 
-                assertTrue("next before now at minute $minute", next >= now)
-                assertEquals("minute $minute", NudgeEligibility.select(snapshot) != null, next == now)
+                assertTrue(next >= now, "next before now at minute $minute")
+                assertEquals(NudgeEligibility.select(snapshot) != null, next == now, "minute $minute")
             }
         }
     }
@@ -241,11 +245,11 @@ class NudgeEligibilityTest {
     @Test
     fun `nextEligibleAt agrees with select at the range ends and across DST`() {
         val days = listOf(
-            ZoneId.of("UTC") to LocalDate.of(2026, 6, 15),
-            ZoneId.of("America/Santiago") to LocalDate.of(2026, 9, 5),
-            ZoneId.of("America/Santiago") to LocalDate.of(2026, 4, 4),
-            ZoneId.of("Europe/London") to LocalDate.of(2026, 3, 29),
-            ZoneId.of("Europe/London") to LocalDate.of(2026, 10, 25),
+            TimeZone.UTC to LocalDate(2026, 6, 15),
+            TimeZone.of("America/Santiago") to LocalDate(2026, 9, 5),
+            TimeZone.of("America/Santiago") to LocalDate(2026, 4, 4),
+            TimeZone.of("Europe/London") to LocalDate(2026, 3, 29),
+            TimeZone.of("Europe/London") to LocalDate(2026, 10, 25),
         )
         // A time off the hour among them, since reminders are chosen to the minute.
         val minutes =
@@ -255,31 +259,34 @@ class NudgeEligibilityTest {
         }
     }
 
-    private fun assertAgreementOver(zone: ZoneId, date: LocalDate, reminderMinute: Int) {
+    private fun assertAgreementOver(zone: TimeZone, date: LocalDate, reminderMinute: Int) {
         fun local(minuteOfDay: Int) =
-            date.atTime(minuteOfDay / 60, minuteOfDay % 60).atZone(zone).toInstant().toEpochMilli()
+            LocalDateTime(date, LocalTime(minuteOfDay / 60, minuteOfDay % 60)).toInstant(zone).toEpochMilliseconds()
         val states: List<Pair<Set<Nudge>, Long?>> = listOf(
             emptySet<Nudge>() to null,
             emptySet<Nudge>() to local(reminderMinute + 10),
             setOf(Nudge.NOT_CHECKED_IN) to local(reminderMinute),
         )
-        val dayStart = date.atStartOfDay(zone).toInstant().toEpochMilli()
-        val dayEnd = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val dayStart = date.atStartOfDayIn(zone).toEpochMilliseconds()
+        val dayEnd = date.plus(1, DateTimeUnit.DAY).atStartOfDayIn(zone).toEpochMilliseconds()
         for ((spent, lastShown) in states) {
             for (now in dayStart until dayEnd step 10 * 60_000L) {
                 val snapshot = NudgeSnapshot(
                     nowMillis = now,
-                    minuteOfDay = Instant.ofEpochMilli(now).atZone(zone).let { it.hour * 60 + it.minute },
+                    minuteOfDay = Instant.fromEpochMilliseconds(now).toLocalDateTime(zone).let {
+                        it.hour * 60 +
+                            it.minute
+                    },
                     reminderMinute = reminderMinute,
                     hasCheckedInToday = false,
                     spentToday = spent,
                     lastShownAtMs = lastShown,
                 )
                 val next = NudgeEligibility.nextEligibleAt(snapshot, zone)
-                val label = "$zone $date minute=$reminderMinute spent=$spent at ${Instant.ofEpochMilli(now)}"
+                val label = "$zone $date minute=$reminderMinute spent=$spent at ${Instant.fromEpochMilliseconds(now)}"
 
-                assertTrue("next before now: $label", next >= now)
-                assertEquals(label, NudgeEligibility.select(snapshot) != null, next == now)
+                assertTrue(next >= now, "next before now: $label")
+                assertEquals(NudgeEligibility.select(snapshot) != null, next == now, label)
             }
         }
     }
@@ -305,7 +312,7 @@ class NudgeEligibilityTest {
     /** Put off past midnight, the band gives way to tomorrow's. */
     @Test
     fun `a due nudge near midnight gives way to tomorrow`() {
-        assertEquals(at(chosen, date = day.plusDays(1)), NudgeEligibility.nextAlarmAt(live(at(23, minute = 50)), utc))
+        assertEquals(at(chosen, date = nextDay), NudgeEligibility.nextAlarmAt(live(at(23, minute = 50)), utc))
     }
 
     /**
@@ -326,8 +333,8 @@ class NudgeEligibilityTest {
                 val eligible = NudgeEligibility.nextEligibleAt(snapshot, utc)
                 val alarm = NudgeEligibility.nextAlarmAt(snapshot, utc)
 
-                assertTrue("alarm not ahead of now at minute $minute", alarm > now)
-                if (eligible > now) assertEquals("minute $minute", eligible, alarm)
+                assertTrue(alarm > now, "alarm not ahead of now at minute $minute")
+                if (eligible > now) assertEquals(eligible, alarm, "minute $minute")
             }
         }
     }

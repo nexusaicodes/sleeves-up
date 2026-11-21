@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import kotlinx.datetime.toKotlinTimeZone
 import java.time.ZoneId
 
 /**
@@ -42,7 +43,7 @@ interface NudgeAlarms {
  * one pass, which re-arms from the real state if it can read it, where waking late costs a reminder.
  */
 fun NudgeAlarms.armFallback(nowMs: Long, zone: ZoneId, settings: ReminderSettings) =
-    arm(NudgeSchedule.nextBandAfter(nowMs, zone, settings.earliestMinute()))
+    arm(NudgeSchedule.nextBandAfter(nowMs, zone.toKotlinTimeZone(), settings.earliestMinute()))
 
 class AndroidNudgeAlarms(private val context: Context) : NudgeAlarms {
 

@@ -6,8 +6,8 @@ package com.checkin.app.notify.nudge
  * clock — is what keeps the rules pure, exhaustively testable, and unable to touch tracking logic.
  *
  * One snapshot per active habit; only [lastShownAtMs] is shared between them, because the gap is
- * the one rule that spans habits. The caller is [NudgeDispatcher], which does every read this holds
- * the results of; that is where to look for how a field is actually derived.
+ * the one rule that spans habits. The caller is the Android app's `NudgeDispatcher`, which does
+ * every read this holds the results of; that is where to look for how a field is actually derived.
  */
 data class NudgeSnapshot(
     val nowMillis: Long,
@@ -35,8 +35,8 @@ data class NudgeSnapshot(
     /**
      * This habit's nudges already attempted today, posted or refused, so one cannot be tried twice.
      *
-     * The band is hours wide and [NudgeWorker] runs hourly, so without this a repeat pass inside it
-     * re-selects the same nudge and reposts identical copy under the same id. A refused attempt
+     * The band is hours wide and the Android app's `NudgeWorker` runs hourly, so without this a repeat
+     * pass inside it re-selects the same nudge and reposts identical copy under the same id. A refused attempt
      * counts too, and that is what makes "a refused nudge waits for tomorrow" true across processes:
      * were only posts recorded, every re-arm would read a refused band as open and unsent, and a user
      * who had turned the channel off would be woken for a pass into it on every process start.

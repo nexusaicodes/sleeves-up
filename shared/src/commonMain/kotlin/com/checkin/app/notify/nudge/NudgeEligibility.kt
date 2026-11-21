@@ -1,7 +1,10 @@
 package com.checkin.app.notify.nudge
 
-import java.time.Instant
-import java.time.ZoneId
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 
 /**
  * Decides which nudge — if any — to send for one habit's [NudgeSnapshot], and when the single
@@ -56,7 +59,7 @@ object NudgeEligibility {
      * comes back as the instant the gap clears. A clock moved backwards puts the last send in the
      * future, so the gap clears later — exactly when [spacedFarEnough] would next allow it.
      */
-    fun nextEligibleAt(snapshot: NudgeSnapshot, zone: ZoneId): Long =
+    fun nextEligibleAt(snapshot: NudgeSnapshot, zone: TimeZone): Long =
         earliest(snapshot, zone, dueAt = snapshot.nowMillis)
 
     /**
@@ -65,7 +68,7 @@ object NudgeEligibility {
      * tomorrow's if the delay runs past midnight. An instant still ahead is left exactly where it is,
      * so an on-time reminder and a gap-deferred one both arrive when the rules allow them.
      */
-    fun nextAlarmAt(snapshot: NudgeSnapshot, zone: ZoneId): Long =
+    fun nextAlarmAt(snapshot: NudgeSnapshot, zone: TimeZone): Long =
         earliest(snapshot, zone, dueAt = snapshot.nowMillis + NudgeConfig.DUE_NOW_DELAY_MS)
 
     /**
@@ -74,12 +77,12 @@ object NudgeEligibility {
      * `PendingIntent` per habit is a request code per habit, and the pass the alarm runs already
      * asks every habit at once.
      */
-    fun nextAlarmAcross(snapshots: List<NudgeSnapshot>, zone: ZoneId): Long? =
+    fun nextAlarmAcross(snapshots: List<NudgeSnapshot>, zone: TimeZone): Long? =
         snapshots.minOfOrNull { nextAlarmAt(it, zone) }
 
     /** The shared body of [nextEligibleAt] and [nextAlarmAt]: [dueAt] stands in for any instant already reached. */
-    private fun earliest(snapshot: NudgeSnapshot, zone: ZoneId, dueAt: Long): Long {
-        val today = Instant.ofEpochMilli(snapshot.nowMillis).atZone(zone).toLocalDate()
+    private fun earliest(snapshot: NudgeSnapshot, zone: TimeZone, dueAt: Long): Long {
+        val today = Instant.fromEpochMilliseconds(snapshot.nowMillis).toLocalDateTime(zone).date
         val gapClearsAt = snapshot.lastShownAtMs?.let { it + NudgeConfig.MIN_GAP_MS } ?: Long.MIN_VALUE
         val todays = Nudge.entries
             .filter { stillSendable(snapshot, it) }
@@ -89,7 +92,7 @@ object NudgeEligibility {
                 (if (opensAt > snapshot.nowMillis) opensAt else dueAt).takeIf { it in band }
             }
             .minOrNull()
-        return todays ?: NudgeSchedule.bandOn(today.plusDays(1), zone, snapshot.reminderMinute).first
+        return todays ?: NudgeSchedule.bandOn(today.plus(1, DateTimeUnit.DAY), zone, snapshot.reminderMinute).first
     }
 
     /**

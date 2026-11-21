@@ -1,6 +1,7 @@
 package com.checkin.app.notify.nudge
 
 import com.checkin.app.notify.NotificationIds
+import com.checkin.app.notify.notificationIdFor
 import com.checkin.app.notify.nudge.Nudge
 import com.checkin.app.notify.nudge.NudgeCatalog
 import com.checkin.app.notify.nudge.NudgeVoice.Voice
