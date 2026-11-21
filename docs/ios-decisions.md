@@ -1,8 +1,9 @@
 # iOS: five product decisions
 
-Five rules in CLAUDE.md rest on Android behaviour that iOS doesn't have. Each one needs a decision
-before the iOS app's code is written, because each one changes what the app promises. This file
-proposes an answer for each. **Nothing here is decided until the owner signs off on it.**
+Five rules in CLAUDE.md rest on Android behaviour that iOS doesn't have. Each one needed a decision
+before the iOS app's code is written, because each one changes what the app promises. **All five
+were signed off by the owner on 2026-11-22, each as proposed below.** CLAUDE.md's "iOS platform rules"
+entry states them as rules; this file keeps the reasoning and the sources.
 
 Every iOS claim below cites Apple's documentation, quoted from the JSON form of
 developer.apple.com's documentation pages. Where Apple's docs don't state something, this file says
@@ -26,7 +27,7 @@ button for in-app notification settings").
 app setting would contradict. On iOS there is no per-habit system control to contradict. The
 app-wide switch stays the master: when it is off, nothing posts whatever the app says.
 
-**Proposal.** On iOS only, each habit gets a reminder on/off in its editor on the Habits screen,
+**Decision.** On iOS only, each habit gets a reminder on/off in its editor on the Habits screen,
 beside its reminder time. The system Settings screen links to it through the in-app
 notification-settings button. The app-wide system switch still governs everything. Android keeps
 channels and no in-app switch. The divergence is written into CLAUDE.md as a platform rule, not left
@@ -49,7 +50,7 @@ that can change a notification before it is shown only in terms of remote (push)
 ([UNNotificationServiceExtension](https://developer.apple.com/documentation/usernotifications/unnotificationserviceextension)),
 and this app sends none.
 
-**Proposal.** Close the session the next time any of the app's code runs: launch, return to the
+**Decision.** Close the session the next time any of the app's code runs: launch, return to the
 foreground, a background refresh, or a widget or Live Activity timeline request. Stamp it with
 `SessionSchedule.dayBoundaryOf`, which is already shared and tested on iOS. The stored record is
 **identical** to Android's: same stop instant, same `DAY_BOUNDARY` ending. The zone rule is the same
@@ -69,7 +70,7 @@ active until its trigger condition is met, or you explicitly cancel it."
 ([Scheduling a notification locally](https://developer.apple.com/documentation/usernotifications/scheduling-a-notification-locally-from-your-app))
 Nothing runs when one fires (see decision 2).
 
-**Proposal.** Turn the decision from "at fire time" into "at schedule time, revised whenever code
+**Decision.** Turn the decision from "at fire time" into "at schedule time, revised whenever code
 runs":
 - Each time app code runs, schedule each active habit's reminders for the next few days with the
   same rules (`NudgeEligibility`, once shared), and pick each one's wording then.
@@ -97,7 +98,7 @@ it on the Lock Screen for up to four more hours, so it "remains on the Lock Scre
 hours" in all.
 ([Displaying live data with Live Activities](https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities))
 
-**Proposal.** Start a Live Activity at check-in and end it at check-out. A session longer than eight
+**Decision.** Start a Live Activity at check-in and end it at check-out. A session longer than eight
 hours loses it, and the session itself is unaffected: the row stays open and the gauge in the app
 keeps counting. The session reminder, every two hours with only the first one alerting, is
 scheduled as local notifications at check-in and cancelled at check-out. That covers the gap
@@ -117,16 +118,16 @@ user often views, with entries "at least about 5 minutes apart."
 ([Keeping a widget up to date](https://developer.apple.com/documentation/widgetkit/keeping-a-widget-up-to-date))
 A name changing every few seconds can't be built from timeline entries.
 
-**Proposal.** With one active habit, "Check in to <name>". With several, a plain "Check In" that
+**Decision.** With one active habit, "Check in to <name>". With several, a plain "Check In" that
 opens the habit picker, which is what Android does with animations off. With a session open, "Check
 out of <name>". Never a figure. The rule that matters, that the widget shows no score, carries over
 unchanged; only the cycling is dropped.
 
 **What it costs.** Users with several habits don't see their names on the widget.
 
-## What gets decided
+## Decided (2026-11-22)
 
-| # | Decision | Proposal |
+| # | Decision | Outcome |
 |---|---|---|
 | 1 | Reminder opt-out per habit | iOS-only in-app switch, linked from system Settings; app-wide switch stays master |
 | 2 | Forgotten session at midnight | Close on next code run, stamped at its own midnight; same record as Android |
@@ -134,5 +135,5 @@ unchanged; only the cycling is dropped.
 | 4 | Running-session display | Live Activity, up to its 8-hour limit; session reminders cover the rest |
 | 5 | Widget | One name, or "Check In" with several habits; no cycling, no figures |
 
-Once signed off, each accepted decision goes into CLAUDE.md as a platform rule beside the Android rule
-it changes.
+The pending-notification limit in decision 3 is still to be measured on a device before the
+scheduling window is chosen.
