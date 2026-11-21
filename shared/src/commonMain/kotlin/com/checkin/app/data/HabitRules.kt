@@ -1,14 +1,12 @@
 package com.checkin.app.data
 
-import com.checkin.app.data.local.Habit
-
 /** Why a habit name was refused. */
 enum class NameProblem { BLANK, TOO_LONG, DUPLICATE }
 
 /**
  * The pure rules about habits: what a name may be, and which habit the app is showing. No DAO, no
- * clock, so `HabitRulesTest` can pin both exhaustively; [com.checkin.app.data.repository.HabitRepository]
- * applies them.
+ * clock, so `HabitRulesTest` can pin both exhaustively; the Android app's `HabitRepository` applies
+ * them. They read a habit through [HabitFacts], so either app's stored type can be passed as it is.
  */
 object HabitRules {
 
@@ -20,7 +18,10 @@ object HabitRules {
      */
     const val MAX_NAME_LENGTH = 25
 
-    /** The stored form of a name: trimmed, and with runs of whitespace collapsed to one space. */
+    /**
+     * The stored form of a name: trimmed, and with runs of ASCII whitespace collapsed to one space.
+     * Inner non-ASCII spaces (a no-break space, an em space) are kept as typed.
+     */
     fun normalise(name: String): String = name.trim().replace(WHITESPACE, " ")
 
     /**
@@ -29,11 +30,11 @@ object HabitRules {
      * the same habit to anyone reading it; archived habits do not count, since they are not in the
      * switcher — restoring one into a clash is refused at the restore instead.
      */
-    fun nameProblem(name: String, activeHabits: List<Habit>, forId: Long? = null): NameProblem? {
+    fun nameProblem(name: String, activeHabits: List<HabitFacts>, forId: Long? = null): NameProblem? {
         val normalised = normalise(name)
         return when {
             normalised.isEmpty() -> NameProblem.BLANK
-            normalised.codePointCount(0, normalised.length) > MAX_NAME_LENGTH -> NameProblem.TOO_LONG
+            codePointCount(normalised) > MAX_NAME_LENGTH -> NameProblem.TOO_LONG
             activeHabits.any { it.id != forId && it.name.equals(normalised, ignoreCase = true) } ->
                 NameProblem.DUPLICATE
             else -> null
@@ -50,10 +51,29 @@ object HabitRules {
      * stored selection that has since been archived. Null only when no habit is active, which the
      * archive rules make unreachable.
      */
-    fun effectiveSelection(storedId: Long?, runningHabitId: Long?, activeHabits: List<Habit>): Habit? =
+    fun <H : HabitFacts> effectiveSelection(storedId: Long?, runningHabitId: Long?, activeHabits: List<H>): H? =
         activeHabits.firstOrNull { it.id == runningHabitId }
             ?: activeHabits.firstOrNull { it.id == storedId }
             ?: activeHabits.firstOrNull()
 
-    private val WHITESPACE = Regex("\\s+")
+    /**
+     * Java's `\s`, spelled out: Kotlin/Native's regex engine is not Java's, and naming the class keeps
+     * both apps collapsing exactly the same characters.
+     */
+    private val WHITESPACE = Regex("[ \t\n\u000B\u000C\r]+")
+
+    /**
+     * Code points in [text], as Java's `String.codePointCount` counts them: a surrogate pair is one,
+     * and an unpaired surrogate is one on its own. The standard library has no common equivalent.
+     */
+    private fun codePointCount(text: String): Int {
+        var count = 0
+        var i = 0
+        while (i < text.length) {
+            val pair = text[i].isHighSurrogate() && i + 1 < text.length && text[i + 1].isLowSurrogate()
+            i += if (pair) 2 else 1
+            count++
+        }
+        return count
+    }
 }

@@ -1,6 +1,6 @@
 package com.checkin.app.launch
 
-import com.checkin.app.data.local.Habit
+import com.checkin.app.data.HabitFacts
 
 /** What a tap from outside the app — a nudge, the home-screen widget, a pick in the picker — resolves to. */
 sealed interface TapOutcome {
@@ -23,8 +23,8 @@ sealed interface TapOutcome {
 /**
  * The rules every tap from outside the app is routed by, read off the database at the moment of the
  * tap — never off whatever the surface that was tapped happened to show, since a notification or a
- * widget can be hours stale. Pure, so `TapRoutingTest` pins each branch;
- * [MainActivity][com.checkin.app.MainActivity] reads the rows and applies the outcome.
+ * widget can be hours stale. Pure, so `TapRoutingTest` pins each branch; the Android app's
+ * `MainActivity` reads the rows and applies the outcome.
  *
  * **There is one open session across all habits**, which decides most of it: a check-in can only be
  * asked for when nothing is open, and while something is, the only gated action left is its check-out.
@@ -35,7 +35,7 @@ object TapRouting {
      * A tap about one habit: a nudge for it, or a row picked in the picker. [habit] is null when no
      * habit carries the tapped uuid — a restored database can orphan one — which asks for nothing.
      */
-    fun forHabit(habit: Habit?, runningHabitId: Long?): TapOutcome = when {
+    fun forHabit(habit: HabitFacts?, runningHabitId: Long?): TapOutcome = when {
         habit == null || habit.archived -> TapOutcome.NoAction
         // Already checked in since the surface was drawn: the tap has nothing left to ask for.
         runningHabitId == habit.id -> TapOutcome.NoAction
@@ -48,7 +48,7 @@ object TapRouting {
      * otherwise a check-in — straight to the gate when there is only one habit it could be for, and
      * through the picker when there is a choice to make. [active] is the active habits, any order.
      */
-    fun forWidget(active: List<Habit>, runningHabitId: Long?): TapOutcome = when {
+    fun forWidget(active: List<HabitFacts>, runningHabitId: Long?): TapOutcome = when {
         runningHabitId != null -> TapOutcome.CheckOut
         active.size == 1 -> forHabit(active.single(), runningHabitId = null)
         active.isEmpty() -> TapOutcome.NoAction
