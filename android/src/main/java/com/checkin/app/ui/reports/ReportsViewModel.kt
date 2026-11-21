@@ -37,6 +37,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.toJavaLocalDate
 import kotlinx.datetime.toJavaYearMonth
 import kotlinx.datetime.toKotlinLocalDate
+import kotlinx.datetime.toKotlinTimeZone
 import kotlinx.datetime.toKotlinYearMonth
 import java.time.LocalDate
 import java.time.YearMonth
@@ -190,7 +191,7 @@ class ReportsViewModel(
                 // never zero — `resolve` returns null rather than an empty window.
                 avgDailyMs = totalWorkedMs / window.days,
                 avgSessionsPerDay = SessionRhythm.averageSessionsPerDay(summaries),
-                startBuckets = SessionRhythm.startBuckets(sessionStarts, timeSource.zone()),
+                startBuckets = SessionRhythm.startBuckets(sessionStarts, timeSource.zone().toKotlinTimeZone()),
                 sessionBands = SessionRhythm.sessionsPerDayBands(summaries),
                 dailySeries = dailySeries(summaries, activeScope, window),
                 monthlySeries = monthlySeries(summaries, activeScope, window),

@@ -1,8 +1,9 @@
 package com.checkin.app.data
 
 import com.checkin.app.data.local.DailyAggregate
-import java.time.Instant
-import java.time.ZoneId
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 
 /**
  * When in the day a session began. Descriptive: no bucket is better than another.
@@ -44,8 +45,8 @@ object SessionRhythm {
     /** Days holding this many sessions or more all land in [SessionBand.THREE_PLUS]. */
     const val THREE_PLUS_FROM = 3
 
-    fun bucketOf(startedAtMillis: Long, zone: ZoneId): StartBucket {
-        val hour = Instant.ofEpochMilli(startedAtMillis).atZone(zone).hour
+    fun bucketOf(startedAtMillis: Long, zone: TimeZone): StartBucket {
+        val hour = Instant.fromEpochMilliseconds(startedAtMillis).toLocalDateTime(zone).hour
         return when {
             hour >= EVENING_FROM_HOUR -> StartBucket.EVENING
             hour >= AFTERNOON_FROM_HOUR -> StartBucket.AFTERNOON
@@ -59,7 +60,7 @@ object SessionRhythm {
      * Every bucket is present in the result, at zero if nothing landed in it — a legend that gains
      * and loses rows as the data moves is harder to read than one that states three figures.
      */
-    fun startBuckets(startsMillis: List<Long>, zone: ZoneId): Map<StartBucket, Int> {
+    fun startBuckets(startsMillis: List<Long>, zone: TimeZone): Map<StartBucket, Int> {
         val counts = StartBucket.entries.associateWith { 0 }.toMutableMap()
         startsMillis.forEach { millis ->
             val bucket = bucketOf(millis, zone)

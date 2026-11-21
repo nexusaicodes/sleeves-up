@@ -22,6 +22,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.toJavaLocalDate
+import kotlinx.datetime.toJavaYearMonth
 import kotlinx.datetime.toKotlinYearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -223,12 +225,12 @@ class ReportsViewModelTest {
 
         val series = viewModel.uiState.value.dailySeries
         // Window is clamped to the tracking start, and today (06-15) is still unfinished.
-        assertEquals(start, series.first().date)
-        assertEquals(LocalDate.of(2026, 6, 14), series.last().date)
+        assertEquals(start, series.first().date.toJavaLocalDate())
+        assertEquals(LocalDate.of(2026, 6, 14), series.last().date.toJavaLocalDate())
         assertEquals(5, series.size)
-        assertEquals(eightHours, series.first { it.date == LocalDate.of(2026, 6, 12) }.workedMs)
+        assertEquals(eightHours, series.first { it.date.toJavaLocalDate() == LocalDate.of(2026, 6, 12) }.workedMs)
         // A day with no sessions is a real zero, not a hole in the line.
-        assertEquals(0L, series.first { it.date == LocalDate.of(2026, 6, 11) }.workedMs)
+        assertEquals(0L, series.first { it.date.toJavaLocalDate() == LocalDate.of(2026, 6, 11) }.workedMs)
     }
 
     /**
@@ -248,7 +250,7 @@ class ReportsViewModelTest {
 
         assertEquals(2, viewModel.uiState.value.showedUpDays)
         assertEquals(2, viewModel.uiState.value.totalDays)
-        assertEquals(LocalDate.of(2026, 6, 14), viewModel.uiState.value.dailySeries.last().date)
+        assertEquals(LocalDate.of(2026, 6, 14), viewModel.uiState.value.dailySeries.last().date.toJavaLocalDate())
 
         // Checked in but not out: nothing must move on an intention.
         dao.seedOpen(today.toString(), startedAt = 0L)
@@ -263,7 +265,7 @@ class ReportsViewModelTest {
         assertEquals(3, viewModel.uiState.value.totalDays)
         assertEquals(0, viewModel.uiState.value.missedDays)
         val series = viewModel.uiState.value.dailySeries
-        assertEquals(today, series.last().date)
+        assertEquals(today, series.last().date.toJavaLocalDate())
         assertEquals(2 * hour, series.last().workedMs)
     }
 
@@ -282,7 +284,7 @@ class ReportsViewModelTest {
 
         val series = viewModel.uiState.value.dailySeries
         assertEquals(DAILY_WINDOW_DAYS, series.size)
-        assertEquals(LocalDate.of(2026, 6, 14), series.last().date)
+        assertEquals(LocalDate.of(2026, 6, 14), series.last().date.toJavaLocalDate())
     }
 
     /**
@@ -305,8 +307,8 @@ class ReportsViewModelTest {
         val state = viewModel.uiState.value
         assertEquals(ReportScope.Month(YearMonth.of(2026, 3).toKotlinYearMonth()), state.scope)
         assertEquals(31, state.totalDays)
-        assertEquals(LocalDate.of(2026, 3, 1), state.dailySeries.first().date)
-        assertEquals(LocalDate.of(2026, 3, 31), state.dailySeries.last().date)
+        assertEquals(LocalDate.of(2026, 3, 1), state.dailySeries.first().date.toJavaLocalDate())
+        assertEquals(LocalDate.of(2026, 3, 31), state.dailySeries.last().date.toJavaLocalDate())
         assertEquals(1, state.showedUpDays)
         // A month spans one bar, which is not a chart — the series is empty and the card is absent.
         assertEquals(emptyList<MonthPoint>(), state.monthlySeries)
@@ -393,8 +395,8 @@ class ReportsViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertEquals(LocalDate.of(2026, 3, 10), state.dailySeries.first().date)
-        assertEquals(LocalDate.of(2026, 3, 31), state.dailySeries.last().date)
+        assertEquals(LocalDate.of(2026, 3, 10), state.dailySeries.first().date.toJavaLocalDate())
+        assertEquals(LocalDate.of(2026, 3, 31), state.dailySeries.last().date.toJavaLocalDate())
         assertEquals(22, state.totalDays)
     }
 
@@ -469,9 +471,7 @@ class ReportsViewModelTest {
         val series = viewModel.uiState.value.monthlySeries
         assertEquals(
             listOf(YearMonth.of(2026, 4), YearMonth.of(2026, 5), YearMonth.of(2026, 6)),
-            series.map {
-                it.month
-            },
+            series.map { it.month.toJavaYearMonth() },
         )
         assertEquals(fourHours, series[0].workedMs)
         assertEquals(0L, series[1].workedMs) // May had no sessions but still needs a bar
@@ -500,7 +500,12 @@ class ReportsViewModelTest {
         val state = viewModel.uiState.value
         assertFalse(state.loading)
         // June carries the parseable day alone — the corrupt row contributes nothing to its bar.
-        assertEquals(fourHours, state.monthlySeries.single { it.month == YearMonth.of(2026, 6) }.workedMs)
+        assertEquals(
+            fourHours,
+            state.monthlySeries.single {
+                it.month.toJavaYearMonth() == YearMonth.of(2026, 6)
+            }.workedMs,
+        )
     }
 
     /** A short day counts as showing up exactly as much as a long one — there is no bar to clear. */

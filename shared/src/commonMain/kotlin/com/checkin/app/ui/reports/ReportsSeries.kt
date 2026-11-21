@@ -1,10 +1,12 @@
 package com.checkin.app.ui.reports
 
 import com.checkin.app.data.local.DailyAggregate
-import kotlinx.datetime.toJavaLocalDate
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.YearMonth
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+import kotlinx.datetime.yearMonth
 
 /*
  * What the two time-series charts plot — one point per day (a line), one per month (a bar) — and the
@@ -15,9 +17,6 @@ import java.time.format.DateTimeFormatter
 
 /** How many trailing days the daily chart plots under all time; a month scope plots its whole month. */
 const val DAILY_WINDOW_DAYS = 30
-
-/** `date_key`'s format. */
-private val DATE_KEY: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
 /** A day's worked time, for the daily-hours chart. */
 data class DayPoint(val date: LocalDate, val workedMs: Long)
@@ -32,20 +31,18 @@ data class MonthPoint(val month: YearMonth, val workedMs: Long)
  * A month scope plots the whole month; all time plots the trailing [DAILY_WINDOW_DAYS], because
  * a line with a point per day of a multi-year record is a solid block.
  */
-internal fun dailySeries(
+fun dailySeries(
     summaries: Map<String, DailyAggregate>,
     activeScope: ReportScope,
     window: ReportWindow,
 ): List<DayPoint> {
-    val start = window.start.toJavaLocalDate()
-    val end = window.end.toJavaLocalDate()
     val from = when (activeScope) {
-        is ReportScope.Month -> start
-        ReportScope.AllTime -> maxOf(start, end.minusDays((DAILY_WINDOW_DAYS - 1).toLong()))
+        is ReportScope.Month -> window.start
+        ReportScope.AllTime -> maxOf(window.start, window.end.minus(DAILY_WINDOW_DAYS - 1, DateTimeUnit.DAY))
     }
-    return generateSequence(from) { it.plusDays(1) }
-        .takeWhile { !it.isAfter(end) }
-        .map { day -> DayPoint(day, summaries[day.format(DATE_KEY)]?.totalDurationMs ?: 0L) }
+    return generateSequence(from) { it.plus(1, DateTimeUnit.DAY) }
+        .takeWhile { it <= window.end }
+        .map { day -> DayPoint(day, summaries[day.toString()]?.totalDurationMs ?: 0L) }
         .toList()
 }
 
@@ -55,7 +52,7 @@ internal fun dailySeries(
  * A month scope spans one month, and a single bar states nothing a chart adds over the total
  * already printed above it, so the card is not rendered at all rather than rendered degenerate.
  */
-internal fun monthlySeries(
+fun monthlySeries(
     summaries: Map<String, DailyAggregate>,
     activeScope: ReportScope,
     window: ReportWindow,
@@ -67,12 +64,11 @@ internal fun monthlySeries(
     val totals = summaries.values.groupBy { monthOf(it.dateKey) }
         .filterKeys { it != null }
         .mapValues { (_, days) -> days.sumOf { it.totalDurationMs } }
-    val lastMonth = YearMonth.from(window.end.toJavaLocalDate())
-    return generateSequence(YearMonth.from(window.start.toJavaLocalDate())) { it.plusMonths(1) }
-        .takeWhile { !it.isAfter(lastMonth) }
+    val lastMonth = window.end.yearMonth
+    return generateSequence(window.start.yearMonth) { it.firstDay.plus(1, DateTimeUnit.MONTH).yearMonth }
+        .takeWhile { it <= lastMonth }
         .map { month -> MonthPoint(month, totals[month] ?: 0L) }
         .toList()
 }
 
-private fun monthOf(dateKey: String): YearMonth? =
-    runCatching { YearMonth.from(LocalDate.parse(dateKey, DATE_KEY)) }.getOrNull()
+private fun monthOf(dateKey: String): YearMonth? = runCatching { LocalDate.parse(dateKey).yearMonth }.getOrNull()

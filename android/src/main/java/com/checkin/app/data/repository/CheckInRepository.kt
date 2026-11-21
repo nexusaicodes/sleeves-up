@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.toJavaLocalDate
+import kotlinx.datetime.toKotlinLocalDate
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -131,14 +133,15 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
     fun countedThroughFlow(habitId: Long, today: LocalDate): Flow<LocalDate> {
         val todayKey = today.format(dateFormatter)
         return dailyAggregatesFlow(habitId, todayKey, todayKey)
-            .map { ConsistencyStats.countedThrough(it.byDateKey(), today) }
+            .map { ConsistencyStats.countedThrough(it.byDateKey(), today.toKotlinLocalDate()).toJavaLocalDate() }
             .distinctUntilChanged()
     }
 
     /** [countedThroughFlow], read once, for the CSV export. */
     suspend fun countedThrough(habitId: Long, today: LocalDate): LocalDate {
         val todayKey = today.format(dateFormatter)
-        return ConsistencyStats.countedThrough(getDailySummaries(habitId, todayKey, todayKey), today)
+        val summaries = getDailySummaries(habitId, todayKey, todayKey)
+        return ConsistencyStats.countedThrough(summaries, today.toKotlinLocalDate()).toJavaLocalDate()
     }
 
     fun sessionsForDateFlow(habitId: Long, dateKey: String): Flow<List<CheckInSession>> =
