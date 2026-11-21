@@ -14,7 +14,7 @@ an unbroken grid says "this app is for people who never miss", which is the oppo
 pitch. The gaps are the honest part.
 
 Type is the app's own: Outfit for the wordmark, Manrope for the tagline, loaded from
-app/src/main/res/font. That is the same split Type.kt makes on screen -- Outfit on display
+android/src/main/res/font. That is the same split Type.kt makes on screen -- Outfit on display
 sizes, Manrope on reading sizes -- and the files are committed, so this script needs no font
 fallback chain and renders identically on any machine.
 
@@ -34,7 +34,7 @@ sys.path.insert(0, "play-store-assets")
 from generate_icons import CORNER_FRAC  # noqa: E402  -- one source for the cell's shape
 
 W, H = 1024, 500
-FONT_DIR = "app/src/main/res/font"
+FONT_DIR = "android/src/main/res/font"
 
 # The app's palette (ui/theme/Color.kt): the field runs from ink, the launcher tile's colour, down
 # to the dark theme's paper, so the filled cells (paper) and the empty ones (a whisper of it) read

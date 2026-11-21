@@ -208,7 +208,7 @@ dependencies {
 
     // Testing
     // JUnit plus the coroutines test dispatcher, and nothing else: the suite is pure JVM and mocks
-    // nothing, standing every seam up with a hand-written fake instead (app/src/test/.../Fakes.kt).
+    // nothing, standing every seam up with a hand-written fake instead (android/src/test/.../Fakes.kt).
     // There is no androidTest source set, so no instrumentation dependency has anything to run.
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
