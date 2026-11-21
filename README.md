@@ -59,7 +59,12 @@ export JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew :app:assembleDebug     -Dorg.gradle.java.installations.paths="$JBR"  # debug APK
 ./gradlew :app:installDebug      -Dorg.gradle.java.installations.paths="$JBR"  # install on a device
 ./gradlew :app:testDebugUnitTest --tests "com.checkin.app.data.ConsistencyStatsTest"  # one test class
+./gradlew :shared:jvmTest        -Dorg.gradle.java.installations.paths="$JBR"  # shared module's tests
 ```
+
+The Android app is in `android/` (Gradle project `:app`). `shared/` is a Kotlin Multiplatform
+module holding pure Kotlin that a future iOS app can use, and `ios/` is where that app will go; see
+[`ios/README.md`](ios/README.md).
 
 ## Checks
 
@@ -68,7 +73,7 @@ export JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew ktlintFormat                # auto-fix formatting
 ./gradlew :app:verifyDocMap           # CLAUDE.md and the source tree agree
 ./gradlew :app:verifyLicenseCoverage  # in-app licence list matches the release classpath
-./gradlew :app:verifyMergedManifest   # merged release manifest matches app/merged-manifest-allowlist.txt
+./gradlew :app:verifyMergedManifest   # merged release manifest matches android/merged-manifest-allowlist.txt
 ./gradlew :app:verifyPackagedFonts    # release APK carries only the app's own res/font typefaces
 ./gradlew :app:lintDebug              # Android lint
 ```

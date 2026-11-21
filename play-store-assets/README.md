@@ -5,7 +5,7 @@ Graphics for the Google Play listing of **Sleeves Up**.
 | File | Spec | Use |
 |---|---|---|
 | `generate_icons.py` | — | **Source of truth for the brand mark.** Emits the `pathData` for the app's vector drawables and renders the 512px Play icon |
-| `../app/src/main/ic_launcher-playstore.png` | 512×512 PNG | App icon (generated — do not hand-edit) |
+| `../android/src/main/ic_launcher-playstore.png` | 512×512 PNG | App icon (generated — do not hand-edit) |
 | `generate_feature_graphic.py` | — | Renders `feature-graphic.png` and `feature-graphic-ar.png` |
 | `feature-graphic.png` | 1024×500 PNG | Feature graphic, en-GB (generated) |
 | `feature-graphic-ar.png` | 1024×500 PNG | Feature graphic, ar (generated) |
@@ -58,7 +58,7 @@ It draws the wordmark, the tagline and a fragment of the binary calendar over a 
 with `generate_icons.py`. The cells and wordmark are paper (`#F1E6CE`) and the tagline the dark
 theme's muted ink, so both the filled cells and the faint empty ones read against the field. The
 screenshots' field and caption colour are imported from it, so the two stay one brand. Type
-is loaded from `app/src/main/res/font`, so output does not depend on the machine. The calendar runs
+is loaded from `android/src/main/res/font`, so output does not depend on the machine. The calendar runs
 off the right edge — asserted by the script — so it reads as a continuing record, not a complete
 object. The Arabic graphic is the same composition mirrored: the words on the right, the calendar
 off the left edge, the wordmark still in Latin script and Outfit, and the tagline the Arabic
@@ -94,7 +94,7 @@ adb root
 adb shell settings put global auto_time 0
 adb shell date 082816052026.00          # TODAY in the seed script, 16:05 (after the open session's start)
 adb shell locksettings set-pin 1234      # the gate's device-unlock fallback; no emulated camera finds a face
-adb install -r app/build/outputs/apk/release/app-release.apk
+adb install -r android/build/outputs/apk/release/app-release.apk
 # Open the app and walk first run (tour, naming step, notification ask) — capture it on the way.
 # The database has no tables until a screen queries it.
 P=com.nexusai.checkin.app; D=/data/data/$P/databases

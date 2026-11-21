@@ -13,7 +13,7 @@ Emits, from the same geometry:
     themed/monochrome layer
   * res/drawable/ic_splash_icon.xml, the splash's animated mark, and its two interpolators
   * pathData for res/drawable/ic_stat_check_in.xml (24dp notification silhouette)
-  * app/src/main/ic_launcher-playstore.png (512x512 Play listing icon)
+  * android/src/main/ic_launcher-playstore.png (512x512 Play listing icon)
 
 WHY NOT A ROLLED SLEEVE. The name suggests one, and it was tried: as a constant-width
 stroke it reads as a hammer, as a stepped silhouette as a chess pawn, and reduced to the
@@ -193,7 +193,7 @@ STAGGER_MS = 70
 MIN_SCALE = 0.6
 EASE_OUT_CUBIC = (0.33, 1.0, 0.68, 1.0)   # Compose's EaseOutCubic
 EASE_OUT_BACK = (0.34, 1.56, 0.64, 1.0)   # Compose's EaseOutBack
-SPLASH_OUT = "app/src/main/res/drawable/ic_splash_icon.xml"
+SPLASH_OUT = "android/src/main/res/drawable/ic_splash_icon.xml"
 
 
 def splash_duration_ms():
@@ -305,11 +305,11 @@ if __name__ == "__main__":
     with open(SPLASH_OUT, "w") as f:
         f.write(splash_xml())
     for name, curve in (("ease out cubic", EASE_OUT_CUBIC), ("ease out back", EASE_OUT_BACK)):
-        path = f"app/src/main/res/interpolator/splash_{name.replace(' ', '_')}.xml"
+        path = f"android/src/main/res/interpolator/splash_{name.replace(' ', '_')}.xml"
         with open(path, "w") as f:
             f.write(interpolator_xml(name, curve))
     print(f"wrote {SPLASH_OUT} ({splash_duration_ms()}ms) and its two interpolators")
 
-    out = "app/src/main/ic_launcher-playstore.png"
+    out = "android/src/main/ic_launcher-playstore.png"
     render(512).convert("RGB").save(out)
     print(f"wrote {out} 512x512")
