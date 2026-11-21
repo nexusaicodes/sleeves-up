@@ -16,8 +16,14 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_17)
         }
     }
-    iosArm64()
-    iosSimulatorArm64()
+    // Each iOS target builds a static framework named Shared, which the Xcode app in ios/ links through
+    // the embedAndSignAppleFrameworkForXcode task its build phase runs.
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
+        target.binaries.framework {
+            baseName = "Shared"
+            isStatic = true
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {

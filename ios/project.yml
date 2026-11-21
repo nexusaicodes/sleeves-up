@@ -1,0 +1,39 @@
+# XcodeGen spec for the iOS app. The .xcodeproj is generated from this file (`xcodegen` in ios/) and
+# is not checked in, so this file is the project's only source.
+name: SleevesUp
+options:
+  deploymentTarget:
+    # Live Activities need iOS 16.1 and interactive widgets need 17.
+    iOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+targets:
+  SleevesUp:
+    type: application
+    platform: iOS
+    sources: [SleevesUp]
+    settings:
+      base:
+        # Matches the Android applicationId. Permanent once the app is first uploaded to Apple.
+        PRODUCT_BUNDLE_IDENTIFIER: com.nexusai.checkin.app
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Sleeves Up
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        # The Kotlin framework is built into shared/build/xcode-frameworks by the build phase below.
+        FRAMEWORK_SEARCH_PATHS: $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+        OTHER_LDFLAGS: [$(inherited), -framework, Shared]
+        # The Gradle build writes outside the target's declared outputs, which Xcode's script sandbox refuses.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    preBuildScripts:
+      - name: Build the shared Kotlin framework
+        basedOnDependencyAnalysis: false
+        script: |
+          set -e
+          # Xcode runs build phases with a minimal environment. Gradle starts on any JDK; its daemon
+          # needs JetBrains Runtime 21 (gradle/gradle-daemon-jvm.properties), Android Studio's bundled one.
+          if [ -z "$JAVA_HOME" ]; then export JAVA_HOME="$(/usr/libexec/java_home)"; fi
+          JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+          cd "$SRCROOT/.."
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode -Dorg.gradle.java.installations.paths="$JBR"
