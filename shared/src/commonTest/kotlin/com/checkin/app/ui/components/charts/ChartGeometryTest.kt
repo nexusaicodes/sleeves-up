@@ -1,9 +1,9 @@
 package com.checkin.app.ui.components.charts
 
 import com.checkin.app.ui.components.charts.ChartGeometry
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class ChartGeometryTest {
 

@@ -125,7 +125,7 @@ val OPEN_SOURCE_LIBRARIES: List<OpenSourceLibrary> = listOf(
         licenses = listOf(LibraryLicense.APACHE_2_0),
     ),
     OpenSourceLibrary(
-        name = "kotlinx.coroutines",
+        name = "kotlinx libraries",
         coordinates = "org.jetbrains.kotlinx:*",
         copyright = "Copyright © JetBrains s.r.o.",
         licenses = listOf(LibraryLicense.APACHE_2_0),

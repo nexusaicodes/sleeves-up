@@ -1,14 +1,10 @@
 package com.checkin.app.data
 
 import com.checkin.app.data.ConsistencyStats
-import com.checkin.app.data.MonthSteps
 import com.checkin.app.data.local.DailyAggregate
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
-import java.time.YearMonth
 
 /**
  * Showing up is the unit. These pin the thing that makes it worth counting: a short day counts
@@ -76,13 +72,5 @@ class ConsistencyStatsTest {
     @Test
     fun `counting stops at yesterday with nothing recorded at all`() {
         assertEquals(day(13), ConsistencyStats.countedThrough(emptyMap(), day(14)))
-    }
-
-    @Test
-    fun `a month stepper stops at the month today falls in, across a year end`() {
-        val today = LocalDate.of(2027, 1, 1)
-        assertTrue(MonthSteps.hasMonthAfter(YearMonth.of(2026, 12), today))
-        assertFalse(MonthSteps.hasMonthAfter(YearMonth.of(2027, 1), today))
-        assertFalse(MonthSteps.hasMonthAfter(YearMonth.of(2027, 2), today))
     }
 }

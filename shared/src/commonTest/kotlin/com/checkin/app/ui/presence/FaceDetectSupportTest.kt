@@ -3,11 +3,11 @@ package com.checkin.app.ui.presence
 import com.checkin.app.ui.presence.FaceDetectSupport
 import com.checkin.app.ui.presence.FaceDetectSupport.FULL
 import com.checkin.app.ui.presence.FaceDetectSupport.SIMPLE
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * The camera pipeline itself cannot be exercised on a JVM suite, so the two decisions that are not

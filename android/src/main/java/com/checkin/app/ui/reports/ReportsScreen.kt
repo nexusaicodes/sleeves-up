@@ -31,6 +31,7 @@ import com.checkin.app.ui.components.LocalSnackbarHostState
 import com.checkin.app.ui.components.MonthStepper
 import com.checkin.app.ui.theme.LocalTimePatterns
 import com.checkin.app.util.TimeFormat
+import kotlinx.datetime.toJavaYearMonth
 
 /**
  * The Reports tab: every figure, chart and the CSV export read the one window that
@@ -167,7 +168,7 @@ private fun ScopeSelector(
  */
 @Composable
 private fun scopeLabel(scope: ReportScope, inline: Boolean = false): String = when (scope) {
-    is ReportScope.Month -> TimeFormat.monthYear(scope.month, LocalTimePatterns.current)
+    is ReportScope.Month -> TimeFormat.monthYear(scope.month.toJavaYearMonth(), LocalTimePatterns.current)
     ReportScope.AllTime ->
         stringResource(if (inline) R.string.scope_all_time_inline else R.string.scope_all_time)
 }

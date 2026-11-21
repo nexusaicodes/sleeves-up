@@ -12,11 +12,11 @@ package com.checkin.app.ui.presence
  * Long enough that a user raising the phone into position never sees the escape hatch at all, and
  * short enough that one the camera cannot resolve is not left waiting on it. Where the wait is
  * measured **from** is the call site's decision and a load-bearing one — see the effect that spends
- * this budget in [PresenceCheckScreen].
+ * this budget in `PresenceCheckScreen`.
  */
-internal const val DEVICE_UNLOCK_OFFERED_AFTER_MS = 10_000L
+const val DEVICE_UNLOCK_OFFERED_AFTER_MS = 10_000L
 
-/** The decisions [PresenceCheckScreen] makes over the readings, the clock and the prompt. */
+/** The decisions `PresenceCheckScreen` makes over the readings, the clock and the prompt. */
 object PresenceCheckRules {
 
     /**

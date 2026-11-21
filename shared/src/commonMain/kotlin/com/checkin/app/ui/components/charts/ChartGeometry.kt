@@ -2,6 +2,7 @@ package com.checkin.app.ui.components.charts
 
 import kotlin.math.floor
 import kotlin.math.log10
+import kotlin.math.pow
 
 /**
  * Pure geometry for the hand-rolled charts. Kept free of Compose and Android types so the maths is
@@ -28,7 +29,7 @@ object ChartGeometry {
      *
      * What a ring's hole can actually hold. The hole is round, so its full diameter is only available
      * along the centre line — content bounded by the diameter still overhangs the arc at the top and
-     * bottom of its own height. Applied inside [DonutChart] rather than at a call site, so no caller
+     * bottom of its own height. Applied inside `DonutChart` rather than at a call site, so no caller
      * can forget it.
      *
      * Currently **dormant**: every donut in the app leaves its hole empty. Kept anyway — the next
@@ -73,7 +74,7 @@ object ChartGeometry {
      */
     fun niceMaxY(rawMax: Float): Float {
         if (rawMax <= 0f) return 1f
-        val magnitude = Math.pow(DECIMAL_BASE, floor(log10(rawMax.toDouble()))).toFloat()
+        val magnitude = DECIMAL_BASE.pow(floor(log10(rawMax.toDouble()))).toFloat()
         val normalized = rawMax / magnitude
         val step = NICE_STEPS.firstOrNull { normalized <= it } ?: NICE_STEPS.last()
         return step * magnitude

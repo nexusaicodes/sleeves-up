@@ -22,6 +22,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.toKotlinYearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -84,7 +85,7 @@ class ReportsViewModelTest {
         appState.selected.value = writing.id
         advanceUntilIdle()
 
-        assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 6).toKotlinYearMonth()), viewModel.uiState.value.scope)
     }
 
     /** The switch lands on the month in progress from a stepped-to month too, not only from all time. */
@@ -103,7 +104,7 @@ class ReportsViewModelTest {
         appState.selected.value = writing.id
         advanceUntilIdle()
 
-        assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 6).toKotlinYearMonth()), viewModel.uiState.value.scope)
     }
 
     /** The file is the habit's record alone, and names it, since nothing inside the file says which. */
@@ -302,7 +303,7 @@ class ReportsViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertEquals(ReportScope.Month(YearMonth.of(2026, 3)), state.scope)
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 3).toKotlinYearMonth()), state.scope)
         assertEquals(31, state.totalDays)
         assertEquals(LocalDate.of(2026, 3, 1), state.dailySeries.first().date)
         assertEquals(LocalDate.of(2026, 3, 31), state.dailySeries.last().date)
@@ -322,14 +323,14 @@ class ReportsViewModelTest {
 
         viewModel.nextMonth()
         advanceUntilIdle()
-        assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 6).toKotlinYearMonth()), viewModel.uiState.value.scope)
 
         viewModel.previousMonth()
         advanceUntilIdle()
         assertEquals(true, viewModel.uiState.value.hasNextMonth)
         repeat(2) { viewModel.nextMonth() }
         advanceUntilIdle()
-        assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 6).toKotlinYearMonth()), viewModel.uiState.value.scope)
         assertEquals(false, viewModel.uiState.value.hasNextMonth)
     }
 
@@ -350,7 +351,7 @@ class ReportsViewModelTest {
         viewModel.selectAllTime()
         viewModel.selectMonth()
         advanceUntilIdle()
-        assertEquals(ReportScope.Month(YearMonth.of(2026, 10)), viewModel.uiState.value.scope)
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 10).toKotlinYearMonth()), viewModel.uiState.value.scope)
         assertEquals(false, viewModel.uiState.value.hasNextMonth)
 
         viewModel.previousMonth()
@@ -358,7 +359,7 @@ class ReportsViewModelTest {
         assertEquals(true, viewModel.uiState.value.hasNextMonth)
         viewModel.nextMonth()
         advanceUntilIdle()
-        assertEquals(ReportScope.Month(YearMonth.of(2026, 10)), viewModel.uiState.value.scope)
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 10).toKotlinYearMonth()), viewModel.uiState.value.scope)
     }
 
     @Test
@@ -419,7 +420,7 @@ class ReportsViewModelTest {
         viewModel.selectMonth()
         advanceUntilIdle()
 
-        assertEquals(ReportScope.Month(YearMonth.of(2026, 6)), viewModel.uiState.value.scope)
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 6).toKotlinYearMonth()), viewModel.uiState.value.scope)
     }
 
     /** Month on a month already is a no-op: it does not pull a stepped-to month back to today's. */
@@ -433,7 +434,7 @@ class ReportsViewModelTest {
         viewModel.selectMonth()
         advanceUntilIdle()
 
-        assertEquals(ReportScope.Month(YearMonth.of(2026, 4)), viewModel.uiState.value.scope)
+        assertEquals(ReportScope.Month(YearMonth.of(2026, 4).toKotlinYearMonth()), viewModel.uiState.value.scope)
     }
 
     /** Stepping outside the record leaves an empty scope, not a set of zeros over invented days. */

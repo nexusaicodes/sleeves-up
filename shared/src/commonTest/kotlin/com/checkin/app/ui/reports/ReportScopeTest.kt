@@ -2,11 +2,13 @@ package com.checkin.app.ui.reports
 
 import com.checkin.app.ui.reports.ReportScope
 import com.checkin.app.ui.reports.resolve
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
-import java.time.LocalDate
-import java.time.YearMonth
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.YearMonth
+import kotlinx.datetime.minus
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 /**
  * The one place a range is clamped, so the one place a range can be wrong.
@@ -17,8 +19,8 @@ import java.time.YearMonth
  */
 class ReportScopeTest {
 
-    private fun month(y: Int, m: Int) = ReportScope.Month(YearMonth.of(y, m))
-    private fun date(y: Int, m: Int, d: Int) = LocalDate.of(y, m, d)
+    private fun month(y: Int, m: Int) = ReportScope.Month(YearMonth(y, m))
+    private fun date(y: Int, m: Int, d: Int) = LocalDate(y, m, d)
 
     @Test
     fun `a fully past month resolves to the whole month`() {
@@ -39,7 +41,7 @@ class ReportScopeTest {
      * missed, and an export mid-month would write dates that have not happened out as empty days.
      */
     @Test
-    fun `the current month ends at the counted day, not the month end`() {
+    fun `the current month ends at the counted day rather than the month end`() {
         val window = month(2026, 8).resolve(
             trackingStart = date(2026, 1, 10),
             countedThrough = date(2026, 8, 25),
@@ -102,7 +104,7 @@ class ReportScopeTest {
     @Test
     fun `an unfinished first day leaves every scope empty`() {
         val today = date(2026, 6, 12)
-        val yesterday = today.minusDays(1)
+        val yesterday = today.minus(1, DateTimeUnit.DAY)
 
         assertNull(month(2026, 6).resolve(trackingStart = today, countedThrough = yesterday))
         assertNull(ReportScope.AllTime.resolve(trackingStart = today, countedThrough = yesterday))

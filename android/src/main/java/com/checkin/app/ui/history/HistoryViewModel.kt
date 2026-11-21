@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.datetime.toKotlinLocalDate
+import kotlinx.datetime.toKotlinYearMonth
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -44,7 +46,10 @@ data class HistoryUiState(
     val selectedDaySessions: List<CheckInSession> = emptyList(),
 ) {
     /** Whether a later month exists to step to: false on the month in progress. */
-    val hasNextMonth: Boolean get() = MonthSteps.hasMonthAfter(currentMonth, today)
+    val hasNextMonth: Boolean get() = MonthSteps.hasMonthAfter(
+        currentMonth.toKotlinYearMonth(),
+        today.toKotlinLocalDate(),
+    )
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -143,7 +148,7 @@ class HistoryViewModel(
 
     /** Stops at the month in progress: a month that has not begun holds no day to look back on. */
     fun nextMonth() {
-        if (!MonthSteps.hasMonthAfter(currentMonth.value, day.value)) return
+        if (!MonthSteps.hasMonthAfter(currentMonth.value.toKotlinYearMonth(), day.value.toKotlinLocalDate())) return
         currentMonth.value = currentMonth.value.plusMonths(1)
         selectedDateKey.value = null
     }

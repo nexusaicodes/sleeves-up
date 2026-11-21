@@ -2,10 +2,10 @@ package com.checkin.app.ui.presence
 
 import com.checkin.app.ui.presence.DEVICE_UNLOCK_OFFERED_AFTER_MS
 import com.checkin.app.ui.presence.PresenceCheckRules
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class PresenceCheckRulesTest {
 
@@ -17,7 +17,7 @@ class PresenceCheckRulesTest {
     }
 
     @Test
-    fun `the wait resumes from the gate opening, clamped at both ends`() {
+    fun `the wait resumes from the gate opening and is clamped at both ends`() {
         assertEquals(DEVICE_UNLOCK_OFFERED_AFTER_MS, PresenceCheckRules.remainingWaitMs(1_000L, 1_000L))
         assertEquals(DEVICE_UNLOCK_OFFERED_AFTER_MS - 4_000L, PresenceCheckRules.remainingWaitMs(1_000L, 5_000L))
         assertEquals(0L, PresenceCheckRules.remainingWaitMs(1_000L, 1_000L + DEVICE_UNLOCK_OFFERED_AFTER_MS * 3))

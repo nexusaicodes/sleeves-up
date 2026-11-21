@@ -22,3 +22,4 @@ rootProject.name = "CheckInApp"
 // and the required check's commands are written against.
 include(":app")
 project(":app").projectDir = file("android")
+include(":shared")

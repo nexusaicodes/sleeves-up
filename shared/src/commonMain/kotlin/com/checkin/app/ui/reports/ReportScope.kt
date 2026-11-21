@@ -1,7 +1,7 @@
 package com.checkin.app.ui.reports
 
-import java.time.LocalDate
-import java.time.YearMonth
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.YearMonth
 
 /**
  * What span of the record Reports is describing.
@@ -17,7 +17,7 @@ sealed interface ReportScope {
 
 /** An inclusive run of tracked, counted days — the range every figure and every query reads. */
 data class ReportWindow(val start: LocalDate, val end: LocalDate) {
-    val days: Int = (end.toEpochDay() - start.toEpochDay() + 1).toInt()
+    val days: Int = (end.toEpochDays() - start.toEpochDays() + 1).toInt()
 }
 
 /**
@@ -43,12 +43,12 @@ data class ReportWindow(val start: LocalDate, val end: LocalDate) {
 fun ReportScope.resolve(trackingStart: LocalDate?, countedThrough: LocalDate): ReportWindow? {
     if (trackingStart == null) return null
     val (rangeStart, rangeEnd) = when (this) {
-        is ReportScope.Month -> month.atDay(1) to month.atEndOfMonth()
+        is ReportScope.Month -> month.firstDay to month.lastDay
         // All time is bounded at both ends by the record itself, so the clamp below is a no-op on it
         // — stated as the full range rather than special-cased, so one line does both scopes.
         ReportScope.AllTime -> trackingStart to countedThrough
     }
     val start = maxOf(rangeStart, trackingStart)
     val end = minOf(rangeEnd, countedThrough)
-    return ReportWindow(start, end).takeIf { !start.isAfter(end) }
+    return ReportWindow(start, end).takeIf { start <= end }
 }

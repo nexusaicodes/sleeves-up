@@ -1,6 +1,7 @@
 package com.checkin.app.ui.reports
 
 import com.checkin.app.data.local.DailyAggregate
+import kotlinx.datetime.toJavaLocalDate
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -36,12 +37,14 @@ internal fun dailySeries(
     activeScope: ReportScope,
     window: ReportWindow,
 ): List<DayPoint> {
+    val start = window.start.toJavaLocalDate()
+    val end = window.end.toJavaLocalDate()
     val from = when (activeScope) {
-        is ReportScope.Month -> window.start
-        ReportScope.AllTime -> maxOf(window.start, window.end.minusDays((DAILY_WINDOW_DAYS - 1).toLong()))
+        is ReportScope.Month -> start
+        ReportScope.AllTime -> maxOf(start, end.minusDays((DAILY_WINDOW_DAYS - 1).toLong()))
     }
     return generateSequence(from) { it.plusDays(1) }
-        .takeWhile { !it.isAfter(window.end) }
+        .takeWhile { !it.isAfter(end) }
         .map { day -> DayPoint(day, summaries[day.format(DATE_KEY)]?.totalDurationMs ?: 0L) }
         .toList()
 }
@@ -64,8 +67,9 @@ internal fun monthlySeries(
     val totals = summaries.values.groupBy { monthOf(it.dateKey) }
         .filterKeys { it != null }
         .mapValues { (_, days) -> days.sumOf { it.totalDurationMs } }
-    return generateSequence(YearMonth.from(window.start)) { it.plusMonths(1) }
-        .takeWhile { !it.isAfter(YearMonth.from(window.end)) }
+    val lastMonth = YearMonth.from(window.end.toJavaLocalDate())
+    return generateSequence(YearMonth.from(window.start.toJavaLocalDate())) { it.plusMonths(1) }
+        .takeWhile { !it.isAfter(lastMonth) }
         .map { month -> MonthPoint(month, totals[month] ?: 0L) }
         .toList()
 }

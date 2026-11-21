@@ -59,7 +59,12 @@ export JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew :app:assembleDebug     -Dorg.gradle.java.installations.paths="$JBR"  # debug APK
 ./gradlew :app:installDebug      -Dorg.gradle.java.installations.paths="$JBR"  # install on a device
 ./gradlew :app:testDebugUnitTest --tests "com.checkin.app.data.ConsistencyStatsTest"  # one test class
+./gradlew :shared:jvmTest        -Dorg.gradle.java.installations.paths="$JBR"  # shared module's tests
 ```
+
+The Android app is in `android/` (Gradle project `:app`). `shared/` is a Kotlin Multiplatform
+module holding pure Kotlin that a future iOS app can use, and `ios/` is where that app will go; see
+[`ios/README.md`](ios/README.md).
 
 ## Checks
 

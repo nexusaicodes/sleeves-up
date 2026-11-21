@@ -131,6 +131,7 @@ android {
 
 dependencies {
     // Core
+    implementation(project(":shared"))
     implementation("androidx.core:core-ktx:1.19.1")
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
@@ -473,15 +474,23 @@ tasks.register("verifyDocMap") {
         "Fails if CLAUDE.md and the main sources disagree, or a comment names a gone member of a project type."
 
     val doc = docMapFile
-    val mainSource = layout.projectDirectory.dir("src/main/java")
+    // The app's main sources and :shared's common ones are one map: a type moved into :shared is
+    // still the app's code, so it is documented, path-checked and member-checked like any other.
+    val mainSources = listOf(
+        layout.projectDirectory.dir("src/main/java"),
+        rootProject.layout.projectDirectory.dir("shared/src/commonMain/kotlin"),
+    )
     // The map names test files too (Fakes.kt, the guards), so the dangling-path half searches both
     // trees. Only main is required to be *documented* — a fixture is found from the test that uses it.
-    val testSource = layout.projectDirectory.dir("src/test/java")
+    val testSources = listOf(
+        layout.projectDirectory.dir("src/test/java"),
+        rootProject.layout.projectDirectory.dir("shared/src/commonTest/kotlin"),
+    )
     val stamp = layout.buildDirectory.file("reports/docMap.txt")
     val buildScript = layout.projectDirectory.file("build.gradle.kts")
     inputs.file(doc)
-    inputs.dir(mainSource)
-    inputs.dir(testSource)
+    mainSources.forEach { inputs.dir(it) }
+    testSources.forEach { inputs.dir(it) }
     inputs.file(buildScript)
     outputs.file(stamp)
 
@@ -490,15 +499,21 @@ tasks.register("verifyDocMap") {
         // Bare-word match, so a name counts however the prose wraps it in backticks or punctuation.
         val words = Regex("""[A-Za-z_][A-Za-z0-9_]*""").findAll(text).map { it.value }.toSet()
 
-        val sourceFiles = mainSource.asFile.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
-        check(sourceFiles.isNotEmpty()) {
-            "Found no .kt files under ${mainSource.asFile}. This check would otherwise pass by " +
-                "finding nothing to compare against."
+        fun ktFilesUnder(root: Directory) = root.asFile.walkTopDown().filter { it.isFile && it.extension == "kt" }
+
+        // Checked per root, so a tree that silently stops holding sources fails rather than shrinking
+        // the comparison.
+        mainSources.forEach { root ->
+            check(ktFilesUnder(root).any()) {
+                "Found no .kt files under ${root.asFile}. This check would otherwise pass by " +
+                    "finding nothing to compare against."
+            }
         }
+        val sourceFiles = mainSources.flatMap { ktFilesUnder(it).toList() }
 
         val undocumented = sourceFiles
             .filterNot { it.nameWithoutExtension in words }
-            .map { it.relativeTo(mainSource.asFile).path }
+            .map { it.relativeTo(rootProject.layout.projectDirectory.asFile).path }
             .sorted()
         check(undocumented.isEmpty()) {
             "These files exist but CLAUDE.md never names them:\n" +
@@ -511,8 +526,7 @@ tasks.register("verifyDocMap") {
         // rename leaves behind. Only explicit paths are checked — a bare symbol may legitimately name
         // something deleted, and this file documents plenty of those on purpose.
         val namedPaths = Regex("""`([A-Za-z0-9_/.]+\.kt)`""").findAll(text).map { it.groupValues[1] }.toSet()
-        val allSources = sourceFiles +
-            testSource.asFile.walkTopDown().filter { it.isFile && it.extension == "kt" }
+        val allSources = sourceFiles + testSources.flatMap { ktFilesUnder(it).toList() }
         val dangling = namedPaths.filterNot { path ->
             allSources.any { it.path.endsWith(path) } ||
                 rootProject.layout.projectDirectory.file(path).asFile.exists() ||

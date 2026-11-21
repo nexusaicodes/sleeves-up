@@ -8,6 +8,8 @@ import com.checkin.app.ui.reports.ReportScope
 import com.checkin.app.ui.reports.ReportWindow
 import com.checkin.app.ui.reports.dailySeries
 import com.checkin.app.ui.reports.monthlySeries
+import kotlinx.datetime.toKotlinLocalDate
+import kotlinx.datetime.toKotlinYearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -34,10 +36,15 @@ class ReportsSeriesTest {
 
     @Test
     fun `a month plots every day in its window, a day with no sessions as zero`() {
-        val window = ReportWindow(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 3))
+        val window =
+            ReportWindow(LocalDate.of(2026, 6, 1).toKotlinLocalDate(), LocalDate.of(2026, 6, 3).toKotlinLocalDate())
 
         val points =
-            dailySeries(summaries(day("2026-06-02", 60_000L)), ReportScope.Month(YearMonth.of(2026, 6)), window)
+            dailySeries(
+                summaries(day("2026-06-02", 60_000L)),
+                ReportScope.Month(YearMonth.of(2026, 6).toKotlinYearMonth()),
+                window,
+            )
 
         assertEquals(
             listOf(
@@ -51,7 +58,8 @@ class ReportsSeriesTest {
 
     @Test
     fun `all time plots only the trailing window of days`() {
-        val window = ReportWindow(LocalDate.of(2025, 1, 1), LocalDate.of(2026, 6, 30))
+        val window =
+            ReportWindow(LocalDate.of(2025, 1, 1).toKotlinLocalDate(), LocalDate.of(2026, 6, 30).toKotlinLocalDate())
 
         val points = dailySeries(emptyMap(), ReportScope.AllTime, window)
 
@@ -62,14 +70,16 @@ class ReportsSeriesTest {
 
     @Test
     fun `all time shorter than the trailing window plots the whole record`() {
-        val window = ReportWindow(LocalDate.of(2026, 6, 28), LocalDate.of(2026, 6, 30))
+        val window =
+            ReportWindow(LocalDate.of(2026, 6, 28).toKotlinLocalDate(), LocalDate.of(2026, 6, 30).toKotlinLocalDate())
 
         assertEquals(3, dailySeries(emptyMap(), ReportScope.AllTime, window).size)
     }
 
     @Test
     fun `months are totalled and gap-filled across the window, oldest first`() {
-        val window = ReportWindow(LocalDate.of(2026, 4, 20), LocalDate.of(2026, 6, 2))
+        val window =
+            ReportWindow(LocalDate.of(2026, 4, 20).toKotlinLocalDate(), LocalDate.of(2026, 6, 2).toKotlinLocalDate())
         val record = summaries(day("2026-04-21", 1_000L), day("2026-04-30", 2_000L), day("2026-06-01", 5_000L))
 
         assertEquals(
@@ -84,16 +94,22 @@ class ReportsSeriesTest {
 
     @Test
     fun `a month scope has no monthly series`() {
-        val window = ReportWindow(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30))
+        val window =
+            ReportWindow(LocalDate.of(2026, 6, 1).toKotlinLocalDate(), LocalDate.of(2026, 6, 30).toKotlinLocalDate())
 
         assertTrue(
-            monthlySeries(summaries(day("2026-06-01", 1L)), ReportScope.Month(YearMonth.of(2026, 6)), window).isEmpty(),
+            monthlySeries(
+                summaries(day("2026-06-01", 1L)),
+                ReportScope.Month(YearMonth.of(2026, 6).toKotlinYearMonth()),
+                window,
+            ).isEmpty(),
         )
     }
 
     @Test
     fun `a malformed date key is dropped rather than thrown on`() {
-        val window = ReportWindow(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30))
+        val window =
+            ReportWindow(LocalDate.of(2026, 6, 1).toKotlinLocalDate(), LocalDate.of(2026, 6, 30).toKotlinLocalDate())
 
         val months = monthlySeries(summaries(day("not-a-date", 9L), day("2026-06-05", 4L)), ReportScope.AllTime, window)
 

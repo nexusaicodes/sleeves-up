@@ -49,11 +49,14 @@ jobs:
       # verifyLicenseCoverage resolves the release runtime classpath, so it runs here rather than
       # with the static analysis above — that step is kept free of dependency resolution.
       # verifyMergedManifest merges the release manifest, which also needs the resolved graph.
+      # :shared:jvmTest runs the shared module's tests on the JVM; its iOS targets need a macOS
+      # host, so this Linux runner does not build or run them.
       - name: Run unit tests, verify licence coverage and merged manifest, assemble debug APK
         run: >-
           ./gradlew --stacktrace
           -Dorg.gradle.java.installations.paths="$JAVA_HOME"
-          :app:testDebugUnitTest :app:verifyLicenseCoverage :app:verifyMergedManifest :app:assembleDebug
+          :app:testDebugUnitTest :shared:jvmTest :app:verifyLicenseCoverage :app:verifyMergedManifest
+          :app:assembleDebug
 
       # verifyPackagedFonts reads the minified release APK, so it pays for the R8 build. It is kept
       # in its own step so a typeface a library slipped in is named apart from a test failure.
@@ -86,7 +89,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: unit-test-report
-          path: android/build/reports/tests/testDebugUnitTest
+          path: |
+            android/build/reports/tests/testDebugUnitTest
+            shared/build/reports/tests/jvmTest
           if-no-files-found: ignore
 
       - name: Upload static analysis reports on failure
@@ -97,4 +102,6 @@ jobs:
           path: |
             android/build/reports/detekt
             android/build/reports/ktlint
+            shared/build/reports/detekt
+            shared/build/reports/ktlint
           if-no-files-found: ignore
