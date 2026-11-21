@@ -1,9 +1,9 @@
 package com.checkin.app.session
 
 import com.checkin.app.session.SessionClock
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 /**
  * The elapsed time on the ongoing notification is the number a user reads to decide whether they are

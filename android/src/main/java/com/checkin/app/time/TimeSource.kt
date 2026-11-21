@@ -5,9 +5,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
+import kotlinx.datetime.toKotlinTimeZone
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.ZonedDateTime
 
 /** Abstraction over wall-clock reads so date-dependent logic is deterministically testable. */
 interface TimeSource {
@@ -48,7 +48,9 @@ object SystemTimeSource : TimeSource {
         var last = LocalDate.now()
         emit(last)
         while (true) {
-            delay(DayClock.millisUntilNextMidnight(ZonedDateTime.now()))
+            delay(
+                DayClock.millisUntilNextMidnight(System.currentTimeMillis(), ZoneId.systemDefault().toKotlinTimeZone()),
+            )
             val current = LocalDate.now()
             if (current != last) {
                 last = current

@@ -14,6 +14,7 @@ import com.checkin.app.notify.StringResolver
 import com.checkin.app.time.TimeSource
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.toKotlinTimeZone
 import java.time.ZoneId
 
 /**
@@ -248,7 +249,7 @@ class SessionLifecycle(
      * recorded, else the device's current zone.
      */
     private fun dayBoundaryFor(session: CheckInSession): Long {
-        val sessionZone = zones.zoneOf(session.id) ?: zone()
+        val sessionZone = (zones.zoneOf(session.id) ?: zone()).toKotlinTimeZone()
         return SessionSchedule.dayBoundaryOf(session.dateKey, sessionZone)
             ?: SessionSchedule.nextDayBoundaryAfter(session.startedAt, sessionZone)
     }
