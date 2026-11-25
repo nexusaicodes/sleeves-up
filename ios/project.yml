@@ -37,7 +37,7 @@ targets:
     dependencies:
       - package: GRDB
     scheme:
-      testTargets: [SleevesUpTests]
+      testTargets: [SleevesUpTests, SleevesUpUITests]
     preBuildScripts:
       - name: Build the shared Kotlin framework
         basedOnDependencyAnalysis: false
@@ -59,3 +59,14 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.nexusai.checkin.app.tests
+  SleevesUpUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [SleevesUpUITests]
+    dependencies:
+      - target: SleevesUp
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.nexusai.checkin.app.uitests
+        TEST_TARGET_NAME: SleevesUp

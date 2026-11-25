@@ -94,6 +94,11 @@ struct PresenceGateView: View {
 
     private func startLooking() async {
         startedAt = Date()
+        guard FaceWatcher.hasFrontCamera else {
+            cameraUsable = false
+            searchTimedOut = true
+            return
+        }
         let granted: Bool
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized: granted = true

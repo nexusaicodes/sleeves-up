@@ -35,10 +35,27 @@ xcodebuild -project SleevesUp.xcodeproj -scheme SleevesUp \
 ```
 
 `SleevesUpTests` runs `SessionStore` against an in-memory record: one open session, a check-out
-that closes once, and the midnight close in the check-in's zone. If the simulator refuses to launch
+that closes once, and the midnight close in the check-in's zone. `SleevesUpUITests` drives the real UI:
+the gate offering device unlock and **Not now** writing nothing runs every time. A full check-in and
+check-out through simulated Face ID runs only when the host answers each Face ID prompt, so it is
+opt-in:
+
+```bash
+xcrun simctl spawn booted notifyutil -s com.apple.BiometricKit.enrollmentChanged 1
+xcrun simctl spawn booted notifyutil -p com.apple.BiometricKit.enrollmentChanged   # enrol Face ID
+TEST_RUNNER_SIM_FACE_ID_HOST=1 xcodebuild -project SleevesUp.xcodeproj -scheme SleevesUp \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test \
+  -only-testing:SleevesUpUITests/GateUITests/testCheckInAndOutThroughDeviceUnlock &
+# while it runs, answer each prompt with a match:
+while sleep 2; do xcrun simctl spawn booted notifyutil -p com.apple.BiometricKit_Sim.pearl.match; done
+```
+
+The UI tests run against the app's own record on the simulator, so they skip themselves if an
+earlier run left a session open. If the simulator refuses to launch
 the test host ("Application failed preflight checks"), boot a different simulator and use that.
 
-**On the simulator** there is no front camera, so the gate offers device unlock at once. The
+**On the simulator** there is no front camera, so the gate asks for no camera permission and
+offers device unlock at once. The
 simulator reports device unlock as available whether or not Face ID is enrolled (checked with
 `LAContext.canEvaluatePolicy` on Xcode 26.3), so the no-passcode instructions can't be reached
 there. The face path and the no-passcode path both need a real device.

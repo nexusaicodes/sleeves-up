@@ -16,8 +16,14 @@ final class FaceWatcher: NSObject, AVCaptureMetadataOutputObjectsDelegate, @unch
         self.onFaces = onFaces
     }
 
-    /// Whether a front camera that reports faces could be set up. False on a device without one
-    /// (and on the simulator), where the gate offers device unlock at once.
+    /// Whether the device has a front camera at all. Asked before camera permission, so a device
+    /// without one (and the simulator) is never asked for a camera it cannot use.
+    static var hasFrontCamera: Bool {
+        AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) != nil
+    }
+
+    /// Whether a front camera that reports faces could be set up. False where the camera reports
+    /// no faces, and the gate then offers device unlock at once.
     func configure() -> Bool {
         guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front),
               let input = try? AVCaptureDeviceInput(device: camera),
