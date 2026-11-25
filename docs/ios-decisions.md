@@ -1,8 +1,8 @@
-# iOS: five product decisions
+# iOS: six product decisions
 
-Five rules in CLAUDE.md rest on Android behaviour that iOS doesn't have. Each one needed a decision
-before the iOS app's code is written, because each one changes what the app promises. **All five
-were signed off by the owner on 2026-11-22, each as proposed below.** CLAUDE.md's "iOS platform rules"
+Six rules in CLAUDE.md rest on Android behaviour that iOS doesn't have. Each one needed a decision
+before the iOS app's code was written, because each one changes what the app promises. **The first
+five were signed off by the owner on 2026-11-22 and the sixth on 2026-11-25, each as proposed below.** CLAUDE.md's "iOS platform rules"
 entry states them as rules; this file keeps the reasoning and the sources.
 
 Every iOS claim below cites Apple's documentation, quoted from the JSON form of
@@ -125,7 +125,30 @@ unchanged; only the cycling is dropped.
 
 **What it costs.** Users with several habits don't see their names on the widget.
 
-## Decided (2026-11-22)
+## 6. A gate with no passcode to fall back on
+
+**Android rule.** The presence gate is never a dead end. When the device has no usable unlock, the
+fallback button becomes **Set up screen lock**, which opens `Settings.ACTION_SECURITY_SETTINGS`.
+
+**iOS.** The device-unlock policy covers "biometry, Apple Watch, or the device passcode", and "In
+iOS, policy evaluation fails with the error `LAError.Code.passcodeNotSet` if the device passcode
+isn't enabled."
+([LAPolicy.deviceOwnerAuthentication](https://developer.apple.com/documentation/localauthentication/lapolicy/deviceownerauthentication))
+The only Settings link an app is given opens "your app's custom settings in the Settings app".
+([openSettingsURLString](https://developer.apple.com/documentation/uikit/uiapplication/opensettingsurlstring))
+So there is no link to passcode settings.
+
+**Decision.** With no passcode, the fallback says where to set one: Settings, then Face ID &
+Passcode (or Touch ID & Passcode, or Passcode, by the device's biometry). Returning to the app
+re-checks, so a passcode set there makes device unlock available at once. **Not now** leaves with
+nothing written, as on every gate screen. Opening the app's own Settings page instead was rejected:
+it is the wrong page.
+
+**What it costs.** One more step for the user than Android's direct link.
+
+## Decided
+
+Decisions 1–5 on 2026-11-22, decision 6 on 2026-11-25.
 
 | # | Decision | Outcome |
 |---|---|---|
@@ -134,6 +157,7 @@ unchanged; only the cycling is dropped.
 | 3 | Reminder timing | Schedule ahead, revise on every code run, cancel on check-in; confirm the pending limit first |
 | 4 | Running-session display | Live Activity, up to its 8-hour limit; session reminders cover the rest |
 | 5 | Widget | One name, or "Check In" with several habits; no cycling, no figures |
+| 6 | Gate with no passcode (2026-11-25) | Instructions for setting one, re-checked on return; Not now always |
 
 The pending-notification limit in decision 3 is still to be measured on a device before the
 scheduling window is chosen.
