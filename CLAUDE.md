@@ -90,11 +90,11 @@ UI (4 tabs + detail screens, Spark) → ViewModel (one UiState) → Repository �
 
 ## Key Source Paths
 
-Under `android/src/main/java/com/checkin/app/`, except twenty-one files that live under `shared/src/commonMain/kotlin/com/checkin/app/` in the same packages: `ChartGeometry`, `PresenceCheckRules`, `FaceDetectSupport`, `ReportScope`, `ReportsSeries`, `MonthSteps`, `ConsistencyStats`, `SessionRhythm`, `DailyAggregate`, `ClosedBy`, `TimeUnits`, `FirstRun`, `SessionClock`, `SessionSchedule`, `DayClock`, and in `notify/nudge/` `Nudge`, `NudgeConfig`, `NudgeSnapshot`, `NudgeSchedule`, `NudgeEligibility` and `NudgeVoice`.
+Under `android/src/main/java/com/checkin/app/`, except twenty-four files that live under `shared/src/commonMain/kotlin/com/checkin/app/` in the same packages: `ChartGeometry`, `PresenceCheckRules`, `FaceDetectSupport`, `ReportScope`, `ReportsSeries`, `MonthSteps`, `ConsistencyStats`, `SessionRhythm`, `DailyAggregate`, `ClosedBy`, `TimeUnits`, `FirstRun`, `SessionClock`, `SessionSchedule`, `DayClock`, `HabitRules`, `HabitFacts`, `TapRouting`, and in `notify/nudge/` `Nudge`, `NudgeConfig`, `NudgeSnapshot`, `NudgeSchedule`, `NudgeEligibility` and `NudgeVoice`.
 
 - **root** — `CheckInApplication` (holds the container), `MainActivity` (`FragmentActivity`; intents, root-gate outcomes, `onStart` expiry).
 - **`time/`** — `TimeSource` (clock, zone, `dayTrigger`), `DayClock` (pure rollover timing, from epoch millis and a kotlinx `TimeZone`).
-- **`data/`** — `ConsistencyStats` (+ `countedThrough`, where every window ends), `MonthSteps` (`hasMonthAfter`, where both month steppers stop), `SessionRhythm` (`StartBucket`/`SessionBand`), `HabitRules` (`NameProblem`, `effectiveSelection`).
+- **`data/`** — `ConsistencyStats` (+ `countedThrough`, where every window ends), `MonthSteps` (`hasMonthAfter`, where both month steppers stop), `SessionRhythm` (`StartBucket`/`SessionBand`), `HabitRules` (`NameProblem`, `effectiveSelection`), `HabitFacts` (the four fields the shared habit rules read, which `Habit` implements).
 - **`data/local/`** — `CheckInSession` + `CheckInSessionDao` (record reads scoped by `habitId`; open-session reads unscoped), `AppDatabase` (`MIGRATION_1_2`, `seedIfEmpty`), `DailyAggregate`, `ClosedBy` + `ClosedByConverter`, `Habit` + `HabitDao` (no delete), `AppState` + `AppStateDao` (the selected habit).
 - **`data/repository/`** — `CheckInRepository` (`checkIn` and its counterpart `checkOut`, plus `checkOutAt` for the day boundary; `CheckInResult`, `trackingStartFlow`), `HabitRepository` (create/rename/archive/restore, `select`, `selectedHabitFlow`; `HabitEdit`, `ArchiveResult`).
 - **`di/`** — `AppContainer` only.

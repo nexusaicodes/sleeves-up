@@ -1,10 +1,8 @@
 package com.checkin.app.launch
 
-import com.checkin.app.data.local.Habit
-import com.checkin.app.launch.TapOutcome
-import com.checkin.app.launch.TapRouting
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import com.checkin.app.data.HabitFacts
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 /**
  * Every tap from outside the app is routed against the rows as they are at the tap, so a surface
@@ -13,8 +11,12 @@ import org.junit.Test
  */
 class TapRoutingTest {
 
-    private fun habit(id: Long, archived: Boolean = false) =
-        Habit(id = id, uuid = "u$id", name = "Habit $id", archived = archived, createdAt = 0L, channelId = "c$id")
+    private data class TestHabit(override val id: Long, override val archived: Boolean) : HabitFacts {
+        override val uuid: String = "u$id"
+        override val name: String = "Habit $id"
+    }
+
+    private fun habit(id: Long, archived: Boolean = false) = TestHabit(id, archived)
 
     private val reading = habit(1)
     private val running = habit(2)

@@ -1,17 +1,20 @@
 package com.checkin.app.data
 
-import com.checkin.app.data.HabitRules
-import com.checkin.app.data.NameProblem
-import com.checkin.app.data.local.Habit
-import com.checkin.app.notify.NotificationChannels
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class HabitRulesTest {
 
-    private fun habit(id: Long, name: String?, archived: Boolean = false) =
-        Habit(id = id, uuid = "u$id", name = name, archived = archived, createdAt = 0L, channelId = "c$id")
+    private data class TestHabit(
+        override val id: Long,
+        override val name: String?,
+        override val archived: Boolean = false,
+    ) : HabitFacts {
+        override val uuid: String = "u$id"
+    }
+
+    private fun habit(id: Long, name: String?, archived: Boolean = false) = TestHabit(id, name, archived)
 
     @Test
     fun `names are trimmed and their inner whitespace collapsed`() {
@@ -60,11 +63,29 @@ class HabitRulesTest {
     }
 
     /**
-     * The seed habit's channel is the one a pre-habits install already had, so the database must seed
-     * exactly that id — `data/` restates it rather than importing it from `notify/`.
+     * Only ASCII whitespace collapses, the set Java's `\s` matches, so a name stored by one app
+     * reads the same in the other. A no-break space or an em space inside a name is kept as typed.
      */
     @Test
-    fun `the seed habit keeps the pre-habits reminder channel`() {
-        assertEquals(NotificationChannels.NUDGE, Habit.SEED_CHANNEL_ID)
+    fun `only ASCII whitespace collapses inside a name`() {
+        assertEquals("a b", HabitRules.normalise("a\u000B\u000C b"))
+        assertEquals("a\u00A0b", HabitRules.normalise("a\u00A0b"))
+        assertEquals("a\u2003b", HabitRules.normalise("a\u2003b"))
+    }
+
+    /** As Java counts them: a lone surrogate is one code point, a pair is one too. */
+    @Test
+    fun `an unpaired surrogate counts as one code point`() {
+        val lone = "\uD83C"
+        assertNull(HabitRules.nameProblem("x".repeat(HabitRules.MAX_NAME_LENGTH - 1) + lone, emptyList()))
+        assertEquals(
+            NameProblem.TOO_LONG,
+            HabitRules.nameProblem("x".repeat(HabitRules.MAX_NAME_LENGTH) + lone, emptyList()),
+        )
+    }
+
+    @Test
+    fun `a duplicate ignores case beyond ASCII`() {
+        assertEquals(NameProblem.DUPLICATE, HabitRules.nameProblem("écrire", listOf(habit(1, "ÉCRIRE"))))
     }
 }

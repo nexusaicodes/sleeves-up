@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.checkin.app.data.HabitFacts
 
 /**
  * One habit: a record of its own, kept apart from every other habit's.
@@ -20,10 +21,10 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "habits", indices = [Index(value = ["uuid"], unique = true)])
 data class Habit(
     @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    override val id: Long = 0,
 
     @ColumnInfo(name = "uuid")
-    val uuid: String,
+    override val uuid: String,
 
     /**
      * Null means the habit is **owed a name**: the record a pre-habits install carried, and the one
@@ -32,11 +33,11 @@ data class Habit(
      * opens. Stored trimmed, and unique among habits that are not archived (see [com.checkin.app.data.HabitRules]).
      */
     @ColumnInfo(name = "name")
-    val name: String?,
+    override val name: String?,
 
     /** Hidden from the switcher, sends no nudges, restorable from the Habits screen. */
     @ColumnInfo(name = "archived", defaultValue = "0")
-    val archived: Boolean = false,
+    override val archived: Boolean = false,
 
     @ColumnInfo(name = "created_at")
     val createdAt: Long,
@@ -49,7 +50,7 @@ data class Habit(
      */
     @ColumnInfo(name = "channel_id")
     val channelId: String,
-) {
+) : HabitFacts {
     companion object {
         /**
          * The row id of the habit every install starts with. It is also `sessions.habit_id`'s
