@@ -6,6 +6,8 @@ import com.checkin.app.data.local.CheckInSessionDao
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.local.DailyAggregate
 import com.checkin.app.data.local.byDateKey
+import com.checkin.app.session.SessionRules
+import com.checkin.app.session.SessionRules.OpenConflict
 import com.checkin.app.time.SystemTimeSource
 import com.checkin.app.time.TimeSource
 import kotlinx.coroutines.flow.Flow
@@ -60,12 +62,11 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
      * both; a new writer goes through it rather than calling this directly.
      */
     suspend fun checkIn(habitId: Long): CheckInResult = checkInLock.withLock {
-        dao.getActiveSession()?.let { open ->
-            return@withLock if (open.habitId == habitId) {
-                CheckInResult.AlreadyOpen(open)
-            } else {
-                CheckInResult.OtherHabitOpen(open)
-            }
+        val open = dao.getActiveSession()
+        when (SessionRules.conflictFor(open?.habitId, habitId)) {
+            OpenConflict.SAME_HABIT -> return@withLock CheckInResult.AlreadyOpen(checkNotNull(open))
+            OpenConflict.OTHER_HABIT -> return@withLock CheckInResult.OtherHabitOpen(checkNotNull(open))
+            OpenConflict.NONE -> Unit
         }
         val session = CheckInSession(
             startedAt = timeSource.nowMillis(),
@@ -111,7 +112,7 @@ class CheckInRepository(private val dao: CheckInSessionDao, private val timeSour
 
     /** The write behind every check-out, on [session] as already read; null if it closed since. */
     private suspend fun close(session: CheckInSession, atMillis: Long, closedBy: ClosedBy): CheckInSession? {
-        val duration = (atMillis - session.startedAt).coerceAtLeast(0L)
+        val duration = SessionRules.durationMs(session.startedAt, atMillis)
         val written = dao.closeIfOpen(session.id, atMillis, duration, closedBy)
         return session.copy(stoppedAt = atMillis, duration = duration, closedBy = closedBy).takeIf { written > 0 }
     }

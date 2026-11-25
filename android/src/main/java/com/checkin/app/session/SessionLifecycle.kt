@@ -30,9 +30,10 @@ import java.time.ZoneId
  * land in a process the broadcast just created, and the watchdog exists for when the service is gone.
  * The `Session` prefix discriminates nothing; what separates the files is their layer:
  *
- * - **Pure math**, no Android, unit-tested: [SessionSchedule] (cadence and the two midnight
- *   derivations) and [SessionClock] (the notification's chronometer base and elapsed time). Neither
- *   schedules anything; both are asked what an instant should be.
+ * - **Pure math**, no Android, unit-tested, in `:shared`: [SessionSchedule] (cadence and the two
+ *   midnight derivations), [SessionRules] (what a check-in meets, a duration, the day-boundary
+ *   stamp) and [SessionClock] (the notification's chronometer base and elapsed time). None schedules
+ *   anything; each is asked what an instant or an outcome should be.
  * - **Platform seams**, each an interface plus its Android implementation: [SessionAlarms], which
  *   is what actually reaches `AlarmManager`, and which persists the armed instants and the reminder
  *   count; [SessionZones], the zone the open session was checked in under, which a backup carries
@@ -225,9 +226,11 @@ class SessionLifecycle(
         // one read further west lands hours past its true midnight and passes, since nothing in
         // the row distinguishes it from a session that really ran that long. A genuinely late
         // alarm still back-stamps to its own midnight, which is the point of deriving the instant.
-        val closeAt = (alarms.dayBoundaryAt.takeIf { it > 0L } ?: dayBoundaryFor(active))
-            .coerceAtLeast(active.startedAt)
-            .coerceAtMost(timeSource.nowMillis())
+        val closeAt = SessionRules.dayBoundaryStamp(
+            boundaryAtMs = alarms.dayBoundaryAt.takeIf { it > 0L } ?: dayBoundaryFor(active),
+            startedAtMs = active.startedAt,
+            nowMs = timeSource.nowMillis(),
+        )
 
         // The only writer of ClosedBy.DAY_BOUNDARY.
         repository.checkOutAt(active.id, closeAt, ClosedBy.DAY_BOUNDARY)
@@ -250,8 +253,7 @@ class SessionLifecycle(
      */
     private fun dayBoundaryFor(session: CheckInSession): Long {
         val sessionZone = (zones.zoneOf(session.id) ?: zone()).toKotlinTimeZone()
-        return SessionSchedule.dayBoundaryOf(session.dateKey, sessionZone)
-            ?: SessionSchedule.nextDayBoundaryAfter(session.startedAt, sessionZone)
+        return SessionRules.dayBoundaryFor(session.dateKey, session.startedAt, sessionZone)
     }
 
     /** An alarm with nothing left to act on. Dropped rather than left to fire again. Called under [lock]. */
