@@ -7,6 +7,7 @@ import com.checkin.app.R
 import com.checkin.app.data.local.DailyAggregate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.TimeZone
 import java.io.File
 import java.io.FileWriter
 
@@ -67,7 +68,9 @@ class AndroidCsvExporter(private val context: Context) : CsvExporter {
         val exportDir = File(context.cacheDir, "exports").also { it.mkdirs() }
         val file = File(exportDir, exportFileName(habitName, startKey, endKey))
 
-        FileWriter(file).use { writer -> csvLines(startKey, endKey, summaries).forEach(writer::write) }
+        // The clock columns read the device's zone, as the person exporting would read them.
+        val zone = TimeZone.currentSystemDefault()
+        FileWriter(file).use { writer -> csvLines(startKey, endKey, summaries, zone).forEach(writer::write) }
         return file
     }
 
