@@ -1,33 +1,31 @@
 package com.checkin.app.platform
 
 import com.checkin.app.data.local.DailyAggregate
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 
 /*
  * The CSV's shape, kept apart from the class that writes and shares the file.
  *
- * This is a data contract people script against, and it is pure, so it is the half a JVM test can
- * pin — [AndroidCsvExporter] needs a `Context` and cannot be. The frozen column order belongs with
- * the functions that spell it, not inside a file about file I/O and share sheets.
+ * This is a data contract people script against, and it is pure, so it is the half a test can pin
+ * on both platforms — the Android app's `AndroidCsvExporter` needs a `Context` and cannot be. The
+ * frozen column order belongs with the functions that spell it, not inside a file about file I/O and
+ * share sheets.
  *
  * What is *not* decided here is the range: [csvLines] is handed two `date_key` strings already
  * clamped by `ReportScope.resolve`, so the file and the screen it was exported from cannot describe
  * different days.
  */
 
-/**
- * The clock columns' own formatter, pinned to [Locale.US] and kept out of `TimeFormat`: the screens'
- * clock follows the reader's language, and this file is machine-read, so it must read the same bytes
- * ("09:05 AM") whatever language the app is in when it is exported.
- */
-private val CSV_CLOCK = DateTimeFormatter.ofPattern("hh:mm a", Locale.US)
+/** Milliseconds in a hundredth of an hour, the precision of the Total Hours column. */
+private const val MILLIS_PER_HUNDREDTH_HOUR = 36_000L
 
-/** Decimal hours is the CSV's unit, so the divisor is a Double. */
-private const val MILLIS_PER_HOUR = 3_600_000.0
+private const val HOURS_PER_HALF_DAY = 12
+private const val PERCENT = 100
 
 /**
  * The column order, which is **append-only**.
@@ -50,13 +48,11 @@ private const val CSV_HEADER = "Date,First Check In,Last Check Out,Total Hours,S
     "Day Boundary Check Outs,In App Check Outs,Timer Notification Check Outs," +
     "Reminder Notification Check Outs,Widget Check Outs\n"
 
-/** One day's row, or a gap-filled day of zeros when [summary] is null. */
-internal fun csvRow(key: String, summary: DailyAggregate?): String {
-    val firstIn = summary?.firstCheckIn?.let(::csvClock) ?: ""
-    val lastOut = summary?.lastCheckOut?.let(::csvClock) ?: ""
-    val totalHrs = summary
-        ?.let { String.format(Locale.US, "%.2f", it.totalDurationMs / MILLIS_PER_HOUR) }
-        ?: "0.00"
+/** One day's row, or a gap-filled day of zeros when [summary] is null. Clocks are read in [zone]. */
+fun csvRow(key: String, summary: DailyAggregate?, zone: TimeZone): String {
+    val firstIn = summary?.firstCheckIn?.let { csvClock(it, zone) } ?: ""
+    val lastOut = summary?.lastCheckOut?.let { csvClock(it, zone) } ?: ""
+    val totalHrs = summary?.let { csvHours(it.totalDurationMs) } ?: "0.00"
     val count = summary?.sessionCount?.toString() ?: "0"
     val dayBoundary = summary?.dayBoundaryCheckOuts?.toString() ?: "0"
     val inApp = summary?.inAppCheckOuts?.toString() ?: "0"
@@ -66,25 +62,55 @@ internal fun csvRow(key: String, summary: DailyAggregate?): String {
     return "$key,$firstIn,$lastOut,$totalHrs,$count,$dayBoundary,$inApp,$fromTimer,$fromReminder,$fromWidget\n"
 }
 
-private fun csvClock(epochMillis: Long): String =
-    Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).format(CSV_CLOCK)
+/**
+ * A clock column: "09:05 AM", in ASCII digits and English, whatever language the app is in. Kept out
+ * of `TimeFormat`, whose clocks follow the reader's language, because this file is machine-read and
+ * must carry the same bytes whoever exports it. It spells out what `hh:mm a` in `Locale.US` writes.
+ */
+private fun csvClock(epochMillis: Long, zone: TimeZone): String {
+    val time = Instant.fromEpochMilliseconds(epochMillis).toLocalDateTime(zone)
+    val hour = (time.hour % HOURS_PER_HALF_DAY).let { if (it == 0) HOURS_PER_HALF_DAY else it }
+    val half = if (time.hour < HOURS_PER_HALF_DAY) "AM" else "PM"
+    return "${twoDigits(hour)}:${twoDigits(time.minute)} $half"
+}
+
+/**
+ * Decimal hours to two places, rounded half up as Java's `%.2f` rounds, worked in whole hundredths
+ * of an hour so no floating-point step can tip a value across a rounding boundary. A negative
+ * duration keeps its sign, `-0.00` included, as `%.2f` writes it; the repository floors durations
+ * at zero, so only a corrupt row could reach that.
+ */
+private fun csvHours(durationMs: Long): String {
+    val magnitude = if (durationMs < 0) -durationMs else durationMs
+    val hundredths = (magnitude + MILLIS_PER_HUNDREDTH_HOUR / 2) / MILLIS_PER_HUNDREDTH_HOUR
+    val sign = if (durationMs < 0) "-" else ""
+    return "$sign${hundredths / PERCENT}.${twoDigits((hundredths % PERCENT).toInt())}"
+}
+
+private fun twoDigits(value: Int): String = value.toString().padStart(2, '0')
 
 /**
  * The header line. The one way to read [CSV_HEADER] — the exporter writes through this too, so the
  * bytes a test pins and the bytes a file gets are the same expression.
  */
-internal fun csvHeader(): String = CSV_HEADER
+fun csvHeader(): String = CSV_HEADER
 
 /**
  * Every line of the file, header first, then one row per day from [startKey] to [endKey] inclusive.
  * A day with no summary is a row of zeros, not a missing row: a script reading the file counts
- * days, and a gap would read as a day the export forgot. The keys are `date_key`s (ISO dates).
+ * days, and a gap would read as a day the export forgot. The keys are `date_key`s (ISO dates), and
+ * the clock columns are read in [zone].
  */
-internal fun csvLines(startKey: String, endKey: String, summaries: Map<String, DailyAggregate>): Sequence<String> {
-    val end = LocalDate.parse(endKey, DateTimeFormatter.ISO_LOCAL_DATE)
-    val days = generateSequence(LocalDate.parse(startKey, DateTimeFormatter.ISO_LOCAL_DATE)) { it.plusDays(1) }
-        .takeWhile { !it.isAfter(end) }
-        .map { day -> day.format(DateTimeFormatter.ISO_LOCAL_DATE).let { key -> csvRow(key, summaries[key]) } }
+fun csvLines(
+    startKey: String,
+    endKey: String,
+    summaries: Map<String, DailyAggregate>,
+    zone: TimeZone,
+): Sequence<String> {
+    val end = LocalDate.parse(endKey)
+    val days = generateSequence(LocalDate.parse(startKey)) { it.plus(1, DateTimeUnit.DAY) }
+        .takeWhile { it <= end }
+        .map { day -> day.toString().let { key -> csvRow(key, summaries[key], zone) } }
     return sequenceOf(csvHeader()) + days
 }
 
@@ -94,11 +120,11 @@ internal fun csvLines(startKey: String, endKey: String, summaries: Map<String, D
  * target rejects, into it. A habit still owed a name, or one with nothing left after the reduction,
  * is `habit` — the file is still that habit's alone, it just cannot say so.
  */
-internal fun exportFileName(habitName: String?, startKey: String, endKey: String): String {
+fun exportFileName(habitName: String?, startKey: String, endKey: String): String {
     val slug = habitName.orEmpty()
         .replace(FILE_NAME_UNSAFE, "_")
         .trim('_')
-        .lowercase(Locale.ROOT)
+        .lowercase()
         .ifEmpty { "habit" }
     return "checkin_${slug}_${startKey}_$endKey.csv"
 }
