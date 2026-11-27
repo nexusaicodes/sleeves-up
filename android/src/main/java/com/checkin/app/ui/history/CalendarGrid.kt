@@ -34,9 +34,11 @@ import com.checkin.app.ui.theme.dayColor
 import com.checkin.app.util.MILLIS_PER_HOUR
 import com.checkin.app.util.MILLIS_PER_MINUTE
 import com.checkin.app.util.TimeFormat
+import kotlinx.datetime.toKotlinLocalDate
+import kotlinx.datetime.toKotlinYearMonth
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
@@ -71,11 +73,18 @@ fun CalendarGrid(
     onDayClick: (String) -> Unit,
     cellHeight: Dp = 48.dp,
 ) {
-    val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
     val locale = LocalTimePatterns.current.locale
     val firstDayOfWeek = WeekFields.of(locale).firstDayOfWeek
-    val startOffset = startOffsetIn(yearMonth, locale)
+    val weekStart = firstDayOfWeek.toKotlinWeekStart()
+    val startOffset = CalendarMonth.leadingBlanks(yearMonth.toKotlinYearMonth(), weekStart)
     val weekDays = (0L..6L).map { firstDayOfWeek.plus(it) }
+    val days = CalendarMonth.days(
+        month = yearMonth.toKotlinYearMonth(),
+        recordedKeys = summaries.keys,
+        trackingStart = trackingStartDate?.toKotlinLocalDate(),
+        today = today.toKotlinLocalDate(),
+        countedThrough = countedThrough.toKotlinLocalDate(),
+    )
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -90,45 +99,25 @@ fun CalendarGrid(
             }
         }
 
-        val totalDays = yearMonth.lengthOfMonth()
-        val rows = weekRowsIn(yearMonth, locale)
+        val rows = CalendarMonth.weekRows(yearMonth.toKotlinYearMonth(), weekStart)
 
         for (row in 0 until rows) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                for (col in 0..6) {
-                    val cellIndex = row * 7 + col
-                    val dayNum = cellIndex - startOffset + 1
-
-                    if (dayNum in 1..totalDays) {
-                        val date = yearMonth.atDay(dayNum)
-                        val key = date.format(dateFormatter)
-                        val summary = summaries[key]
-                        val isSelected = key == selectedDateKey
-                        val isToday = date == today
-                        // Today shades like any other recorded day once it has been checked out of,
-                        // keeping its marker on top; while it is still in progress it carries the
-                        // marker alone, since it is not counted anywhere else either.
-                        val isTracked = trackingStartDate != null &&
-                            !date.isBefore(trackingStartDate) &&
-                            !date.isAfter(countedThrough)
-                        // Days the record does not cover: not yet lived, before the user began, or
-                        // every day at once while there is nothing recorded to begin from.
-                        val isOutsideWindow = trackingStartDate == null ||
-                            date.isBefore(trackingStartDate) ||
-                            date.isAfter(today)
-
+                for (col in 0 until CalendarMonth.DAYS_PER_WEEK) {
+                    val day = days.getOrNull(row * CalendarMonth.DAYS_PER_WEEK + col - startOffset)
+                    if (day != null) {
                         DayCell(
-                            day = dayNum,
-                            summary = summary.takeIf { isTracked },
-                            isSelected = isSelected,
-                            isToday = isToday,
-                            isOutsideWindow = isOutsideWindow,
+                            day = day.date.day,
+                            summary = summaries[day.dateKey].takeIf { day.recorded },
+                            isSelected = day.dateKey == selectedDateKey,
+                            isToday = day.today,
+                            isOutsideWindow = day.outsideRecord,
                             modifier = Modifier.weight(1f),
                             cellHeight = cellHeight,
-                            onClick = { onDayClick(key) },
+                            onClick = { onDayClick(day.dateKey) },
                         )
                     } else {
                         // Leading/trailing blank, kept at cell height so the row aligns.
@@ -252,23 +241,12 @@ private fun CalendarGridPreview() {
     }
 }
 
-private const val DAYS_PER_WEEK = 7
+/** [CalendarMonth]'s week start, from the locale's. */
+private fun DayOfWeek.toKotlinWeekStart(): kotlinx.datetime.DayOfWeek = kotlinx.datetime.DayOfWeek(value)
 
 /**
- * The column [month]'s first day falls into, under [locale]'s week start — the theme's resolved
- * locale, so the grid and the dates around it agree on which language they are in.
- */
-private fun startOffsetIn(month: YearMonth, locale: Locale): Int {
-    val firstDayOfWeek = WeekFields.of(locale).firstDayOfWeek
-    return (month.atDay(1).dayOfWeek.value - firstDayOfWeek.value + DAYS_PER_WEEK) % DAYS_PER_WEEK
-}
-
-/**
- * Week rows [month] occupies — 4 to 6. A partial trailing week still takes a row, so this rounds up.
- *
- * Shared with `HistoryScreen`, which needs the row count to size a cell *before* this grid is
- * composed. Two derivations of the same geometry is how the height gets computed for a different
- * number of rows than the grid then draws.
+ * Week rows [month] occupies under [locale]'s week start. `HistoryScreen` sizes a cell from it before
+ * this grid is composed; both read [CalendarMonth.weekRows], so they count the same rows.
  */
 internal fun weekRowsIn(month: YearMonth, locale: Locale): Int =
-    (startOffsetIn(month, locale) + month.lengthOfMonth() + DAYS_PER_WEEK - 1) / DAYS_PER_WEEK
+    CalendarMonth.weekRows(month.toKotlinYearMonth(), WeekFields.of(locale).firstDayOfWeek.toKotlinWeekStart())
