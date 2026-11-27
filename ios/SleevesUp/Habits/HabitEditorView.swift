@@ -33,7 +33,7 @@ struct HabitNameField: View {
 /// name write and returns what it did; the reminder is applied once the name has saved.
 struct HabitEditorView: View {
 
-    let title: String
+    let title: LocalizedStringKey
     let problemFor: (String) -> NameProblem?
     let onSave: (String) -> HabitStore.Edit?
     let onSaved: (_ reminderOn: Bool, _ reminderMinute: Int) -> Void
@@ -47,7 +47,7 @@ struct HabitEditorView: View {
     @State private var reminderMinute: Int
 
     init(
-        title: String,
+        title: LocalizedStringKey,
         initialName: String = "",
         reminderOn: Bool = true,
         reminderMinute: Int = Int(NudgeSchedule.shared.DEFAULT_MINUTE),

@@ -59,7 +59,7 @@ struct CheckInView: View {
         VStack(spacing: 24) {
             Spacer()
             readout
-            Button(store.openSession == nil ? "Check In" : "Check Out") {
+            Button(store.openSession == nil ? LocalizedStringKey("Check In") : LocalizedStringKey("Check Out")) {
                 gateFor = store.openSession == nil ? .checkIn : .checkOut
             }
             .buttonStyle(.borderedProminent)
@@ -136,8 +136,11 @@ struct CheckInView: View {
         } else if outcome is TapOutcomeChooseHabit {
             choosing = true
         } else if let running = outcome as? TapOutcomeRunningElsewhere {
-            let name = habits.active.first { $0.id == running.runningHabitId }.map(HabitText.name) ?? "A habit"
-            failure = "\(name) is running. Check out of it first."
+            if let name = habits.active.first(where: { $0.id == running.runningHabitId }).map(HabitText.name) {
+                failure = String(app: "\(name) is running. Check out of it first.")
+            } else {
+                failure = String(app: "A habit is running. Check out of it first.")
+            }
         } else if let checkIn = outcome as? TapOutcomeCheckIn {
             do {
                 guard try habits.select(checkIn.habitId) else { return }
@@ -175,30 +178,30 @@ struct CheckInView: View {
             }
             failure = nil
         } catch {
-            failure = "That didn't save. Try again."
+            failure = HabitText.saveFailed
         }
     }
 }
 
-/// How sessions' times are written, on Check-In and History. English only for now; the Android
-/// app's languages arrive with the iOS localization work.
+/// How sessions' times are written, on Check-In and History, with Android's unit letters per
+/// language ("2h 5m", "2 س 5 د") and Latin digits.
 enum SessionText {
 
     static func live(_ ms: Int64) -> String {
         let seconds = ms / 1000
         let h = seconds / 3600, m = (seconds % 3600) / 60, s = seconds % 60
-        return h > 0 ? "\(h)h \(m)m \(s)s" : "\(m)m \(s)s"
+        return h > 0 ? String(app: "\(h)h \(m)m \(s)s") : String(app: "\(m)m \(s)s")
     }
 
     static func short(_ ms: Int64) -> String {
         let minutes = ms / 60_000
         let h = minutes / 60, m = minutes % 60
-        return h > 0 ? "\(h)h \(m)m" : "\(m)m"
+        return h > 0 ? String(app: "\(h)h \(m)m") : String(app: "\(m)m")
     }
 
     static func range(_ session: SessionRow) -> String {
-        let start = Clock.date(ms: session.startedAt).formatted(date: .omitted, time: .shortened)
+        let start = AppLocale.clock(Clock.date(ms: session.startedAt))
         guard let stop = session.stoppedAt else { return start }
-        return "\(start) – \(Clock.date(ms: stop).formatted(date: .omitted, time: .shortened))"
+        return String(app: "\(start) – \(AppLocale.clock(Clock.date(ms: stop)))")
     }
 }

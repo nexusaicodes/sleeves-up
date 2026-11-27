@@ -23,7 +23,7 @@ struct ReminderFields: View {
     }
 }
 
-/// How a reminder's time is written and picked. English only for now.
+/// How a reminder's time is written and picked, in the app's language with Latin digits.
 enum ReminderText {
 
     static var range: ClosedRange<Int> {
@@ -44,13 +44,13 @@ enum ReminderText {
     }
 
     static func clock(_ minute: Int) -> String {
-        date(minute: minute).formatted(date: .omitted, time: .shortened)
+        AppLocale.clock(date(minute: minute))
     }
 
     /// A habit's row: "Around 10:00", or that its reminders are off. A time, never a figure.
     static func summary(on: Bool, minute: Int) -> String {
-        on ? "Around \(clock(minute))" : "Reminders off"
+        on ? String(app: "Around \(clock(minute))") : String(app: "Reminders off")
     }
 
-    static var rangeNote: String { "Between \(clock(range.lowerBound)) and \(clock(range.upperBound))" }
+    static var rangeNote: String { String(app: "Between \(clock(range.lowerBound)) and \(clock(range.upperBound))") }
 }

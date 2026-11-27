@@ -67,10 +67,10 @@ struct PresenceGateView: View {
     }
 
     private var message: String {
-        if passed { return "You're here!" }
-        if cameraUsable == false { return "This camera can't check for a face. Use device unlock instead." }
-        if searchTimedOut { return "Still looking. You can use device unlock instead." }
-        return "Looking for a face…"
+        if passed { return String(app: "You're here!") }
+        if cameraUsable == false { return String(app: "This camera can't check for a face. Use device unlock instead.") }
+        if searchTimedOut { return String(app: "Still looking. You can use device unlock instead.") }
+        return String(app: "Looking for a face…")
     }
 
     private var passcodeHelp: some View {
@@ -86,9 +86,9 @@ struct PresenceGateView: View {
         let context = LAContext()
         _ = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil)
         switch context.biometryType {
-        case .touchID: return "Touch ID & Passcode"
-        case .faceID: return "Face ID & Passcode"
-        default: return "Passcode"
+        case .touchID: return String(app: "Touch ID & Passcode")
+        case .faceID: return String(app: "Face ID & Passcode")
+        default: return String(app: "Passcode")
         }
     }
 
@@ -133,7 +133,7 @@ struct PresenceGateView: View {
         // Set before the prompt, so a face found behind it cannot pass the gate under the dialog.
         usingDeviceUnlock = true
         Task {
-            let unlocked = await DeviceUnlock.ask(reason: "Use your device unlock to verify your presence")
+            let unlocked = await DeviceUnlock.ask(reason: String(app: "Use your device unlock to verify your presence"))
             usingDeviceUnlock = false
             if unlocked { pass() }
         }

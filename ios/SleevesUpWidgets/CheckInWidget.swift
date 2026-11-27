@@ -13,8 +13,9 @@ struct CheckInWidget: Widget {
             FaceView(face: entry.face)
                 .containerBackground(.background, for: .widget)
                 .widgetURL(WidgetFace.tap)
+                .environment(\.locale, AppLocale.current)
         }
-        .configurationDisplayName("Sleeves Up")
+        .configurationDisplayName(Text(verbatim: "Sleeves Up"))
         .description("Check in from your home screen")
         .supportedFamilies([.systemSmall, .systemMedium])
     }

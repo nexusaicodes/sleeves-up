@@ -87,6 +87,7 @@ struct SleevesUpApp: App {
                     Text("Sleeves Up couldn't open its record.").padding()
                 }
             }
+            .environment(\.locale, AppLocale.current)
             .task { open() }
             .onOpenURL { url in
                 if url == SessionActivityLink.checkOut { delegate.taps.receive(.checkOutFromActivity) }

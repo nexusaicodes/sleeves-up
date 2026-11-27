@@ -111,12 +111,12 @@ struct ReportsView: View {
             switch try reports.export(habitName: habits.selected?.name) {
             case .file(let url):
                 sharing = SharedFile(url: url)
-                notice = "CSV ready to share"
+                notice = String(app: "CSV ready to share")
             case .nothing:
-                notice = "No completed days to export yet"
+                notice = String(app: "No completed days to export yet")
             }
         } catch {
-            notice = "Export failed: \(error.localizedDescription)"
+            notice = String(app: "Export failed: \(error.localizedDescription)")
         }
     }
 
@@ -133,7 +133,7 @@ struct ReportsView: View {
 /// A titled card. Plain until the styling pass.
 private struct ReportCard<Content: View>: View {
 
-    let title: String
+    let title: LocalizedStringKey
     var subtitle: String?
     @ViewBuilder let content: Content
 
@@ -152,7 +152,7 @@ private struct ReportCard<Content: View>: View {
 }
 
 private struct StatRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let value: String
 
     var body: some View {
@@ -199,7 +199,7 @@ private struct SplitCard: View {
                     emptyColor: .gray,
                     description: ReportText.daysSplit(figures)
                 )
-                Legend(colors: [.accentColor, .gray], labels: ["Showed up", "Missed"],
+                Legend(colors: [.accentColor, .gray], labels: [String(app: "Showed up"), String(app: "Missed")],
                        values: [Int(figures.showedUpDays), Int(figures.missedDays)])
             }
         }
@@ -213,8 +213,8 @@ private struct DailyHoursCard: View {
         let hours = figures.dailySeries.map { Float($0.workedMs) / Float(ReportText.msPerHour) }
         let average = hours.isEmpty ? 0 : hours.reduce(0, +) / Float(hours.count)
         let days = figures.dailySeries.count
-        ReportCard(title: "Daily Hours", subtitle: "\(ReportText.days(days)) · dashed line = average") {
-            LineChartView(values: hours, reference: average, description: "Daily hours over \(ReportText.days(days)).")
+        ReportCard(title: "Daily Hours", subtitle: String(app: "\(days) days · dashed line = average")) {
+            LineChartView(values: hours, reference: average, description: String(app: "Daily hours over \(days) days."))
                 .frame(height: 140)
             HStack {
                 Text(figures.dailySeries.first.map { ReportText.axisDay($0.date) } ?? "")
@@ -239,11 +239,12 @@ private struct MonthlyHoursCard: View {
         let series = figures.monthlySeries
         let multiYear = Set(series.map { $0.month.year }).count > 1
         let label = { (point: MonthPoint) in ReportText.axisMonth(point.month, multiYear: multiYear) }
-        let spoken = series.map { "\(label($0)) \(SessionText.short($0.workedMs))" }.joined(separator: ", ")
+        let spoken = series.map { String(app: "\(label($0)) \(SessionText.short($0.workedMs))") }
+            .joined(separator: ReportText.listSeparator)
         ReportCard(title: "Hours by Month") {
             BarChartView(
                 values: series.map { Float($0.workedMs) / Float(ReportText.msPerHour) },
-                description: "Hours by month: \(spoken)"
+                description: String(app: "Hours by month: \(spoken)")
             )
             .frame(height: 120)
             Group {
@@ -277,13 +278,12 @@ private struct StartTimesCard: View {
 
     var body: some View {
         let counts = [StartBucket.morning, .afternoon, .evening].map { Int(figures.startBuckets[$0]?.int32Value ?? 0) }
+        let spoken = counts.map(ReportText.sessions)
         ReportCard(title: "Start Times") {
             SplitRow(
                 values: counts,
-                labels: ["Morning", "Afternoon", "Evening"],
-                description: "Start times: \(ReportText.sessions(counts[0])) in the morning, "
-                    + "\(ReportText.sessions(counts[1])) in the afternoon, "
-                    + "\(ReportText.sessions(counts[2])) in the evening"
+                labels: [String(app: "Morning"), String(app: "Afternoon"), String(app: "Evening")],
+                description: String(app: "Start times: \(spoken[0]) in the morning, \(spoken[1]) in the afternoon, \(spoken[2]) in the evening")
             )
         }
     }
@@ -294,13 +294,13 @@ private struct SessionsPerDayCard: View {
 
     var body: some View {
         let counts = [SessionBand.one, .two, .threePlus].map { Int(figures.sessionBands[$0]?.int32Value ?? 0) }
+        let spoken = counts.map(ReportText.days)
+        let average = ReportText.average(figures.avgSessionsPerDay)
         ReportCard(title: "Sessions Per Day") {
             SplitRow(
                 values: counts,
-                labels: [ReportText.sessions(1), ReportText.sessions(2), "3 or more"],
-                description: "Sessions per day: \(ReportText.days(counts[0])) with one session, "
-                    + "\(ReportText.days(counts[1])) with two, \(ReportText.days(counts[2])) with three or more. "
-                    + "Average \(ReportText.average(figures.avgSessionsPerDay))."
+                labels: [ReportText.sessions(1), ReportText.sessions(2), String(app: "3 or more")],
+                description: String(app: "Sessions per day: \(spoken[0]) with one session, \(spoken[1]) with two, \(spoken[2]) with three or more. Average \(average).")
             )
         }
     }
@@ -335,7 +335,7 @@ private struct Legend: View {
                     Circle().fill(colors[index]).frame(width: 10, height: 10)
                     Text(labels[index])
                     Spacer(minLength: 8)
-                    Text("\(values[index])").monospacedDigit()
+                    Text(verbatim: "\(values[index])").monospacedDigit()
                 }
                 .font(.callout)
             }

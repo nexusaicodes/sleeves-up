@@ -115,7 +115,7 @@ private struct DayCell: View {
         let shape = RoundedRectangle(cornerRadius: 8)
         Button(action: onTap) {
             VStack(spacing: 2) {
-                Text("\(day.date.day)")
+                Text(verbatim: "\(day.date.day)")
                     .font(.callout.weight(day.today ? .bold : .regular))
                     .foregroundStyle(numberStyle)
                 Circle().frame(width: 4, height: 4).opacity(day.today ? 1 : 0)
@@ -135,7 +135,7 @@ private struct DayCell: View {
     /// The shade carries no hours, so a recorded day's are spoken.
     private var label: String {
         guard day.recorded, let summary else { return "\(day.date.day)" }
-        return "\(day.date.day), \(SessionText.short(summary.totalDurationMs)) worked"
+        return String(app: "\(Int(day.date.day)), \(SessionText.short(summary.totalDurationMs)) worked")
     }
 
     private var numberStyle: AnyShapeStyle {
@@ -145,14 +145,14 @@ private struct DayCell: View {
     }
 }
 
-/// History's copy, the Android app's English strings. English only for now.
+/// History's copy and dates, in the app's language with Latin digits.
 enum HistoryText {
 
-    static let readFailed = "That didn't load. Try again."
+    static var readFailed: String { String(app: "That didn't load. Try again.") }
 
     static func monthYear(_ month: HistoryStore.Month) -> String {
         let date = Calendar.current.date(from: DateComponents(year: Int(month.year), month: Int(month.month), day: 1))
-        return date?.formatted(.dateTime.month(.wide).year()) ?? ""
+        return date?.formatted(.dateTime.month(.wide).year().locale(AppLocale.current)) ?? ""
     }
 
     static func dateWithWeekday(_ key: String) -> String {
@@ -161,19 +161,20 @@ enum HistoryText {
                   from: DateComponents(year: Int(date.year), month: Int(Clock.monthNumber(date)), day: Int(date.day))
               )
         else { return key }
-        return day.formatted(.dateTime.weekday(.wide).day().month(.wide).year())
+        return day.formatted(.dateTime.weekday(.wide).day().month(.wide).year().locale(AppLocale.current))
     }
 
     /// The count of the rows shown and the sum of their printed durations; an open session adds to
     /// the count, not the total.
     static func daySummary(_ sessions: [SessionRow]) -> String {
-        let count = sessions.count == 1 ? "1 session" : "\(sessions.count) sessions"
         let total = sessions.reduce(Int64(0)) { $0 + ($1.duration ?? 0) }
-        return "\(count) · \(SessionText.short(total))"
+        return String(app: "\(ReportText.sessions(sessions.count)) · \(SessionText.short(total))")
     }
 
-    /// Narrow weekday initials, starting on the device's week start.
+    /// Narrow weekday initials in the app's language, starting on the device's week start.
     static func weekdayInitials(_ calendar: Calendar = .current) -> [String] {
+        var calendar = calendar
+        calendar.locale = AppLocale.current
         let symbols = calendar.veryShortStandaloneWeekdaySymbols
         let start = calendar.firstWeekday - 1
         return Array(symbols[start...] + symbols[..<start])

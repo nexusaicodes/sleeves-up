@@ -22,13 +22,16 @@ struct OpenSourceLibrary: Identifiable {
     var id: String { name }
 
     /// Everything linked into the app: GRDB through Swift Package Manager, and the shared Kotlin
-    /// code's runtime dependencies (`:shared`'s iOS klibraries).
-    static let all = [
-        OpenSourceLibrary(name: "GRDB.swift", copyright: "Copyright (C) 2015-2025 Gwendal Roué", license: .mit, note: "The SQLite database the record is kept in."),
-        OpenSourceLibrary(name: "Kotlin Standard Library", copyright: "Copyright JetBrains s.r.o. and Kotlin Programming Language contributors", license: .apache2, note: "The runtime of the code shared with the Android app."),
-        OpenSourceLibrary(name: "kotlinx-datetime", copyright: "Copyright JetBrains s.r.o. and contributors", license: .apache2, note: "Dates and time zones in the shared code."),
-        OpenSourceLibrary(name: "kotlinx.serialization", copyright: "Copyright JetBrains s.r.o. and contributors", license: .apache2, note: "Its core, which kotlinx-datetime depends on."),
-    ]
+    /// code's runtime dependencies (`:shared`'s iOS klibraries). Names, copyrights and licences stay
+    /// English, as Android's do; only each note is in the app's language.
+    static var all: [OpenSourceLibrary] {
+        [
+            OpenSourceLibrary(name: "GRDB.swift", copyright: "Copyright (C) 2015-2025 Gwendal Roué", license: .mit, note: String(app: "The SQLite database the record is kept in.")),
+            OpenSourceLibrary(name: "Kotlin Standard Library", copyright: "Copyright JetBrains s.r.o. and Kotlin Programming Language contributors", license: .apache2, note: String(app: "The runtime of the code shared with the Android app.")),
+            OpenSourceLibrary(name: "kotlinx-datetime", copyright: "Copyright JetBrains s.r.o. and contributors", license: .apache2, note: String(app: "Dates and time zones in the shared code.")),
+            OpenSourceLibrary(name: "kotlinx.serialization", copyright: "Copyright JetBrains s.r.o. and contributors", license: .apache2, note: String(app: "Its core, which kotlinx-datetime depends on.")),
+        ]
+    }
 }
 
 /// The Licences screen: each project with its copyright and licence, and the licence texts.

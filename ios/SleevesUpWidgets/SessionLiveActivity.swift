@@ -60,7 +60,7 @@ struct SessionLiveActivity: Widget {
     }
 }
 
-/// The session's clock, counting up from check-in and stopping at its own midnight.
+/// The session's clock, counting up from check-in and stopping at its own midnight, in Latin digits.
 private struct SessionClock: View {
     let attributes: SessionActivityAttributes
 
@@ -70,14 +70,15 @@ private struct SessionClock: View {
             countsDown: false
         )
         .multilineTextAlignment(.trailing)
+        .environment(\.locale, AppLocale.current)
     }
 }
 
-/// The activity's copy, Android's timer notification strings.
+/// The activity's copy, Android's timer notification strings in the app's language.
 enum SessionActivityText {
     static func title(_ habitName: String?) -> String {
-        habitName.map { "Checked In: \($0)" } ?? "Checked In"
+        habitName.map { String(app: "Checked In: \($0)") } ?? String(app: "Checked In")
     }
 
-    static let checkOut = "Check Out"
+    static var checkOut: String { String(app: "Check Out") }
 }

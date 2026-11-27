@@ -35,7 +35,7 @@ enum NotificationKinds {
     static let habitUuidKey = "habitUuid"
 
     static func register(on center: UNUserNotificationCenter = .current()) {
-        let checkOut = UNNotificationAction(identifier: checkOutAction, title: "Check Out", options: [.foreground])
+        let checkOut = UNNotificationAction(identifier: checkOutAction, title: String(app: "Check Out"), options: [.foreground])
         center.setNotificationCategories([
             UNNotificationCategory(identifier: sessionReminder, actions: [checkOut], intentIdentifiers: []),
             UNNotificationCategory(identifier: habitReminder, actions: [], intentIdentifiers: []),

@@ -1,8 +1,10 @@
+import Foundation
 import Shared
 
-/// Habit reminders' copy, the Android app's English strings under the same frozen keys
-/// (`NudgeCatalog.kt`, `strings.xml`); `NudgeCatalogTests` reads both and fails on any drift. A title
-/// holds `%1$s` for the habit's name, with a twin for a habit still owed one. English only for now.
+/// Habit reminders' copy, the Android app's strings under the same frozen keys (`NudgeCatalog.kt`,
+/// `strings.xml`). Each English line is also its key in `Localizable.xcstrings`, whose Arabic is
+/// Android's `values-ar`; `NudgeCatalogTests` reads all three and fails on any drift. A title holds
+/// `%1$s` for the habit's name in either language, with a twin for a habit still owed one.
 enum NudgeCatalog {
 
     struct Title {
@@ -100,14 +102,22 @@ extension NudgeCatalog {
         )
     }
 
-    /// The title under `key` for a habit named `habitName`, or its unnamed twin while it has none.
-    static func title(_ key: String, habitName: String?) -> String? {
+    /// The title under `key` for a habit named `habitName`, or its unnamed twin while it has none,
+    /// in `bundle`'s language.
+    static func title(_ key: String, habitName: String?, in bundle: Bundle = .main) -> String? {
         guard let title = titles.values.joined().first(where: { $0.key == key }) else { return nil }
-        guard let habitName else { return title.unnamed }
-        return title.named.replacingOccurrences(of: "%1$s", with: habitName)
+        guard let habitName else { return translated(title.unnamed, in: bundle) }
+        return translated(title.named, in: bundle).replacingOccurrences(of: "%1$s", with: habitName)
     }
 
-    static func body(_ key: String) -> String? {
-        bodies.values.joined().first { $0.key == key }?.text
+    static func body(_ key: String, in bundle: Bundle = .main) -> String? {
+        bodies.values.joined().first { $0.key == key }.map { translated($0.text, in: bundle) }
+    }
+
+    /// `english`'s translation in `bundle`'s language, looked up by the English line itself, which
+    /// is its key in the string catalog. The habit's name goes in after the lookup, so a name holding
+    /// a `%` cannot be read as a format.
+    private static func translated(_ english: String, in bundle: Bundle) -> String {
+        bundle.localizedString(forKey: english, value: english, table: nil)
     }
 }

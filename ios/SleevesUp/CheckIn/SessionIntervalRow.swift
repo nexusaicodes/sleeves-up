@@ -11,7 +11,7 @@ struct SessionIntervalRow: View {
         HStack {
             Text(SessionText.range(session))
             Spacer()
-            Text(session.duration.map(SessionText.short) ?? "ongoing")
+            Text(session.duration.map(SessionText.short) ?? String(app: "ongoing"))
                 .monospacedDigit()
         }
         .font(.callout)

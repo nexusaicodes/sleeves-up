@@ -101,13 +101,24 @@ policy, feedback by email and the licences). Every tab re-reads at midnight whil
   feedback email the user reads before sending (`Feedback`; with no mail app the address is copied)
   and the licences (`LicensesView`: GRDB, the Kotlin standard library, kotlinx-datetime and
   kotlinx.serialization, with GRDB's MIT notice from `Licences/` and the Apache 2.0 text the Android
-  app bundles). No language row until the Arabic arrives, and no rating row until a listing exists.
+  app bundles). The Language row opens the app's page in iOS Settings, where iOS keeps the per-app
+  language. No rating row until a listing exists.
 - **`Habits/`**: the Habits screen (tap a row to show it; swipe or long-press to edit or archive),
   the name editor with each habit's reminder (`ReminderFields`: on or off, iOS only, and the time,
   05:00 to 21:00), the first-run naming step, which sets the time too, and `habitSwitcher`, the top
   bar every tab carries. Rows state each habit's reminder time and nothing else.
 
-Copy is English only for now, taken from the Android app's strings.
+Copy is English and Modern Standard Arabic, in one string catalog, `Common/Localizable.xcstrings`,
+compiled into the app and the widget extension (the two permission reasons are in
+`SleevesUp/InfoPlist.xcstrings`). Each key is the English line, with the Android app's
+`values-ar` text wherever Android has the same English, Android's plural forms (all six in Arabic)
+for every count, and Android's unit letters for durations. `AppLocale.current` is the language iOS
+chose for the app in the device's region, with Latin digits, as Android's `nu-latn`; every screen,
+widget and date format reads it, and `String(app:)` translates a line built in code. The reminder
+copy is looked up by its English line, and `NudgeCatalogTests` checks both languages against
+Android's. A new user-facing string needs its Arabic in the same commit (`LocalizationTests` fails on
+a catalog key without one); build with `SWIFT_EMIT_LOC_STRINGS=YES` to list the keys the compiler
+extracts. Reports' line and bar charts mirror under Arabic; the donut and the mark do not.
 
 ## Building and running the app
 

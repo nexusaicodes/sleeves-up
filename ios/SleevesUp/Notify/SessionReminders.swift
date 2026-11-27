@@ -28,8 +28,8 @@ final class SessionReminders {
         )
         for (slot, fireAt) in zip(Self.identifiers, ahead) {
             let content = UNMutableNotificationContent()
-            content.title = "Still checked in?"
-            content.body = "Your session is still running. It closes on its own at midnight."
+            content.title = String(app: "Still checked in?")
+            content.body = String(app: "Your session is still running. It closes on its own at midnight.")
             content.categoryIdentifier = NotificationKinds.sessionReminder
             if fireAt.int64Value == first {
                 content.sound = .default
