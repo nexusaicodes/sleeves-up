@@ -10,6 +10,14 @@ struct ReportsView: View {
     let habits: HabitStore
 
     @State private var failed = false
+    @State private var sharing: SharedFile?
+    @State private var notice: String?
+
+    /// A written export, for the share sheet.
+    private struct SharedFile: Identifiable {
+        let url: URL
+        var id: URL { url }
+    }
 
     var body: some View {
         NavigationStack {
@@ -29,6 +37,20 @@ struct ReportsView: View {
             }
             .habitSwitcher(habits)
             .onAppear { act { try reports.reload() } }
+            .sheet(item: $sharing) { file in ShareSheet(items: [file.url]) }
+            .safeAreaInset(edge: .bottom) {
+                if let notice {
+                    Text(notice)
+                        .font(.footnote)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(.thinMaterial)
+                        .task(id: notice) {
+                            try? await Task.sleep(for: .seconds(4))
+                            self.notice = nil
+                        }
+                }
+            }
         }
     }
 
@@ -75,6 +97,27 @@ struct ReportsView: View {
         if figures.monthlySeries.count > 1 { MonthlyHoursCard(figures: figures) }
         StartTimesCard(figures: figures)
         SessionsPerDayCard(figures: figures)
+        // Last, so it never competes with the figures, and only with a window to write: offering it
+        // on an empty scope would offer a no-op.
+        ReportCard(title: "Export Data") {
+            Button("Export \(ReportText.scopeInline(reports.scope))", action: export)
+                .buttonStyle(.bordered)
+        }
+    }
+
+    /// Writes the screen's window as CSV and opens the share sheet over it.
+    private func export() {
+        do {
+            switch try reports.export(habitName: habits.selected?.name) {
+            case .file(let url):
+                sharing = SharedFile(url: url)
+                notice = "CSV ready to share"
+            case .nothing:
+                notice = "No completed days to export yet"
+            }
+        } catch {
+            notice = "Export failed: \(error.localizedDescription)"
+        }
     }
 
     private func act(_ read: () throws -> Void) {
@@ -299,4 +342,15 @@ private struct Legend: View {
         }
         .accessibilityHidden(true)
     }
+}
+
+/// The system share sheet over `items`.
+private struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }

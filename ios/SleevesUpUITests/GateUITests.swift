@@ -138,6 +138,21 @@ final class GateUITests: XCTestCase {
         XCTAssertFalse(app.buttons["Previous month"].isEnabled, "no month to step under all time")
         attach(app, "reports-all-time")
 
+        // With a counted day, the last card exports the window and opens the share sheet.
+        let export = app.buttons["Export all time"]
+        if numbers.exists {
+            app.swipeUp()
+            app.swipeUp()
+            XCTAssertTrue(export.waitForExistence(timeout: 3))
+            export.tap()
+            let sheet = app.otherElements["ActivityListView"]
+            XCTAssertTrue(sheet.waitForExistence(timeout: 5), "the share sheet opens over the file")
+            attach(app, "reports-export")
+            app.buttons["Close"].firstMatch.tap()
+        } else {
+            XCTAssertFalse(export.exists, "an empty scope offers no export")
+        }
+
         app.buttons["Month"].tap()
         XCTAssertTrue(app.staticTexts[month].waitForExistence(timeout: 3), "Month returns to the month in progress")
         XCTAssertTrue(app.buttons["habitSwitcher"].exists, "the switcher sits on Reports too")

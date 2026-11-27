@@ -9,8 +9,8 @@ restored and switched between, with one open session across all of them locking 
 shown habit's check-in and check-out, each through the presence gate, the open session counting up,
 its sessions today, and the close of a forgotten session at its own midnight; and History, the
 shown habit's month calendar and the sessions of a tapped day; and Reports, every figure and chart
-for one month or all time. Every tab re-reads at midnight while the app is open. No CSV export,
-reminders, Live Activity or widget yet.
+for one month or all time, exported as CSV through the share sheet. Every tab re-reads at midnight
+while the app is open. No reminders, Live Activity or widget yet.
 
 - **`Record/`**: the record, a [GRDB](https://github.com/groue/GRDB.swift) SQLite database with the
   Android app's `sessions` and `app_state` tables and `habits` columns (less Android's `channel_id`),
@@ -20,7 +20,9 @@ reminders, Live Activity or widget yet.
   `HistoryStore` reads a month through `DailyAggregates` (Android's daily aggregate query, as the
   shared `DailyAggregate`) and draws each day in the shared `CalendarMonth`'s states. `ReportsStore`
   resolves the scope to one window (`ReportScope.resolve`) and takes every figure from the shared
-  `ReportFigures`, reading the window's days and session starts over the identical range.
+  `ReportFigures`, reading the window's days and session starts over the identical range. Its
+  export writes that window through the shared `csvLines` under `exportFileName`, byte for byte the
+  file Android writes, and writes nothing for a window with no completed day.
 - **`Gate/`**: the presence gate. `FaceWatcher` runs the front camera with an
   `AVCaptureMetadataOutput` for faces only, so the app receives face bounds and never a frame.
   `PresenceGateView` applies the shared `PresenceCheckRules`, falls back to `DeviceUnlock`
@@ -33,7 +35,8 @@ reminders, Live Activity or widget yet.
 - **`Reports/`**: the Reports tab: the Month / All time choice over a month stepper, an empty state
   for a scope holding no counted day, and six cards (The Numbers, Days Split, Daily Hours, Hours by
   Month under all time, Start Times, Sessions Per Day). `ReportCharts` draws the line, bar and ring
-  charts from the shared `ChartGeometry`, as Android's are drawn.
+  charts from the shared `ChartGeometry`, as Android's are drawn. The last card exports the
+  screen's window and opens the share sheet.
 - **`Habits/`**: the Habits screen (tap a row to show it; swipe or long-press to edit or archive),
   the name editor, the first-run naming step, and `habitSwitcher`, the top bar every tab carries.
 
@@ -58,10 +61,11 @@ one open session, a check-out that closes once, the midnight close in the check-
 selection locked to a running habit, archive refusals and where an archive moves the selection, a
 restore held to the name rule, a day shading at check-out and per habit, the month stepper and
 week start, and Reports' window ending at yesterday until today is checked out of, per habit, and
-its Month / All time steps. `SleevesUpUITests` drives the real UI, naming the seed habit when the record
+its Month / All time steps, and the exported file's name and bytes. `SleevesUpUITests` drives the real UI, naming the seed habit when the record
 is fresh. Four tests run every time: the gate offering device unlock with **Not now** writing nothing,
 creating a habit, switching to it and archiving it, History stepping back a month and showing a
-tapped day, and Reports switching between Month and All time. A full check-in and
+tapped day, and Reports switching between Month and All time and opening the share sheet over an
+export. A full check-in and
 check-out through simulated Face ID runs only when the host answers each Face ID prompt, so it is
 opt-in:
 
