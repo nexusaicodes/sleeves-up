@@ -6,10 +6,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.checkin.app.CheckInApplication
+import com.checkin.app.data.ArchiveResult
 import com.checkin.app.data.HabitRules
 import com.checkin.app.data.NameProblem
 import com.checkin.app.data.local.Habit
-import com.checkin.app.data.repository.ArchiveResult
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.HabitEdit
 import com.checkin.app.data.repository.HabitRepository

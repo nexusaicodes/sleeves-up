@@ -1,9 +1,9 @@
 package com.checkin.app.ui.habits
 
+import com.checkin.app.data.ArchiveResult
 import com.checkin.app.data.NameProblem
 import com.checkin.app.data.local.ClosedBy
 import com.checkin.app.data.local.Habit
-import com.checkin.app.data.repository.ArchiveResult
 import com.checkin.app.data.repository.CheckInRepository
 import com.checkin.app.data.repository.HabitEdit
 import com.checkin.app.data.repository.HabitRepository
