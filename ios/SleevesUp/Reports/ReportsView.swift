@@ -1,0 +1,302 @@
+import Shared
+import SwiftUI
+
+/// The Reports tab: a Month / All time choice over a month stepper, then every figure and chart for
+/// the one window that scope resolves to. A scope holding no counted day is an empty state, never a
+/// set of zeros. Every number is a quantity with no direction; only days shown up is the thesis.
+struct ReportsView: View {
+
+    let reports: ReportsStore
+    let habits: HabitStore
+
+    @State private var failed = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    scopeSelector
+                    if failed { Text(HistoryText.readFailed).font(.footnote).foregroundStyle(.secondary) }
+                    if reports.loaded {
+                        if let figures = reports.figures {
+                            cards(figures)
+                        } else {
+                            emptyScope
+                        }
+                    }
+                }
+                .padding()
+            }
+            .habitSwitcher(habits)
+            .onAppear { act { try reports.reload() } }
+        }
+    }
+
+    /// The only control on the screen. The stepper keeps its slot under all time rather than
+    /// vanishing, so the row does not reflow with the choice.
+    private var scopeSelector: some View {
+        VStack(spacing: 8) {
+            Picker("Scope", selection: Binding(
+                get: { reports.isAllTime },
+                set: { allTime in act { try allTime ? reports.selectAllTime() : reports.selectMonth() } }
+            )) {
+                Text("Month").tag(false)
+                Text("All time").tag(true)
+            }
+            .pickerStyle(.segmented)
+            HStack {
+                Button { act { try reports.previousMonth() } } label: { Image(systemName: "chevron.left") }
+                    .accessibilityLabel("Previous month")
+                    .disabled(reports.isAllTime)
+                Spacer()
+                Text(ReportText.scopeLabel(reports.scope)).font(.headline)
+                Spacer()
+                Button { act { try reports.nextMonth() } } label: { Image(systemName: "chevron.right") }
+                    .accessibilityLabel("Next month")
+                    .disabled(!reports.hasNextMonth)
+            }
+        }
+    }
+
+    private var emptyScope: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Nothing recorded here").font(.headline)
+            Text(ReportText.emptyMessage(reports.scope)).foregroundStyle(.secondary)
+        }
+        .padding(.top, 24)
+    }
+
+    @ViewBuilder
+    private func cards(_ figures: ReportFigures) -> some View {
+        NumbersCard(figures: figures, trackingStart: reports.isAllTime ? reports.trackingStart : nil)
+        SplitCard(figures: figures)
+        DailyHoursCard(figures: figures)
+        // Two bars or more: one bar states nothing the total above has not already stated.
+        if figures.monthlySeries.count > 1 { MonthlyHoursCard(figures: figures) }
+        StartTimesCard(figures: figures)
+        SessionsPerDayCard(figures: figures)
+    }
+
+    private func act(_ read: () throws -> Void) {
+        do {
+            try read()
+            failed = false
+        } catch {
+            failed = true
+        }
+    }
+}
+
+/// A titled card. Plain until the styling pass.
+private struct ReportCard<Content: View>: View {
+
+    let title: String
+    var subtitle: String?
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.headline)
+                if let subtitle { Text(subtitle).font(.caption).foregroundStyle(.secondary) }
+            }
+            content
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+private struct StatRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack {
+            Text(label).foregroundStyle(.secondary)
+            Spacer()
+            Text(value).monospacedDigit()
+        }
+        .font(.callout)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Totals and averages, stated and left alone. The averages are rows, never rings: the only
+/// denominator to fill a ring against is the user's own best.
+private struct NumbersCard: View {
+    let figures: ReportFigures
+    let trackingStart: Kotlinx_datetimeLocalDate?
+
+    var body: some View {
+        ReportCard(title: "The Numbers") {
+            if let trackingStart { StatRow(label: "Tracking since", value: ReportText.dateWithYear(trackingStart)) }
+            StatRow(label: "Days tracked", value: ReportText.days(figures.totalDays))
+            StatRow(label: "Showed up", value: ReportText.days(figures.showedUpDays))
+            StatRow(label: "Missed", value: ReportText.days(figures.missedDays))
+            Divider()
+            StatRow(label: "Total hours", value: SessionText.short(figures.totalWorkedMs))
+            StatRow(label: "Total sessions", value: ReportText.sessions(figures.totalSessions))
+            StatRow(label: "Hours per tracked day", value: SessionText.short(figures.avgDailyMs))
+            StatRow(label: "Sessions per day showed up", value: ReportText.average(figures.avgSessionsPerDay))
+        }
+    }
+}
+
+private struct SplitCard: View {
+    let figures: ReportFigures
+
+    var body: some View {
+        ReportCard(title: "Days Split") {
+            HStack(spacing: 20) {
+                DonutChartView(
+                    values: [Int(figures.showedUpDays), Int(figures.missedDays)],
+                    colors: [.accentColor, .gray],
+                    emptyColor: .gray,
+                    description: ReportText.daysSplit(figures)
+                )
+                Legend(colors: [.accentColor, .gray], labels: ["Showed up", "Missed"],
+                       values: [Int(figures.showedUpDays), Int(figures.missedDays)])
+            }
+        }
+    }
+}
+
+private struct DailyHoursCard: View {
+    let figures: ReportFigures
+
+    var body: some View {
+        let hours = figures.dailySeries.map { Float($0.workedMs) / Float(ReportText.msPerHour) }
+        let average = hours.isEmpty ? 0 : hours.reduce(0, +) / Float(hours.count)
+        let days = figures.dailySeries.count
+        ReportCard(title: "Daily Hours", subtitle: "\(ReportText.days(days)) · dashed line = average") {
+            LineChartView(values: hours, reference: average, description: "Daily hours over \(ReportText.days(days)).")
+                .frame(height: 140)
+            HStack {
+                Text(figures.dailySeries.first.map { ReportText.axisDay($0.date) } ?? "")
+                Spacer()
+                Text(figures.dailySeries.last.map { ReportText.axisDay($0.date) } ?? "")
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .accessibilityHidden(true)
+        }
+    }
+}
+
+/// Above this many bars there is no room for a total under each, and the first and last month label
+/// the axis instead. VoiceOver hears every month either way.
+private let monthLabelsUpTo = 6
+
+private struct MonthlyHoursCard: View {
+    let figures: ReportFigures
+
+    var body: some View {
+        let series = figures.monthlySeries
+        let multiYear = Set(series.map { $0.month.year }).count > 1
+        let label = { (point: MonthPoint) in ReportText.axisMonth(point.month, multiYear: multiYear) }
+        let spoken = series.map { "\(label($0)) \(SessionText.short($0.workedMs))" }.joined(separator: ", ")
+        ReportCard(title: "Hours by Month") {
+            BarChartView(
+                values: series.map { Float($0.workedMs) / Float(ReportText.msPerHour) },
+                description: "Hours by month: \(spoken)"
+            )
+            .frame(height: 120)
+            Group {
+                if series.count <= monthLabelsUpTo {
+                    HStack(spacing: 0) {
+                        ForEach(Array(series.enumerated()), id: \.offset) { _, point in
+                            VStack(spacing: 2) {
+                                Text(label(point))
+                                Text(SessionText.short(point.workedMs)).monospacedDigit()
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                } else {
+                    HStack {
+                        Text(series.first.map(label) ?? "")
+                        Spacer()
+                        Text(series.last.map(label) ?? "")
+                    }
+                }
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .accessibilityHidden(true)
+        }
+    }
+}
+
+private struct StartTimesCard: View {
+    let figures: ReportFigures
+
+    var body: some View {
+        let counts = [StartBucket.morning, .afternoon, .evening].map { Int(figures.startBuckets[$0]?.int32Value ?? 0) }
+        ReportCard(title: "Start Times") {
+            SplitRow(
+                values: counts,
+                labels: ["Morning", "Afternoon", "Evening"],
+                description: "Start times: \(ReportText.sessions(counts[0])) in the morning, "
+                    + "\(ReportText.sessions(counts[1])) in the afternoon, "
+                    + "\(ReportText.sessions(counts[2])) in the evening"
+            )
+        }
+    }
+}
+
+private struct SessionsPerDayCard: View {
+    let figures: ReportFigures
+
+    var body: some View {
+        let counts = [SessionBand.one, .two, .threePlus].map { Int(figures.sessionBands[$0]?.int32Value ?? 0) }
+        ReportCard(title: "Sessions Per Day") {
+            SplitRow(
+                values: counts,
+                labels: [ReportText.sessions(1), ReportText.sessions(2), "3 or more"],
+                description: "Sessions per day: \(ReportText.days(counts[0])) with one session, "
+                    + "\(ReportText.days(counts[1])) with two, \(ReportText.days(counts[2])) with three or more. "
+                    + "Average \(ReportText.average(figures.avgSessionsPerDay))."
+            )
+        }
+    }
+}
+
+/// A ring with a legend beside it, in three hues of equal weight: no slice is better than another,
+/// so no slice is stronger.
+private struct SplitRow: View {
+    let values: [Int]
+    let labels: [String]
+    let description: String
+
+    private let hues: [Color] = [.primary, .orange, .teal]
+
+    var body: some View {
+        HStack(spacing: 20) {
+            DonutChartView(values: values, colors: hues, emptyColor: .gray, description: description)
+            Legend(colors: hues, labels: labels, values: values)
+        }
+    }
+}
+
+private struct Legend: View {
+    let colors: [Color]
+    let labels: [String]
+    let values: [Int]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(labels.indices, id: \.self) { index in
+                HStack(spacing: 8) {
+                    Circle().fill(colors[index]).frame(width: 10, height: 10)
+                    Text(labels[index])
+                    Spacer(minLength: 8)
+                    Text("\(values[index])").monospacedDigit()
+                }
+                .font(.callout)
+            }
+        }
+        .accessibilityHidden(true)
+    }
+}

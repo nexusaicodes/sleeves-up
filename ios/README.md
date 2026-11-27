@@ -8,8 +8,9 @@ What it does today: the naming step for the seed habit; habits, created, renamed
 restored and switched between, with one open session across all of them locking the switcher; the
 shown habit's check-in and check-out, each through the presence gate, the open session counting up,
 its sessions today, and the close of a forgotten session at its own midnight; and History, the
-shown habit's month calendar and the sessions of a tapped day. Both tabs re-read at midnight while
-the app is open. No Reports, reminders, Live Activity or widget yet.
+shown habit's month calendar and the sessions of a tapped day; and Reports, every figure and chart
+for one month or all time. Every tab re-reads at midnight while the app is open. No CSV export,
+reminders, Live Activity or widget yet.
 
 - **`Record/`**: the record, a [GRDB](https://github.com/groue/GRDB.swift) SQLite database with the
   Android app's `sessions` and `app_state` tables and `habits` columns (less Android's `channel_id`),
@@ -17,7 +18,9 @@ the app is open. No Reports, reminders, Live Activity or widget yet.
   is refused, closed and measured as on Android; `HabitStore` makes every habit write through the
   shared `HabitRules` and `HabitWrites`; `SessionZones` keeps the open session's check-in zone.
   `HistoryStore` reads a month through `DailyAggregates` (Android's daily aggregate query, as the
-  shared `DailyAggregate`) and draws each day in the shared `CalendarMonth`'s states.
+  shared `DailyAggregate`) and draws each day in the shared `CalendarMonth`'s states. `ReportsStore`
+  resolves the scope to one window (`ReportScope.resolve`) and takes every figure from the shared
+  `ReportFigures`, reading the window's days and session starts over the identical range.
 - **`Gate/`**: the presence gate. `FaceWatcher` runs the front camera with an
   `AVCaptureMetadataOutput` for faces only, so the app receives face bounds and never a frame.
   `PresenceGateView` applies the shared `PresenceCheckRules`, falls back to `DeviceUnlock`
@@ -27,6 +30,10 @@ the app is open. No Reports, reminders, Live Activity or widget yet.
 - **`History/`**: the History tab: a month stepper that stops at the current month, the calendar
   (shaded for a completed session whatever it held, faded only outside the record, on the device's
   week start), and the tapped day's sessions.
+- **`Reports/`**: the Reports tab: the Month / All time choice over a month stepper, an empty state
+  for a scope holding no counted day, and six cards (The Numbers, Days Split, Daily Hours, Hours by
+  Month under all time, Start Times, Sessions Per Day). `ReportCharts` draws the line, bar and ring
+  charts from the shared `ChartGeometry`, as Android's are drawn.
 - **`Habits/`**: the Habits screen (tap a row to show it; swipe or long-press to edit or archive),
   the name editor, the first-run naming step, and `habitSwitcher`, the top bar every tab carries.
 
@@ -49,11 +56,12 @@ xcodebuild -project SleevesUp.xcodeproj -scheme SleevesUp \
 `SleevesUpTests` runs `SessionStore`, `HabitStore` and `HistoryStore` against an in-memory record:
 one open session, a check-out that closes once, the midnight close in the check-in's zone, the
 selection locked to a running habit, archive refusals and where an archive moves the selection, a
-restore held to the name rule, a day shading at check-out and per habit, and the month stepper and
-week start. `SleevesUpUITests` drives the real UI, naming the seed habit when the record
-is fresh. Three tests run every time: the gate offering device unlock with **Not now** writing nothing,
-creating a habit, switching to it and archiving it, and History stepping back a month and showing a
-tapped day. A full check-in and
+restore held to the name rule, a day shading at check-out and per habit, the month stepper and
+week start, and Reports' window ending at yesterday until today is checked out of, per habit, and
+its Month / All time steps. `SleevesUpUITests` drives the real UI, naming the seed habit when the record
+is fresh. Four tests run every time: the gate offering device unlock with **Not now** writing nothing,
+creating a habit, switching to it and archiving it, History stepping back a month and showing a
+tapped day, and Reports switching between Month and All time. A full check-in and
 check-out through simulated Face ID runs only when the host answers each Face ID prompt, so it is
 opt-in:
 

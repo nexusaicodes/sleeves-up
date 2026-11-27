@@ -1,7 +1,7 @@
 import XCTest
 
-/// The Check-In screen, History, the Habits screen and the presence gate, driven through the real UI
-/// on a simulator. The simulator has no front camera, so the gate offers device unlock at once.
+/// The Check-In screen, History, Reports, the Habits screen and the presence gate, driven through the
+/// real UI on a simulator. The simulator has no front camera, so the gate offers device unlock at once.
 ///
 /// `testCheckInAndOutThroughDeviceUnlock` passes the gate with simulated Face ID, which only the
 /// host can answer: it runs when `TEST_RUNNER_SIM_FACE_ID_HOST=1` is set on `xcodebuild`, with the
@@ -117,6 +117,30 @@ final class GateUITests: XCTestCase {
         first.tap()
         XCTAssertTrue(app.staticTexts["No day selected"].waitForExistence(timeout: 3), "a second tap clears it")
         XCTAssertTrue(app.buttons["habitSwitcher"].exists, "the switcher sits on History too")
+    }
+
+    @MainActor
+    func testReportsSwitchesScopeAndStopsAtTheMonthInProgress() throws {
+        let app = try launchBetweenSessions()
+        app.tabBars.buttons["Reports"].tap()
+        let numbers = app.staticTexts["The Numbers"]
+        let empty = app.staticTexts["Nothing recorded here"]
+        XCTAssertTrue(numbers.waitForExistence(timeout: 5) || empty.exists, "a window's cards or the empty state")
+        XCTAssertFalse(app.buttons["Next month"].isEnabled, "the stepper stops at the month in progress")
+        let month = Date().formatted(.dateTime.month(.wide).year())
+        XCTAssertTrue(app.staticTexts[month].exists)
+
+        app.buttons["Previous month"].tap()
+        XCTAssertTrue(app.buttons["Next month"].isEnabled)
+
+        app.buttons["All time"].tap()
+        XCTAssertTrue(app.staticTexts["All time"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["Previous month"].isEnabled, "no month to step under all time")
+        attach(app, "reports-all-time")
+
+        app.buttons["Month"].tap()
+        XCTAssertTrue(app.staticTexts[month].waitForExistence(timeout: 3), "Month returns to the month in progress")
+        XCTAssertTrue(app.buttons["habitSwitcher"].exists, "the switcher sits on Reports too")
     }
 
     /// Check-In's start/stop control reading `label`, told apart from the Check In tab.
