@@ -14,7 +14,8 @@ checked in?" reminders, whose Check Out action opens the gate; and each habit's 
 planned ahead, timed and switched per habit, and replanned by background refresh while the app is
 not opened; and the open session's Live Activity on the Lock Screen and in the Dynamic Island,
 whose Check Out opens the gate; and the home-screen widget, which opens the gate or the habit
-picker. Every tab re-reads at midnight while the app is open.
+picker; and Settings, with the Habits link and About (version, what the app collects, the privacy
+policy, feedback by email and the licences). Every tab re-reads at midnight while the app is open.
 
 - **`Record/`**: the record, a [GRDB](https://github.com/groue/GRDB.swift) SQLite database with the
   Android app's `sessions` and `app_state` tables and `habits` columns (less Android's `channel_id`),
@@ -90,6 +91,13 @@ picker. Every tab re-reads at midnight while the app is open.
   the tour before it held the widget page meets that page once, alone, when `FirstRun.widgetPageOwed`
   says so (two days holding a session of the shown habit, no widget placed), decided as the app comes
   to the front; a start that finds the widget placed ends the question.
+- **`Settings/`**: the Settings tab. The Habits link is locked while a session runs. About states
+  the version and the developer, and links to what the app collects (`PrivacyView`: iOS's own
+  claims, each naming its mechanism, checked through App Privacy Report), the privacy policy, a
+  feedback email the user reads before sending (`Feedback`; with no mail app the address is copied)
+  and the licences (`LicensesView`: GRDB, the Kotlin standard library, kotlinx-datetime and
+  kotlinx.serialization, with GRDB's MIT notice from `Licences/` and the Apache 2.0 text the Android
+  app bundles). No language row until the Arabic arrives, and no rating row until a listing exists.
 - **`Habits/`**: the Habits screen (tap a row to show it; swipe or long-press to edit or archive),
   the name editor with each habit's reminder (`ReminderFields`: on or off, iOS only, and the time,
   05:00 to 21:00), the first-run naming step, which sets the time too, and `habitSwitcher`, the top
@@ -117,10 +125,10 @@ selection locked to a running habit, archive refusals and where an archive moves
 restore held to the name rule, a day shading at check-out and per habit, the month stepper and
 week start, Reports' window ending at yesterday until today is checked out of, per habit, and its
 Month / All time steps, the exported file's name and bytes, the session reminders' instants,
-sound and clearing, the Live Activity's start, rename, end and once-per-session-per-install rule, the widget's faces, the first-run prompts, and the habit reminders' plan, replan after a check-in and settled wording,
+sound and clearing, the Live Activity's start, rename, end and once-per-session-per-install rule, the widget's faces, the first-run prompts, the feedback draft and the bundled licence texts, and the habit reminders' plan, replan after a check-in and settled wording,
 against a fake notification center, and each habit's reminder settings. `NudgeCatalogTests` reads Android's `NudgeCatalog.kt` and
 `strings.xml` from the repository and fails if the iOS copy drifts from them. `SleevesUpUITests` drives the real UI, finishing the tour and naming the seed
-habit when they are owed. Five tests run every time: the welcome tour paging through to the app, the gate offering device unlock with **Not now** writing nothing,
+habit when they are owed. Six tests run every time: the welcome tour paging through to the app, Settings showing the privacy claims and licences, the gate offering device unlock with **Not now** writing nothing,
 creating a habit, switching to it and archiving it, History stepping back a month and showing a
 tapped day, and Reports switching between Month and All time and opening the share sheet over an
 export. A full check-in and
@@ -169,7 +177,8 @@ iPhone 15 (iOS 27.2.1, Xcode 26.3): the camera prompt, a face passing with nothi
 no-passcode instructions have not been seen, since showing them means removing the device's passcode.
 
 GRDB comes in through Swift Package Manager, pinned to an exact version in `project.yml`. It is MIT
-licensed; the iOS app has no licences screen yet, and needs one listing it before release.
+licensed and listed on the Licences screen; a new dependency, Swift or Kotlin, gets an entry in
+`OpenSourceLibrary.all` and its notice in `Licences/` if its licence asks for one.
 
 Each build first runs `./gradlew :shared:embedAndSignAppleFrameworkForXcode` (a build phase in
 `project.yml`), so the Swift code always links the current Kotlin. That phase needs Android
