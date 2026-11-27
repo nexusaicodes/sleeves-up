@@ -5,12 +5,14 @@ import SwiftUI
 /// Re-check the network line before a release: a new dependency can make it false.
 struct PrivacyView: View {
 
-    private let claims: [(title: String, body: String)] = [
-        ("No network activity", "The app makes no network requests and contains nothing that does, so it cannot upload anything."),
-        ("No account, no server", "There is nothing to sign in to. Your sessions live in a database on this iPhone. If iCloud Backup is on, your iPhone's backup in your own iCloud account includes it."),
-        ("No photo is taken", "Your camera reports whether a face is in frame. The app reads that and nothing else."),
-        ("No analytics, no ads", "Nothing here measures how you use the app, and nothing asks anyone else anything."),
-    ]
+    private var claims: [(title: String, body: String)] {
+        [
+            (String(app: "No network activity"), String(app: "The app makes no network requests and contains nothing that does, so it cannot upload anything.")),
+            (String(app: "No account, no server"), String(app: "There is nothing to sign in to. Your sessions live in a database on this iPhone. If iCloud Backup is on, your iPhone's backup in your own iCloud account includes it.")),
+            (String(app: "No photo is taken"), String(app: "Your camera reports whether a face is in frame. The app reads that and nothing else.")),
+            (String(app: "No analytics, no ads"), String(app: "Nothing here measures how you use the app, and nothing asks anyone else anything.")),
+        ]
+    }
 
     var body: some View {
         List {

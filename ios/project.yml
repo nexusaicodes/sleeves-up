@@ -46,7 +46,8 @@ targets:
         INFOPLIST_KEY_NSSupportsLiveActivities: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
-        # Says what happens and nothing more, as Android's camera disclosure does.
+        # Says what happens and nothing more, as Android's camera disclosure does. Both reasons are
+        # translated in SleevesUp/InfoPlist.xcstrings, which must keep the same English.
         INFOPLIST_KEY_NSCameraUsageDescription: The front camera checks you're here when you check in or out.
         INFOPLIST_KEY_NSFaceIDUsageDescription: Face ID confirms it's you when the camera can't.
         OTHER_LDFLAGS: [$(inherited), -framework, Shared]
@@ -76,7 +77,8 @@ targets:
   SleevesUpWidgets:
     type: app-extension
     platform: iOS
-    # `Common` (the record's location, the widget's face, the Live Activity's attributes) is compiled into both.
+    # `Common` (the record's location, the widget's face, the Live Activity's attributes, the locale and
+    # the string catalog, `Localizable.xcstrings`) is compiled into both.
     sources: [SleevesUpWidgets, Common]
     settings:
       base:

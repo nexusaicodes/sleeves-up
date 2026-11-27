@@ -1,7 +1,7 @@
 import Shared
 import SwiftUI
 
-/// One page of the welcome tour, Android's `WelcomePages` copy.
+/// One page of the welcome tour, Android's `WelcomePages` copy in the app's language.
 struct WelcomePage: Identifiable {
     let id: Int
     let symbol: String
@@ -10,36 +10,40 @@ struct WelcomePage: Identifiable {
     /// Below the body: how to place the widget, which iOS gives an app no way to do for the user.
     var note: String?
 
-    static let widget = WelcomePage(
-        id: 2,
-        symbol: "square.grid.2x2",
-        title: "On your home screen",
-        body: "Add the widget to check in or out without opening the app first. The same presence check runs.",
-        note: "Touch and hold an empty part of your Home Screen, tap Edit, then Add Widget."
-    )
+    static var widget: WelcomePage {
+        WelcomePage(
+            id: 2,
+            symbol: "square.grid.2x2",
+            title: String(app: "On your home screen"),
+            body: String(app: "Add the widget to check in or out without opening the app first. The same presence check runs."),
+            note: String(app: "Touch and hold an empty part of your Home Screen, tap Edit, then Add Widget.")
+        )
+    }
 
     /// The quote, the thesis, the widget, habits. The tour names nothing; the naming step follows.
-    static let all = [
-        WelcomePage(
-            id: 0,
-            symbol: "quote.opening",
-            title: "Make it a habit",
-            body: "“We are what we repeatedly do. Excellence, then, is not an act, but a habit.” — Will Durant, on Aristotle"
-        ),
-        WelcomePage(
-            id: 1,
-            symbol: "face.smiling",
-            title: "Showing up is what counts",
-            body: "Check in with a glance at the camera, and check out the same way. Your time is logged, but showing up is what counts."
-        ),
-        widget,
-        WelcomePage(
-            id: 3,
-            symbol: "square.stack",
-            title: "One habit at a time",
-            body: "Start with one habit you want to build, and add more later — each keeps its own record."
-        ),
-    ]
+    static var all: [WelcomePage] {
+        [
+            WelcomePage(
+                id: 0,
+                symbol: "quote.opening",
+                title: String(app: "Make it a habit"),
+                body: String(app: "“We are what we repeatedly do. Excellence, then, is not an act, but a habit.” — Will Durant, on Aristotle")
+            ),
+            WelcomePage(
+                id: 1,
+                symbol: "face.smiling",
+                title: String(app: "Showing up is what counts"),
+                body: String(app: "Check in with a glance at the camera, and check out the same way. Your time is logged, but showing up is what counts.")
+            ),
+            widget,
+            WelcomePage(
+                id: 3,
+                symbol: "square.stack",
+                title: String(app: "One habit at a time"),
+                body: String(app: "Start with one habit you want to build, and add more later — each keeps its own record.")
+            ),
+        ]
+    }
 }
 
 /// The first-run welcome tour: four pages, Skip and Next, then Get started on the last. A finish
@@ -69,7 +73,7 @@ struct WelcomeView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
             .indexViewStyle(.page(backgroundDisplayMode: .always))
-            Button(isLast ? "Get started" : "Next") {
+            Button(isLast ? LocalizedStringKey("Get started") : LocalizedStringKey("Next")) {
                 if isLast { onExit(.finished) } else { withAnimation { page += 1 } }
             }
             .buttonStyle(.borderedProminent)

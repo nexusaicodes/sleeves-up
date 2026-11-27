@@ -10,7 +10,7 @@ enum WidgetFace: Equatable {
     case checkOutOf(String)
 
     /// The habit's name as the app shows it, `HabitText.name`'s fallback for one owed a name.
-    static func name(_ name: String?) -> String { name ?? "Unnamed habit" }
+    static func name(_ name: String?) -> String { name ?? String(app: "Unnamed habit") }
 
     /// The face for the active habits' names and, when a session is open, its habit's name, which
     /// may be nil itself; `openSession` is nil when none is open.
@@ -22,9 +22,9 @@ enum WidgetFace: Equatable {
 
     var text: String {
         switch self {
-        case .checkInTo(let name): return "Check in to \(name)"
-        case .checkIn: return "Check In"
-        case .checkOutOf(let name): return "Check out of \(name)"
+        case .checkInTo(let name): return String(app: "Check in to \(name)")
+        case .checkIn: return String(app: "Check In")
+        case .checkOutOf(let name): return String(app: "Check out of \(name)")
         }
     }
 

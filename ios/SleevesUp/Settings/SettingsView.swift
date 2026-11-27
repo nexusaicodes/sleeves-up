@@ -1,8 +1,9 @@
 import SwiftUI
 import UIKit
 
-/// The Settings tab: the Habits link and About, and no state of its own. iOS has no language row
-/// yet (the app is English only until its Arabic arrives) and no rating row (no App Store listing).
+/// The Settings tab: the Habits link, the app's language and About, and no state of its own. The
+/// language row opens the app's page in iOS Settings, where iOS keeps the per-app language, so the
+/// app stores no choice of its own. No rating row (no App Store listing).
 struct SettingsView: View {
 
     let habits: HabitStore
@@ -22,9 +23,19 @@ struct SettingsView: View {
                 } footer: {
                     if habits.isLocked { Text(HabitText.switchLocked(habits.active.first { $0.id == habits.runningHabitId })) }
                 }
+                Section("Language") {
+                    Button("App language") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                    }
+                    .accessibilityHint("Opens outside the app")
+                }
                 Section("About") {
-                    LabeledContent("Sleeves Up", value: "Version \(AppBuild.version) (build \(AppBuild.build))")
-                    Text("Nexus AI Technology Labs").foregroundStyle(.secondary)
+                    LabeledContent {
+                        Text(String(app: "Version \(AppBuild.version) (build \(AppBuild.build))"))
+                    } label: {
+                        Text(verbatim: "Sleeves Up")
+                    }
+                    Text(verbatim: "Nexus AI Technology Labs").foregroundStyle(.secondary)
                     NavigationLink("What this app collects") { PrivacyView() }
                     Button("Privacy policy") { openURL(Self.privacyPolicy) }
                         .accessibilityHint("Opens outside the app")
@@ -51,7 +62,7 @@ struct SettingsView: View {
         openURL(url) { opened in
             if !opened {
                 UIPasteboard.general.string = Feedback.address
-                notice = "No email app found. Address copied: \(Feedback.address)"
+                notice = String(app: "No email app found. Address copied: \(Feedback.address)")
             }
         }
     }

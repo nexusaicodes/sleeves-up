@@ -48,8 +48,7 @@ struct CheckOutCelebrationView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     private var dayText: String {
-        let count = completed.daySessionCount == 1 ? "1 session" : "\(completed.daySessionCount) sessions"
-        return "\(count) · \(SessionText.short(completed.dayTotalMs)) today"
+        String(app: "\(ReportText.sessions(completed.daySessionCount)) · \(SessionText.short(completed.dayTotalMs)) today")
     }
 
     var body: some View {
@@ -78,7 +77,7 @@ struct CheckOutCelebrationView: View {
         // One announcement for the whole surface rather than four fragments, and a tap closes it.
         .accessibilityRepresentation {
             Button(
-                [completed.habitName, "You showed up", SessionText.short(completed.sessionMs), dayText]
+                [completed.habitName, String(app: "You showed up"), SessionText.short(completed.sessionMs), dayText]
                     .compactMap { $0 }.joined(separator: ". "),
                 action: onDismiss
             )
