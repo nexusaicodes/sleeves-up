@@ -45,6 +45,16 @@ final class NudgeLedger {
         try migrator.migrate(queue)
     }
 
+    @MainActor private static var shared: NudgeLedger?
+
+    /// The process's one ledger on disk, opened on first ask and shared as the record's queue is.
+    @MainActor static func sharedOnDisk() throws -> NudgeLedger {
+        if let shared { return shared }
+        let ledger = try openOnDisk()
+        shared = ledger
+        return ledger
+    }
+
     static func openOnDisk() throws -> NudgeLedger {
         let folder = try FileManager.default.url(
             for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true

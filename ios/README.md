@@ -11,8 +11,8 @@ its sessions today, and the close of a forgotten session at its own midnight; an
 shown habit's month calendar and the sessions of a tapped day; and Reports, every figure and chart
 for one month or all time, exported as CSV through the share sheet; and the open session's "Still
 checked in?" reminders, whose Check Out action opens the gate; and each habit's daily reminder,
-planned ahead. Every tab re-reads at midnight while the app is open. No reminder settings screen,
-Live Activity or widget yet.
+planned ahead, timed and switched per habit, and replanned by background refresh while the app is
+not opened. Every tab re-reads at midnight while the app is open. No Live Activity or widget yet.
 
 - **`Record/`**: the record, a [GRDB](https://github.com/groue/GRDB.swift) SQLite database with the
   Android app's `sessions` and `app_state` tables and `habits` columns (less Android's `channel_id`),
@@ -40,7 +40,11 @@ Live Activity or widget yet.
   (`nudges.sqlite`, apart from the record, as Android's `nudges.db`) keeps the plan and what was
   shown, for the wording rotation. `NudgeCatalog` is Android's English copy under the same frozen
   keys, and `ReminderSettings` each habit's minute and on/off by uuid. A reminder's tap shows its
-  habit and opens the gate, as the shared `TapRouting.forHabit` decides.
+  habit and opens the gate, as the shared `TapRouting.forHabit` decides. `BackgroundRefresh` asks
+  the system to run app code every six hours or so, closing a forgotten session and replanning, so
+  a user who stays away keeps the two-week plan (the identifier is in `SleevesUpInfo.plist`, merged
+  into the generated Info.plist). iOS Settings' link to the app's notification settings opens the
+  Habits screen.
 - **`CheckIn/`**: the Check-In screen, and `SessionIntervalRow`, a session as Check-In and History
   both draw it.
 - **`History/`**: the History tab: a month stepper that stops at the current month, the calendar
@@ -52,7 +56,9 @@ Live Activity or widget yet.
   charts from the shared `ChartGeometry`, as Android's are drawn. The last card exports the
   screen's window and opens the share sheet.
 - **`Habits/`**: the Habits screen (tap a row to show it; swipe or long-press to edit or archive),
-  the name editor, the first-run naming step, and `habitSwitcher`, the top bar every tab carries.
+  the name editor with each habit's reminder (`ReminderFields`: on or off, iOS only, and the time,
+  05:00 to 21:00), the first-run naming step, which sets the time too, and `habitSwitcher`, the top
+  bar every tab carries. Rows state each habit's reminder time and nothing else.
 
 Copy is English only for now, taken from the Android app's strings.
 
@@ -77,7 +83,7 @@ restore held to the name rule, a day shading at check-out and per habit, the mon
 week start, Reports' window ending at yesterday until today is checked out of, per habit, and its
 Month / All time steps, the exported file's name and bytes, the session reminders' instants,
 sound and clearing, and the habit reminders' plan, replan after a check-in and settled wording,
-against a fake notification center. `NudgeCatalogTests` reads Android's `NudgeCatalog.kt` and
+against a fake notification center, and each habit's reminder settings. `NudgeCatalogTests` reads Android's `NudgeCatalog.kt` and
 `strings.xml` from the repository and fails if the iOS copy drifts from them. `SleevesUpUITests` drives the real UI, naming the seed habit when the record
 is fresh. Four tests run every time: the gate offering device unlock with **Not now** writing nothing,
 creating a habit, switching to it and archiving it, History stepping back a month and showing a

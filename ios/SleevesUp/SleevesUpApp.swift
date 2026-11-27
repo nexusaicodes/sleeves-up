@@ -14,6 +14,7 @@ struct SleevesUpApp: App {
     @State private var reports: ReportsStore?
     /// Nil only when the reminder ledger cannot be opened, which costs reminders and nothing else.
     @State private var habitReminders: HabitReminders?
+    @State private var reminderSettings = ReminderSettings()
     @State private var openFailed = false
 
     var body: some Scene {
@@ -22,16 +23,19 @@ struct SleevesUpApp: App {
                 if let store, let habits, let history, let reports {
                     Group {
                         if let unnamed = habits.needingName {
-                            NameHabitView(habits: habits, habit: unnamed)
+                            NameHabitView(habits: habits, habit: unnamed, settings: reminderSettings)
                         } else {
                             TabView(selection: $tab) {
                                 CheckInView(store: store, habits: habits, taps: delegate.taps)
+                                    .environment(reminderSettings)
                                     .tabItem { Label("Check In", systemImage: "checkmark.circle") }
                                     .tag(Tab.checkIn)
                                 HistoryView(history: history, habits: habits)
+                                    .environment(reminderSettings)
                                     .tabItem { Label("History", systemImage: "calendar") }
                                     .tag(Tab.history)
                                 ReportsView(reports: reports, habits: habits)
+                                    .environment(reminderSettings)
                                     .tabItem { Label("Reports", systemImage: "chart.bar") }
                                     .tag(Tab.reports)
                             }
@@ -39,9 +43,10 @@ struct SleevesUpApp: App {
                             .onChange(of: delegate.taps.pending, initial: true) { _, pending in
                                 if pending != nil { tab = .checkIn }
                             }
+                            .task { BackgroundRefresh.schedule() }
                             .task { await askForNotifications() }
                             // Whatever the plan reads: the open session, today's sessions, the habits.
-                            .onChange(of: PlanInputs(store, habits)) { replanReminders() }
+                            .onChange(of: PlanInputs(store, habits, reminderSettings)) { replanReminders() }
                         }
                     }
                     .task(id: store.openSession?.id) { await closeAtBoundary(store, habits, history, reports) }
@@ -63,6 +68,7 @@ struct SleevesUpApp: App {
             if phase == .active, let store, let habits, let history, let reports {
                 try? refresh(store, habits, history, reports)
             }
+            if phase == .background { BackgroundRefresh.schedule() }
         }
     }
 
@@ -76,20 +82,20 @@ struct SleevesUpApp: App {
     private func askForNotifications() async {
         let center = UNUserNotificationCenter.current()
         guard await center.notificationSettings().authorizationStatus == .notDetermined else { return }
-        _ = try? await center.requestAuthorization(options: [.alert, .sound])
+        _ = try? await center.requestAuthorization(options: [.alert, .sound, .providesAppNotificationSettings])
     }
 
     /// Opens the record and closes a forgotten session before the first screen is drawn.
     private func open() {
         guard store == nil else { return }
         do {
-            let database = try RecordDatabase.openOnDisk()
+            let database = try RecordDatabase.sharedOnDisk()
             let openedHabits = HabitStore(database: database)
             let openedStore = SessionStore(database: database, reminders: SessionReminders())
             let openedHistory = HistoryStore(database: database)
             let openedReports = ReportsStore(database: database)
-            habitReminders = (try? NudgeLedger.openOnDisk()).map {
-                HabitReminders(record: database, ledger: $0, settings: ReminderSettings())
+            habitReminders = (try? NudgeLedger.sharedOnDisk()).map {
+                HabitReminders(record: database, ledger: $0, settings: reminderSettings)
             }
             try refresh(openedStore, openedHabits, openedHistory, openedReports)
             habits = openedHabits
@@ -128,12 +134,14 @@ struct SleevesUpApp: App {
         let openSessionId: Int64?
         let todaySessions: Int
         let habits: [String]
+        let settingsRevision: Int
 
         @MainActor
-        init(_ store: SessionStore, _ habits: HabitStore) {
+        init(_ store: SessionStore, _ habits: HabitStore, _ settings: ReminderSettings) {
             openSessionId = store.openSession?.id
             todaySessions = store.todaySessions.count
             self.habits = habits.active.map { "\($0.uuid):\($0.name ?? "")" }
+            settingsRevision = settings.revision
         }
     }
 

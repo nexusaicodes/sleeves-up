@@ -25,6 +25,8 @@ targets:
         # Matches the Android applicationId. Permanent once the app is first uploaded to Apple.
         PRODUCT_BUNDLE_IDENTIFIER: com.nexusai.checkin.app
         GENERATE_INFOPLIST_FILE: YES
+        # Background refresh's identifier and mode, merged into the generated plist.
+        INFOPLIST_FILE: SleevesUpInfo.plist
         INFOPLIST_KEY_CFBundleDisplayName: Sleeves Up
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait

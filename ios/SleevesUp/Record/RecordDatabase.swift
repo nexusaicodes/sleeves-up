@@ -17,6 +17,17 @@ enum RecordDatabase {
     /// `app_state`'s one row, `AppState.ROW_ID` on Android.
     static let appStateRowId: Int64 = 0
 
+    @MainActor private static var shared: DatabaseQueue?
+
+    /// The process's one queue on the on-disk record, opened on first ask. The app and its background
+    /// refresh share it, as GRDB wants one queue per database file.
+    @MainActor static func sharedOnDisk() throws -> DatabaseQueue {
+        if let shared { return shared }
+        let queue = try openOnDisk()
+        shared = queue
+        return queue
+    }
+
     /// The record in Application Support, created and migrated on first open.
     static func openOnDisk() throws -> DatabaseQueue {
         let folder = try FileManager.default.url(

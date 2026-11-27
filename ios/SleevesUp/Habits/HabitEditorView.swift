@@ -29,29 +29,39 @@ struct HabitNameField: View {
     }
 }
 
-/// New Habit and Edit Habit, as a sheet. `onSave` performs the write and returns what it did.
+/// New Habit and Edit Habit, as a sheet: the name, and the habit's reminder. `onSave` performs the
+/// name write and returns what it did; the reminder is applied once the name has saved.
 struct HabitEditorView: View {
 
     let title: String
     let problemFor: (String) -> NameProblem?
     let onSave: (String) -> HabitStore.Edit?
+    let onSaved: (_ reminderOn: Bool, _ reminderMinute: Int) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var name: String
     @State private var showProblem = false
     @State private var refused: NameProblem?
     @State private var failure: String?
+    @State private var reminderOn: Bool
+    @State private var reminderMinute: Int
 
     init(
         title: String,
         initialName: String = "",
+        reminderOn: Bool = true,
+        reminderMinute: Int = Int(NudgeSchedule.shared.DEFAULT_MINUTE),
         problemFor: @escaping (String) -> NameProblem?,
-        onSave: @escaping (String) -> HabitStore.Edit?
+        onSave: @escaping (String) -> HabitStore.Edit?,
+        onSaved: @escaping (_ reminderOn: Bool, _ reminderMinute: Int) -> Void
     ) {
         self.title = title
         self.problemFor = problemFor
         self.onSave = onSave
+        self.onSaved = onSaved
         _name = State(initialValue: initialName)
+        _reminderOn = State(initialValue: reminderOn)
+        _reminderMinute = State(initialValue: reminderMinute)
     }
 
     var body: some View {
@@ -60,6 +70,11 @@ struct HabitEditorView: View {
                 HabitNameField(name: $name, showProblem: $showProblem, refused: $refused, problemFor: problemFor)
                     .onSubmit(save)
                 if let failure { Text(failure).font(.footnote).foregroundStyle(.secondary) }
+                Section {
+                    ReminderFields(on: $reminderOn, minute: $reminderMinute)
+                } footer: {
+                    Text("\(ReminderText.rangeNote). Once a day at most, on days you haven't checked in yet.")
+                }
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
@@ -74,7 +89,9 @@ struct HabitEditorView: View {
         showProblem = true
         guard refused == nil, problemFor(name) == nil else { return }
         switch onSave(name) {
-        case .saved: dismiss()
+        case .saved:
+            onSaved(reminderOn, reminderMinute)
+            dismiss()
         case .rejected(let problem): refused = problem
         case .missing: failure = HabitText.missing
         case nil: failure = HabitText.saveFailed
@@ -82,14 +99,16 @@ struct HabitEditorView: View {
     }
 }
 
-/// The first-run naming step: the seed habit is created unnamed, and this asks for its name before
-/// anything else is shown.
+/// The first-run naming step: the seed habit is created unnamed, and this asks for its name, and the
+/// time its reminder comes around, before anything else is shown.
 struct NameHabitView: View {
 
     let habits: HabitStore
     let habit: HabitRow
+    let settings: ReminderSettings
 
     @State private var name = ""
+    @State private var reminderMinute = Int(NudgeSchedule.shared.DEFAULT_MINUTE)
     @State private var showProblem = false
     @State private var refused: NameProblem?
     @State private var failure: String?
@@ -104,6 +123,9 @@ struct NameHabitView: View {
             .textFieldStyle(.roundedBorder)
             .onSubmit(save)
             Text("Add more in the app when you want.").font(.footnote).foregroundStyle(.secondary)
+            ReminderFields(on: .constant(true), minute: $reminderMinute, showsToggle: false)
+            Text("A reminder comes around then on days you haven't checked in yet.")
+                .font(.footnote).foregroundStyle(.secondary)
             if let failure { Text(failure).font(.footnote).foregroundStyle(.secondary) }
             Spacer()
             Button("Continue", action: save)
@@ -121,6 +143,9 @@ struct NameHabitView: View {
         )
         guard refused == nil, typed == nil else { return }
         do {
+            // The time is stored first: the rename ends the naming step, and the replan it causes
+            // must already read the chosen time.
+            settings.setMinute(reminderMinute, for: habit.uuid)
             switch try habits.rename(habit.id, to: name) {
             case .saved: failure = nil
             case .rejected(let problem): refused = problem
