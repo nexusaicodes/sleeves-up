@@ -187,6 +187,27 @@ final class GateUITests: XCTestCase {
         XCTAssertTrue(app.buttons["habitSwitcher"].exists, "the switcher sits on Reports too")
     }
 
+    /// Settings: the Habits link, the privacy claims and the licences with their texts.
+    @MainActor
+    func testSettingsShowsPrivacyAndLicences() throws {
+        let app = try launchBetweenSessions()
+        app.tabBars.buttons["Settings"].tap()
+        XCTAssertTrue(app.buttons["Habits"].waitForExistence(timeout: 3))
+        app.buttons["What this app collects"].tap()
+        XCTAssertTrue(app.staticTexts["No network activity"].waitForExistence(timeout: 3))
+        attach(app, "privacy")
+        app.navigationBars.buttons.firstMatch.tap()
+        app.buttons["Licences"].tap()
+        XCTAssertTrue(app.staticTexts["GRDB.swift"].waitForExistence(timeout: 3))
+        let mit = app.buttons["MIT License (GRDB.swift)"]
+        if !mit.isHittable { app.swipeUp() }
+        mit.tap()
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Gwendal Roué'")).firstMatch.waitForExistence(timeout: 3))
+        app.navigationBars.buttons.firstMatch.tap()
+        app.navigationBars.buttons.firstMatch.tap()
+        attach(app, "settings")
+    }
+
     /// Check-In's start/stop control reading `label`, told apart from the Check In tab.
     @MainActor
     private func action(_ app: XCUIApplication, _ label: String) -> XCUIElement {

@@ -23,7 +23,15 @@ targets:
   SleevesUp:
     type: application
     platform: iOS
-    sources: [SleevesUp, Common]
+    sources:
+      - SleevesUp
+      - Common
+      # The licence texts the Licences screen shows: GRDB's MIT notice, and the Apache 2.0 text the
+      # Android app bundles too.
+      - path: Licences
+        buildPhase: resources
+      - path: ../android/src/main/res/raw/apache_2_0.txt
+        buildPhase: resources
     settings:
       base:
         # Matches the Android applicationId. Permanent once the app is first uploaded to Apple.

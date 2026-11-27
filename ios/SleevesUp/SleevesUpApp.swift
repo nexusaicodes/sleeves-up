@@ -46,6 +46,10 @@ struct SleevesUpApp: App {
                                     .environment(reminderSettings)
                                     .tabItem { Label("Reports", systemImage: "chart.bar") }
                                     .tag(Tab.reports)
+                                SettingsView(habits: habits)
+                                    .environment(reminderSettings)
+                                    .tabItem { Label("Settings", systemImage: "gearshape") }
+                                    .tag(Tab.settings)
                             }
                             // A notification's request is acted on from Check-In.
                             .onChange(of: delegate.taps.pending, initial: true) { _, pending in
@@ -99,7 +103,7 @@ struct SleevesUpApp: App {
     }
 
     private enum Tab: Hashable {
-        case checkIn, history, reports
+        case checkIn, history, reports, settings
     }
 
     /// Which first-run step is owed, by the shared `FirstRun`: the tour, the naming step, then the
