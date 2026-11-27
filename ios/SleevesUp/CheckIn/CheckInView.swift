@@ -1,3 +1,4 @@
+import Shared
 import SwiftUI
 
 /// The Check-In screen for the selected habit: one start/stop control, the open session's time
@@ -25,9 +26,16 @@ struct CheckInView: View {
             screen.habitSwitcher(habits)
         }
         .onChange(of: taps.pending, initial: true) { _, pending in
-            guard pending != nil, taps.take() == .checkOut else { return }
-            // A reminder for a session already closed has nothing left to ask.
-            if store.openSession != nil { gateFor = .checkOutFromReminder }
+            guard pending != nil else { return }
+            switch taps.take() {
+            case .checkOut:
+                // A reminder for a session already closed has nothing left to ask.
+                if store.openSession != nil { gateFor = .checkOutFromReminder }
+            case .checkIn(let habitUuid):
+                checkInFromReminder(habitUuid)
+            case nil:
+                break
+            }
         }
     }
 
@@ -73,6 +81,29 @@ struct CheckInView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// A habit reminder's tap, routed by the rows at the tap: an archived or unknown habit, or one
+    /// already running, asks nothing; another habit running says so; otherwise the habit is shown and
+    /// the gate opens for it.
+    private func checkInFromReminder(_ habitUuid: String) {
+        let habit = (habits.active + habits.archived).first { $0.uuid == habitUuid }
+        let outcome = TapRouting.shared.forHabit(
+            habit: habit, runningHabitId: habits.runningHabitId.map { KotlinLong(value: $0) }
+        )
+        if let running = outcome as? TapOutcomeRunningElsewhere {
+            let name = habits.active.first { $0.id == running.runningHabitId }.map(HabitText.name) ?? "A habit"
+            failure = "\(name) is running. Check out of it first."
+        } else if let checkIn = outcome as? TapOutcomeCheckIn {
+            do {
+                guard try habits.select(checkIn.habitId) else { return }
+                try store.show(habitId: checkIn.habitId)
+                failure = nil
+                gateFor = .checkIn
+            } catch {
+                failure = HabitText.saveFailed
+            }
+        }
     }
 
     private func write(_ action: GateAction) {
