@@ -144,7 +144,9 @@ struct CheckInView: View {
     private func write(_ action: GateAction) {
         do {
             switch action {
-            case .checkIn: _ = try store.checkIn()
+            case .checkIn:
+                // A skipped tour asked nothing, so the first check-in asks, as Android's gate does.
+                if try store.checkIn() == .opened { Task { await NotificationAsk.ifUndetermined() } }
             case .checkOut: try store.checkOut()
             case .checkOutFromReminder: try store.checkOut(closedBy: .reminderNotification)
             case .checkOutFromActivity: try store.checkOut(closedBy: .timerNotification)

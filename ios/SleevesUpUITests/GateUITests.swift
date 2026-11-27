@@ -9,12 +9,13 @@ import XCTest
 /// each prompt is up (see the iOS README), and is skipped otherwise.
 final class GateUITests: XCTestCase {
 
-    /// Launches the app on the Check-In screen with no session open, naming the seed habit first
-    /// when the record is fresh.
+    /// Launches the app on the Check-In screen with no session open, through the welcome tour and
+    /// the naming step when they are owed.
     @MainActor
     private func launchBetweenSessions() throws -> XCUIApplication {
         let app = XCUIApplication()
         app.launch()
+        finishTheTourIfShown(app)
         nameTheSeedHabitIfAsked(app)
         allowNotificationsIfAsked()
         if action(app, "Check Out").waitForExistence(timeout: 3) {
@@ -22,6 +23,29 @@ final class GateUITests: XCTestCase {
         }
         XCTAssertTrue(action(app, "Check In").waitForExistence(timeout: 5))
         return app
+    }
+
+    /// The tour's four pages, Skip on all but the last, and Get started handing over to the app.
+    @MainActor
+    func testTheWelcomeTourPagesThroughToTheApp() throws {
+        let app = XCUIApplication()
+        // Read ahead of the stored value for this launch only, so the tour is owed.
+        app.launchArguments = ["-welcome_seen", "NO"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Make it a habit"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Skip"].exists)
+        let next = app.buttons["welcomeAction"]
+        for title in ["Showing up is what counts", "On your home screen", "One habit at a time"] {
+            next.tap()
+            XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 3), title)
+        }
+        XCTAssertEqual(next.label, "Get started")
+        XCTAssertFalse(app.buttons["Skip"].exists)
+        attach(app, "last page")
+        next.tap()
+        nameTheSeedHabitIfAsked(app)
+        allowNotificationsIfAsked()
+        XCTAssertTrue(app.buttons.matching(identifier: "sessionAction").firstMatch.waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -174,6 +198,16 @@ final class GateUITests: XCTestCase {
     private func allowNotificationsIfAsked() {
         let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow"]
         if allow.waitForExistence(timeout: 2) { allow.tap() }
+    }
+
+    /// Pages through the welcome tour with Next and ends it with Get started.
+    @MainActor
+    private func finishTheTourIfShown(_ app: XCUIApplication) {
+        let next = app.buttons["welcomeAction"]
+        guard next.waitForExistence(timeout: 3) else { return }
+        while next.exists, next.label == "Next" { next.tap() }
+        XCTAssertEqual(next.label, "Get started")
+        next.tap()
     }
 
     @MainActor

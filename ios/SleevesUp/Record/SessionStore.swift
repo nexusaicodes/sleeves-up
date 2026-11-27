@@ -58,6 +58,16 @@ final class SessionStore {
         try reload()
     }
 
+    /// How many days hold a session of the shown habit, open ones included. Read only to decide
+    /// whether the widget page is owed, and never displayed.
+    func daysWithSession() throws -> Int {
+        try database.read { db in
+            try Int.fetchOne(
+                db, sql: "SELECT COUNT(DISTINCT date_key) FROM sessions WHERE habit_id = ?", arguments: [habitId]
+            ) ?? 0
+        }
+    }
+
     /// Shows `habitId`: the habit the next check-in writes to and today's list reads.
     func show(habitId: Int64) throws {
         guard habitId != self.habitId else { return }
