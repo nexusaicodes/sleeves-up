@@ -28,6 +28,8 @@ final class SessionStore {
     /// opened or closed the session (a check-in, a check-out, the midnight close) also arms or clears
     /// them, as Android's `SessionActions` does.
     private let reminders: SessionReminders?
+    /// The open session's Live Activity, re-synced with its reminders.
+    private let activity: SessionActivity?
     /// The habit check-in writes to and today's list reads, set through `show(habitId:)`.
     private(set) var habitId: Int64
 
@@ -37,9 +39,11 @@ final class SessionStore {
         now: @escaping () -> Date = Date.init,
         zone: @escaping () -> TimeZone = { TimeZone.current },
         reminders: SessionReminders? = nil,
+        activity: SessionActivity? = nil,
         habitId: Int64 = RecordDatabase.seedHabitId
     ) {
         self.reminders = reminders
+        self.activity = activity
         self.habitId = habitId
         self.database = database
         self.zones = zones
@@ -154,9 +158,13 @@ final class SessionStore {
 
     private func reload() throws {
         let todayKey = Clock.dateKey(now(), in: zone())
-        let (open, today) = try database.read { db in
-            (
-                try SessionRow.fetchOne(db, sql: "SELECT * FROM sessions WHERE stopped_at IS NULL LIMIT 1"),
+        let (open, openName, today) = try database.read { db in
+            let open = try SessionRow.fetchOne(db, sql: "SELECT * FROM sessions WHERE stopped_at IS NULL LIMIT 1")
+            return (
+                open,
+                try open.flatMap {
+                    try String.fetchOne(db, sql: "SELECT name FROM habits WHERE id = ?", arguments: [$0.habitId])
+                },
                 try SessionRow.fetchAll(
                     db,
                     sql: "SELECT * FROM sessions WHERE habit_id = ? AND date_key = ? ORDER BY started_at ASC",
@@ -166,6 +174,8 @@ final class SessionStore {
         }
         openSession = open
         todaySessions = today
-        reminders?.sync(open: open, dayBoundaryMs: open.map(dayBoundary(of:)), nowMs: Clock.nowMs(now()))
+        let boundary = open.map(dayBoundary(of:))
+        reminders?.sync(open: open, dayBoundaryMs: boundary, nowMs: Clock.nowMs(now()))
+        activity?.sync(open: open, habitName: openName, dayBoundaryMs: boundary)
     }
 }

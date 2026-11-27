@@ -32,11 +32,12 @@ enum BackgroundRefresh {
         try? BGTaskScheduler.shared.submit(request)
     }
 
-    /// Closes a forgotten session, re-syncs the open session's reminders and replans the habits'.
+    /// Closes a forgotten session, re-syncs the open session's reminders and Live Activity, and
+    /// replans the habits' reminders.
     @MainActor
     static func run() throws {
         let record = try RecordDatabase.sharedOnDisk()
-        try SessionStore(database: record, reminders: SessionReminders()).refresh()
+        try SessionStore(database: record, reminders: SessionReminders(), activity: SessionActivity()).refresh()
         try HabitReminders(record: record, ledger: try NudgeLedger.sharedOnDisk(), settings: ReminderSettings()).replan()
     }
 }

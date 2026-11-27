@@ -19,6 +19,8 @@ struct CheckInView: View {
         case checkIn, checkOut
         /// A check-out asked for from the session reminder, recorded as `ClosedBy.reminderNotification`.
         case checkOutFromReminder
+        /// A check-out asked for from the Live Activity, recorded as `ClosedBy.timerNotification`.
+        case checkOutFromActivity
         var id: Self { self }
     }
 
@@ -32,6 +34,8 @@ struct CheckInView: View {
             case .checkOut:
                 // A reminder for a session already closed has nothing left to ask.
                 if store.openSession != nil { gateFor = .checkOutFromReminder }
+            case .checkOutFromActivity:
+                if store.openSession != nil { gateFor = .checkOutFromActivity }
             case .checkIn(let habitUuid):
                 checkInFromReminder(habitUuid)
             case .reminderSettings:
@@ -115,6 +119,7 @@ struct CheckInView: View {
             case .checkIn: _ = try store.checkIn()
             case .checkOut: try store.checkOut()
             case .checkOutFromReminder: try store.checkOut(closedBy: .reminderNotification)
+            case .checkOutFromActivity: try store.checkOut(closedBy: .timerNotification)
             }
             try habits.reload()
             failure = nil

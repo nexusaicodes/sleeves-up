@@ -47,6 +47,8 @@ struct SleevesUpApp: App {
                             .task { await askForNotifications() }
                             // Whatever the plan reads: the open session, today's sessions, the habits.
                             .onChange(of: PlanInputs(store, habits, reminderSettings)) { replanReminders() }
+                            // A rename of the running habit reaches its Live Activity.
+                            .onChange(of: habits.active.map(\.name)) { try? store.refresh() }
                         }
                     }
                     .task(id: store.openSession?.id) { await closeAtBoundary(store, habits, history, reports) }
@@ -63,6 +65,9 @@ struct SleevesUpApp: App {
                 }
             }
             .task { open() }
+            .onOpenURL { url in
+                if url == SessionActivityLink.checkOut { delegate.taps.receive(.checkOutFromActivity) }
+            }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, let store, let habits, let history, let reports {
@@ -91,7 +96,7 @@ struct SleevesUpApp: App {
         do {
             let database = try RecordDatabase.sharedOnDisk()
             let openedHabits = HabitStore(database: database)
-            let openedStore = SessionStore(database: database, reminders: SessionReminders())
+            let openedStore = SessionStore(database: database, reminders: SessionReminders(), activity: SessionActivity())
             let openedHistory = HistoryStore(database: database)
             let openedReports = ReportsStore(database: database)
             habitReminders = (try? NudgeLedger.sharedOnDisk()).map {
