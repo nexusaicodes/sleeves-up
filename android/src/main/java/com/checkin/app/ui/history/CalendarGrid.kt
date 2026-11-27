@@ -110,7 +110,7 @@ fun CalendarGrid(
                     val day = days.getOrNull(row * CalendarMonth.DAYS_PER_WEEK + col - startOffset)
                     if (day != null) {
                         DayCell(
-                            day = day.date.dayOfMonth,
+                            day = day.date.day,
                             summary = summaries[day.dateKey].takeIf { day.recorded },
                             isSelected = day.dateKey == selectedDateKey,
                             isToday = day.today,
