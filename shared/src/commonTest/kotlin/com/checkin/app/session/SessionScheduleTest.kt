@@ -111,4 +111,23 @@ class SessionScheduleTest {
     fun `a midnight skipped by DST resolves to the first instant after it`() {
         assertEquals(santiagoSep6At0100, SessionSchedule.dayBoundaryOf("2026-09-05", TimeZone.of("America/Santiago")))
     }
+
+    @Test
+    fun `a session's reminders run two-hourly from check-in up to its day boundary`() {
+        val hour = 3_600_000L
+        val all = SessionSchedule.remindersAhead(utcJun15At0900, utcJun15At0900, utcJun16Midnight)
+        assertEquals((1..7).map { utcJun15At0900 + 2 * it * hour }, all, "11:00 to 23:00")
+
+        val ahead = SessionSchedule.remindersAhead(utcJun15At0900, utcJun15At0900 + 5 * hour, utcJun16Midnight)
+        assertEquals(utcJun15At0900 + 6 * hour, ahead.first(), "the ones already past are dropped")
+        assertEquals(5, ahead.size)
+    }
+
+    @Test
+    fun `a session checked in at midnight holds the most reminders and none at its boundary`() {
+        val all = SessionSchedule.remindersAhead(utcJun15Midnight, utcJun15Midnight, utcJun16Midnight)
+        assertEquals(11, all.size, "02:00 to 22:00; midnight itself closes the session")
+        assertTrue(all.size <= SessionSchedule.MAX_REMINDERS_PER_SESSION)
+        assertTrue(SessionSchedule.remindersAhead(utcJun15Midnight, utcJun16Midnight, utcJun16Midnight).isEmpty())
+    }
 }
