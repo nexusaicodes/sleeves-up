@@ -8,6 +8,13 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    # The Kotlin framework is built into shared/build/xcode-frameworks by the app's build phase below.
+    FRAMEWORK_SEARCH_PATHS: $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+packages:
+  # SQLite for the record (MIT). Pinned exactly: a release is adopted on purpose, never by resolution.
+  GRDB:
+    url: https://github.com/groue/GRDB.swift
+    exactVersion: 7.12.0
 targets:
   SleevesUp:
     type: application
@@ -21,11 +28,16 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Sleeves Up
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
-        # The Kotlin framework is built into shared/build/xcode-frameworks by the build phase below.
-        FRAMEWORK_SEARCH_PATHS: $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+        # Says what happens and nothing more, as Android's camera disclosure does.
+        INFOPLIST_KEY_NSCameraUsageDescription: The front camera checks you're here when you check in or out.
+        INFOPLIST_KEY_NSFaceIDUsageDescription: Face ID confirms it's you when the camera can't.
         OTHER_LDFLAGS: [$(inherited), -framework, Shared]
         # The Gradle build writes outside the target's declared outputs, which Xcode's script sandbox refuses.
         ENABLE_USER_SCRIPT_SANDBOXING: NO
+    dependencies:
+      - package: GRDB
+    scheme:
+      testTargets: [SleevesUpTests, SleevesUpUITests]
     preBuildScripts:
       - name: Build the shared Kotlin framework
         basedOnDependencyAnalysis: false
@@ -37,3 +49,24 @@ targets:
           JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
           cd "$SRCROOT/.."
           ./gradlew :shared:embedAndSignAppleFrameworkForXcode -Dorg.gradle.java.installations.paths="$JBR"
+  SleevesUpTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [SleevesUpTests]
+    dependencies:
+      - target: SleevesUp
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.nexusai.checkin.app.tests
+  SleevesUpUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [SleevesUpUITests]
+    dependencies:
+      - target: SleevesUp
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.nexusai.checkin.app.uitests
+        TEST_TARGET_NAME: SleevesUp
