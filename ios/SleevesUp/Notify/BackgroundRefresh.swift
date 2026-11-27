@@ -39,5 +39,7 @@ enum BackgroundRefresh {
         let record = try RecordDatabase.sharedOnDisk()
         try SessionStore(database: record, reminders: SessionReminders(), activity: SessionActivity()).refresh()
         try HabitReminders(record: record, ledger: try NudgeLedger.sharedOnDisk(), settings: ReminderSettings()).replan()
+        // A forgotten session closed here changes the widget's face.
+        WidgetRedraw.ask()
     }
 }

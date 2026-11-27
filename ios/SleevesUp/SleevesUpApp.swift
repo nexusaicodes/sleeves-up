@@ -47,6 +47,8 @@ struct SleevesUpApp: App {
                             .task { await askForNotifications() }
                             // Whatever the plan reads: the open session, today's sessions, the habits.
                             .onChange(of: PlanInputs(store, habits, reminderSettings)) { replanReminders() }
+                            // The widget reads the habits' names and the open session.
+                            .onChange(of: WidgetInputs(store, habits), initial: true) { WidgetRedraw.ask() }
                             // A rename of the running habit reaches its Live Activity.
                             .onChange(of: habits.active.map(\.name)) { try? store.refresh() }
                         }
@@ -67,6 +69,7 @@ struct SleevesUpApp: App {
             .task { open() }
             .onOpenURL { url in
                 if url == SessionActivityLink.checkOut { delegate.taps.receive(.checkOutFromActivity) }
+                if url == WidgetFace.tap { delegate.taps.receive(.widget) }
             }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -132,6 +135,18 @@ struct SleevesUpApp: App {
     /// A failed replan leaves the previous plan scheduled, which is still the best answer it has.
     private func replanReminders() {
         try? habitReminders?.replan()
+    }
+
+    /// What the widget's face reads, so any change to it redraws the widget.
+    private struct WidgetInputs: Equatable {
+        let openSessionId: Int64?
+        let habits: [String]
+
+        @MainActor
+        init(_ store: SessionStore, _ habits: HabitStore) {
+            openSessionId = store.openSession?.id
+            self.habits = habits.active.map { "\($0.id):\($0.name ?? "")" }
+        }
     }
 
     /// What the reminder plan depends on, so any change to it replans.
