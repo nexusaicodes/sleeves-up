@@ -60,6 +60,23 @@ simulator reports device unlock as available whether or not Face ID is enrolled 
 `LAContext.canEvaluatePolicy` on Xcode 26.3), so the no-passcode instructions can't be reached
 there. The face path and the no-passcode path both need a real device.
 
+**On a device**, sign with your own team on the command line, so nothing about signing is
+committed. With a free (personal) team the install stops launching after 7 days, and the first
+launch needs the developer trusted under Settings, General, VPN & Device Management. Developer Mode
+must be on.
+
+```bash
+cd ios
+xcodebuild -project SleevesUp.xcodeproj -scheme SleevesUp -destination 'id=<device id>' \
+  -allowProvisioningUpdates DEVELOPMENT_TEAM=<team id> CODE_SIGN_STYLE=Automatic build
+xcrun devicectl device install app --device <device> <derived data>/Build/Products/Debug-iphoneos/SleevesUp.app
+```
+
+`xcodebuild -showdestinations` lists the device id. The face path was checked this way on an
+iPhone 15 (iOS 27.2.1, Xcode 26.3): the camera prompt, a face passing with nothing to press, the
+10-second device-unlock offer with the camera covered, and **Not now** writing nothing. The
+no-passcode instructions have not been seen, since showing them means removing the device's passcode.
+
 GRDB comes in through Swift Package Manager, pinned to an exact version in `project.yml`. It is MIT
 licensed; the iOS app has no licences screen yet, and needs one listing it before release.
 
