@@ -16,7 +16,10 @@ not opened. Every tab re-reads at midnight while the app is open. No Live Activi
 
 - **`Record/`**: the record, a [GRDB](https://github.com/groue/GRDB.swift) SQLite database with the
   Android app's `sessions` and `app_state` tables and `habits` columns (less Android's `channel_id`),
-  and the same SQL. `SessionStore` makes every write through the shared `SessionRules`, so a session
+  and the same SQL. It lives in the app group `group.com.nexusai.checkin.app`'s container
+  (`RecordLocation`), where the widget extension can read it; a record an earlier build kept in the
+  app's own Application Support is moved there, with its journal, before its first open, and a
+  record already in the group is never replaced. `SessionStore` makes every write through the shared `SessionRules`, so a session
   is refused, closed and measured as on Android; `HabitStore` makes every habit write through the
   shared `HabitRules` and `HabitWrites`; `SessionZones` keeps the open session's check-in zone.
   `HistoryStore` reads a month through `DailyAggregates` (Android's daily aggregate query, as the
@@ -77,7 +80,7 @@ xcodebuild -project SleevesUp.xcodeproj -scheme SleevesUp \
 ```
 
 `SleevesUpTests` runs `SessionStore`, `HabitStore` and `HistoryStore` against an in-memory record:
-one open session, a check-out that closes once, the midnight close in the check-in's zone, the
+the record's move into the app group's container, one open session, a check-out that closes once, the midnight close in the check-in's zone, the
 selection locked to a running habit, archive refusals and where an archive moves the selection, a
 restore held to the name rule, a day shading at check-out and per habit, the month stepper and
 week start, Reports' window ending at yesterday until today is checked out of, per habit, and its
@@ -115,7 +118,10 @@ there. The face path and the no-passcode path both need a real device.
 **On a device**, sign with your own team on the command line, so nothing about signing is
 committed. With a free (personal) team the install stops launching after 7 days, and the first
 launch needs the developer trusted under Settings, General, VPN & Device Management. Developer Mode
-must be on.
+must be on. `xcodebuild` cannot register an app group for a team that has none, so once per team
+open the project in Xcode, choose the team under the SleevesUp target's Signing & Capabilities, and
+let the App Groups capability register `group.com.nexusai.checkin.app` (tick it if unticked); after
+that the command line signs with it.
 
 ```bash
 cd ios
