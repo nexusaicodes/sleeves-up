@@ -12,7 +12,9 @@ shown habit's month calendar and the sessions of a tapped day; and Reports, ever
 for one month or all time, exported as CSV through the share sheet; and the open session's "Still
 checked in?" reminders, whose Check Out action opens the gate; and each habit's daily reminder,
 planned ahead, timed and switched per habit, and replanned by background refresh while the app is
-not opened. Every tab re-reads at midnight while the app is open. No Live Activity or widget yet.
+not opened; and the open session's Live Activity on the Lock Screen and in the Dynamic Island,
+whose Check Out opens the gate. Every tab re-reads at midnight while the app is open. No
+home-screen widget yet.
 
 - **`Record/`**: the record, a [GRDB](https://github.com/groue/GRDB.swift) SQLite database with the
   Android app's `sessions` and `app_state` tables and `habits` columns (less Android's `channel_id`),
@@ -48,6 +50,17 @@ not opened. Every tab re-reads at midnight while the app is open. No Live Activi
   a user who stays away keeps the two-week plan (the identifier is in `SleevesUpInfo.plist`, merged
   into the generated Info.plist). iOS Settings' link to the app's notification settings opens the
   Habits screen.
+- **`Live/`** and **`../SessionActivity/`**: the open session's Live Activity (iOS rule 4).
+  `SessionActivity` starts it at check-in, renames it with the habit and ends it at any close,
+  re-synced on every read of the record as the reminders are; it starts once per session per
+  install, so a dismissed one, or one ended by iOS's eight-hour limit, stays gone, while an update,
+  which ends the old install's activities, starts it again. `SessionActivityAttributes` (compiled
+  into the app and the extension) carries the habit's name and the session's span, never a figure.
+  **`SleevesUpWidgets/`**, the widget extension, draws it: the habit, a clock the system counts up
+  from check-in and stops at the session's midnight, and Check Out, a `sleevesup://session/check-out`
+  link that opens the gate, recorded as `ClosedBy.TIMER_NOTIFICATION` (the Live Activity is iOS's
+  timer notification). The scheme is registered in `SleevesUpInfo.plist`; whoever opens the link
+  gets only the gate.
 - **`CheckIn/`**: the Check-In screen, and `SessionIntervalRow`, a session as Check-In and History
   both draw it.
 - **`History/`**: the History tab: a month stepper that stops at the current month, the calendar
@@ -85,7 +98,7 @@ selection locked to a running habit, archive refusals and where an archive moves
 restore held to the name rule, a day shading at check-out and per habit, the month stepper and
 week start, Reports' window ending at yesterday until today is checked out of, per habit, and its
 Month / All time steps, the exported file's name and bytes, the session reminders' instants,
-sound and clearing, and the habit reminders' plan, replan after a check-in and settled wording,
+sound and clearing, the Live Activity's start, rename, end and once-per-session-per-install rule, and the habit reminders' plan, replan after a check-in and settled wording,
 against a fake notification center, and each habit's reminder settings. `NudgeCatalogTests` reads Android's `NudgeCatalog.kt` and
 `strings.xml` from the repository and fails if the iOS copy drifts from them. `SleevesUpUITests` drives the real UI, naming the seed habit when the record
 is fresh. Four tests run every time: the gate offering device unlock with **Not now** writing nothing,

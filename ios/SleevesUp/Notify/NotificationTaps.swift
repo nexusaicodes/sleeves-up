@@ -11,6 +11,9 @@ final class NotificationTaps {
     enum Request: Equatable {
         /// The session reminder or its Check Out action: the presence gate, then a check-out.
         case checkOut
+        /// The Live Activity's Check Out: the presence gate, then a check-out recorded as
+        /// `ClosedBy.timerNotification`, the Live Activity being iOS's timer notification.
+        case checkOutFromActivity
         /// A habit's reminder: that habit shown, then the presence gate for a check-in to it, as the
         /// shared `TapRouting.forHabit` decides.
         case checkIn(habitUuid: String)

@@ -7,6 +7,19 @@
 	<array>
 		<string>com.nexusai.checkin.app.refresh</string>
 	</array>
+	<!-- The Live Activity's Check Out link. Whoever opens it gets only the presence gate, which
+	     writes nothing unless someone present passes it. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.nexusai.checkin.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>sleevesup</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

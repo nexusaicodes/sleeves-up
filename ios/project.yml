@@ -8,6 +8,10 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    # The app and its extension carry the same version, which an extension needs to install. A
+    # placeholder until the first upload to Apple sets the iOS app's versioning.
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
     # The Kotlin framework is built into shared/build/xcode-frameworks by the app's build phase below.
     FRAMEWORK_SEARCH_PATHS: $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
 packages:
@@ -19,7 +23,7 @@ targets:
   SleevesUp:
     type: application
     platform: iOS
-    sources: [SleevesUp]
+    sources: [SleevesUp, SessionActivity]
     settings:
       base:
         # Matches the Android applicationId. Permanent once the app is first uploaded to Apple.
@@ -30,6 +34,8 @@ targets:
         # The app group holding the record, which the widget extension reads (`RecordLocation`).
         CODE_SIGN_ENTITLEMENTS: SleevesUp/SleevesUp.entitlements
         INFOPLIST_KEY_CFBundleDisplayName: Sleeves Up
+        # The open session's Live Activity (iOS rule 4), drawn by SleevesUpWidgets.
+        INFOPLIST_KEY_NSSupportsLiveActivities: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         # Says what happens and nothing more, as Android's camera disclosure does.
@@ -45,6 +51,7 @@ targets:
           enabled: 1
     dependencies:
       - package: GRDB
+      - target: SleevesUpWidgets
     scheme:
       testTargets: [SleevesUpTests, SleevesUpUITests]
     preBuildScripts:
@@ -58,6 +65,18 @@ targets:
           JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
           cd "$SRCROOT/.."
           ./gradlew :shared:embedAndSignAppleFrameworkForXcode -Dorg.gradle.java.installations.paths="$JBR"
+  SleevesUpWidgets:
+    type: app-extension
+    platform: iOS
+    # The Live Activity's attributes are compiled into both the app and this extension.
+    sources: [SleevesUpWidgets, SessionActivity]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.nexusai.checkin.app.widgets
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: SleevesUpWidgets/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Sleeves Up
+        SKIP_INSTALL: YES
   SleevesUpTests:
     type: bundle.unit-test
     platform: iOS
