@@ -75,21 +75,17 @@ final class ReportsStore {
         try reload()
     }
 
+    /// What an export wrote.
+    enum Export: Equatable {
+        case file(URL)
+        /// The scope holds no completed day, so no file was written. Not a failure.
+        case nothing
+    }
+
     /// Re-reads the record for the shown scope and habit, with today read afresh.
     func reload() throws {
         let today = Clock.localDate(now(), in: zone())
-        let todayKey = today.description()
-        let (startKey, todayDays) = try database.read { [habitId] db in
-            (
-                try String.fetchOne(db, sql: "SELECT MIN(date_key) FROM sessions WHERE habit_id = ?", arguments: [habitId]),
-                try DailyAggregates.fetch(db, habitId: habitId, from: todayKey, through: todayKey)
-            )
-        }
-        let start = startKey.flatMap(Clock.localDate(key:))
-        let countedThrough = ConsistencyStats.shared.countedThrough(
-            summaries: DailyAggregates.byDateKey(todayDays), today: today
-        )
-        let window = ReportScopeKt.resolve(scope, trackingStart: start, countedThrough: countedThrough)
+        let (start, window) = try resolveWindow(today: today)
 
         var figures: ReportFigures?
         if let window {
@@ -123,5 +119,58 @@ final class ReportsStore {
         trackingStart = start
         self.figures = figures
         loaded = true
+    }
+
+    /// Writes the shown habit's CSV for the screen's own window, through the shared `csvLines`, into
+    /// `folder` as `exportFileName` names it. The window is resolved afresh from one reading of the
+    /// clock, so the file and the screen describe the same days. A scope with no counted day, or a
+    /// window holding no completed day, writes nothing: a file of pure gap-fill would assert absences
+    /// the app never recorded.
+    func export(
+        habitName: String?,
+        into folder: URL = FileManager.default.temporaryDirectory.appendingPathComponent("exports")
+    ) throws -> Export {
+        let today = Clock.localDate(now(), in: zone())
+        guard case let (_, window?) = try resolveWindow(today: today) else { return .nothing }
+        let startKey = window.start.description()
+        let endKey = window.end.description()
+        let days = try database.read { [habitId] db in
+            try DailyAggregates.fetch(db, habitId: habitId, from: startKey, through: endKey)
+        }
+        guard !days.isEmpty else { return .nothing }
+
+        // The clock columns read the device's zone, as the person exporting would read them.
+        let lines = CsvFormatKt.csvLines(
+            startKey: startKey, endKey: endKey, summaries: DailyAggregates.byDateKey(days), zone: Clock.kotlinZone(zone())
+        ).iterator()
+        var text = ""
+        while lines.hasNext() {
+            if let line = lines.next() as? String { text += line }
+        }
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let file = folder.appendingPathComponent(
+            CsvFormatKt.exportFileName(habitName: habitName, startKey: startKey, endKey: endKey)
+        )
+        try Data(text.utf8).write(to: file, options: .atomic)
+        return .file(file)
+    }
+
+    /// The habit's first session day and the window the scope resolves to on `today`: shading ends
+    /// at `ConsistencyStats.countedThrough`, so the window ends at yesterday until today is checked
+    /// out of.
+    private func resolveWindow(today: Kotlinx_datetimeLocalDate) throws
+        -> (Kotlinx_datetimeLocalDate?, ReportWindow?) {
+        let todayKey = today.description()
+        let (startKey, todayDays) = try database.read { [habitId] db in
+            (
+                try String.fetchOne(db, sql: "SELECT MIN(date_key) FROM sessions WHERE habit_id = ?", arguments: [habitId]),
+                try DailyAggregates.fetch(db, habitId: habitId, from: todayKey, through: todayKey)
+            )
+        }
+        let start = startKey.flatMap(Clock.localDate(key:))
+        let countedThrough = ConsistencyStats.shared.countedThrough(
+            summaries: DailyAggregates.byDateKey(todayDays), today: today
+        )
+        return (start, ReportScopeKt.resolve(scope, trackingStart: start, countedThrough: countedThrough))
     }
 }

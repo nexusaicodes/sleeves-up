@@ -29,6 +29,11 @@ enum ReportText {
         return format(month.month.firstDay, "MMMM yyyy")
     }
 
+    /// The scope inside a sentence ("Export all time"): a month name reads the same either way.
+    static func scopeInline(_ scope: any ReportScope) -> String {
+        scope is ReportScopeMonth ? scopeLabel(scope) : "all time"
+    }
+
     static func emptyMessage(_ scope: any ReportScope) -> String {
         guard scope is ReportScopeMonth else {
             return "No day has been checked out of yet. Check out of a session and it appears here."

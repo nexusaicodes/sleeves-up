@@ -3,8 +3,8 @@ import XCTest
 @testable import SleevesUp
 
 /// Reports on iOS, against an in-memory record: an empty scope until a day is checked out of, the
-/// window ending at yesterday until today is, figures for the shown habit alone, and the Month /
-/// All time steps.
+/// window ending at yesterday until today is, figures for the shown habit alone, the Month / All
+/// time steps, and the CSV export of the screen's window.
 @MainActor
 final class ReportsStoreTests: XCTestCase {
 
@@ -117,5 +117,43 @@ final class ReportsStoreTests: XCTestCase {
 
         try reports.selectMonth()
         XCTAssertEqual(ReportText.scopeLabel(reports.scope), "June 2026", "Month returns to the month in progress")
+    }
+
+    private func exportFolder() -> URL {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+        return folder
+    }
+
+    func testExportWritesTheScreensWindowAsAndroidWritesIt() throws {
+        let (reports, sessions, _) = try makeStores()
+        try sessionOnJune10(sessions)
+        _ = try sessions.checkIn()
+        try reports.reload()
+
+        guard case let .file(url) = try reports.export(habitName: "Gym", into: exportFolder()) else {
+            return XCTFail("a window with a completed day writes a file")
+        }
+        XCTAssertEqual(url.lastPathComponent, "checkin_gym_2026-06-10_2026-06-14.csv", "today is still in progress")
+        let zeros = ",,,0.00,0,0,0,0,0,0\n"
+        XCTAssertEqual(
+            try String(contentsOf: url, encoding: .utf8),
+            CsvFormatKt.csvHeader()
+                + "2026-06-10,09:00 AM,10:00 AM,1.00,1,0,1,0,0,0\n"
+                + "2026-06-11" + zeros + "2026-06-12" + zeros + "2026-06-13" + zeros + "2026-06-14" + zeros
+        )
+    }
+
+    func testExportWritesNothingWithoutACompletedDayInTheWindow() throws {
+        let (reports, sessions, _) = try makeStores()
+        XCTAssertEqual(try reports.export(habitName: "Gym", into: exportFolder()), .nothing, "nothing recorded")
+
+        _ = try sessions.checkIn()
+        XCTAssertEqual(try reports.export(habitName: "Gym", into: exportFolder()), .nothing, "only today, in progress")
+
+        nowMs += hour
+        try sessions.checkOut()
+        try reports.previousMonth()
+        XCTAssertEqual(try reports.export(habitName: "Gym", into: exportFolder()), .nothing, "a month before the record")
     }
 }
