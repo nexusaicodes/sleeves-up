@@ -1,15 +1,18 @@
 import SwiftUI
 
-/// The Check-In screen: one start/stop control, the open session's time counting up from zero, and
-/// today's sessions. Every check-in and check-out goes through the presence gate first. As on
-/// Android, the readout is the current session, never the day's total, and nothing here grades a
-/// session or a day.
+/// The Check-In screen for the selected habit: one start/stop control, the open session's time
+/// counting up from zero, and the habit's sessions today. Every check-in and check-out goes through
+/// the presence gate first. As on Android, the readout is the current session, never the day's
+/// total, and nothing here grades a session or a day. The habit's name at the top is the switcher:
+/// it opens the Habits screen, and while a session runs it is locked and says why.
 struct CheckInView: View {
 
     let store: SessionStore
+    let habits: HabitStore
 
     @State private var gateFor: GateAction?
     @State private var failure: String?
+    @State private var showingHabits = false
 
     private enum GateAction: Identifiable {
         case checkIn, checkOut
@@ -17,6 +20,33 @@ struct CheckInView: View {
     }
 
     var body: some View {
+        NavigationStack {
+            screen
+                .toolbar { ToolbarItem(placement: .principal) { switcher } }
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationDestination(isPresented: $showingHabits) { HabitsView(habits: habits) }
+        }
+    }
+
+    private var switcher: some View {
+        Button {
+            if habits.isLocked {
+                failure = HabitText.switchLocked(habits.selected)
+            } else {
+                failure = nil
+                showingHabits = true
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text(habits.selected.map(HabitText.name) ?? "").font(.headline)
+                Image(systemName: habits.isLocked ? "lock.fill" : "chevron.up.chevron.down").font(.caption)
+            }
+        }
+        .accessibilityIdentifier("habitSwitcher")
+        .accessibilityLabel("Habit: \(habits.selected.map(HabitText.name) ?? ""). Switch habit")
+    }
+
+    private var screen: some View {
         VStack(spacing: 24) {
             Spacer()
             readout
@@ -71,6 +101,7 @@ struct CheckInView: View {
             case .checkIn: _ = try store.checkIn()
             case .checkOut: try store.checkOut()
             }
+            try habits.reload()
             failure = nil
         } catch {
             failure = "That didn't save. Try again."
