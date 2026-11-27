@@ -74,7 +74,11 @@ policy, feedback by email and the licences). Every tab re-reads at midnight whil
   `ClosedBy.WIDGET`), the gate for the one habit, or `HabitPickerView` ("Check in to…", names
   only), whose pick is routed as that habit's reminder would be. The widget's kind,
   `CheckInWidget`, is frozen once one is placed.
-- **`CheckIn/`**: the Check-In screen, and `SessionIntervalRow`, a session as Check-In and History
+- **`CheckIn/`**: the check-out celebration (`CheckOutCelebration`), raised by every gated
+  check-out and never by the midnight close: the mark settling once (Android's schedule, already settled under
+  Reduce Motion), the habit, "You showed up", the session's length and the closed session's own day,
+  identical at any length, closed by a tap and closed on return after two minutes away. The
+  Check-In screen, and `SessionIntervalRow`, a session as Check-In and History
   both draw it.
 - **`History/`**: the History tab: a month stepper that stops at the current month, the calendar
   (shaded for a completed session whatever it held, faded only outside the record, on the device's
@@ -125,14 +129,14 @@ selection locked to a running habit, archive refusals and where an archive moves
 restore held to the name rule, a day shading at check-out and per habit, the month stepper and
 week start, Reports' window ending at yesterday until today is checked out of, per habit, and its
 Month / All time steps, the exported file's name and bytes, the session reminders' instants,
-sound and clearing, the Live Activity's start, rename, end and once-per-session-per-install rule, the widget's faces, the first-run prompts, the feedback draft and the bundled licence texts, and the habit reminders' plan, replan after a check-in and settled wording,
+sound and clearing, the Live Activity's start, rename, end and once-per-session-per-install rule, the widget's faces, the first-run prompts, the feedback draft and the bundled licence texts, the celebration's day figures and settle, and the habit reminders' plan, replan after a check-in and settled wording,
 against a fake notification center, and each habit's reminder settings. `NudgeCatalogTests` reads Android's `NudgeCatalog.kt` and
 `strings.xml` from the repository and fails if the iOS copy drifts from them. `SleevesUpUITests` drives the real UI, finishing the tour and naming the seed
 habit when they are owed. Six tests run every time: the welcome tour paging through to the app, Settings showing the privacy claims and licences, the gate offering device unlock with **Not now** writing nothing,
 creating a habit, switching to it and archiving it, History stepping back a month and showing a
 tapped day, and Reports switching between Month and All time and opening the share sheet over an
 export. A full check-in and
-check-out through simulated Face ID runs only when the host answers each Face ID prompt, so it is
+check-out through simulated Face ID, closing the celebration, runs only when the host answers each Face ID prompt, so it is
 opt-in:
 
 ```bash

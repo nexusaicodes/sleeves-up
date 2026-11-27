@@ -14,6 +14,9 @@ struct CheckInView: View {
     @State private var gateFor: GateAction?
     /// The widget's picker, open while there is a habit to choose.
     @State private var choosing = false
+    @State private var celebration: CheckOutCompleted?
+    /// A check-out's celebration, waiting for the gate to finish going.
+    @State private var pendingCelebration: CheckOutCompleted?
     @State private var failure: String?
     @State private var openHabits = false
 
@@ -70,7 +73,13 @@ struct CheckInView: View {
         .sheet(isPresented: $choosing) {
             HabitPickerView(habits: habits.active, onPick: picked, onDismiss: { choosing = false })
         }
-        .fullScreenCover(item: $gateFor) { action in
+        .fullScreenCover(item: $celebration) { completed in
+            CheckOutCelebrationView(completed: completed) { celebration = nil }
+        }
+        .fullScreenCover(item: $gateFor, onDismiss: {
+            celebration = pendingCelebration
+            pendingCelebration = nil
+        }) { action in
             PresenceGateView(
                 onPassed: {
                     gateFor = nil
@@ -143,16 +152,27 @@ struct CheckInView: View {
 
     private func write(_ action: GateAction) {
         do {
+            var closed: SessionRow?
             switch action {
             case .checkIn:
                 // A skipped tour asked nothing, so the first check-in asks, as Android's gate does.
                 if try store.checkIn() == .opened { Task { await NotificationAsk.ifUndetermined() } }
-            case .checkOut: try store.checkOut()
-            case .checkOutFromReminder: try store.checkOut(closedBy: .reminderNotification)
-            case .checkOutFromActivity: try store.checkOut(closedBy: .timerNotification)
-            case .checkOutFromWidget: try store.checkOut(closedBy: .widget)
+            case .checkOut: closed = try store.checkOut()
+            case .checkOutFromReminder: closed = try store.checkOut(closedBy: .reminderNotification)
+            case .checkOutFromActivity: closed = try store.checkOut(closedBy: .timerNotification)
+            case .checkOutFromWidget: closed = try store.checkOut(closedBy: .widget)
             }
             try habits.reload()
+            // Every gated check-out celebrates, shown once the gate has gone; a close that closed
+            // nothing (another closer got there first) does not, and nor does the midnight close.
+            if let closed {
+                let day = try store.daySummary(habitId: closed.habitId, dateKey: closed.dateKey)
+                pendingCelebration = CheckOutCompleted(
+                    sessionMs: closed.duration ?? 0, dayTotalMs: day.totalMs, daySessionCount: day.count,
+                    habitName: (habits.active + habits.archived).first { $0.id == closed.habitId }?.name,
+                    raisedAt: Date()
+                )
+            }
             failure = nil
         } catch {
             failure = "That didn't save. Try again."

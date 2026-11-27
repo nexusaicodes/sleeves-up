@@ -58,6 +58,21 @@ final class SessionStore {
         try reload()
     }
 
+    /// `habitId`'s completed sessions on `dateKey`: how many, and their summed duration.
+    func daySummary(habitId: Int64, dateKey: String) throws -> (count: Int, totalMs: Int64) {
+        try database.read { db in
+            let row = try Row.fetchOne(
+                db,
+                sql: """
+                    SELECT COUNT(*) AS count, COALESCE(SUM(duration), 0) AS total FROM sessions
+                    WHERE habit_id = ? AND date_key = ? AND stopped_at IS NOT NULL
+                    """,
+                arguments: [habitId, dateKey]
+            )
+            return (row?["count"] ?? 0, row?["total"] ?? 0)
+        }
+    }
+
     /// How many days hold a session of the shown habit, open ones included. Read only to decide
     /// whether the widget page is owed, and never displayed.
     func daysWithSession() throws -> Int {
