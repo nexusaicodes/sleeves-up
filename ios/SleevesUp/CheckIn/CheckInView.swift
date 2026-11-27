@@ -12,6 +12,8 @@ struct CheckInView: View {
     let taps: NotificationTaps
 
     @State private var gateFor: GateAction?
+    /// The widget's picker, open while there is a habit to choose.
+    @State private var choosing = false
     @State private var failure: String?
     @State private var openHabits = false
 
@@ -21,6 +23,8 @@ struct CheckInView: View {
         case checkOutFromReminder
         /// A check-out asked for from the Live Activity, recorded as `ClosedBy.timerNotification`.
         case checkOutFromActivity
+        /// A check-out asked for from the home-screen widget, recorded as `ClosedBy.widget`.
+        case checkOutFromWidget
         var id: Self { self }
     }
 
@@ -36,6 +40,8 @@ struct CheckInView: View {
                 if store.openSession != nil { gateFor = .checkOutFromReminder }
             case .checkOutFromActivity:
                 if store.openSession != nil { gateFor = .checkOutFromActivity }
+            case .widget:
+                fromWidget()
             case .checkIn(let habitUuid):
                 checkInFromReminder(habitUuid)
             case .reminderSettings:
@@ -61,6 +67,9 @@ struct CheckInView: View {
             sessions
         }
         .padding()
+        .sheet(isPresented: $choosing) {
+            HabitPickerView(habits: habits.active, onPick: picked, onDismiss: { choosing = false })
+        }
         .fullScreenCover(item: $gateFor) { action in
             PresenceGateView(
                 onPassed: {
@@ -95,10 +104,29 @@ struct CheckInView: View {
     /// the gate opens for it.
     private func checkInFromReminder(_ habitUuid: String) {
         let habit = (habits.active + habits.archived).first { $0.uuid == habitUuid }
-        let outcome = TapRouting.shared.forHabit(
-            habit: habit, runningHabitId: habits.runningHabitId.map { KotlinLong(value: $0) }
-        )
-        if let running = outcome as? TapOutcomeRunningElsewhere {
+        route(TapRouting.shared.forHabit(habit: habit, runningHabitId: runningHabitId))
+    }
+
+    /// The widget's tap, routed by the rows at the tap, so a face drawn before a change cannot ask
+    /// for the wrong thing.
+    private func fromWidget() {
+        route(TapRouting.shared.forWidget(active: habits.active, runningHabitId: runningHabitId))
+    }
+
+    /// A habit picked in the widget's picker, routed as its reminder's tap would be.
+    private func picked(_ habit: HabitRow) {
+        choosing = false
+        route(TapRouting.shared.forHabit(habit: habit, runningHabitId: runningHabitId))
+    }
+
+    private var runningHabitId: KotlinLong? { habits.runningHabitId.map { KotlinLong(value: $0) } }
+
+    private func route(_ outcome: TapOutcome) {
+        if outcome is TapOutcomeCheckOut {
+            if store.openSession != nil { gateFor = .checkOutFromWidget }
+        } else if outcome is TapOutcomeChooseHabit {
+            choosing = true
+        } else if let running = outcome as? TapOutcomeRunningElsewhere {
             let name = habits.active.first { $0.id == running.runningHabitId }.map(HabitText.name) ?? "A habit"
             failure = "\(name) is running. Check out of it first."
         } else if let checkIn = outcome as? TapOutcomeCheckIn {
@@ -120,6 +148,7 @@ struct CheckInView: View {
             case .checkOut: try store.checkOut()
             case .checkOutFromReminder: try store.checkOut(closedBy: .reminderNotification)
             case .checkOutFromActivity: try store.checkOut(closedBy: .timerNotification)
+            case .checkOutFromWidget: try store.checkOut(closedBy: .widget)
             }
             try habits.reload()
             failure = nil

@@ -14,6 +14,10 @@ final class NotificationTaps {
         /// The Live Activity's Check Out: the presence gate, then a check-out recorded as
         /// `ClosedBy.timerNotification`, the Live Activity being iOS's timer notification.
         case checkOutFromActivity
+        /// The home-screen widget: routed from the rows at the tap by the shared
+        /// `TapRouting.forWidget`, to the gate for the open session's check-out (recorded as
+        /// `ClosedBy.widget`), the gate for the one habit, or the picker.
+        case widget
         /// A habit's reminder: that habit shown, then the presence gate for a check-in to it, as the
         /// shared `TapRouting.forHabit` decides.
         case checkIn(habitUuid: String)

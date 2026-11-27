@@ -23,7 +23,7 @@ targets:
   SleevesUp:
     type: application
     platform: iOS
-    sources: [SleevesUp, SessionActivity]
+    sources: [SleevesUp, Common]
     settings:
       base:
         # Matches the Android applicationId. Permanent once the app is first uploaded to Apple.
@@ -68,15 +68,23 @@ targets:
   SleevesUpWidgets:
     type: app-extension
     platform: iOS
-    # The Live Activity's attributes are compiled into both the app and this extension.
-    sources: [SleevesUpWidgets, SessionActivity]
+    # `Common` (the record's location, the widget's face, the Live Activity's attributes) is compiled into both.
+    sources: [SleevesUpWidgets, Common]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.nexusai.checkin.app.widgets
+        # The app group holding the record, which the home-screen widget reads.
+        CODE_SIGN_ENTITLEMENTS: SleevesUpWidgets/SleevesUpWidgets.entitlements
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_FILE: SleevesUpWidgets/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Sleeves Up
         SKIP_INSTALL: YES
+    attributes:
+      SystemCapabilities:
+        com.apple.ApplicationGroups.iOS:
+          enabled: 1
+    dependencies:
+      - package: GRDB
   SleevesUpTests:
     type: bundle.unit-test
     platform: iOS

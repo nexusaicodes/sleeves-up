@@ -13,8 +13,8 @@ for one month or all time, exported as CSV through the share sheet; and the open
 checked in?" reminders, whose Check Out action opens the gate; and each habit's daily reminder,
 planned ahead, timed and switched per habit, and replanned by background refresh while the app is
 not opened; and the open session's Live Activity on the Lock Screen and in the Dynamic Island,
-whose Check Out opens the gate. Every tab re-reads at midnight while the app is open. No
-home-screen widget yet.
+whose Check Out opens the gate; and the home-screen widget, which opens the gate or the habit
+picker. Every tab re-reads at midnight while the app is open.
 
 - **`Record/`**: the record, a [GRDB](https://github.com/groue/GRDB.swift) SQLite database with the
   Android app's `sessions` and `app_state` tables and `habits` columns (less Android's `channel_id`),
@@ -50,7 +50,9 @@ home-screen widget yet.
   a user who stays away keeps the two-week plan (the identifier is in `SleevesUpInfo.plist`, merged
   into the generated Info.plist). iOS Settings' link to the app's notification settings opens the
   Habits screen.
-- **`Live/`** and **`../SessionActivity/`**: the open session's Live Activity (iOS rule 4).
+- **`Common/`**: compiled into the app and the widget extension: `RecordLocation`,
+  `SessionActivityAttributes` and `WidgetFace`.
+- **`Live/`**: the open session's Live Activity (iOS rule 4) and the widget's redraw.
   `SessionActivity` starts it at check-in, renames it with the habit and ends it at any close,
   re-synced on every read of the record as the reminders are; it starts once per session per
   install, so a dismissed one, or one ended by iOS's eight-hour limit, stays gone, while an update,
@@ -59,8 +61,18 @@ home-screen widget yet.
   **`SleevesUpWidgets/`**, the widget extension, draws it: the habit, a clock the system counts up
   from check-in and stops at the session's midnight, and Check Out, a `sleevesup://session/check-out`
   link that opens the gate, recorded as `ClosedBy.TIMER_NOTIFICATION` (the Live Activity is iOS's
-  timer notification). The scheme is registered in `SleevesUpInfo.plist`; whoever opens the link
-  gets only the gate.
+  timer notification). The scheme is registered in `SleevesUpInfo.plist`; whoever opens a
+  `sleevesup://` link gets only the gate or the picker.
+  The extension also holds **the home-screen widget** (iOS rule 5), which states `WidgetFace` and
+  never a figure: "Check in to <name>" for one active habit, "Check In" for several, "Check out of
+  <name>" while a session is open, with the mark at full colour. It reads the record read-only from
+  the app group's container and holds one entry; the app asks it to redraw (`WidgetRedraw`)
+  whenever the open session or the active habits' names change, and after background refresh.
+  Its tap, `sleevesup://widget/tap`, is routed in the app by the shared `TapRouting.forWidget`
+  from the rows at the tap: the gate for the open session's check-out (recorded as
+  `ClosedBy.WIDGET`), the gate for the one habit, or `HabitPickerView` ("Check in to…", names
+  only), whose pick is routed as that habit's reminder would be. The widget's kind,
+  `CheckInWidget`, is frozen once one is placed.
 - **`CheckIn/`**: the Check-In screen, and `SessionIntervalRow`, a session as Check-In and History
   both draw it.
 - **`History/`**: the History tab: a month stepper that stops at the current month, the calendar
@@ -98,7 +110,7 @@ selection locked to a running habit, archive refusals and where an archive moves
 restore held to the name rule, a day shading at check-out and per habit, the month stepper and
 week start, Reports' window ending at yesterday until today is checked out of, per habit, and its
 Month / All time steps, the exported file's name and bytes, the session reminders' instants,
-sound and clearing, the Live Activity's start, rename, end and once-per-session-per-install rule, and the habit reminders' plan, replan after a check-in and settled wording,
+sound and clearing, the Live Activity's start, rename, end and once-per-session-per-install rule, the widget's faces, and the habit reminders' plan, replan after a check-in and settled wording,
 against a fake notification center, and each habit's reminder settings. `NudgeCatalogTests` reads Android's `NudgeCatalog.kt` and
 `strings.xml` from the repository and fails if the iOS copy drifts from them. `SleevesUpUITests` drives the real UI, naming the seed habit when the record
 is fresh. Four tests run every time: the gate offering device unlock with **Not now** writing nothing,
@@ -132,9 +144,10 @@ there. The face path and the no-passcode path both need a real device.
 committed. With a free (personal) team the install stops launching after 7 days, and the first
 launch needs the developer trusted under Settings, General, VPN & Device Management. Developer Mode
 must be on. `xcodebuild` cannot register an app group for a team that has none, so once per team
-open the project in Xcode, choose the team under the SleevesUp target's Signing & Capabilities, and
-let the App Groups capability register `group.com.nexusai.checkin.app` (tick it if unticked); after
-that the command line signs with it.
+open the project in Xcode, choose the team under Signing & Capabilities for both the SleevesUp and
+SleevesUpWidgets targets, and let the App Groups capability register `group.com.nexusai.checkin.app`
+(tick it if unticked); after that the command line signs with it. The widget extension is a second
+App ID, which a free team's limit of ten new App IDs a week counts.
 
 ```bash
 cd ios
