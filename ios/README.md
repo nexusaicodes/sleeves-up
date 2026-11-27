@@ -7,21 +7,28 @@ for the JVM the Android app uses. CLAUDE.md's Key Source Paths lists the shared 
 What it does today: the naming step for the seed habit; habits, created, renamed, archived,
 restored and switched between, with one open session across all of them locking the switcher; the
 shown habit's check-in and check-out, each through the presence gate, the open session counting up,
-its sessions today, and the close of a forgotten session at its own midnight. No Reports, History,
-reminders, Live Activity or widget yet.
+its sessions today, and the close of a forgotten session at its own midnight; and History, the
+shown habit's month calendar and the sessions of a tapped day. Both tabs re-read at midnight while
+the app is open. No Reports, reminders, Live Activity or widget yet.
 
 - **`Record/`**: the record, a [GRDB](https://github.com/groue/GRDB.swift) SQLite database with the
   Android app's `sessions` and `app_state` tables and `habits` columns (less Android's `channel_id`),
   and the same SQL. `SessionStore` makes every write through the shared `SessionRules`, so a session
   is refused, closed and measured as on Android; `HabitStore` makes every habit write through the
   shared `HabitRules` and `HabitWrites`; `SessionZones` keeps the open session's check-in zone.
+  `HistoryStore` reads a month through `DailyAggregates` (Android's daily aggregate query, as the
+  shared `DailyAggregate`) and draws each day in the shared `CalendarMonth`'s states.
 - **`Gate/`**: the presence gate. `FaceWatcher` runs the front camera with an
   `AVCaptureMetadataOutput` for faces only, so the app receives face bounds and never a frame.
   `PresenceGateView` applies the shared `PresenceCheckRules`, falls back to `DeviceUnlock`
   (`LocalAuthentication`), and with no passcode set says where to set one (iOS rule 6).
-- **`CheckIn/`**: the Check-In screen, whose title is the habit switcher.
+- **`CheckIn/`**: the Check-In screen, and `SessionIntervalRow`, a session as Check-In and History
+  both draw it.
+- **`History/`**: the History tab: a month stepper that stops at the current month, the calendar
+  (shaded for a completed session whatever it held, faded only outside the record, on the device's
+  week start), and the tapped day's sessions.
 - **`Habits/`**: the Habits screen (tap a row to show it; swipe or long-press to edit or archive),
-  the name editor, and the first-run naming step.
+  the name editor, the first-run naming step, and `habitSwitcher`, the top bar every tab carries.
 
 Copy is English only for now, taken from the Android app's strings.
 
@@ -39,12 +46,14 @@ xcodebuild -project SleevesUp.xcodeproj -scheme SleevesUp \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
 
-`SleevesUpTests` runs `SessionStore` and `HabitStore` against an in-memory record: one open
-session, a check-out that closes once, the midnight close in the check-in's zone, the selection
-locked to a running habit, archive refusals and where an archive moves the selection, and a restore
-held to the name rule. `SleevesUpUITests` drives the real UI, naming the seed habit when the record
-is fresh. Two tests run every time: the gate offering device unlock with **Not now** writing nothing,
-and creating a habit, switching to it and archiving it. A full check-in and
+`SleevesUpTests` runs `SessionStore`, `HabitStore` and `HistoryStore` against an in-memory record:
+one open session, a check-out that closes once, the midnight close in the check-in's zone, the
+selection locked to a running habit, archive refusals and where an archive moves the selection, a
+restore held to the name rule, a day shading at check-out and per habit, and the month stepper and
+week start. `SleevesUpUITests` drives the real UI, naming the seed habit when the record
+is fresh. Three tests run every time: the gate offering device unlock with **Not now** writing nothing,
+creating a habit, switching to it and archiving it, and History stepping back a month and showing a
+tapped day. A full check-in and
 check-out through simulated Face ID runs only when the host answers each Face ID prompt, so it is
 opt-in:
 

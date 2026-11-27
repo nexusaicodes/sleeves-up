@@ -1,7 +1,7 @@
 import XCTest
 
-/// The Check-In screen, the Habits screen and the presence gate, driven through the real UI on a
-/// simulator. The simulator has no front camera, so the gate offers device unlock at once.
+/// The Check-In screen, History, the Habits screen and the presence gate, driven through the real UI
+/// on a simulator. The simulator has no front camera, so the gate offers device unlock at once.
 ///
 /// `testCheckInAndOutThroughDeviceUnlock` passes the gate with simulated Face ID, which only the
 /// host can answer: it runs when `TEST_RUNNER_SIM_FACE_ID_HOST=1` is set on `xcodebuild`, with the
@@ -16,17 +16,17 @@ final class GateUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
         nameTheSeedHabitIfAsked(app)
-        if app.buttons["Check Out"].waitForExistence(timeout: 3) {
+        if action(app, "Check Out").waitForExistence(timeout: 3) {
             throw XCTSkip("A session is open from an earlier run; close it in the app first.")
         }
-        XCTAssertTrue(app.buttons["Check In"].waitForExistence(timeout: 5))
+        XCTAssertTrue(action(app, "Check In").waitForExistence(timeout: 5))
         return app
     }
 
     @MainActor
     func testTheGateOffersDeviceUnlockAndNotNowWritesNothing() throws {
         let app = try launchBetweenSessions()
-        app.buttons["Check In"].tap()
+        action(app, "Check In").tap()
 
         XCTAssertTrue(app.staticTexts["This camera can't check for a face. Use device unlock instead."]
             .waitForExistence(timeout: 5))
@@ -34,8 +34,8 @@ final class GateUITests: XCTestCase {
         attach(app, "gate")
 
         app.buttons["Not now"].tap()
-        XCTAssertTrue(app.buttons["Check In"].waitForExistence(timeout: 5), "Not now must leave with nothing written")
-        XCTAssertFalse(app.buttons["Check Out"].exists)
+        XCTAssertTrue(action(app, "Check In").waitForExistence(timeout: 5), "Not now must leave with nothing written")
+        XCTAssertFalse(action(app, "Check Out").exists)
     }
 
     @MainActor
@@ -44,16 +44,16 @@ final class GateUITests: XCTestCase {
             throw XCTSkip("Needs the host to answer simulated Face ID; see the iOS README.")
         }
         let app = try launchBetweenSessions()
-        app.buttons["Check In"].tap()
+        action(app, "Check In").tap()
         app.buttons["Use device unlock"].tap()
         // The host matches the Face ID prompt; the gate then passes and the session opens.
-        XCTAssertTrue(app.buttons["Check Out"].waitForExistence(timeout: 60))
+        XCTAssertTrue(action(app, "Check Out").waitForExistence(timeout: 60))
         attach(app, "checked-in")
 
         sleep(61)
-        app.buttons["Check Out"].tap()
+        action(app, "Check Out").tap()
         app.buttons["Use device unlock"].tap()
-        XCTAssertTrue(app.buttons["Check In"].waitForExistence(timeout: 60))
+        XCTAssertTrue(action(app, "Check In").waitForExistence(timeout: 60))
         XCTAssertTrue(app.staticTexts["1m"].waitForExistence(timeout: 5), "today's list shows the closed session")
         attach(app, "checked-out")
     }
@@ -78,7 +78,7 @@ final class GateUITests: XCTestCase {
 
         // Tapping the new row shows it and returns to Check-In.
         app.buttons[name].tap()
-        XCTAssertTrue(app.buttons["Check In"].waitForExistence(timeout: 5))
+        XCTAssertTrue(action(app, "Check In").waitForExistence(timeout: 5))
         XCTAssertTrue(app.navigationBars.staticTexts[name].exists, "the switcher names the shown habit")
 
         switcher.tap()
@@ -92,8 +92,37 @@ final class GateUITests: XCTestCase {
         attach(app, "archived")
 
         app.navigationBars.buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(app.buttons["Check In"].waitForExistence(timeout: 5))
+        XCTAssertTrue(action(app, "Check In").waitForExistence(timeout: 5))
         XCTAssertFalse(app.navigationBars.staticTexts[name].exists, "the selection moved off the archived habit")
+    }
+
+    @MainActor
+    func testHistoryStepsBackAndShowsATappedDay() throws {
+        let app = try launchBetweenSessions()
+        app.tabBars.buttons["History"].tap()
+        XCTAssertTrue(app.staticTexts["No day selected"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Next month"].isEnabled, "the stepper stops at the current month")
+
+        app.buttons["Previous month"].tap()
+        XCTAssertTrue(app.buttons["Next month"].isEnabled)
+        let lastMonth = Calendar(identifier: .gregorian).date(byAdding: .month, value: -1, to: Date())!
+        let parts = Calendar(identifier: .gregorian).dateComponents([.year, .month], from: lastMonth)
+        let key = String(format: "%04ld-%02ld-01", parts.year!, parts.month!)
+        let first = app.buttons["day-\(key)"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5))
+        first.tap()
+        XCTAssertTrue(app.staticTexts["No sessions recorded on this day."].waitForExistence(timeout: 3))
+        attach(app, "history-day")
+
+        first.tap()
+        XCTAssertTrue(app.staticTexts["No day selected"].waitForExistence(timeout: 3), "a second tap clears it")
+        XCTAssertTrue(app.buttons["habitSwitcher"].exists, "the switcher sits on History too")
+    }
+
+    /// Check-In's start/stop control reading `label`, told apart from the Check In tab.
+    @MainActor
+    private func action(_ app: XCUIApplication, _ label: String) -> XCUIElement {
+        app.buttons.matching(identifier: "sessionAction").matching(NSPredicate(format: "label == %@", label)).firstMatch
     }
 
     @MainActor

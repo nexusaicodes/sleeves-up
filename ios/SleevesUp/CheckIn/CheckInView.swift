@@ -3,8 +3,7 @@ import SwiftUI
 /// The Check-In screen for the selected habit: one start/stop control, the open session's time
 /// counting up from zero, and the habit's sessions today. Every check-in and check-out goes through
 /// the presence gate first. As on Android, the readout is the current session, never the day's
-/// total, and nothing here grades a session or a day. The habit's name at the top is the switcher:
-/// it opens the Habits screen, and while a session runs it is locked and says why.
+/// total, and nothing here grades a session or a day. The habit's name at the top is the switcher.
 struct CheckInView: View {
 
     let store: SessionStore
@@ -12,7 +11,6 @@ struct CheckInView: View {
 
     @State private var gateFor: GateAction?
     @State private var failure: String?
-    @State private var showingHabits = false
 
     private enum GateAction: Identifiable {
         case checkIn, checkOut
@@ -21,29 +19,8 @@ struct CheckInView: View {
 
     var body: some View {
         NavigationStack {
-            screen
-                .toolbar { ToolbarItem(placement: .principal) { switcher } }
-                .navigationBarTitleDisplayMode(.inline)
-                .navigationDestination(isPresented: $showingHabits) { HabitsView(habits: habits) }
+            screen.habitSwitcher(habits)
         }
-    }
-
-    private var switcher: some View {
-        Button {
-            if habits.isLocked {
-                failure = HabitText.switchLocked(habits.selected)
-            } else {
-                failure = nil
-                showingHabits = true
-            }
-        } label: {
-            HStack(spacing: 6) {
-                Text(habits.selected.map(HabitText.name) ?? "").font(.headline)
-                Image(systemName: habits.isLocked ? "lock.fill" : "chevron.up.chevron.down").font(.caption)
-            }
-        }
-        .accessibilityIdentifier("habitSwitcher")
-        .accessibilityLabel("Habit: \(habits.selected.map(HabitText.name) ?? ""). Switch habit")
     }
 
     private var screen: some View {
@@ -55,6 +32,7 @@ struct CheckInView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
+            .accessibilityIdentifier("sessionAction")
             if let failure { Text(failure).font(.footnote).foregroundStyle(.secondary) }
             Spacer()
             sessions
@@ -83,13 +61,7 @@ struct CheckInView: View {
     private var sessions: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(store.todaySessions, id: \.id) { session in
-                HStack {
-                    Text(SessionText.range(session))
-                    Spacer()
-                    Text(session.duration.map(SessionText.short) ?? "ongoing")
-                        .monospacedDigit()
-                }
-                .font(.callout)
+                SessionIntervalRow(session: session)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -109,8 +81,8 @@ struct CheckInView: View {
     }
 }
 
-/// How the Check-In screen writes times. English only for now; the Android app's languages arrive
-/// with the iOS localization work.
+/// How sessions' times are written, on Check-In and History. English only for now; the Android
+/// app's languages arrive with the iOS localization work.
 enum SessionText {
 
     static func live(_ ms: Int64) -> String {
