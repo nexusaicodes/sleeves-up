@@ -1,6 +1,8 @@
 package com.checkin.app.data.repository
 
+import com.checkin.app.data.ArchiveResult
 import com.checkin.app.data.HabitRules
+import com.checkin.app.data.HabitWrites
 import com.checkin.app.data.NameProblem
 import com.checkin.app.data.local.AppState
 import com.checkin.app.data.local.AppStateDao
@@ -29,24 +31,13 @@ sealed interface HabitEdit {
     data object Missing : HabitEdit
 }
 
-/** What [HabitRepository.archive] did. */
-enum class ArchiveResult {
-    ARCHIVED,
-
-    /** The habit has the open session; check out first. */
-    RUNNING,
-
-    /** The only active habit — the app always shows one, so it cannot be put away. */
-    LAST_ACTIVE,
-}
-
 /**
  * The habits, and which one the app is showing.
  *
- * Every write here goes through [HabitRules], and the rules are re-checked against the database at
- * the write rather than trusted from the screen that asked, because two dialogs can be open on one
- * list. Nothing here touches notification channels: those are reconciled from [allHabitsFlow] by
- * `AppContainer`, so no write can forget its channel.
+ * Every write here goes through [HabitRules] and [HabitWrites], and the rules are re-checked
+ * against the database at the write rather than trusted from the screen that asked, because two
+ * dialogs can be open on one list. Nothing here touches notification channels: those are
+ * reconciled from [allHabitsFlow] by `AppContainer`, so no write can forget its channel.
  */
 class HabitRepository(
     private val habitDao: HabitDao,
@@ -103,9 +94,7 @@ class HabitRepository(
      * here as well as in the switcher, because a nudge tap selects too.
      */
     suspend fun select(habitId: Long): Boolean {
-        val running = sessionDao.getActiveSession()
-        if (running != null && running.habitId != habitId) return false
-        if (habitDao.byId(habitId)?.archived != false) return false
+        if (!HabitWrites.canSelect(habitDao.byId(habitId), sessionDao.getActiveSession()?.habitId)) return false
         appStateDao.put(AppState(selectedHabitId = habitId))
         return true
     }
@@ -138,12 +127,11 @@ class HabitRepository(
      * switcher does not list.
      */
     suspend fun archive(habitId: Long): ArchiveResult {
-        if (sessionDao.getActiveSession()?.habitId == habitId) return ArchiveResult.RUNNING
         val active = habitDao.activeHabits()
-        val remaining = active.filter { it.id != habitId }
-        if (remaining.isEmpty()) return ArchiveResult.LAST_ACTIVE
+        HabitWrites.archiveRefusal(habitId, sessionDao.getActiveSession()?.habitId, active)?.let { return it }
         habitDao.setArchived(habitId, true)
-        if (appStateDao.selectedHabitId() == habitId) appStateDao.put(AppState(selectedHabitId = remaining.first().id))
+        HabitWrites.selectionAfterArchive(habitId, appStateDao.selectedHabitId(), active)
+            ?.let { appStateDao.put(AppState(selectedHabitId = it)) }
         return ArchiveResult.ARCHIVED
     }
 
@@ -153,11 +141,7 @@ class HabitRepository(
      */
     suspend fun restore(habitId: Long): HabitEdit {
         val habit = habitDao.byId(habitId) ?: return HabitEdit.Missing
-        val name = habit.name
-        if (name != null) {
-            HabitRules.nameProblem(name, habitDao.activeHabits(), forId = habitId)
-                ?.let { return HabitEdit.Rejected(it) }
-        }
+        HabitWrites.restoreProblem(habit, habitDao.activeHabits())?.let { return HabitEdit.Rejected(it) }
         habitDao.setArchived(habitId, false)
         return HabitEdit.Saved(habit.copy(archived = false))
     }

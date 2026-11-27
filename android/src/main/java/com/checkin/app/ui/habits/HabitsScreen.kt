@@ -36,8 +36,8 @@ import com.adevinta.spark.icons.PenOutline
 import com.adevinta.spark.icons.Plus
 import com.adevinta.spark.icons.ThreeDotsVertical
 import com.checkin.app.R
+import com.checkin.app.data.ArchiveResult
 import com.checkin.app.data.local.Habit
-import com.checkin.app.data.repository.ArchiveResult
 import com.checkin.app.notify.nudge.NudgeSchedule
 import com.checkin.app.ui.components.ActionRow
 import com.checkin.app.ui.components.AppIconButton
