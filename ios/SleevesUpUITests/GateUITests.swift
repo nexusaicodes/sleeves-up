@@ -78,7 +78,13 @@ final class GateUITests: XCTestCase {
         sleep(61)
         action(app, "Check Out").tap()
         app.buttons["Use device unlock"].tap()
-        XCTAssertTrue(action(app, "Check In").waitForExistence(timeout: 60))
+        // The celebration, the same at any length, closed by a tap.
+        let celebration = app.buttons["celebration"]
+        XCTAssertTrue(celebration.waitForExistence(timeout: 60))
+        XCTAssertTrue(celebration.label.contains("You showed up"), celebration.label)
+        attach(app, "celebration")
+        celebration.tap()
+        XCTAssertTrue(action(app, "Check In").waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["1m"].waitForExistence(timeout: 5), "today's list shows the closed session")
         attach(app, "checked-out")
     }
