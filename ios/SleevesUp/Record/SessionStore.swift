@@ -3,8 +3,8 @@ import GRDB
 import Observation
 import Shared
 
-/// The seed habit's sessions: the open one, today's, and the only two writes, check-in and
-/// check-out, plus the day-boundary close of a forgotten session. Every rule a write follows comes
+/// The open session (across all habits), the shown habit's sessions today, and the only two writes,
+/// check-in and check-out, plus the day-boundary close of a forgotten session. Every rule a write follows comes
 /// from the shared `SessionRules`, so a session ends, lasts and is refused exactly as on Android.
 /// Each write is one GRDB transaction, which serializes it against every other write.
 @MainActor
@@ -24,14 +24,17 @@ final class SessionStore {
     private let zones: SessionZones
     private let now: () -> Date
     private let zone: () -> TimeZone
-    private let habitId = RecordDatabase.seedHabitId
+    /// The habit check-in writes to and today's list reads, set through `show(habitId:)`.
+    private(set) var habitId: Int64
 
     init(
         database: DatabaseQueue,
         zones: SessionZones = SessionZones(),
         now: @escaping () -> Date = Date.init,
-        zone: @escaping () -> TimeZone = { TimeZone.current }
+        zone: @escaping () -> TimeZone = { TimeZone.current },
+        habitId: Int64 = RecordDatabase.seedHabitId
     ) {
+        self.habitId = habitId
         self.database = database
         self.zones = zones
         self.now = now
@@ -42,6 +45,13 @@ final class SessionStore {
     /// return to the foreground, so no past day's session is ever shown as running (iOS rule 2).
     func refresh() throws {
         try closeForgottenSession()
+        try reload()
+    }
+
+    /// Shows `habitId`: the habit the next check-in writes to and today's list reads.
+    func show(habitId: Int64) throws {
+        guard habitId != self.habitId else { return }
+        self.habitId = habitId
         try reload()
     }
 

@@ -4,19 +4,24 @@ The iOS app (`SleevesUp/`), a SwiftUI app on the shared Kotlin code in [`../shar
 which builds for `iosArm64` (devices) and `iosSimulatorArm64` (Apple-silicon simulators) as well as
 for the JVM the Android app uses. CLAUDE.md's Key Source Paths lists the shared files.
 
-What it does today: the seed habit's check-in and check-out, each through the presence gate, the
-open session counting up, today's sessions, and the close of a forgotten session at its own midnight.
-No habits screen, Reports, History, reminders, Live Activity or widget yet.
+What it does today: the naming step for the seed habit; habits, created, renamed, archived,
+restored and switched between, with one open session across all of them locking the switcher; the
+shown habit's check-in and check-out, each through the presence gate, the open session counting up,
+its sessions today, and the close of a forgotten session at its own midnight. No Reports, History,
+reminders, Live Activity or widget yet.
 
 - **`Record/`**: the record, a [GRDB](https://github.com/groue/GRDB.swift) SQLite database with the
-  Android app's `sessions` table and `habits` columns (less Android's `channel_id`), and the same SQL.
-  `SessionStore` makes every write through the shared `SessionRules`, so a session is refused, closed
-  and measured as on Android; `SessionZones` keeps the open session's check-in zone.
+  Android app's `sessions` and `app_state` tables and `habits` columns (less Android's `channel_id`),
+  and the same SQL. `SessionStore` makes every write through the shared `SessionRules`, so a session
+  is refused, closed and measured as on Android; `HabitStore` makes every habit write through the
+  shared `HabitRules` and `HabitWrites`; `SessionZones` keeps the open session's check-in zone.
 - **`Gate/`**: the presence gate. `FaceWatcher` runs the front camera with an
   `AVCaptureMetadataOutput` for faces only, so the app receives face bounds and never a frame.
   `PresenceGateView` applies the shared `PresenceCheckRules`, falls back to `DeviceUnlock`
   (`LocalAuthentication`), and with no passcode set says where to set one (iOS rule 6).
-- **`CheckIn/`**: the Check-In screen.
+- **`CheckIn/`**: the Check-In screen, whose title is the habit switcher.
+- **`Habits/`**: the Habits screen (tap a row to show it; swipe or long-press to edit or archive),
+  the name editor, and the first-run naming step.
 
 Copy is English only for now, taken from the Android app's strings.
 
@@ -34,9 +39,12 @@ xcodebuild -project SleevesUp.xcodeproj -scheme SleevesUp \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
 
-`SleevesUpTests` runs `SessionStore` against an in-memory record: one open session, a check-out
-that closes once, and the midnight close in the check-in's zone. `SleevesUpUITests` drives the real UI:
-the gate offering device unlock and **Not now** writing nothing runs every time. A full check-in and
+`SleevesUpTests` runs `SessionStore` and `HabitStore` against an in-memory record: one open
+session, a check-out that closes once, the midnight close in the check-in's zone, the selection
+locked to a running habit, archive refusals and where an archive moves the selection, and a restore
+held to the name rule. `SleevesUpUITests` drives the real UI, naming the seed habit when the record
+is fresh. Two tests run every time: the gate offering device unlock with **Not now** writing nothing,
+and creating a habit, switching to it and archiving it. A full check-in and
 check-out through simulated Face ID runs only when the host answers each Face ID prompt, so it is
 opt-in:
 
