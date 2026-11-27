@@ -13,6 +13,7 @@ struct CheckInView: View {
 
     @State private var gateFor: GateAction?
     @State private var failure: String?
+    @State private var openHabits = false
 
     private enum GateAction: Identifiable {
         case checkIn, checkOut
@@ -23,7 +24,7 @@ struct CheckInView: View {
 
     var body: some View {
         NavigationStack {
-            screen.habitSwitcher(habits)
+            screen.habitSwitcher(habits, open: $openHabits)
         }
         .onChange(of: taps.pending, initial: true) { _, pending in
             guard pending != nil else { return }
@@ -33,6 +34,8 @@ struct CheckInView: View {
                 if store.openSession != nil { gateFor = .checkOutFromReminder }
             case .checkIn(let habitUuid):
                 checkInFromReminder(habitUuid)
+            case .reminderSettings:
+                openHabits = true
             case nil:
                 break
             }

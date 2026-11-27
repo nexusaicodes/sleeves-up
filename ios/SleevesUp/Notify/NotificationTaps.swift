@@ -14,6 +14,9 @@ final class NotificationTaps {
         /// A habit's reminder: that habit shown, then the presence gate for a check-in to it, as the
         /// shared `TapRouting.forHabit` decides.
         case checkIn(habitUuid: String)
+        /// iOS Settings' link to the app's notification settings: the Habits screen, where each
+        /// habit's reminders are switched and timed (iOS rule 1).
+        case reminderSettings
     }
 
     private(set) var pending: Request?
@@ -41,6 +44,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         NotificationKinds.register()
+        BackgroundRefresh.register()
         return true
     }
 
@@ -65,6 +69,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             return
         }
         Task { @MainActor in taps.receive(request) }
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter, openSettingsFor notification: UNNotification?
+    ) {
+        Task { @MainActor in taps.receive(.reminderSettings) }
     }
 
     /// A reminder that arrives while the app is open is still shown, as Android posts it regardless.

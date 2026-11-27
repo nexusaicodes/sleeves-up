@@ -72,18 +72,22 @@ final class GateUITests: XCTestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         app.buttons["Save"].tap()
         XCTAssertTrue(app.staticTexts["Give it a name"].waitForExistence(timeout: 3), "an empty save shows the problem")
+        XCTAssertTrue(app.switches["Reminders"].exists, "the editor sets the habit's reminder")
         field.tap()
         field.typeText(name)
         app.buttons["Save"].tap()
         attach(app, "habits")
 
+        let reminderTime = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Around '")).firstMatch
+        XCTAssertTrue(reminderTime.exists, "rows state each habit's reminder time")
         // Tapping the new row shows it and returns to Check-In.
-        app.buttons[name].tap()
+        // A row's label is its name, then its reminder time.
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch.tap()
         XCTAssertTrue(action(app, "Check In").waitForExistence(timeout: 5))
         XCTAssertTrue(app.navigationBars.staticTexts[name].exists, "the switcher names the shown habit")
 
         switcher.tap()
-        // The shown habit's row reads "<name>, Showing".
+        // The shown habit's row reads "<name>, <reminder time>, Showing".
         let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         row.swipeLeft()
