@@ -6,10 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.checkin.app.CheckInApplication
-import com.checkin.app.data.ConsistencyStats
-import com.checkin.app.data.MonthSteps
 import com.checkin.app.data.SessionBand
-import com.checkin.app.data.SessionRhythm
 import com.checkin.app.data.StartBucket
 import com.checkin.app.data.local.byDateKey
 import com.checkin.app.data.repository.CheckInRepository
@@ -35,12 +32,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.toJavaLocalDate
-import kotlinx.datetime.toJavaYearMonth
 import kotlinx.datetime.toKotlinLocalDate
 import kotlinx.datetime.toKotlinTimeZone
-import kotlinx.datetime.toKotlinYearMonth
 import java.time.LocalDate
-import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 data class ReportsUiState(
@@ -99,7 +93,7 @@ class ReportsViewModel(
     // Opens on the current month rather than on the whole record: the live question is the month in
     // progress, and it is the scope History opens on too.
     private val scope =
-        MutableStateFlow<ReportScope>(ReportScope.Month(YearMonth.from(timeSource.today()).toKotlinYearMonth()))
+        MutableStateFlow<ReportScope>(currentMonthScope(timeSource.today().toKotlinLocalDate()))
 
     // The habit the figures last described, so a switch can be told apart from the first emission.
     private var shownHabitId: Long? = null
@@ -139,7 +133,7 @@ class ReportsViewModel(
                 } else {
                     windowStats(habit, activeScope, start, window)
                 }
-            }.map { state -> state.copy(hasNextMonth = state.scope.hasMonthAfter(today)) }
+            }.map { state -> state.copy(hasNextMonth = state.scope.hasMonthAfter(today.toKotlinLocalDate())) }
         }
 
     val uiState: StateFlow<ReportsUiState> = statsFlow.stateIn(
@@ -172,29 +166,29 @@ class ReportsViewModel(
             repository.dailyAggregatesFlow(habitId, startKey, endKey),
             repository.sessionStartsFlow(habitId, startKey, endKey),
         ) { aggregates, sessionStarts ->
-            val summaries = aggregates.byDateKey()
-            val showedUp = ConsistencyStats.showedUpDays(summaries)
-            val totalWorkedMs = ConsistencyStats.totalWorkedMs(summaries)
+            val figures = ReportFigures.of(
+                activeScope,
+                window,
+                aggregates.byDateKey(),
+                sessionStarts,
+                timeSource.zone().toKotlinTimeZone(),
+            )
             ReportsUiState(
                 loading = false,
                 scope = activeScope,
                 trackingStartDate = trackingStart,
                 window = window,
-                totalDays = window.days,
-                showedUpDays = showedUp,
-                // Days with no sessions never reach the map, so the missed count is what is left of
-                // the window once the recorded days are removed.
-                missedDays = (window.days - showedUp).coerceAtLeast(0),
-                totalWorkedMs = totalWorkedMs,
-                totalSessions = ConsistencyStats.totalSessions(summaries),
-                // Per *tracked* day, which keeps missed days in the denominator. `window.days` is
-                // never zero — `resolve` returns null rather than an empty window.
-                avgDailyMs = totalWorkedMs / window.days,
-                avgSessionsPerDay = SessionRhythm.averageSessionsPerDay(summaries),
-                startBuckets = SessionRhythm.startBuckets(sessionStarts, timeSource.zone().toKotlinTimeZone()),
-                sessionBands = SessionRhythm.sessionsPerDayBands(summaries),
-                dailySeries = dailySeries(summaries, activeScope, window),
-                monthlySeries = monthlySeries(summaries, activeScope, window),
+                totalDays = figures.totalDays,
+                showedUpDays = figures.showedUpDays,
+                missedDays = figures.missedDays,
+                totalWorkedMs = figures.totalWorkedMs,
+                totalSessions = figures.totalSessions,
+                avgDailyMs = figures.avgDailyMs,
+                avgSessionsPerDay = figures.avgSessionsPerDay,
+                startBuckets = figures.startBuckets,
+                sessionBands = figures.sessionBands,
+                dailySeries = figures.dailySeries,
+                monthlySeries = figures.monthlySeries,
                 // `countedThrough` is consumed by `resolve` and is deliberately not carried into the
                 // state: every figure here ends there by construction, so a second copy of it would
                 // only be something for a caller to check the first against.
@@ -207,42 +201,34 @@ class ReportsViewModel(
     }
 
     fun previousMonth() {
-        scope.value = ReportScope.Month(displayedMonth().minusMonths(1).toKotlinYearMonth())
+        scope.value = scope.value.previousMonth(day.value.toKotlinLocalDate())
     }
 
-    /** Stops at the month in progress: a month that has not begun holds no day the record could cover. */
+    /** Stops at the month in progress (`ReportScope.nextMonth`). */
     fun nextMonth() {
-        if (!scope.value.hasMonthAfter(day.value)) return
-        scope.value = ReportScope.Month(displayedMonth().plusMonths(1).toKotlinYearMonth())
+        scope.value = scope.value.nextMonth(day.value.toKotlinLocalDate())
     }
 
     /**
-     * Leaving all time returns to the month the user is in, not to whichever they last stepped to;
-     * on a month already, nothing moves.
+     * Leaving all time returns to the month in progress; on a month already, nothing moves
+     * (`ReportScope.monthChosen`).
      *
      * The decision reads [scope] rather than the rendered state, because the state only catches up
      * once the window's queries have emitted: judged from the screen, a tap on Month right after one
      * on All time would see the month it has already left and stay there.
      */
     fun selectMonth() {
-        if (scope.value is ReportScope.Month) return
-        showCurrentMonth()
+        scope.value = scope.value.monthChosen(day.value.toKotlinLocalDate())
     }
 
     /** The month in progress, from either scope: where the tab opens, and where a habit switch lands. */
     private fun showCurrentMonth() {
-        scope.value = ReportScope.Month(YearMonth.from(day.value).toKotlinYearMonth())
+        scope.value = currentMonthScope(day.value.toKotlinLocalDate())
     }
 
     fun selectAllTime() {
         scope.value = ReportScope.AllTime
     }
-
-    private fun ReportScope.hasMonthAfter(today: LocalDate): Boolean =
-        this is ReportScope.Month && MonthSteps.hasMonthAfter(month, today.toKotlinLocalDate())
-
-    private fun displayedMonth(): YearMonth =
-        (scope.value as? ReportScope.Month)?.month?.toJavaYearMonth() ?: YearMonth.from(day.value)
 
     /**
      * Exports whatever the screen is showing.

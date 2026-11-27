@@ -1,6 +1,11 @@
 package com.checkin.app.ui.reports
 
 import com.checkin.app.ui.reports.ReportScope
+import com.checkin.app.ui.reports.currentMonthScope
+import com.checkin.app.ui.reports.hasMonthAfter
+import com.checkin.app.ui.reports.monthChosen
+import com.checkin.app.ui.reports.nextMonth
+import com.checkin.app.ui.reports.previousMonth
 import com.checkin.app.ui.reports.resolve
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -8,7 +13,9 @@ import kotlinx.datetime.YearMonth
 import kotlinx.datetime.minus
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * The one place a range is clamped, so the one place a range can be wrong.
@@ -128,5 +135,36 @@ class ReportScopeTest {
         assertEquals(date(2026, 6, 1), window?.start)
         assertEquals(date(2026, 6, 1), window?.end)
         assertEquals(1, window?.days)
+    }
+
+    @Test
+    fun `reports opens on the month in progress and steps back across a year end`() {
+        val today = LocalDate(2027, 1, 10)
+        val opened = currentMonthScope(today)
+        assertEquals(ReportScope.Month(YearMonth(2027, 1)), opened)
+        assertEquals(ReportScope.Month(YearMonth(2026, 12)), opened.previousMonth(today))
+        assertEquals(ReportScope.Month(YearMonth(2026, 12)), ReportScope.AllTime.previousMonth(today))
+    }
+
+    @Test
+    fun `stepping forward stops at the month in progress and moves nothing under all time`() {
+        val today = LocalDate(2027, 1, 10)
+        val december = ReportScope.Month(YearMonth(2026, 12))
+        assertTrue(december.hasMonthAfter(today))
+        assertEquals(ReportScope.Month(YearMonth(2027, 1)), december.nextMonth(today))
+
+        val january = ReportScope.Month(YearMonth(2027, 1))
+        assertFalse(january.hasMonthAfter(today))
+        assertEquals(january, january.nextMonth(today))
+        assertFalse(ReportScope.AllTime.hasMonthAfter(today))
+        assertEquals(ReportScope.AllTime, ReportScope.AllTime.nextMonth(today))
+    }
+
+    @Test
+    fun `choosing month leaves all time for the month in progress and keeps a month shown`() {
+        val today = LocalDate(2027, 1, 10)
+        assertEquals(ReportScope.Month(YearMonth(2027, 1)), ReportScope.AllTime.monthChosen(today))
+        val march = ReportScope.Month(YearMonth(2026, 3))
+        assertEquals(march, march.monthChosen(today))
     }
 }
