@@ -31,6 +31,25 @@ object SessionSchedule {
     fun nextReminderAt(fromMs: Long): Long = fromMs + REMINDER_INTERVAL_MS
 
     /**
+     * The most reminders one session can hold: one per [REMINDER_INTERVAL_MS] of a day, a 25-hour DST
+     * day included, since a session closes at its day boundary.
+     */
+    const val MAX_REMINDERS_PER_SESSION = 12
+
+    /**
+     * Every reminder of a session checked in at [startedAtMs] that is still ahead of [nowMs], for a
+     * platform that schedules them all at once: one each [REMINDER_INTERVAL_MS] from the check-in,
+     * strictly before [dayBoundaryMs], when the session closes. Only a session's first reminder, at
+     * [startedAtMs] + [REMINDER_INTERVAL_MS], alerts; a caller tells it apart by that instant.
+     */
+    fun remindersAhead(startedAtMs: Long, nowMs: Long, dayBoundaryMs: Long): List<Long> =
+        generateSequence(nextReminderAt(startedAtMs), ::nextReminderAt)
+            .takeWhile { it < dayBoundaryMs }
+            .take(MAX_REMINDERS_PER_SESSION)
+            .filter { it > nowMs }
+            .toList()
+
+    /**
      * The local midnight that ends the day [atMs] falls in — strictly after [atMs], so an instant
      * that is *already* midnight gets the following one rather than closing a session the moment it
      * opens.

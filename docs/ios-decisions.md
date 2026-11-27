@@ -78,9 +78,12 @@ runs":
 - Reminders for a day the user never opens the app on still fire. They are true whenever the user
   hasn't checked in, which is the only case they're meant for.
 
-**Open fact to check first.** Apple's pages above state no limit on how many requests can be
-pending, but a ceiling is widely reported. Confirm the real limit on a device before choosing how
-many days ahead to schedule.
+**Measured limit.** Apple's pages above state no limit on how many requests can be pending. On an
+iPhone 15 running iOS 27.2.1 (2026-11-28), a throwaway app scheduled 200 calendar-triggered
+requests, latest-firing first: 64 stayed pending, the 64 firing soonest, and the rest were dropped
+without an error. So the plan never relies on the ceiling: the shared `NudgePlan` holds 12 slots for
+a session's two-hourly reminders (`SessionSchedule.MAX_REMINDERS_PER_SESSION`) and plans as many
+days of habit reminders as fit in the other 52, at most 14.
 
 **What it costs.** The 90-minute gap and the one-per-day rule are applied to a plan, not to what
 actually happened. A user who checks in from the widget without opening the app may still get that
@@ -154,10 +157,9 @@ Decisions 1–5 on 2026-11-22, decision 6 on 2026-11-25.
 |---|---|---|
 | 1 | Reminder opt-out per habit | iOS-only in-app switch, linked from system Settings; app-wide switch stays master |
 | 2 | Forgotten session at midnight | Close on next code run, stamped at its own midnight; same record as Android |
-| 3 | Reminder timing | Schedule ahead, revise on every code run, cancel on check-in; confirm the pending limit first |
+| 3 | Reminder timing | Schedule ahead, revise on every code run, cancel on check-in; 64 pending, measured |
 | 4 | Running-session display | Live Activity, up to its 8-hour limit; session reminders cover the rest |
 | 5 | Widget | One name, or "Check In" with several habits; no cycling, no figures |
 | 6 | Gate with no passcode (2026-11-25) | Instructions for setting one, re-checked on return; Not now always |
 
-The pending-notification limit in decision 3 is still to be measured on a device before the
-scheduling window is chosen.
+The pending-notification limit in decision 3 was measured on 2026-11-28: 64 per app.
