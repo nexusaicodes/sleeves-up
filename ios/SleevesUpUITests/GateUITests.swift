@@ -16,6 +16,7 @@ final class GateUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
         nameTheSeedHabitIfAsked(app)
+        allowNotificationsIfAsked()
         if action(app, "Check Out").waitForExistence(timeout: 3) {
             throw XCTSkip("A session is open from an earlier run; close it in the app first.")
         }
@@ -162,6 +163,13 @@ final class GateUITests: XCTestCase {
     @MainActor
     private func action(_ app: XCUIApplication, _ label: String) -> XCUIElement {
         app.buttons.matching(identifier: "sessionAction").matching(NSPredicate(format: "label == %@", label)).firstMatch
+    }
+
+    /// The notification prompt, raised on the first start past the naming step on a fresh simulator.
+    @MainActor
+    private func allowNotificationsIfAsked() {
+        let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow"]
+        if allow.waitForExistence(timeout: 2) { allow.tap() }
     }
 
     @MainActor

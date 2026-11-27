@@ -9,8 +9,9 @@ restored and switched between, with one open session across all of them locking 
 shown habit's check-in and check-out, each through the presence gate, the open session counting up,
 its sessions today, and the close of a forgotten session at its own midnight; and History, the
 shown habit's month calendar and the sessions of a tapped day; and Reports, every figure and chart
-for one month or all time, exported as CSV through the share sheet. Every tab re-reads at midnight
-while the app is open. No reminders, Live Activity or widget yet.
+for one month or all time, exported as CSV through the share sheet; and the open session's "Still
+checked in?" reminders, whose Check Out action opens the gate. Every tab re-reads at midnight while
+the app is open. No habit reminders, Live Activity or widget yet.
 
 - **`Record/`**: the record, a [GRDB](https://github.com/groue/GRDB.swift) SQLite database with the
   Android app's `sessions` and `app_state` tables and `habits` columns (less Android's `channel_id`),
@@ -27,6 +28,12 @@ while the app is open. No reminders, Live Activity or widget yet.
   `AVCaptureMetadataOutput` for faces only, so the app receives face bounds and never a frame.
   `PresenceGateView` applies the shared `PresenceCheckRules`, falls back to `DeviceUnlock`
   (`LocalAuthentication`), and with no passcode set says where to set one (iOS rule 6).
+- **`Notify/`**: notifications. `SessionReminders` schedules the open session's reminders two-hourly
+  from check-in up to its own midnight (the shared `SessionSchedule.remindersAhead`), only the first
+  with a sound, in fixed slots that every read of the record re-syncs, so any close clears them.
+  `NotificationTaps` and the `AppDelegate` turn a tap on one, or its Check Out action, into the gate
+  on Check-In, recorded as `ClosedBy.REMINDER_NOTIFICATION`. Notifications are asked for once, on
+  the first start past the naming step.
 - **`CheckIn/`**: the Check-In screen, and `SessionIntervalRow`, a session as Check-In and History
   both draw it.
 - **`History/`**: the History tab: a month stepper that stops at the current month, the calendar
@@ -60,8 +67,9 @@ xcodebuild -project SleevesUp.xcodeproj -scheme SleevesUp \
 one open session, a check-out that closes once, the midnight close in the check-in's zone, the
 selection locked to a running habit, archive refusals and where an archive moves the selection, a
 restore held to the name rule, a day shading at check-out and per habit, the month stepper and
-week start, and Reports' window ending at yesterday until today is checked out of, per habit, and
-its Month / All time steps, and the exported file's name and bytes. `SleevesUpUITests` drives the real UI, naming the seed habit when the record
+week start, Reports' window ending at yesterday until today is checked out of, per habit, and its
+Month / All time steps, the exported file's name and bytes, and the session reminders' instants,
+sound and clearing, against a fake notification center. `SleevesUpUITests` drives the real UI, naming the seed habit when the record
 is fresh. Four tests run every time: the gate offering device unlock with **Not now** writing nothing,
 creating a habit, switching to it and archiving it, History stepping back a month and showing a
 tapped day, and Reports switching between Month and All time and opening the share sheet over an

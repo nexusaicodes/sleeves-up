@@ -1,10 +1,13 @@
 import Shared
 import SwiftUI
+import UserNotifications
 
 @main
 struct SleevesUpApp: App {
 
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @Environment(\.scenePhase) private var scenePhase
+    @State private var tab = Tab.checkIn
     @State private var store: SessionStore?
     @State private var habits: HabitStore?
     @State private var history: HistoryStore?
@@ -19,14 +22,22 @@ struct SleevesUpApp: App {
                         if let unnamed = habits.needingName {
                             NameHabitView(habits: habits, habit: unnamed)
                         } else {
-                            TabView {
-                                CheckInView(store: store, habits: habits)
+                            TabView(selection: $tab) {
+                                CheckInView(store: store, habits: habits, taps: delegate.taps)
                                     .tabItem { Label("Check In", systemImage: "checkmark.circle") }
+                                    .tag(Tab.checkIn)
                                 HistoryView(history: history, habits: habits)
                                     .tabItem { Label("History", systemImage: "calendar") }
+                                    .tag(Tab.history)
                                 ReportsView(reports: reports, habits: habits)
                                     .tabItem { Label("Reports", systemImage: "chart.bar") }
+                                    .tag(Tab.reports)
                             }
+                            // A notification's request is acted on from Check-In.
+                            .onChange(of: delegate.taps.pending, initial: true) { _, pending in
+                                if pending != nil { tab = .checkIn }
+                            }
+                            .task { await askForNotifications() }
                         }
                     }
                     .task(id: store.openSession?.id) { await closeAtBoundary(store, habits, history, reports) }
@@ -51,13 +62,26 @@ struct SleevesUpApp: App {
         }
     }
 
+    private enum Tab: Hashable {
+        case checkIn, history, reports
+    }
+
+    /// Asks for notifications once, on the first start past the naming step, so a new user has just
+    /// named what they are showing up for, and an existing install is asked on its next start. The
+    /// system shows the prompt only while the answer is undetermined.
+    private func askForNotifications() async {
+        let center = UNUserNotificationCenter.current()
+        guard await center.notificationSettings().authorizationStatus == .notDetermined else { return }
+        _ = try? await center.requestAuthorization(options: [.alert, .sound])
+    }
+
     /// Opens the record and closes a forgotten session before the first screen is drawn.
     private func open() {
         guard store == nil else { return }
         do {
             let database = try RecordDatabase.openOnDisk()
             let openedHabits = HabitStore(database: database)
-            let openedStore = SessionStore(database: database)
+            let openedStore = SessionStore(database: database, reminders: SessionReminders())
             let openedHistory = HistoryStore(database: database)
             let openedReports = ReportsStore(database: database)
             try refresh(openedStore, openedHabits, openedHistory, openedReports)
