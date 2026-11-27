@@ -28,12 +28,14 @@ enum RecordDatabase {
         return queue
     }
 
-    /// The record in Application Support, created and migrated on first open.
+    /// The record in the app group's container (`RecordLocation`), moved there from the app's own
+    /// Application Support if an earlier build left it there, and created and migrated on first open.
     static func openOnDisk() throws -> DatabaseQueue {
-        let folder = try FileManager.default.url(
-            for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true
+        let folder = try RecordLocation.folder()
+        try RecordLocation.moveIfNeeded(
+            fileName: RecordLocation.fileName, from: try RecordLocation.legacyFolder(), to: folder
         )
-        return try open(path: folder.appendingPathComponent("record.sqlite").path, nowMs: Clock.nowMs(Date()))
+        return try open(path: folder.appendingPathComponent(RecordLocation.fileName).path, nowMs: Clock.nowMs(Date()))
     }
 
     /// The record at `path`, created and migrated on first open.

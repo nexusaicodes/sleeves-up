@@ -27,6 +27,8 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         # Background refresh's identifier and mode, merged into the generated plist.
         INFOPLIST_FILE: SleevesUpInfo.plist
+        # The app group holding the record, which the widget extension reads (`RecordLocation`).
+        CODE_SIGN_ENTITLEMENTS: SleevesUp/SleevesUp.entitlements
         INFOPLIST_KEY_CFBundleDisplayName: Sleeves Up
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
@@ -36,6 +38,11 @@ targets:
         OTHER_LDFLAGS: [$(inherited), -framework, Shared]
         # The Gradle build writes outside the target's declared outputs, which Xcode's script sandbox refuses.
         ENABLE_USER_SCRIPT_SANDBOXING: NO
+    attributes:
+      # Lets automatic signing add the app group to the App ID and its profile.
+      SystemCapabilities:
+        com.apple.ApplicationGroups.iOS:
+          enabled: 1
     dependencies:
       - package: GRDB
     scheme:
