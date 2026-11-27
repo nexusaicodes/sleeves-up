@@ -1,7 +1,12 @@
 package com.checkin.app.ui.reports
 
+import com.checkin.app.data.MonthSteps
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.YearMonth
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+import kotlinx.datetime.yearMonth
 
 /**
  * What span of the record Reports is describing.
@@ -52,3 +57,33 @@ fun ReportScope.resolve(trackingStart: LocalDate?, countedThrough: LocalDate): R
     val end = minOf(rangeEnd, countedThrough)
     return ReportWindow(start, end).takeIf { start <= end }
 }
+
+/** The month in progress on [today]: where Reports opens, and where a habit switch returns it. */
+fun currentMonthScope(today: LocalDate): ReportScope.Month = ReportScope.Month(today.yearMonth)
+
+/** Whether a later month exists to step to: false under all time and on the month in progress. */
+fun ReportScope.hasMonthAfter(today: LocalDate): Boolean =
+    this is ReportScope.Month && MonthSteps.hasMonthAfter(month, today)
+
+/** One month back from the month shown, or from the month in progress under all time. Unbounded. */
+fun ReportScope.previousMonth(today: LocalDate): ReportScope.Month =
+    ReportScope.Month(shownMonth(today).firstDay.minus(1, DateTimeUnit.MONTH).yearMonth)
+
+/**
+ * One month on, stopping at the month in progress, since a month that has not begun holds no day the
+ * record could cover. Under all time nothing moves.
+ */
+fun ReportScope.nextMonth(today: LocalDate): ReportScope = if (hasMonthAfter(today)) {
+    ReportScope.Month(shownMonth(today).firstDay.plus(1, DateTimeUnit.MONTH).yearMonth)
+} else {
+    this
+}
+
+/**
+ * Choosing Month: from all time it returns to the month in progress, not to whichever was last
+ * stepped to; on a month already, nothing moves.
+ */
+fun ReportScope.monthChosen(today: LocalDate): ReportScope =
+    if (this is ReportScope.Month) this else currentMonthScope(today)
+
+private fun ReportScope.shownMonth(today: LocalDate): YearMonth = (this as? ReportScope.Month)?.month ?: today.yearMonth
