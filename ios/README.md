@@ -4,7 +4,7 @@ The iOS app (`SleevesUp/`), a SwiftUI app on the shared Kotlin code in [`../shar
 which builds for `iosArm64` (devices) and `iosSimulatorArm64` (Apple-silicon simulators) as well as
 for the JVM the Android app uses. CLAUDE.md's Key Source Paths lists the shared files.
 
-What it does today: the naming step for the seed habit; habits, created, renamed, archived,
+What it does today: the welcome tour and the naming step for the seed habit; habits, created, renamed, archived,
 restored and switched between, with one open session across all of them locking the switcher; the
 shown habit's check-in and check-out, each through the presence gate, the open session counting up,
 its sessions today, and the close of a forgotten session at its own midnight; and History, the
@@ -38,8 +38,8 @@ picker. Every tab re-reads at midnight while the app is open.
   from check-in up to its own midnight (the shared `SessionSchedule.remindersAhead`), only the first
   with a sound, in fixed slots that every read of the record re-syncs, so any close clears them.
   `NotificationTaps` and the `AppDelegate` turn a tap on one, or its Check Out action, into the gate
-  on Check-In, recorded as `ClosedBy.REMINDER_NOTIFICATION`. Notifications are asked for once, on
-  the first start past the naming step. `HabitReminders` plans each active habit's reminders with
+  on Check-In, recorded as `ClosedBy.REMINDER_NOTIFICATION`. Notifications are asked for once, after
+  a finished welcome tour and the naming step; a skipped tour asks at the first check-in instead. `HabitReminders` plans each active habit's reminders with
   the shared `NudgePlan` (iOS rule 3) and replaces the plan whenever what it reads changes, on
   open, on return and at midnight, so a check-in removes that day's reminder. `NudgeLedger`
   (`nudges.sqlite`, apart from the record, as Android's `nudges.db`) keeps the plan and what was
@@ -83,6 +83,13 @@ picker. Every tab re-reads at midnight while the app is open.
   Month under all time, Start Times, Sessions Per Day). `ReportCharts` draws the line, bar and ring
   charts from the shared `ChartGeometry`, as Android's are drawn. The last card exports the
   screen's window and opens the share sheet.
+- **`Welcome/`**: first run, ordered by the shared `FirstRun.step`: the four-page welcome tour
+  (Android's copy; the widget page says how to place the widget, since iOS gives an app no way to
+  add one), then the naming step, then the notification ask over the app. `SeenPrompts` keeps
+  Android's `welcome_seen`, `notifications_asked` and `widget_page_seen`. An install that finished
+  the tour before it held the widget page meets that page once, alone, when `FirstRun.widgetPageOwed`
+  says so (two days holding a session of the shown habit, no widget placed), decided as the app comes
+  to the front; a start that finds the widget placed ends the question.
 - **`Habits/`**: the Habits screen (tap a row to show it; swipe or long-press to edit or archive),
   the name editor with each habit's reminder (`ReminderFields`: on or off, iOS only, and the time,
   05:00 to 21:00), the first-run naming step, which sets the time too, and `habitSwitcher`, the top
@@ -110,10 +117,10 @@ selection locked to a running habit, archive refusals and where an archive moves
 restore held to the name rule, a day shading at check-out and per habit, the month stepper and
 week start, Reports' window ending at yesterday until today is checked out of, per habit, and its
 Month / All time steps, the exported file's name and bytes, the session reminders' instants,
-sound and clearing, the Live Activity's start, rename, end and once-per-session-per-install rule, the widget's faces, and the habit reminders' plan, replan after a check-in and settled wording,
+sound and clearing, the Live Activity's start, rename, end and once-per-session-per-install rule, the widget's faces, the first-run prompts, and the habit reminders' plan, replan after a check-in and settled wording,
 against a fake notification center, and each habit's reminder settings. `NudgeCatalogTests` reads Android's `NudgeCatalog.kt` and
-`strings.xml` from the repository and fails if the iOS copy drifts from them. `SleevesUpUITests` drives the real UI, naming the seed habit when the record
-is fresh. Four tests run every time: the gate offering device unlock with **Not now** writing nothing,
+`strings.xml` from the repository and fails if the iOS copy drifts from them. `SleevesUpUITests` drives the real UI, finishing the tour and naming the seed
+habit when they are owed. Five tests run every time: the welcome tour paging through to the app, the gate offering device unlock with **Not now** writing nothing,
 creating a habit, switching to it and archiving it, History stepping back a month and showing a
 tapped day, and Reports switching between Month and All time and opening the share sheet over an
 export. A full check-in and

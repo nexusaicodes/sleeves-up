@@ -1,6 +1,7 @@
 import Shared
 import SwiftUI
 import UserNotifications
+import WidgetKit
 
 @main
 struct SleevesUpApp: App {
@@ -15,6 +16,8 @@ struct SleevesUpApp: App {
     /// Nil only when the reminder ledger cannot be opened, which costs reminders and nothing else.
     @State private var habitReminders: HabitReminders?
     @State private var reminderSettings = ReminderSettings()
+    @State private var prompts = SeenPrompts()
+    @State private var showWidgetPage = false
     @State private var openFailed = false
 
     var body: some Scene {
@@ -22,7 +25,12 @@ struct SleevesUpApp: App {
             Group {
                 if let store, let habits, let history, let reports {
                     Group {
-                        if let unnamed = habits.needingName {
+                        let step = firstRunStep(habits)
+                        if step == .welcome {
+                            WelcomeView { exit in
+                                prompts.endWelcome(asksNotifications: FirstRun.shared.asksNotificationsAfter(exit: exit))
+                            }
+                        } else if step == .nameHabit, let unnamed = habits.needingName {
                             NameHabitView(habits: habits, habit: unnamed, settings: reminderSettings)
                         } else {
                             TabView(selection: $tab) {
@@ -44,7 +52,16 @@ struct SleevesUpApp: App {
                                 if pending != nil { tab = .checkIn }
                             }
                             .task { BackgroundRefresh.schedule() }
-                            .task { await askForNotifications() }
+                            .task(id: step == .askNotifications) {
+                                if step == .askNotifications {
+                                    await NotificationAsk.ifUndetermined()
+                                    prompts.markNotificationsAsked()
+                                }
+                            }
+                            .task { await offerWidgetPage(store, habits) }
+                            .sheet(isPresented: $showWidgetPage, onDismiss: prompts.markWidgetPageSeen) {
+                                WidgetPageView { showWidgetPage = false }
+                            }
                             // Whatever the plan reads: the open session, today's sessions, the habits.
                             .onChange(of: PlanInputs(store, habits, reminderSettings)) { replanReminders() }
                             // The widget reads the habits' names and the open session.
@@ -75,6 +92,7 @@ struct SleevesUpApp: App {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, let store, let habits, let history, let reports {
                 try? refresh(store, habits, history, reports)
+                Task { await offerWidgetPage(store, habits) }
             }
             if phase == .background { BackgroundRefresh.schedule() }
         }
@@ -84,13 +102,37 @@ struct SleevesUpApp: App {
         case checkIn, history, reports
     }
 
-    /// Asks for notifications once, on the first start past the naming step, so a new user has just
-    /// named what they are showing up for, and an existing install is asked on its next start. The
-    /// system shows the prompt only while the answer is undetermined.
-    private func askForNotifications() async {
-        let center = UNUserNotificationCenter.current()
-        guard await center.notificationSettings().authorizationStatus == .notDetermined else { return }
-        _ = try? await center.requestAuthorization(options: [.alert, .sound, .providesAppNotificationSettings])
+    /// Which first-run step is owed, by the shared `FirstRun`: the tour, the naming step, then the
+    /// launch-time notification ask over the app.
+    private func firstRunStep(_ habits: HabitStore) -> FirstRun.Step {
+        FirstRun.shared.step(
+            seenWelcome: prompts.welcomeSeen,
+            habitNeedsName: KotlinBoolean(bool: habits.needingName != nil),
+            askedNotifications: prompts.notificationsAsked
+        )
+    }
+
+    /// Shows the widget page alone when the shared `FirstRun.widgetPageOwed` says so, decided as the
+    /// app comes to the front and never mid-use, and never over a tap's gate or picker. A start that
+    /// finds the widget placed marks the page seen, ending the question.
+    private func offerWidgetPage(_ store: SessionStore, _ habits: HabitStore) async {
+        guard prompts.welcomeSeen, !prompts.widgetPageSeen, !showWidgetPage,
+              firstRunStep(habits) == .none, delegate.taps.pending == nil
+        else { return }
+        let placed = await withCheckedContinuation { continuation in
+            WidgetCenter.shared.getCurrentConfigurations { result in
+                continuation.resume(returning: (try? result.get())?.contains { $0.kind == WidgetFace.kind } ?? false)
+            }
+        }
+        if placed {
+            prompts.markWidgetPageSeen()
+            return
+        }
+        guard let days = try? store.daysWithSession() else { return }
+        showWidgetPage = FirstRun.shared.widgetPageOwed(
+            seenWelcome: prompts.welcomeSeen, seenWidgetPage: prompts.widgetPageSeen,
+            daysWithSession: Int32(days), widgetPlaced: false
+        )
     }
 
     /// Opens the record and closes a forgotten session before the first screen is drawn.
