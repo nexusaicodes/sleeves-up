@@ -8,37 +8,19 @@ import XCTest
 @MainActor
 final class SessionRemindersTests: XCTestCase {
 
-    /// Records what was scheduled, keeping only what is still pending, as the system does.
-    private final class FakeCenter: NotificationScheduling {
-        private(set) var pending: [String: UNNotificationRequest] = [:]
-
-        func add(_ request: UNNotificationRequest) { pending[request.identifier] = request }
-
-        func removePending(_ identifiers: [String]) { identifiers.forEach { pending[$0] = nil } }
-
-        /// Pending requests in firing order, as seconds from when they were scheduled.
-        var intervals: [TimeInterval] {
-            pending.values.compactMap { ($0.trigger as? UNTimeIntervalNotificationTrigger)?.timeInterval }.sorted()
-        }
-
-        func content(firingAfter seconds: TimeInterval) -> UNNotificationContent? {
-            pending.values.first { ($0.trigger as? UNTimeIntervalNotificationTrigger)?.timeInterval == seconds }?.content
-        }
-    }
-
     // 2026-06-15 09:00 UTC.
     private let utcJun15At0900: Int64 = 1_781_514_000_000
     private let hour: Int64 = 3_600_000
 
     private var nowMs: Int64 = 0
     private var defaults: UserDefaults!
-    private var center: FakeCenter!
+    private var center: FakeNotificationCenter!
 
     override func setUp() async throws {
         defaults = UserDefaults(suiteName: "SessionRemindersTests")!
         defaults.removePersistentDomain(forName: "SessionRemindersTests")
         nowMs = utcJun15At0900
-        center = FakeCenter()
+        center = FakeNotificationCenter()
     }
 
     private func makeStore() throws -> SessionStore {
@@ -56,11 +38,11 @@ final class SessionRemindersTests: XCTestCase {
         XCTAssertEqual(try store.checkIn(), .opened)
 
         XCTAssertEqual(center.intervals, (1...7).map { TimeInterval($0 * 2 * 3600) }, "11:00 to 23:00")
-        let first = try XCTUnwrap(center.content(firingAfter: 2 * 3600))
+        let first = try XCTUnwrap(center.request(firingAfter: 2 * 3600)?.content)
         XCTAssertEqual(first.title, "Still checked in?")
         XCTAssertEqual(first.categoryIdentifier, NotificationKinds.sessionReminder)
         XCTAssertNotNil(first.sound)
-        let later = try XCTUnwrap(center.content(firingAfter: 4 * 3600))
+        let later = try XCTUnwrap(center.request(firingAfter: 4 * 3600)?.content)
         XCTAssertNil(later.sound)
         XCTAssertEqual(later.interruptionLevel, .passive)
     }

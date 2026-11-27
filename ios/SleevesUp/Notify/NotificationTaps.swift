@@ -11,6 +11,9 @@ final class NotificationTaps {
     enum Request: Equatable {
         /// The session reminder or its Check Out action: the presence gate, then a check-out.
         case checkOut
+        /// A habit's reminder: that habit shown, then the presence gate for a check-in to it, as the
+        /// shared `TapRouting.forHabit` decides.
+        case checkIn(habitUuid: String)
     }
 
     private(set) var pending: Request?
@@ -46,13 +49,22 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        let category = response.notification.request.content.categoryIdentifier
+        let content = response.notification.request.content
         let action = response.actionIdentifier
+        let habitUuid = content.userInfo[NotificationKinds.habitUuidKey] as? String
         defer { completionHandler() }
-        guard category == NotificationKinds.sessionReminder,
-              action == NotificationKinds.checkOutAction || action == UNNotificationDefaultActionIdentifier
-        else { return }
-        Task { @MainActor in taps.receive(.checkOut) }
+        let request: NotificationTaps.Request
+        switch content.categoryIdentifier {
+        case NotificationKinds.sessionReminder
+            where action == NotificationKinds.checkOutAction || action == UNNotificationDefaultActionIdentifier:
+            request = .checkOut
+        case NotificationKinds.habitReminder where action == UNNotificationDefaultActionIdentifier:
+            guard let habitUuid else { return }
+            request = .checkIn(habitUuid: habitUuid)
+        default:
+            return
+        }
+        Task { @MainActor in taps.receive(request) }
     }
 
     /// A reminder that arrives while the app is open is still shown, as Android posts it regardless.

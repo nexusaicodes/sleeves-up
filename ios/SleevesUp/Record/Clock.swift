@@ -21,6 +21,13 @@ enum Clock {
         return String(format: "%04ld-%02ld-%02ld", day.year ?? 0, day.month ?? 0, day.day ?? 0)
     }
 
+    /// The epoch millis of the midnight starting `date`'s day in `zone`.
+    static func startOfDayMs(_ date: Date, in zone: TimeZone) -> Int64 {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = zone
+        return nowMs(calendar.startOfDay(for: date))
+    }
+
     /// The calendar date of `date` in `zone`, as the shared code's `LocalDate`.
     static func localDate(_ date: Date, in zone: TimeZone) -> Kotlinx_datetimeLocalDate {
         var calendar = Calendar(identifier: .gregorian)

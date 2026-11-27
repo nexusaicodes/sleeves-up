@@ -12,6 +12,8 @@ struct SleevesUpApp: App {
     @State private var habits: HabitStore?
     @State private var history: HistoryStore?
     @State private var reports: ReportsStore?
+    /// Nil only when the reminder ledger cannot be opened, which costs reminders and nothing else.
+    @State private var habitReminders: HabitReminders?
     @State private var openFailed = false
 
     var body: some Scene {
@@ -38,6 +40,8 @@ struct SleevesUpApp: App {
                                 if pending != nil { tab = .checkIn }
                             }
                             .task { await askForNotifications() }
+                            // Whatever the plan reads: the open session, today's sessions, the habits.
+                            .onChange(of: PlanInputs(store, habits)) { replanReminders() }
                         }
                     }
                     .task(id: store.openSession?.id) { await closeAtBoundary(store, habits, history, reports) }
@@ -84,6 +88,9 @@ struct SleevesUpApp: App {
             let openedStore = SessionStore(database: database, reminders: SessionReminders())
             let openedHistory = HistoryStore(database: database)
             let openedReports = ReportsStore(database: database)
+            habitReminders = (try? NudgeLedger.openOnDisk()).map {
+                HabitReminders(record: database, ledger: $0, settings: ReminderSettings())
+            }
             try refresh(openedStore, openedHabits, openedHistory, openedReports)
             habits = openedHabits
             store = openedStore
@@ -108,6 +115,26 @@ struct SleevesUpApp: App {
         }
         try history.reload()
         try reports.reload()
+        replanReminders()
+    }
+
+    /// A failed replan leaves the previous plan scheduled, which is still the best answer it has.
+    private func replanReminders() {
+        try? habitReminders?.replan()
+    }
+
+    /// What the reminder plan depends on, so any change to it replans.
+    private struct PlanInputs: Equatable {
+        let openSessionId: Int64?
+        let todaySessions: Int
+        let habits: [String]
+
+        @MainActor
+        init(_ store: SessionStore, _ habits: HabitStore) {
+            openSessionId = store.openSession?.id
+            todaySessions = store.todaySessions.count
+            self.habits = habits.active.map { "\($0.uuid):\($0.name ?? "")" }
+        }
     }
 
     /// While the app is open over a session's midnight, closes it there rather than drawing a past
