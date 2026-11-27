@@ -24,6 +24,10 @@ final class SessionStore {
     private let zones: SessionZones
     private let now: () -> Date
     private let zone: () -> TimeZone
+    /// The open session's reminders, re-synced on every read of the record, so whichever write
+    /// opened or closed the session (a check-in, a check-out, the midnight close) also arms or clears
+    /// them, as Android's `SessionActions` does.
+    private let reminders: SessionReminders?
     /// The habit check-in writes to and today's list reads, set through `show(habitId:)`.
     private(set) var habitId: Int64
 
@@ -32,8 +36,10 @@ final class SessionStore {
         zones: SessionZones = SessionZones(),
         now: @escaping () -> Date = Date.init,
         zone: @escaping () -> TimeZone = { TimeZone.current },
+        reminders: SessionReminders? = nil,
         habitId: Int64 = RecordDatabase.seedHabitId
     ) {
+        self.reminders = reminders
         self.habitId = habitId
         self.database = database
         self.zones = zones
@@ -86,13 +92,14 @@ final class SessionStore {
         return outcome
     }
 
-    /// Closes the open session at now. Returns the closed row, or nil when nothing was open.
+    /// Closes the open session at now, recording what ended it (`ClosedBy`, a CSV column). Returns
+    /// the closed row, or nil when nothing was open.
     @discardableResult
-    func checkOut() throws -> SessionRow? {
+    func checkOut(closedBy: ClosedBy = .inApp) throws -> SessionRow? {
         guard let open = try database.read({ db in
             try SessionRow.fetchOne(db, sql: "SELECT * FROM sessions WHERE stopped_at IS NULL LIMIT 1")
         }) else { return nil }
-        let closed = try close(open, at: Clock.nowMs(now()), closedBy: ClosedBy.inApp)
+        let closed = try close(open, at: Clock.nowMs(now()), closedBy: closedBy)
         try reload()
         return closed
     }
@@ -159,5 +166,6 @@ final class SessionStore {
         }
         openSession = open
         todaySessions = today
+        reminders?.sync(open: open, dayBoundaryMs: open.map(dayBoundary(of:)), nowMs: Clock.nowMs(now()))
     }
 }

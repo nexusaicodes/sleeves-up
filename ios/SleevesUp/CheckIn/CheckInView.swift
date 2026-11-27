@@ -8,18 +8,26 @@ struct CheckInView: View {
 
     let store: SessionStore
     let habits: HabitStore
+    let taps: NotificationTaps
 
     @State private var gateFor: GateAction?
     @State private var failure: String?
 
     private enum GateAction: Identifiable {
         case checkIn, checkOut
+        /// A check-out asked for from the session reminder, recorded as `ClosedBy.reminderNotification`.
+        case checkOutFromReminder
         var id: Self { self }
     }
 
     var body: some View {
         NavigationStack {
             screen.habitSwitcher(habits)
+        }
+        .onChange(of: taps.pending, initial: true) { _, pending in
+            guard pending != nil, taps.take() == .checkOut else { return }
+            // A reminder for a session already closed has nothing left to ask.
+            if store.openSession != nil { gateFor = .checkOutFromReminder }
         }
     }
 
@@ -72,6 +80,7 @@ struct CheckInView: View {
             switch action {
             case .checkIn: _ = try store.checkIn()
             case .checkOut: try store.checkOut()
+            case .checkOutFromReminder: try store.checkOut(closedBy: .reminderNotification)
             }
             try habits.reload()
             failure = nil
