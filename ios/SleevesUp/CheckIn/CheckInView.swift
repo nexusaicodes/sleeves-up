@@ -58,28 +58,21 @@ struct CheckInView: View {
         }
     }
 
+    /// One viewport with the action in thumb reach; on a short screen or at an accessibility text
+    /// size the same content scrolls instead, since a fixed layout would clip rather than shrink.
     private var screen: some View {
-        VStack(spacing: 0) {
-            Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(AppLocale.current)))
-                .font(AppFont.bodyMediumEmphasis)
-                .foregroundStyle(Palette.inkMuted)
-            Spacer(minLength: 8).frame(maxHeight: 80)
-            gauge
-            Spacer(minLength: 12)
-            if let failure {
-                Text(failure).font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted)
-                    .multilineTextAlignment(.center)
-                    .padding(.bottom, 12)
+        GeometryReader { proxy in
+            let compact = proxy.size.height < Self.compactHeight || dynamicTypeSize.isAccessibilitySize
+            Group {
+                if compact {
+                    ScrollView {
+                        content(compact: true).frame(minHeight: proxy.size.height)
+                    }
+                } else {
+                    content(compact: false).frame(height: proxy.size.height)
+                }
             }
-            if !store.todaySessions.isEmpty {
-                sessions.padding(.bottom, 12)
-            }
-            action
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
-        .padding(.bottom, 16)
-        .frame(maxWidth: .infinity)
         .background(Palette.paper.ignoresSafeArea())
         .sheet(isPresented: $choosing) {
             HabitPickerView(habits: habits.active, onPick: picked, onDismiss: { choosing = false })
@@ -98,6 +91,45 @@ struct CheckInView: View {
                 },
                 onDismiss: { gateFor = nil }
             )
+        }
+    }
+
+    /// Android's `COMPACT_HEIGHT_THRESHOLD`: below it the screen scrolls.
+    private static let compactHeight: CGFloat = 560
+
+    private func content(compact: Bool) -> some View {
+        VStack(spacing: 0) {
+            Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(AppLocale.current)))
+                .font(AppFont.bodyMediumEmphasis)
+                .foregroundStyle(Palette.inkMuted)
+            if compact { Spacer().frame(height: 8) } else { Spacer(minLength: 8).frame(maxHeight: 80) }
+            if store.hasEverTracked { gauge } else { welcome }
+            if compact { Spacer().frame(height: 12) } else { Spacer(minLength: 12) }
+            if let failure {
+                Text(failure).font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 12)
+            }
+            if !store.todaySessions.isEmpty {
+                sessions(scrollsInside: !compact).padding(.bottom, 12)
+            }
+            action
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 16)
+        .frame(maxWidth: .infinity)
+    }
+
+    /// The first-run empty state, in place of a gauge that would only ever read zero: the mark and a
+    /// title, no message, since the action below already says what to do.
+    private var welcome: some View {
+        VStack(spacing: 20) {
+            BrandMark(color: Palette.ink).frame(width: 96, height: 96)
+            Text("Ready when you are")
+                .font(AppFont.heading)
+                .foregroundStyle(Palette.ink)
+                .multilineTextAlignment(.center)
         }
     }
 
@@ -126,7 +158,7 @@ struct CheckInView: View {
 
     /// Today's sessions as a pill stating the day once (`n sessions · Xh Ym today`, the open interval
     /// included live), which opens into the ledger rows.
-    private var sessions: some View {
+    private func sessions(scrollsInside: Bool) -> some View {
         VStack(spacing: 8) {
             Button {
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { sessionsExpanded.toggle() }
@@ -151,16 +183,34 @@ struct CheckInView: View {
             .accessibilityIdentifier("todaySessions")
             .accessibilityHint(sessionsExpanded ? String(app: "Hide today's sessions") : String(app: "Show today's sessions"))
             if sessionsExpanded {
-                ScrollView {
-                    VStack(spacing: 4) {
-                        ForEach(store.todaySessions, id: \.id) { session in
-                            SessionIntervalRow(session: session)
-                        }
-                    }
+                // Bounded and scrolling inside itself in the one-viewport layout; in full when the
+                // whole screen already scrolls.
+                if scrollsInside {
+                    ScrollView { rows }
+                        .scrollBounceBehavior(.basedOnSize)
+                        .frame(maxHeight: 160)
+                        .transition(.opacity)
+                } else {
+                    rows.transition(.opacity)
                 }
-                .scrollBounceBehavior(.basedOnSize)
-                .frame(maxHeight: 160)
-                .transition(.opacity)
+            }
+        }
+    }
+
+    /// "Check in to Gym" for the shown habit, "Check out of Gym" for the running one, or the bare
+    /// action while the habit is unnamed.
+    private func actionLabel(running: Bool) -> String {
+        if running {
+            let name = (habits.active + habits.archived).first { $0.id == store.openSession?.habitId }?.name
+            return name.map { String(app: "Check out of \($0)") } ?? String(app: "Check Out")
+        }
+        return habits.selected?.name.map { String(app: "Check in to \($0)") } ?? String(app: "Check In")
+    }
+
+    private var rows: some View {
+        VStack(spacing: 4) {
+            ForEach(store.todaySessions, id: \.id) { session in
+                SessionIntervalRow(session: session)
             }
         }
     }
@@ -184,9 +234,10 @@ struct CheckInView: View {
                 Image(systemName: running ? "square.and.arrow.up" : "square.and.arrow.down")
                     .font(.system(size: 22, weight: .semibold))
                     .accessibilityHidden(true)
-                Text(running ? LocalizedStringKey("Check Out") : LocalizedStringKey("Check In"))
+                Text(actionLabel(running: running))
                     .font(AppFont.actionLabel)
                     .lineLimit(1)
+                    .truncationMode(.tail)
             }
             .foregroundStyle(colors.label)
             .frame(maxWidth: .infinity, minHeight: 64)
@@ -291,7 +342,7 @@ enum SessionText {
 
     static func range(_ session: SessionRow) -> String {
         let start = AppLocale.clock(Clock.date(ms: session.startedAt))
-        guard let stop = session.stoppedAt else { return start }
-        return String(app: "\(start) – \(AppLocale.clock(Clock.date(ms: stop)))")
+        let end = session.stoppedAt.map { AppLocale.clock(Clock.date(ms: $0)) } ?? String(app: "ongoing")
+        return String(app: "\(start) – \(end)")
     }
 }

@@ -13,19 +13,42 @@ struct HistoryView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    monthStepper
-                    CalendarGridView(history: history) { key in act { try history.select(key) } }
-                    daySlot
-                    if failed { Text(HistoryText.readFailed).font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted) }
+            GeometryReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: Self.spacing) {
+                        monthStepper
+                        CalendarGridView(history: history, cellHeight: cellHeight(for: proxy.size.height)) { key in
+                            act { try history.select(key) }
+                        }
+                        daySlot
+                        if failed { Text(HistoryText.readFailed).font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted) }
+                    }
+                    .padding(Self.padding)
                 }
-                .padding()
             }
             .background(Palette.paper.ignoresSafeArea())
             .habitSwitcher(habits)
             .onAppear { act { try history.reload() } }
         }
+    }
+
+    private static let padding: CGFloat = 16
+    private static let spacing: CGFloat = 16
+    private static let stepperHeight: CGFloat = 48
+    private static let weekdayHeaderHeight: CGFloat = 20
+    /// The slot under the grid, held at its tallest state (a selected day holding nothing) because
+    /// the grid is sized before the slot is laid out. Erring high costs grid height; erring low would
+    /// push the slot off screen.
+    private static let detailSlotHeight: CGFloat = 180
+
+    /// The cell height that fits the month and the day slot in the real viewport, as Android's
+    /// History does: never under a 48-point target (a six-row month may then scroll slightly) and
+    /// never over 80, where a cell stops reading as a day and becomes a ribbon.
+    private func cellHeight(for viewport: CGFloat) -> CGFloat {
+        let rows = CGFloat(max((history.leadingBlanks + history.days.count + 6) / 7, 1))
+        let chrome = Self.padding * 2 + Self.spacing * 2 + Self.stepperHeight + Self.weekdayHeaderHeight
+            + Self.detailSlotHeight + CalendarGridView.spacing * rows
+        return min(max((viewport - chrome) / rows, 48), 80)
     }
 
     private var monthStepper: some View {
@@ -82,21 +105,24 @@ struct HistoryView: View {
 private struct CalendarGridView: View {
 
     let history: HistoryStore
+    let cellHeight: CGFloat
     let onTap: (String) -> Void
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+    static let spacing: CGFloat = 4
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: Self.spacing), count: 7)
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 4) {
+        LazyVGrid(columns: columns, spacing: Self.spacing) {
             ForEach(Array(HistoryText.weekdayInitials().enumerated()), id: \.offset) { _, initial in
                 Text(initial).font(AppFont.labelSmall).foregroundStyle(Palette.inkMuted).accessibilityHidden(true)
             }
-            ForEach(0..<history.leadingBlanks, id: \.self) { _ in Color.clear.frame(height: 48) }
+            ForEach(0..<history.leadingBlanks, id: \.self) { _ in Color.clear.frame(height: cellHeight) }
             ForEach(history.days, id: \.dateKey) { day in
                 DayCell(
                     day: day,
                     summary: history.summaries[day.dateKey],
-                    selected: day.dateKey == history.selectedKey
+                    selected: day.dateKey == history.selectedKey,
+                    height: cellHeight
                 ) { onTap(day.dateKey) }
             }
         }
@@ -110,6 +136,7 @@ private struct DayCell: View {
     let day: CalendarDay
     let summary: DailyAggregate?
     let selected: Bool
+    let height: CGFloat
     let onTap: () -> Void
 
     var body: some View {
@@ -122,7 +149,7 @@ private struct DayCell: View {
                 Circle().frame(width: 4, height: 4).opacity(day.today ? 1 : 0)
                     .foregroundStyle(Palette.ink)
             }
-            .frame(maxWidth: .infinity, minHeight: 48)
+            .frame(maxWidth: .infinity, minHeight: height)
             .background(day.recorded ? Palette.dayColor.opacity(Palette.recordedDayAlpha) : .clear, in: shape)
             .overlay { if selected { shape.strokeBorder(Palette.ink, lineWidth: 2) } }
             .contentShape(shape)

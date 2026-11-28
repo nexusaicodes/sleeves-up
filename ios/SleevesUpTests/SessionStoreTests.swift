@@ -45,6 +45,18 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertEqual(store.openSession?.habitId, RecordDatabase.seedHabitId)
     }
 
+    func testHasEverTrackedFollowsTheShownHabitsSessions() throws {
+        nowMs = utcJun15At0900
+        let store = try makeStore()
+        XCTAssertFalse(store.hasEverTracked, "a fresh record has tracked nothing")
+
+        _ = try store.checkIn()
+        XCTAssertTrue(store.hasEverTracked, "an open session counts")
+
+        try store.show(habitId: RecordDatabase.seedHabitId + 1)
+        XCTAssertFalse(store.hasEverTracked, "another habit's sessions do not")
+    }
+
     func testASecondCheckInWritesNothing() throws {
         nowMs = utcJun15At0900
         let store = try makeStore()

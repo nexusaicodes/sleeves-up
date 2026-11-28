@@ -19,6 +19,9 @@ final class SessionStore {
 
     private(set) var openSession: SessionRow?
     private(set) var todaySessions: [SessionRow] = []
+    /// Whether the shown habit holds any session, open ones included: Check-In shows its first-run
+    /// empty state until it does, rather than a gauge that would only ever read zero.
+    private(set) var hasEverTracked = false
 
     private let database: DatabaseQueue
     private let zones: SessionZones
@@ -183,7 +186,7 @@ final class SessionStore {
 
     private func reload() throws {
         let todayKey = Clock.dateKey(now(), in: zone())
-        let (open, openName, today) = try database.read { db in
+        let (open, openName, today, tracked) = try database.read { db in
             let open = try SessionRow.fetchOne(db, sql: "SELECT * FROM sessions WHERE stopped_at IS NULL LIMIT 1")
             return (
                 open,
@@ -194,11 +197,15 @@ final class SessionStore {
                     db,
                     sql: "SELECT * FROM sessions WHERE habit_id = ? AND date_key = ? ORDER BY started_at ASC",
                     arguments: [habitId, todayKey]
-                )
+                ),
+                try Bool.fetchOne(
+                    db, sql: "SELECT EXISTS(SELECT 1 FROM sessions WHERE habit_id = ?)", arguments: [habitId]
+                ) ?? false
             )
         }
         openSession = open
         todaySessions = today
+        hasEverTracked = tracked
         let boundary = open.map(dayBoundary(of:))
         reminders?.sync(open: open, dayBoundaryMs: boundary, nowMs: Clock.nowMs(now()))
         activity?.sync(open: open, habitName: openName, dayBoundaryMs: boundary)
