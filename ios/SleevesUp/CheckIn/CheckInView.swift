@@ -19,6 +19,9 @@ struct CheckInView: View {
     @State private var pendingCelebration: CheckOutCompleted?
     @State private var failure: String?
     @State private var openHabits = false
+    @State private var sessionsExpanded = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum GateAction: Identifiable {
         case checkIn, checkOut
@@ -56,20 +59,28 @@ struct CheckInView: View {
     }
 
     private var screen: some View {
-        VStack(spacing: 24) {
-            Spacer()
-            readout
-            Button(store.openSession == nil ? LocalizedStringKey("Check In") : LocalizedStringKey("Check Out")) {
-                gateFor = store.openSession == nil ? .checkIn : .checkOut
+        VStack(spacing: 0) {
+            Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(AppLocale.current)))
+                .font(AppFont.bodyMediumEmphasis)
+                .foregroundStyle(Palette.inkMuted)
+            Spacer(minLength: 8).frame(maxHeight: 80)
+            gauge
+            Spacer(minLength: 12)
+            if let failure {
+                Text(failure).font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 12)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .accessibilityIdentifier("sessionAction")
-            if let failure { Text(failure).font(.footnote).foregroundStyle(.secondary) }
-            Spacer()
-            sessions
+            if !store.todaySessions.isEmpty {
+                sessions.padding(.bottom, 12)
+            }
+            action
         }
-        .padding()
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 16)
+        .frame(maxWidth: .infinity)
+        .background(Palette.paper.ignoresSafeArea())
         .sheet(isPresented: $choosing) {
             HabitPickerView(habits: habits.active, onPick: picked, onDismiss: { choosing = false })
         }
@@ -90,22 +101,101 @@ struct CheckInView: View {
         }
     }
 
-    /// The open session counting up from its check-in, or zero between sessions.
-    private var readout: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { context in
-            let elapsed = store.openSession.map { Clock.nowMs(context.date) - $0.startedAt } ?? 0
-            Text(SessionText.live(max(elapsed, 0)))
-                .font(.system(size: 44, weight: .semibold).monospacedDigit())
+    /// The brand lattice breathing while a session is open, still at rest, above the open session's
+    /// time counting up from its check-in (zero between sessions). The mark says one thing, whether a
+    /// session is open; the readout is the current session, never the day's total.
+    private var gauge: some View {
+        VStack(spacing: 20) {
+            BrandMark(mode: .pulse(running: store.openSession != nil), color: Palette.ink)
+                .frame(maxWidth: markSide, maxHeight: markSide)
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                let elapsed = store.openSession.map { Clock.nowMs(context.date) - $0.startedAt } ?? 0
+                Text(SessionText.live(max(elapsed, 0)))
+                    .font(dynamicTypeSize.isAccessibilitySize ? AppFont.readoutCompact : AppFont.readout)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .foregroundStyle(Palette.ink)
+            }
         }
     }
 
+    /// The mark's side: generous on a tall phone, smaller at large Dynamic Type so the readout,
+    /// the pill and the action still share one screen.
+    private var markSide: CGFloat { dynamicTypeSize.isAccessibilitySize ? 120 : 200 }
+
+    /// Today's sessions as a pill stating the day once (`n sessions · Xh Ym today`, the open interval
+    /// included live), which opens into the ledger rows.
     private var sessions: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(store.todaySessions, id: \.id) { session in
-                SessionIntervalRow(session: session)
+        VStack(spacing: 8) {
+            Button {
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { sessionsExpanded.toggle() }
+            } label: {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    HStack(spacing: 4) {
+                        Text(String(app: "\(ReportText.sessions(store.todaySessions.count)) · \(SessionText.short(todayTotal(at: context.date))) today"))
+                            .font(AppFont.bodyMedium)
+                        Image(systemName: sessionsExpanded ? "chevron.up" : "chevron.down")
+                            .font(AppFont.bodySmall)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .foregroundStyle(Palette.inkMuted)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .frame(minHeight: 48)
+                .background(Palette.paper200, in: Capsule())
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("todaySessions")
+            .accessibilityHint(sessionsExpanded ? String(app: "Hide today's sessions") : String(app: "Show today's sessions"))
+            if sessionsExpanded {
+                ScrollView {
+                    VStack(spacing: 4) {
+                        ForEach(store.todaySessions, id: \.id) { session in
+                            SessionIntervalRow(session: session)
+                        }
+                    }
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                .frame(maxHeight: 160)
+                .transition(.opacity)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The day so far: every completed session, plus the open one's time to `date`.
+    private func todayTotal(at date: Date) -> Int64 {
+        store.todaySessions.reduce(Int64(0)) { sum, session in
+            sum + (session.duration ?? max(Clock.nowMs(date) - session.startedAt, 0))
+        }
+    }
+
+    /// The start/stop control, coloured by what it does: brass-fill to check in, ink to check out,
+    /// animated across the switch so it reads as one control changing state. Never red.
+    private var action: some View {
+        let running = store.openSession != nil
+        let colors = running ? Palette.stopAction : Palette.startAction
+        return Button {
+            gateFor = running ? .checkOut : .checkIn
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: running ? "square.and.arrow.up" : "square.and.arrow.down")
+                    .font(.system(size: 22, weight: .semibold))
+                    .accessibilityHidden(true)
+                Text(running ? LocalizedStringKey("Check Out") : LocalizedStringKey("Check In"))
+                    .font(AppFont.actionLabel)
+                    .lineLimit(1)
+            }
+            .foregroundStyle(colors.label)
+            .frame(maxWidth: .infinity, minHeight: 64)
+            .background(colors.fill, in: Capsule())
+            .contentShape(Capsule())
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: running)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("sessionAction")
     }
 
     /// A habit reminder's tap, routed by the rows at the tap: an archived or unknown habit, or one

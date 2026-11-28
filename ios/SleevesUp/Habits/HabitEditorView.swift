@@ -23,7 +23,7 @@ struct HabitNameField: View {
                     refused = nil
                 }
             if showProblem, let problem {
-                Text(HabitText.problem(problem)).font(.footnote).foregroundStyle(.secondary)
+                Text(HabitText.problem(problem)).font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted)
             }
         }
     }
@@ -67,15 +67,22 @@ struct HabitEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
-                HabitNameField(name: $name, showProblem: $showProblem, refused: $refused, problemFor: problemFor)
-                    .onSubmit(save)
-                if let failure { Text(failure).font(.footnote).foregroundStyle(.secondary) }
+                Section {
+                    HabitNameField(name: $name, showProblem: $showProblem, refused: $refused, problemFor: problemFor)
+                        .onSubmit(save)
+                    if let failure { Text(failure).font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted) }
+                }
+                .rowOnPaper()
                 Section {
                     ReminderFields(on: $reminderOn, minute: $reminderMinute)
                 } footer: {
                     Text("\(ReminderText.rangeNote). Once a day at most, on days you haven't checked in yet.")
+                        .font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted)
                 }
+                .rowOnPaper()
             }
+            .font(AppFont.bodyLarge)
+            .screenBackground()
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -99,6 +106,18 @@ struct HabitEditorView: View {
     }
 }
 
+/// The naming step's field: the name at headline size on the page with an ink rule under it, as
+/// Android's `TitleNameField`, rather than a boxed form field.
+private struct TitleNameFieldStyle: TextFieldStyle {
+    func _body(configuration: TextField<Self._Label>) -> some View {
+        configuration
+            .font(AppFont.headlineSmall)
+            .foregroundStyle(Palette.ink)
+            .padding(.vertical, 8)
+            .overlay(alignment: .bottom) { Rectangle().fill(Palette.ink).frame(height: 2) }
+    }
+}
+
 /// The first-run naming step: the seed habit is created unnamed, and this asks for its name, and the
 /// time its reminder comes around, before anything else is shown.
 struct NameHabitView: View {
@@ -116,24 +135,25 @@ struct NameHabitView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Spacer()
-            Text("What are you showing up for?").font(.title.bold())
+            Text("What are you showing up for?").font(AppFont.heading)
             HabitNameField(name: $name, showProblem: $showProblem, refused: $refused) { typed in
                 HabitRules.shared.nameProblem(name: typed, activeHabits: habits.active, forId: KotlinLong(value: habit.id))
             }
-            .textFieldStyle(.roundedBorder)
+            .textFieldStyle(TitleNameFieldStyle())
             .onSubmit(save)
-            Text("Add more in the app when you want.").font(.footnote).foregroundStyle(.secondary)
+            Text("Add more in the app when you want.").font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted)
             ReminderFields(on: .constant(true), minute: $reminderMinute, showsToggle: false)
             Text("A reminder comes around then on days you haven't checked in yet.")
-                .font(.footnote).foregroundStyle(.secondary)
-            if let failure { Text(failure).font(.footnote).foregroundStyle(.secondary) }
+                .font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted)
+            if let failure { Text(failure).font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted) }
             Spacer()
-            Button("Continue", action: save)
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .frame(maxWidth: .infinity)
+            Button(action: save) {
+                Text("Continue").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.primary)
         }
-        .padding()
+        .padding(24)
+        .background(Palette.paper.ignoresSafeArea())
     }
 
     private func save() {

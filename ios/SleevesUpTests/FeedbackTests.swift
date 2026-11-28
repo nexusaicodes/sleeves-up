@@ -24,7 +24,7 @@ final class FeedbackTests: XCTestCase {
     }
 
     func testEveryLicenceTextShips() {
-        for license in [OpenSourceLibrary.License.apache2, .mit] {
+        for license in [OpenSourceLibrary.License.apache2, .mit, .ofl] {
             let url = Bundle.main.url(forResource: license.resource, withExtension: "txt")
             let text = url.flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? ""
             XCTAssertGreaterThan(text.count, 500, license.rawValue)

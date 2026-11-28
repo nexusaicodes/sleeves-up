@@ -24,7 +24,7 @@ struct ReportsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     scopeSelector
-                    if failed { Text(HistoryText.readFailed).font(.footnote).foregroundStyle(.secondary) }
+                    if failed { Text(HistoryText.readFailed).font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted) }
                     if reports.loaded {
                         if let figures = reports.figures {
                             cards(figures)
@@ -35,16 +35,13 @@ struct ReportsView: View {
                 }
                 .padding()
             }
+            .background(Palette.paper.ignoresSafeArea())
             .habitSwitcher(habits)
             .onAppear { act { try reports.reload() } }
             .sheet(item: $sharing) { file in ShareSheet(items: [file.url]) }
             .safeAreaInset(edge: .bottom) {
                 if let notice {
-                    Text(notice)
-                        .font(.footnote)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(.thinMaterial)
+                    Toast(text: notice)
                         .task(id: notice) {
                             try? await Task.sleep(for: .seconds(4))
                             self.notice = nil
@@ -67,13 +64,13 @@ struct ReportsView: View {
             }
             .pickerStyle(.segmented)
             HStack {
-                Button { act { try reports.previousMonth() } } label: { Image(systemName: "chevron.left") }
+                Button { act { try reports.previousMonth() } } label: { MonthArrow(systemName: "chevron.left") }
                     .accessibilityLabel("Previous month")
                     .disabled(reports.isAllTime)
                 Spacer()
-                Text(ReportText.scopeLabel(reports.scope)).font(.headline)
+                Text(ReportText.scopeLabel(reports.scope)).font(AppFont.titleMedium).foregroundStyle(Palette.ink)
                 Spacer()
-                Button { act { try reports.nextMonth() } } label: { Image(systemName: "chevron.right") }
+                Button { act { try reports.nextMonth() } } label: { MonthArrow(systemName: "chevron.right") }
                     .accessibilityLabel("Next month")
                     .disabled(!reports.hasNextMonth)
             }
@@ -82,8 +79,8 @@ struct ReportsView: View {
 
     private var emptyScope: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Nothing recorded here").font(.headline)
-            Text(ReportText.emptyMessage(reports.scope)).foregroundStyle(.secondary)
+            Text("Nothing recorded here").font(AppFont.titleMedium).foregroundStyle(Palette.ink)
+            Text(ReportText.emptyMessage(reports.scope)).foregroundStyle(Palette.inkMuted)
         }
         .padding(.top, 24)
     }
@@ -101,7 +98,7 @@ struct ReportsView: View {
         // on an empty scope would offer a no-op.
         ReportCard(title: "Export Data") {
             Button("Export \(ReportText.scopeInline(reports.scope))", action: export)
-                .buttonStyle(.bordered)
+                .buttonStyle(.tertiary)
         }
     }
 
@@ -130,7 +127,7 @@ struct ReportsView: View {
     }
 }
 
-/// A titled card. Plain until the styling pass.
+/// A titled card on raised paper, as Android's `ChartCard` and `SectionCard` are.
 private struct ReportCard<Content: View>: View {
 
     let title: LocalizedStringKey
@@ -140,14 +137,14 @@ private struct ReportCard<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.headline)
-                if let subtitle { Text(subtitle).font(.caption).foregroundStyle(.secondary) }
+                Text(title).font(AppFont.cardTitle).foregroundStyle(Palette.ink)
+                if let subtitle { Text(subtitle).font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted) }
             }
             content
         }
-        .padding()
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+        .background(Palette.paper200, in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
@@ -157,11 +154,11 @@ private struct StatRow: View {
 
     var body: some View {
         HStack {
-            Text(label).foregroundStyle(.secondary)
+            Text(label).foregroundStyle(Palette.inkMuted)
             Spacer()
-            Text(value).monospacedDigit()
+            Text(value).monospacedDigit().foregroundStyle(Palette.ink)
         }
-        .font(.callout)
+        .font(AppFont.bodyMedium)
         .accessibilityElement(children: .combine)
     }
 }
@@ -178,7 +175,7 @@ private struct NumbersCard: View {
             StatRow(label: "Days tracked", value: ReportText.days(figures.totalDays))
             StatRow(label: "Showed up", value: ReportText.days(figures.showedUpDays))
             StatRow(label: "Missed", value: ReportText.days(figures.missedDays))
-            Divider()
+            Divider().overlay(Palette.outline.opacity(0.5))
             StatRow(label: "Total hours", value: SessionText.short(figures.totalWorkedMs))
             StatRow(label: "Total sessions", value: ReportText.sessions(figures.totalSessions))
             StatRow(label: "Hours per tracked day", value: SessionText.short(figures.avgDailyMs))
@@ -195,11 +192,11 @@ private struct SplitCard: View {
             HStack(spacing: 20) {
                 DonutChartView(
                     values: [Int(figures.showedUpDays), Int(figures.missedDays)],
-                    colors: [.accentColor, .gray],
-                    emptyColor: .gray,
+                    colors: [Palette.dayColor, Palette.outline],
+                    emptyColor: Palette.outline,
                     description: ReportText.daysSplit(figures)
                 )
-                Legend(colors: [.accentColor, .gray], labels: [String(app: "Showed up"), String(app: "Missed")],
+                Legend(colors: [Palette.dayColor, Palette.outline], labels: [String(app: "Showed up"), String(app: "Missed")],
                        values: [Int(figures.showedUpDays), Int(figures.missedDays)])
             }
         }
@@ -221,8 +218,8 @@ private struct DailyHoursCard: View {
                 Spacer()
                 Text(figures.dailySeries.last.map { ReportText.axisDay($0.date) } ?? "")
             }
-            .font(.caption2)
-            .foregroundStyle(.secondary)
+            .font(AppFont.labelSmall)
+            .foregroundStyle(Palette.inkMuted)
             .accessibilityHidden(true)
         }
     }
@@ -266,8 +263,8 @@ private struct MonthlyHoursCard: View {
                     }
                 }
             }
-            .font(.caption2)
-            .foregroundStyle(.secondary)
+            .font(AppFont.labelSmall)
+            .foregroundStyle(Palette.inkMuted)
             .accessibilityHidden(true)
         }
     }
@@ -313,11 +310,11 @@ private struct SplitRow: View {
     let labels: [String]
     let description: String
 
-    private let hues: [Color] = [.primary, .orange, .teal]
+    private let hues = Palette.descriptiveHues
 
     var body: some View {
         HStack(spacing: 20) {
-            DonutChartView(values: values, colors: hues, emptyColor: .gray, description: description)
+            DonutChartView(values: values, colors: hues, emptyColor: Palette.outline, description: description)
             Legend(colors: hues, labels: labels, values: values)
         }
     }
@@ -333,11 +330,11 @@ private struct Legend: View {
             ForEach(labels.indices, id: \.self) { index in
                 HStack(spacing: 8) {
                     Circle().fill(colors[index]).frame(width: 10, height: 10)
-                    Text(labels[index])
+                    Text(labels[index]).foregroundStyle(Palette.inkMuted)
                     Spacer(minLength: 8)
-                    Text(verbatim: "\(values[index])").monospacedDigit()
+                    Text(verbatim: "\(values[index])").monospacedDigit().foregroundStyle(Palette.ink)
                 }
-                .font(.callout)
+                .font(AppFont.bodyMedium)
             }
         }
         .accessibilityHidden(true)

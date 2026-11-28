@@ -4,7 +4,8 @@ import SwiftUI
 /// One page of the welcome tour, Android's `WelcomePages` copy in the app's language.
 struct WelcomePage: Identifiable {
     let id: Int
-    let symbol: String
+    /// The page's icon, or nil for the brand mark.
+    let symbol: String?
     let title: String
     let body: String
     /// Below the body: how to place the widget, which iOS gives an app no way to do for the user.
@@ -25,7 +26,7 @@ struct WelcomePage: Identifiable {
         [
             WelcomePage(
                 id: 0,
-                symbol: "quote.opening",
+                symbol: nil,
                 title: String(app: "Make it a habit"),
                 body: String(app: "“We are what we repeatedly do. Excellence, then, is not an act, but a habit.” — Will Durant, on Aristotle")
             ),
@@ -64,7 +65,8 @@ struct WelcomeView: View {
                     Button("Skip") { onExit(.skipped) }
                 }
             }
-            .frame(height: 44)
+            .buttonStyle(.ghost)
+            .frame(height: 48)
             .padding(.horizontal)
             TabView(selection: $page) {
                 ForEach(WelcomePage.all) { item in
@@ -72,15 +74,17 @@ struct WelcomeView: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
-            .indexViewStyle(.page(backgroundDisplayMode: .always))
-            Button(isLast ? LocalizedStringKey("Get started") : LocalizedStringKey("Next")) {
+            .indexViewStyle(.page(backgroundDisplayMode: .never))
+            Button {
                 if isLast { onExit(.finished) } else { withAnimation { page += 1 } }
+            } label: {
+                Text(isLast ? LocalizedStringKey("Get started") : LocalizedStringKey("Next")).frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .padding()
+            .buttonStyle(.primary)
+            .padding(24)
             .accessibilityIdentifier("welcomeAction")
         }
+        .background(Palette.paper.ignoresSafeArea())
     }
 }
 
@@ -90,20 +94,29 @@ struct WelcomePageView: View {
     var body: some View {
         VStack(spacing: 20) {
             Spacer()
-            Image(systemName: page.symbol)
-                .font(.system(size: 56))
-                .accessibilityHidden(true)
+            Group {
+                if let symbol = page.symbol {
+                    Image(systemName: symbol).font(.system(size: 44)).foregroundStyle(Palette.ink)
+                } else {
+                    BrandMark(color: Palette.ink).frame(width: 52, height: 52)
+                }
+            }
+            .frame(width: 96, height: 96)
+            .background(Palette.paper200, in: Circle())
+            .accessibilityHidden(true)
             Text(page.title)
-                .font(.title.weight(.semibold))
+                .font(AppFont.heading)
+                .foregroundStyle(Palette.ink)
                 .multilineTextAlignment(.center)
             Text(page.body)
+                .font(AppFont.bodyLarge)
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Palette.inkMuted)
             if let note = page.note {
                 Text(note)
-                    .font(.footnote)
+                    .font(AppFont.bodySmall)
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Palette.inkMuted)
             }
             Spacer()
             Spacer()
@@ -121,10 +134,10 @@ struct WidgetPageView: View {
     var body: some View {
         VStack {
             WelcomePageView(page: WelcomePage.widget)
-            Button("Done", action: onDone)
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .padding()
+            Button(action: onDone) { Text("Done").frame(maxWidth: .infinity) }
+                .buttonStyle(.primary)
+                .padding(24)
         }
+        .background(Palette.paper.ignoresSafeArea())
     }
 }

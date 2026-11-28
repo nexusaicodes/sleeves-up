@@ -18,10 +18,11 @@ struct HistoryView: View {
                     monthStepper
                     CalendarGridView(history: history) { key in act { try history.select(key) } }
                     daySlot
-                    if failed { Text(HistoryText.readFailed).font(.footnote).foregroundStyle(.secondary) }
+                    if failed { Text(HistoryText.readFailed).font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted) }
                 }
                 .padding()
             }
+            .background(Palette.paper.ignoresSafeArea())
             .habitSwitcher(habits)
             .onAppear { act { try history.reload() } }
         }
@@ -29,12 +30,12 @@ struct HistoryView: View {
 
     private var monthStepper: some View {
         HStack {
-            Button { act { try history.previousMonth() } } label: { Image(systemName: "chevron.left") }
+            Button { act { try history.previousMonth() } } label: { MonthArrow(systemName: "chevron.left") }
                 .accessibilityLabel("Previous month")
             Spacer()
-            Text(HistoryText.monthYear(history.month)).font(.headline)
+            Text(HistoryText.monthYear(history.month)).font(AppFont.titleMedium).foregroundStyle(Palette.ink)
             Spacer()
-            Button { act { try history.nextMonth() } } label: { Image(systemName: "chevron.right") }
+            Button { act { try history.nextMonth() } } label: { MonthArrow(systemName: "chevron.right") }
                 .accessibilityLabel("Next month")
                 .disabled(!history.hasNextMonth)
         }
@@ -46,13 +47,13 @@ struct HistoryView: View {
     private var daySlot: some View {
         if let key = history.selectedKey {
             VStack(alignment: .leading, spacing: 8) {
-                Text(HistoryText.dateWithWeekday(key)).font(.headline)
+                Text(HistoryText.dateWithWeekday(key)).font(AppFont.titleMedium).foregroundStyle(Palette.ink)
                 if history.selectedSessions.isEmpty {
-                    Text("No sessions recorded on this day.").foregroundStyle(.secondary)
+                    Text("No sessions recorded on this day.").foregroundStyle(Palette.inkMuted)
                 } else {
                     Text(HistoryText.daySummary(history.selectedSessions))
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(.secondary)
+                        .font(AppFont.labelLarge)
+                        .foregroundStyle(Palette.inkMuted)
                     ForEach(history.selectedSessions, id: \.id) { session in
                         SessionIntervalRow(session: session)
                     }
@@ -60,8 +61,8 @@ struct HistoryView: View {
             }
         } else {
             VStack(alignment: .leading, spacing: 4) {
-                Text("No day selected").font(.headline)
-                Text("Tap a day in the calendar to see its sessions.").foregroundStyle(.secondary)
+                Text("No day selected").font(AppFont.titleMedium).foregroundStyle(Palette.ink)
+                Text("Tap a day in the calendar to see its sessions.").foregroundStyle(Palette.inkMuted)
             }
         }
     }
@@ -88,9 +89,9 @@ private struct CalendarGridView: View {
     var body: some View {
         LazyVGrid(columns: columns, spacing: 4) {
             ForEach(Array(HistoryText.weekdayInitials().enumerated()), id: \.offset) { _, initial in
-                Text(initial).font(.caption2).foregroundStyle(.secondary).accessibilityHidden(true)
+                Text(initial).font(AppFont.labelSmall).foregroundStyle(Palette.inkMuted).accessibilityHidden(true)
             }
-            ForEach(0..<history.leadingBlanks, id: \.self) { _ in Color.clear.frame(height: 44) }
+            ForEach(0..<history.leadingBlanks, id: \.self) { _ in Color.clear.frame(height: 48) }
             ForEach(history.days, id: \.dateKey) { day in
                 DayCell(
                     day: day,
@@ -116,14 +117,14 @@ private struct DayCell: View {
         Button(action: onTap) {
             VStack(spacing: 2) {
                 Text(verbatim: "\(day.date.day)")
-                    .font(.callout.weight(day.today ? .bold : .regular))
+                    .font(day.today ? AppFont.bodyMediumBold : AppFont.bodyMedium)
                     .foregroundStyle(numberStyle)
                 Circle().frame(width: 4, height: 4).opacity(day.today ? 1 : 0)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Palette.ink)
             }
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(day.recorded ? Color.accentColor.opacity(0.4) : .clear, in: shape)
-            .overlay { if selected { shape.strokeBorder(.primary, lineWidth: 2) } }
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .background(day.recorded ? Palette.dayColor.opacity(Palette.recordedDayAlpha) : .clear, in: shape)
+            .overlay { if selected { shape.strokeBorder(Palette.ink, lineWidth: 2) } }
             .contentShape(shape)
         }
         .buttonStyle(.plain)
@@ -138,10 +139,23 @@ private struct DayCell: View {
         return String(app: "\(Int(day.date.day)), \(SessionText.short(summary.totalDurationMs)) worked")
     }
 
-    private var numberStyle: AnyShapeStyle {
-        if day.today { return AnyShapeStyle(Color.accentColor) }
-        if day.outsideRecord { return AnyShapeStyle(.tertiary) }
-        return AnyShapeStyle(.primary)
+    /// Only days outside the record are faded; an empty past day is drawn as plainly as any other.
+    private var numberStyle: Color {
+        day.outsideRecord && !day.today ? Palette.ink.opacity(0.38) : Palette.ink
+    }
+}
+
+/// A month stepper's arrow at a 48-point target, shared by History and Reports.
+struct MonthArrow: View {
+    let systemName: String
+    @Environment(\.isEnabled) private var isEnabled
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(Palette.ink.opacity(isEnabled ? 1 : 0.38))
+            .frame(width: 48, height: 48)
+            .contentShape(Rectangle())
     }
 }
 

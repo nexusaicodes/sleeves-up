@@ -20,6 +20,10 @@ struct SleevesUpApp: App {
     @State private var showWidgetPage = false
     @State private var openFailed = false
 
+    init() {
+        AppChrome.install()
+    }
+
     var body: some Scene {
         WindowGroup {
             Group {
@@ -87,6 +91,10 @@ struct SleevesUpApp: App {
                     Text("Sleeves Up couldn't open its record.").padding()
                 }
             }
+            .font(AppFont.bodyMedium)
+            .foregroundStyle(Palette.ink)
+            .tint(Palette.ink)
+            .background(Palette.paper.ignoresSafeArea())
             .environment(\.locale, AppLocale.current)
             .task { open() }
             .onOpenURL { url in

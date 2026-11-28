@@ -23,19 +23,21 @@ struct SettingsView: View {
                 } footer: {
                     if habits.isLocked { Text(HabitText.switchLocked(habits.active.first { $0.id == habits.runningHabitId })) }
                 }
+                .rowOnPaper()
                 Section("Language") {
                     Button("App language") {
                         if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                     }
                     .accessibilityHint("Opens outside the app")
                 }
+                .rowOnPaper()
                 Section("About") {
                     LabeledContent {
                         Text(String(app: "Version \(AppBuild.version) (build \(AppBuild.build))"))
                     } label: {
                         Text(verbatim: "Sleeves Up")
                     }
-                    Text(verbatim: "Nexus AI Technology Labs").foregroundStyle(.secondary)
+                    Text(verbatim: "Nexus AI Technology Labs").foregroundStyle(Palette.inkMuted)
                     NavigationLink("What this app collects") { PrivacyView() }
                     Button("Privacy policy") { openURL(Self.privacyPolicy) }
                         .accessibilityHint("Opens outside the app")
@@ -43,11 +45,16 @@ struct SettingsView: View {
                         .accessibilityHint("Opens outside the app")
                     NavigationLink("Licences") { LicensesView() }
                 }
+                .rowOnPaper()
                 if let notice {
-                    Section { Text(notice).font(.footnote).foregroundStyle(.secondary) }
+                    Section { Text(notice).font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted) }
+                        .rowOnPaper()
                 }
             }
+            .font(AppFont.bodyLarge)
+            .screenBackground()
             .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(isPresented: $openHabits) { HabitsView(habits: habits) }
         }
     }

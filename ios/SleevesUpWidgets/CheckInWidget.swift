@@ -11,7 +11,7 @@ struct CheckInWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: WidgetFace.kind, provider: FaceProvider()) { entry in
             FaceView(face: entry.face)
-                .containerBackground(.background, for: .widget)
+                .containerBackground(Palette.paper, for: .widget)
                 .widgetURL(WidgetFace.tap)
                 .environment(\.locale, AppLocale.current)
         }
@@ -68,12 +68,16 @@ private struct FaceView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // The mark at rest is the ink at 40%, at full colour while a session is open.
-            Image(systemName: "square.grid.3x3.fill")
-                .font(.title2)
-                .opacity(face.sessionOpen ? 1 : 0.4)
+            Image("Mark")
+                .renderingMode(.template)
+                .resizable()
+                .frame(width: 32, height: 32)
+                .foregroundStyle(Palette.ink.opacity(face.sessionOpen ? 1 : 0.4))
+                .accessibilityHidden(true)
             Spacer(minLength: 0)
             Text(face.text)
                 .font(.headline)
+                .foregroundStyle(Palette.ink)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
         }

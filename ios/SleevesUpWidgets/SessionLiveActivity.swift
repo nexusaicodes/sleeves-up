@@ -12,27 +12,33 @@ struct SessionLiveActivity: Widget {
         ActivityConfiguration(for: SessionActivityAttributes.self) { context in
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(SessionActivityText.title(context.state.habitName))
-                        .font(.headline)
-                        .lineLimit(2)
+                    HStack(spacing: 8) {
+                        MarkImage().frame(width: 18, height: 18).foregroundStyle(Palette.ink)
+                        Text(SessionActivityText.title(context.state.habitName))
+                            .font(.headline)
+                            .lineLimit(2)
+                    }
                     SessionClock(attributes: context.attributes)
-                        .font(.title2.monospacedDigit())
+                        .font(.title2.weight(.semibold).monospacedDigit())
                 }
+                .foregroundStyle(Palette.ink)
                 Spacer()
                 Link(destination: SessionActivityLink.checkOut) {
                     Text(SessionActivityText.checkOut)
                         .font(.callout.weight(.semibold))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(.tint, in: Capsule())
-                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Palette.ink, in: Capsule())
+                        .foregroundStyle(Palette.paper)
                 }
             }
             .padding()
+            .activityBackgroundTint(Palette.paper)
+            .activitySystemActionForegroundColor(Palette.ink)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Image(systemName: "square.grid.3x3.fill")
+                    MarkImage().frame(width: 24, height: 24).foregroundStyle(Palette.nightInk)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     SessionClock(attributes: context.attributes)
@@ -45,22 +51,32 @@ struct SessionLiveActivity: Widget {
                         Spacer()
                         Link(SessionActivityText.checkOut, destination: SessionActivityLink.checkOut)
                             .font(.callout.weight(.semibold))
+                            .foregroundStyle(Palette.nightInk)
                     }
                 }
             } compactLeading: {
-                Image(systemName: "square.grid.3x3.fill")
+                MarkImage().frame(width: 16, height: 16).foregroundStyle(Palette.nightInk)
             } compactTrailing: {
                 SessionClock(attributes: context.attributes)
                     .monospacedDigit()
                     .frame(maxWidth: 64)
             } minimal: {
-                Image(systemName: "square.grid.3x3.fill")
+                MarkImage().frame(width: 16, height: 16).foregroundStyle(Palette.nightInk)
             }
+            .keylineTint(Palette.nightInk)
         }
     }
 }
 
+/// The brand mark as the generated template image, tinted by its caller.
+private struct MarkImage: View {
+    var body: some View {
+        Image("Mark").renderingMode(.template).resizable().accessibilityHidden(true)
+    }
+}
+
 /// The session's clock, counting up from check-in and stopping at its own midnight, in Latin digits.
+
 private struct SessionClock: View {
     let attributes: SessionActivityAttributes
 

@@ -31,6 +31,7 @@ struct HabitsView: View {
                     activeRow(habit)
                 }
             }
+            .rowOnPaper()
             if !habits.archived.isEmpty {
                 Section {
                     ForEach(habits.archived, id: \.id) { habit in
@@ -40,9 +41,12 @@ struct HabitsView: View {
                     Text("Archived")
                 } footer: {
                     Text("Archived habits keep their records and send no reminders.")
+                        .font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted)
                 }
+                .rowOnPaper()
             }
         }
+        .screenBackground()
         .navigationTitle("Habits")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -51,11 +55,7 @@ struct HabitsView: View {
         }
         .safeAreaInset(edge: .bottom) {
             if let notice {
-                Text(notice)
-                    .font(.footnote)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(.thinMaterial)
+                Toast(text: notice)
                     .task(id: notice) {
                         try? await Task.sleep(for: .seconds(4))
                         self.notice = nil
@@ -71,13 +71,13 @@ struct HabitsView: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(HabitText.name(habit)).foregroundStyle(.primary)
+                    Text(HabitText.name(habit)).font(AppFont.bodyLarge).foregroundStyle(Palette.ink)
                     Text(ReminderText.summary(on: settings.isOn(habit.uuid), minute: settings.minute(habit.uuid)))
-                        .font(.footnote).foregroundStyle(.secondary)
+                        .font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted)
                 }
                 Spacer()
                 if habit.id == habits.selected?.id {
-                    Text("Showing").font(.footnote).foregroundStyle(.secondary)
+                    Text("Showing").font(AppFont.bodySmall).foregroundStyle(Palette.inkMuted)
                 }
             }
         }
@@ -94,7 +94,7 @@ struct HabitsView: View {
 
     private func archivedRow(_ habit: HabitRow) -> some View {
         HStack {
-            Text(HabitText.name(habit)).foregroundStyle(.secondary)
+            Text(HabitText.name(habit)).font(AppFont.bodyLarge).foregroundStyle(Palette.inkMuted)
             Spacer()
             Button("Restore") { restore(habit) }.buttonStyle(.borderless)
         }

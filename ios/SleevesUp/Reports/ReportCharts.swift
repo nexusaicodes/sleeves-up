@@ -36,14 +36,14 @@ struct LineChartView: View {
                 var line = Path()
                 line.move(to: CGPoint(x: 0, y: y))
                 line.addLine(to: CGPoint(x: size.width, y: y))
-                context.stroke(line, with: .style(.secondary), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                context.stroke(line, with: .color(Palette.outline), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
             }
             // A single reading has no segment to stroke, so it is a dot.
             if points.count == 1 {
                 let r = stroke * 1.5
                 context.fill(
                     Path(ellipseIn: CGRect(x: points[0].x - r, y: points[0].y - r, width: 2 * r, height: 2 * r)),
-                    with: .color(.accentColor)
+                    with: .color(Palette.ink)
                 )
                 return
             }
@@ -56,11 +56,11 @@ struct LineChartView: View {
             context.fill(
                 fill,
                 with: .linearGradient(
-                    Gradient(colors: [Color.accentColor.opacity(0.25), .clear]),
+                    Gradient(colors: [Palette.ink.opacity(0.25), .clear]),
                     startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)
                 )
             )
-            context.stroke(line, with: .color(.accentColor), style: StrokeStyle(lineWidth: stroke, lineCap: .round))
+            context.stroke(line, with: .color(Palette.ink), style: StrokeStyle(lineWidth: stroke, lineCap: .round))
         }
         .flipsForRightToLeftLayoutDirection(true)
         .accessibilityElement()
@@ -81,7 +81,7 @@ struct BarChartView: View {
             let ceiling = ChartGeometry.shared.niceMaxY(rawMax: values.max() ?? 0)
             let rule: CGFloat = 1
             let plotHeight = max(size.height - rule, 0)
-            context.fill(Path(CGRect(x: 0, y: plotHeight, width: size.width, height: rule)), with: .style(.secondary))
+            context.fill(Path(CGRect(x: 0, y: plotHeight, width: size.width, height: rule)), with: .color(Palette.outline))
             let bars = ChartGeometry.shared.barRects(
                 values: values.map { KotlinFloat(value: $0) },
                 width: Float(size.width),
@@ -94,7 +94,7 @@ struct BarChartView: View {
                     x: CGFloat(bar.left), y: CGFloat(bar.top),
                     width: CGFloat(bar.right - bar.left), height: CGFloat(bar.bottom - bar.top)
                 )
-                context.fill(Path(roundedRect: rect, cornerRadius: 4), with: .color(.accentColor))
+                context.fill(Path(roundedRect: rect, cornerRadius: 4), with: .color(Palette.ink))
             }
         }
         .flipsForRightToLeftLayoutDirection(true)
