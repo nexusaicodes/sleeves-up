@@ -598,6 +598,16 @@
         }
       }
     },
+    "All text when the app is in Arabic." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جميع النصوص حين يكون التطبيق بالعربية."
+          }
+        }
+      }
+    },
     "All time" : {
       "localizations" : {
         "ar" : {
@@ -696,6 +706,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "بين %1$@ و%2$@"
+          }
+        }
+      }
+    },
+    "Body and label sizes." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أحجام النصوص والتسميات."
           }
         }
       }
@@ -978,6 +998,16 @@
         }
       }
     },
+    "Display, headline and title sizes." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أحجام العرض والعناوين."
+          }
+        }
+      }
+    },
     "Done" : {
       "localizations" : {
         "ar" : {
@@ -1142,6 +1172,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "العادات"
+          }
+        }
+      }
+    },
+    "Hide today's sessions" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إخفاء جلسات اليوم"
           }
         }
       }
@@ -1925,6 +1965,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "عرض هذه العادة"
+          }
+        }
+      }
+    },
+    "Show today's sessions" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إظهار جلسات اليوم"
           }
         }
       }

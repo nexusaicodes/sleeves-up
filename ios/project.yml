@@ -35,6 +35,14 @@ targets:
         buildPhase: resources
       - path: ../android/src/main/res/raw/apache_2_0.txt
         buildPhase: resources
+      # The SIL Open Font License the three typefaces below are under, as Android bundles it.
+      - path: ../android/src/main/res/raw/ofl_1_1.txt
+        buildPhase: resources
+      # Outfit, Manrope and IBM Plex Sans Arabic: Android's own files, referenced rather than copied
+      # so the two apps cannot drift. Registered by `UIAppFonts` in SleevesUpInfo.plist.
+      - path: ../android/src/main/res/font
+        type: folder
+        buildPhase: resources
     settings:
       base:
         # Matches the Android applicationId. Permanent once the app is first uploaded to Apple.
@@ -47,7 +55,8 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Sleeves Up
         # The open session's Live Activity (iOS rule 4), drawn by SleevesUpWidgets.
         INFOPLIST_KEY_NSSupportsLiveActivities: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        # The launch screen (the mark on paper) is `UILaunchScreen` in SleevesUpInfo.plist.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         # Says what happens and nothing more, as Android's camera disclosure does. Both reasons are
         # translated in SleevesUp/InfoPlist.xcstrings, which must keep the same English.

@@ -29,11 +29,7 @@ private struct HabitSwitcher: ViewModifier {
             }
             .safeAreaInset(edge: .bottom) {
                 if let notice {
-                    Text(notice)
-                        .font(.footnote)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(.thinMaterial)
+                    Toast(text: notice)
                         .task(id: notice) {
                             try? await Task.sleep(for: .seconds(4))
                             self.notice = nil
@@ -54,8 +50,8 @@ private struct HabitSwitcher: ViewModifier {
     private var switcher: some View {
         Button(action: openHabits) {
             HStack(spacing: 6) {
-                Text(habits.selected.map(HabitText.name) ?? "").font(.headline)
-                Image(systemName: habits.isLocked ? "lock.fill" : "chevron.up.chevron.down").font(.caption)
+                Text(habits.selected.map(HabitText.name) ?? "").font(AppFont.titleLarge).lineLimit(1)
+                Image(systemName: habits.isLocked ? "lock.fill" : "arrow.left.arrow.right").font(AppFont.bodySmall)
             }
         }
         .accessibilityIdentifier("habitSwitcher")

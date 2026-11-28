@@ -85,7 +85,13 @@ final class GateUITests: XCTestCase {
         attach(app, "celebration")
         celebration.tap()
         XCTAssertTrue(action(app, "Check In").waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["1m"].waitForExistence(timeout: 5), "today's list shows the closed session")
+        let today = app.buttons["todaySessions"]
+        XCTAssertTrue(today.waitForExistence(timeout: 5), "the pill states today's sessions")
+        today.tap()
+        XCTAssertTrue(
+            app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "1m")).firstMatch.waitForExistence(timeout: 5),
+            "today's list shows the closed session"
+        )
         attach(app, "checked-out")
     }
 

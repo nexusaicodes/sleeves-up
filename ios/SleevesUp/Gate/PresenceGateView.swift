@@ -26,32 +26,52 @@ struct PresenceGateView: View {
 
     private var rules: PresenceCheckRules { PresenceCheckRules.shared }
 
+    /// The scrim under everything drawn over the preview, dense enough that the vermilion error still
+    /// reads 4.5:1 over a white wall.
+    private static let scrimAlpha = 0.88
+
     var body: some View {
         ZStack {
             if let watcher, cameraUsable == true {
                 CameraPreview(session: watcher.session).ignoresSafeArea()
             } else {
-                Color.black.ignoresSafeArea()
+                Palette.nightPaper.ignoresSafeArea()
             }
+            // What sits over the preview is in the night scheme on a scrim, whatever the appearance,
+            // so it reads over a white wall as over a dark room. The preview itself stays visible.
             VStack(spacing: 20) {
                 HStack {
                     Spacer()
                     Button("Not now", action: onDismiss)
+                        .font(AppFont.labelLarge)
+                        .padding(.horizontal, 16)
+                        .frame(minHeight: 44)
+                        .background(Palette.nightPaper.opacity(Self.scrimAlpha), in: Capsule())
                 }
                 Spacer()
-                if needsPasscode {
-                    passcodeHelp
-                } else {
-                    Text(message).multilineTextAlignment(.center)
-                    if rules.offersFallback(passed: passed, usingDeviceUnlock: usingDeviceUnlock, searchTimedOut: searchTimedOut) {
-                        Button("Use device unlock", action: useDeviceUnlock)
-                            .buttonStyle(.borderedProminent)
+                VStack(spacing: 16) {
+                    if needsPasscode {
+                        passcodeHelp
+                    } else {
+                        Text(message)
+                            .font(AppFont.bodyLarge)
+                            .foregroundStyle(cameraUsable == false ? Palette.nightVermilion : Palette.nightInk)
+                            .multilineTextAlignment(.center)
+                        if rules.offersFallback(passed: passed, usingDeviceUnlock: usingDeviceUnlock, searchTimedOut: searchTimedOut) {
+                            Button(action: useDeviceUnlock) {
+                                Text("Use device unlock").frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(NightPrimaryButtonStyle())
+                        }
                     }
                 }
+                .padding(20)
+                .frame(maxWidth: .infinity)
+                .background(Palette.nightPaper.opacity(Self.scrimAlpha), in: RoundedRectangle(cornerRadius: 24))
             }
-            .padding(24)
-            .foregroundStyle(.white)
-            .background(Color.black.opacity(0.5).ignoresSafeArea())
+            .padding(16)
+            .foregroundStyle(Palette.nightInk)
+            .environment(\.colorScheme, .dark)
         }
         .task { await startLooking() }
         .task(id: cameraUsable) { await waitForFallback() }
@@ -75,7 +95,7 @@ struct PresenceGateView: View {
 
     private var passcodeHelp: some View {
         VStack(spacing: 12) {
-            Text("Set a passcode to use device unlock").font(.headline)
+            Text("Set a passcode to use device unlock").font(AppFont.titleMedium)
             Text("Open Settings, then \(passcodeSettingsName), and turn on a passcode. Then come back here.")
                 .multilineTextAlignment(.center)
         }
@@ -166,5 +186,18 @@ private struct CameraPreview: UIViewRepresentable {
     final class PreviewView: UIView {
         override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
         var previewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
+    }
+}
+
+/// The gate's one filled button, in the night scheme: cream under night paper.
+private struct NightPrimaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(AppFont.titleMedium)
+            .padding(.horizontal, 24)
+            .frame(minHeight: 56)
+            .foregroundStyle(Palette.nightPaper)
+            .background(Palette.nightInk, in: Capsule())
+            .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }

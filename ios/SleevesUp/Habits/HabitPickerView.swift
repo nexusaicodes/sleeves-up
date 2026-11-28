@@ -14,8 +14,11 @@ struct HabitPickerView: View {
         NavigationStack {
             List(habits, id: \.id) { habit in
                 Button(HabitText.name(habit)) { onPick(habit) }
-                    .foregroundStyle(.primary)
+                    .font(AppFont.bodyLarge)
+                    .foregroundStyle(Palette.ink)
+                    .rowOnPaper()
             }
+            .screenBackground()
             .navigationTitle("Check in to…")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

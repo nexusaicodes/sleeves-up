@@ -28,21 +28,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.adevinta.spark.SparkTheme
+import com.checkin.app.ui.components.BrandGridMotion.CELLS_A_SIDE
+import com.checkin.app.ui.components.BrandGridMotion.CORNER_FRAC
+import com.checkin.app.ui.components.BrandGridMotion.FILLED_CELLS
+import com.checkin.app.ui.components.BrandGridMotion.FILLED_COUNT
+import com.checkin.app.ui.components.BrandGridMotion.FILL_FRAC
+import com.checkin.app.ui.components.BrandGridMotion.MIN_SCALE
+import com.checkin.app.ui.components.BrandGridMotion.WAVE_MS
+import com.checkin.app.ui.components.BrandGridMotion.cellProgress
+import com.checkin.app.ui.components.BrandGridMotion.waveLevel
 import com.checkin.app.ui.theme.CheckInAppTheme
-import kotlin.math.cos
-import kotlin.math.floor
-import kotlin.math.pow
 
 /**
  * The brand mark, drawn rather than loaded, so its cells can be addressed individually.
  *
- * The geometry is the one in `play-store-assets/generate_icons.py` — a 3x3 lattice of rounded cells
- * at [FILL_FRAC] of the pitch, with [EMPTY_CELLS] left out. Seven of nine: a full grid claims a
- * perfect month, which is the claim this app exists not to make. **Those constants are a second
- * copy of the generator's and must be changed with it**; the drawables it emits are the launcher,
- * splash and notification marks, and this is the same mark at display size. It is a copy rather
- * than a shared source because the generator is Python and emits `pathData` — a single flattened
- * path, which is exactly what cannot be animated per cell.
+ * The geometry, the settle's schedule and the gauge's wave are numbers in the shared
+ * [BrandGridMotion], which iOS's mark draws from too; this file only turns them into draws.
  *
  * [settle] runs the arrival once and then rests: the cells land in reading order and the last one
  * overshoots slightly, so a mark that was already there reads as a mark that has just gained an
@@ -191,90 +192,10 @@ private fun GridCanvas(modifier: Modifier, paint: (Int) -> CellPaint?) {
     }
 }
 
-// --- geometry, mirroring generate_icons.py -------------------------------------------------
-
-private const val CELLS_A_SIDE = 3
-private const val FILL_FRAC = 0.88f
-private const val CORNER_FRAC = 0.22f
-
-/** Row/column of the two cells the mark leaves out. Off the diagonal and off centre on purpose. */
-private val EMPTY_CELLS = setOf(1 to 2, 2 to 0)
-
-/**
- * The cells that are drawn, in reading order. Built once rather than in the draw lambda: the gauge
- * animates for as long as a session is open, so a rebuild there is three lists and nine pairs a
- * frame for hours.
- */
-private val FILLED_CELLS: List<Pair<Int, Int>> = (0 until CELLS_A_SIDE).flatMap { row ->
-    (0 until CELLS_A_SIDE).map { col -> row to col }
-}.filterNot { it in EMPTY_CELLS }
-
-/** Derived, never restated: a hand-kept count is free to disagree with the set it counts. */
-private val FILLED_COUNT = FILLED_CELLS.size
-
-// --- the settle ----------------------------------------------------------------------------
-
-/** Milliseconds one cell takes to arrive, and the offset between starts. The splash restates both. */
-private const val CELL_MS = 260
-private const val STAGGER_MS = 70
-
-/** The cursor's end value: the last cell's start offset plus its own duration, in milliseconds. */
-private val SETTLED = ((FILLED_COUNT - 1) * STAGGER_MS + CELL_MS).toFloat()
+/** The settle's cursor at rest, so every cell is drawn fully arrived. */
+private val SETTLED = BrandGridMotion.SETTLED_MS
 
 private fun settleDurationMs(): Int = SETTLED.toInt()
-
-/**
- * How far the cell at [index] has arrived when the settle is [elapsed] milliseconds in.
- *
- * Pure, and the reason the animation is one `Animatable` rather than seven: a cursor running over a
- * fixed schedule cannot let two cells disagree about where in the sequence they are.
- */
-internal fun cellProgress(index: Int, elapsed: Float): Float =
-    ((elapsed - index * STAGGER_MS) / CELL_MS).coerceIn(0f, 1f)
-
-private const val MIN_SCALE = 0.6f
-
-// --- the gauge -----------------------------------------------------------------------------
-
-/**
- * One pass of the wave over the seven cells — so the band steps to the next cell every seventh of
- * this, and any one cell peaks once per pass.
- *
- * Deliberately calmer than `OngoingPulse`'s 600ms cycle, which is a 6dp glyph in a table row and has
- * to catch the eye; this is a 200dp mark under a number counting hours, and it is on screen for as
- * long as the tab is. **There is a ceiling as well as a floor**: past roughly five seconds the cells
- * drift far enough apart in phase to stop reading as one wave and start reading as cells fading
- * independently, which loses the single-living-thing impression the shape exists for.
- */
-private const val WAVE_MS = 3_000
-
-private const val TWO_PI = 2.0 * Math.PI
-
-/**
- * How bright the cell at [index] is when the wave is [phase] of the way through a pass, on 0..1
- * from the track colour to the full one.
- *
- * A raised cosine offset by the cell's share of the lattice, so each cell peaks a beat after the
- * one before it and every cell traces the identical curve. **That every cell is identical is the
- * property worth keeping**: a wave whose cells differed in height or dwell would be a ranking of
- * cells, and a ranking is the one thing the mark must not carry.
- */
-internal fun waveLevel(index: Int, phase: Float): Float {
-    val offset = phase - index.toFloat() / FILLED_COUNT
-    val cellPhase = offset - floor(offset)
-    val raisedCosine = (cos(TWO_PI * cellPhase) + 1.0) / 2.0
-    return raisedCosine.pow(CREST_POWER).toFloat()
-}
-
-/**
- * How narrow the crest is. A plain raised cosine (1.0) spreads the bright band over about three
- * cells and reads as a swell; raising it contracts the band and lengthens the dark stretch behind
- * it, so the pass reads as a pulse travelling the lattice instead. It changes the shape of the
- * curve every cell traces, never which cell traces which, so the cells stay identical (see
- * [waveLevel]). A sharper crest is also a more insistent motion, so it and [WAVE_MS] must not both be
- * pushed at once.
- */
-private const val CREST_POWER = 2.0
 
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)

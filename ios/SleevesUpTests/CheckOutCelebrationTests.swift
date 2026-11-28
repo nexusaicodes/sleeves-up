@@ -1,8 +1,9 @@
+import Shared
 import XCTest
 @testable import SleevesUp
 
 /// The celebration's figures and its mark: the closed session's own day for its habit, open and
-/// other habits' sessions left out, and Android's settle schedule.
+/// other habits' sessions left out, and the shared settle schedule.
 @MainActor
 final class CheckOutCelebrationTests: XCTestCase {
 
@@ -34,12 +35,12 @@ final class CheckOutCelebrationTests: XCTestCase {
         XCTAssertEqual(try store.daySummary(habitId: 2, dateKey: second.dateKey).count, 0)
     }
 
-    func testTheMarkSettlesInReadingOrderOverAndroidsSchedule() {
-        XCTAssertEqual(MarkSettle.cells.count, 7)
-        XCTAssertEqual(MarkSettle.settledMs, 6 * 70 + 260)
-        XCTAssertEqual(MarkSettle.progress(index: 0, elapsedMs: 0), 0)
-        XCTAssertEqual(MarkSettle.progress(index: 1, elapsedMs: 70 + 130), 0.5)
-        XCTAssertEqual(MarkSettle.progress(index: 6, elapsedMs: MarkSettle.settledMs), 1)
-        XCTAssertTrue((0..<7).allSatisfy { MarkSettle.progress(index: $0, elapsedMs: MarkSettle.settledMs) == 1 })
+    /// The settle's schedule is the shared `BrandGridMotion`'s, tested in `:shared`; this pins that
+    /// the mark reads it across the framework boundary.
+    func testTheMarkReadsTheSharedSchedule() {
+        let motion = BrandGridMotion.shared
+        XCTAssertEqual(motion.FILLED_CELLS.count, 7)
+        XCTAssertEqual(motion.SETTLED_MS, Float(6 * 70 + 260))
+        XCTAssertEqual(motion.cellProgress(index: 6, elapsed: motion.SETTLED_MS), 1)
     }
 }

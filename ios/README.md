@@ -52,7 +52,18 @@ policy, feedback by email and the licences). Every tab re-reads at midnight whil
   into the generated Info.plist). iOS Settings' link to the app's notification settings opens the
   Habits screen.
 - **`Common/`**: compiled into the app and the widget extension: `RecordLocation`,
-  `SessionActivityAttributes` and `WidgetFace`.
+  `SessionActivityAttributes`, `WidgetFace`, `Palette` (mudda's colours, Android's `Color.kt`
+  values, following the system appearance) and `Brand.xcassets` (the template `Mark` image).
+- **`Theme/`**: the app's look, Android's on iOS's own behaviour: the system tab bar, navigation,
+  sheets, lists and swipe-back stay, painted by `AppChrome` (paper bars, ink selection, Outfit
+  titles). `AppFont` is Android's type split (Outfit for display, headline and title sizes,
+  Manrope for body and label, IBM Plex Sans Arabic for both under Arabic), each style scaling with
+  Dynamic Type; the faces are Android's own files in `android/src/main/res/font`, referenced by
+  `project.yml` and registered in `UIAppFonts`. `BrandMark` draws the mark from the shared
+  `BrandGridMotion`, still, settling or pulsing (the Check-In gauge), and honours Reduce Motion.
+  `AppButtonStyle` is the primary (ink), secondary (brass), tertiary (outlined) and ghost set, and
+  `Toast` the snackbar. The Check-In action is brass-fill to check in and ink to check out; nothing
+  is ever red.
 - **`Live/`**: the open session's Live Activity (iOS rule 4) and the widget's redraw.
   `SessionActivity` starts it at check-in, renames it with the habit and ends it at any close,
   re-synced on every read of the record as the reminders are; it starts once per session per
@@ -78,8 +89,9 @@ policy, feedback by email and the licences). Every tab re-reads at midnight whil
   check-out and never by the midnight close: the mark settling once (Android's schedule, already settled under
   Reduce Motion), the habit, "You showed up", the session's length and the closed session's own day,
   identical at any length, closed by a tap and closed on return after two minutes away. The
-  Check-In screen, and `SessionIntervalRow`, a session as Check-In and History
-  both draw it.
+  Check-In screen: today's date, the mark breathing while a session is open above the session's
+  time, today's sessions behind a pill that states the day once, and the start/stop action; and
+  `SessionIntervalRow`, a session as Check-In and History both draw it.
 - **`History/`**: the History tab: a month stepper that stops at the current month, the calendar
   (shaded for a completed session whatever it held, faded only outside the record, on the device's
   week start), and the tapped day's sessions.
@@ -99,9 +111,9 @@ policy, feedback by email and the licences). Every tab re-reads at midnight whil
   the version and the developer, and links to what the app collects (`PrivacyView`: iOS's own
   claims, each naming its mechanism, checked through App Privacy Report), the privacy policy, a
   feedback email the user reads before sending (`Feedback`; with no mail app the address is copied)
-  and the licences (`LicensesView`: GRDB, the Kotlin standard library, kotlinx-datetime and
-  kotlinx.serialization, with GRDB's MIT notice from `Licences/` and the Apache 2.0 text the Android
-  app bundles). The Language row opens the app's page in iOS Settings, where iOS keeps the per-app
+  and the licences (`LicensesView`: GRDB, the Kotlin standard library, kotlinx-datetime,
+  kotlinx.serialization and the three typefaces, with GRDB's MIT notice from `Licences/` and the
+  Apache 2.0 and OFL 1.1 texts the Android app bundles). The Language row opens the app's page in iOS Settings, where iOS keeps the per-app
   language. No rating row until a listing exists.
 - **`Habits/`**: the Habits screen (tap a row to show it; swipe or long-press to edit or archive),
   the name editor with each habit's reminder (`ReminderFields`: on or off, iOS only, and the time,
@@ -119,6 +131,11 @@ copy is looked up by its English line, and `NudgeCatalogTests` checks both langu
 Android's. A new user-facing string needs its Arabic in the same commit (`LocalizationTests` fails on
 a catalog key without one); build with `SWIFT_EMIT_LOC_STRINGS=YES` to list the keys the compiler
 extracts. Reports' line and bar charts mirror under Arabic; the donut and the mark do not.
+
+The app icon (default, dark and tinted), the launch screen (`LaunchBackground` behind
+`LaunchMark`, named by `UILaunchScreen` in `SleevesUpInfo.plist`) and the template `Mark` are
+written by `play-store-assets/generate_icons.py`, the mark's one source of geometry; regenerate
+rather than edit them.
 
 ## Building and running the app
 

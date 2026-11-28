@@ -19,16 +19,19 @@ struct PrivacyView: View {
             Section("What This App Does Not Do") {
                 ForEach(claims, id: \.title) { claim in
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(claim.title).font(.headline)
-                        Text(claim.body).foregroundStyle(.secondary)
+                        Text(claim.title).font(AppFont.cardTitle)
+                        Text(claim.body).foregroundStyle(Palette.inkMuted)
                     }
                     .padding(.vertical, 4)
                 }
             }
+            .rowOnPaper()
             Section("How to Check") {
                 Text("You don't have to take this on trust. Turn on App Privacy Report under Settings, Privacy & Security: it lists every domain each app contacts. This app contacts none.")
             }
+            .rowOnPaper()
         }
+        .screenBackground()
         .navigationTitle("What this app collects")
         .navigationBarTitleDisplayMode(.inline)
     }
