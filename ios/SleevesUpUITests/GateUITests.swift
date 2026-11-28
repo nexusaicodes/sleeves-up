@@ -88,9 +88,11 @@ final class GateUITests: XCTestCase {
         let today = app.buttons["todaySessions"]
         XCTAssertTrue(today.waitForExistence(timeout: 5), "the pill states today's sessions")
         today.tap()
-        let row = app.descendants(matching: .any).matching(identifier: "sessionRow").firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 5), "today's list opens")
-        XCTAssertTrue(row.label.contains("1m"), "today's list shows the closed session")
+        // Earlier sessions today may be listed too, so look for the one just closed: a row ending in
+        // its one-minute duration (" 1m", which an "11m" row does not end in).
+        let closed = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier == 'sessionRow' AND label ENDSWITH ' 1m'")).firstMatch
+        XCTAssertTrue(closed.waitForExistence(timeout: 5), "today's list shows the closed session")
         attach(app, "checked-out")
     }
 
@@ -219,10 +221,12 @@ final class GateUITests: XCTestCase {
         attach(app, "settings")
     }
 
-    /// Check-In's start/stop control reading `label`, told apart from the Check In tab.
+    /// Check-In's start/stop control for `label` ("Check In" or "Check Out"), told apart from the
+    /// Check In tab. It names the habit ("Check in to Gym"), so its label is matched by its start.
     @MainActor
     private func action(_ app: XCUIApplication, _ label: String) -> XCUIElement {
-        app.buttons.matching(identifier: "sessionAction").matching(NSPredicate(format: "label == %@", label)).firstMatch
+        app.buttons.matching(identifier: "sessionAction")
+            .matching(NSPredicate(format: "label BEGINSWITH[c] %@", label)).firstMatch
     }
 
     /// The notification prompt, raised on the first start past the naming step on a fresh simulator.

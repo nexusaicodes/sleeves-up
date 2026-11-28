@@ -96,6 +96,9 @@ struct SleevesUpApp: App {
             .tint(Palette.ink)
             .background(Palette.paper.ignoresSafeArea())
             .environment(\.locale, AppLocale.current)
+            .onReceive(NotificationCenter.default.publisher(for: UIContentSizeCategory.didChangeNotification)) { _ in
+                AppChrome.refreshLiveBars()
+            }
             .task { open() }
             .onOpenURL { url in
                 if url == SessionActivityLink.checkOut { delegate.taps.receive(.checkOutFromActivity) }

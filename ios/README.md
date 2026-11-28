@@ -62,7 +62,8 @@ policy, feedback by email and the licences). Every tab re-reads at midnight whil
   `project.yml` and registered in `UIAppFonts`. `BrandMark` draws the mark from the shared
   `BrandGridMotion`, still, settling or pulsing (the Check-In gauge), and honours Reduce Motion.
   `AppButtonStyle` is the primary (ink), secondary (brass), tertiary (outlined) and ghost set, and
-  `Toast` the snackbar. The Check-In action is brass-fill to check in and ink to check out; nothing
+  `Toast` the snackbar. A text-size change while the app runs re-paints the bars already on screen
+  (`AppChrome.refreshLiveBars`), since UIKit's appearance proxies reach only new bars. The Check-In action is brass-fill to check in and ink to check out; nothing
   is ever red.
 - **`Live/`**: the open session's Live Activity (iOS rule 4) and the widget's redraw.
   `SessionActivity` starts it at check-in, renames it with the habit and ends it at any close,
@@ -90,11 +91,16 @@ policy, feedback by email and the licences). Every tab re-reads at midnight whil
   Reduce Motion), the habit, "You showed up", the session's length and the closed session's own day,
   identical at any length, closed by a tap and closed on return after two minutes away. The
   Check-In screen: today's date, the mark breathing while a session is open above the session's
-  time, today's sessions behind a pill that states the day once, and the start/stop action; and
-  `SessionIntervalRow`, a session as Check-In and History both draw it.
+  time (or, until the habit holds any session, the still mark and "Ready when you are"), today's
+  sessions behind a pill that states the day once, and the start/stop action, which names the
+  habit ("Check in to Gym", "Check out of Gym"). Below 560 points of height or at an accessibility
+  text size the screen scrolls instead of holding one viewport. `SessionIntervalRow` is a session
+  as Check-In and History both draw it; an open one reads "… – ongoing" with three pulsing dots
+  where its duration will be.
 - **`History/`**: the History tab: a month stepper that stops at the current month, the calendar
   (shaded for a completed session whatever it held, faded only outside the record, on the device's
-  week start), and the tapped day's sessions.
+  week start, its cells sized from the viewport between 48 and 80 points), and the tapped day's
+  sessions.
 - **`Reports/`**: the Reports tab: the Month / All time choice over a month stepper, an empty state
   for a scope holding no counted day, and six cards (The Numbers, Days Split, Daily Hours, Hours by
   Month under all time, Start Times, Sessions Per Day). `ReportCharts` draws the line, bar and ring
