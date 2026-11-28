@@ -68,13 +68,14 @@ struct SessionLiveActivity: Widget {
     }
 }
 
-/// The session's clock, counting up from check-in and stopping at its own midnight, in Latin digits.
 /// The brand mark as the generated template image, tinted by its caller.
 private struct MarkImage: View {
     var body: some View {
         Image("Mark").renderingMode(.template).resizable().accessibilityHidden(true)
     }
 }
+
+/// The session's clock, counting up from check-in and stopping at its own midnight, in Latin digits.
 
 private struct SessionClock: View {
     let attributes: SessionActivityAttributes

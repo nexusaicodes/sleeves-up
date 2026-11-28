@@ -42,6 +42,8 @@ struct CheckOutCelebrationView: View {
                 Text(SessionText.short(completed.sessionMs))
                     .font(AppFont.readout)
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                     .foregroundStyle(Palette.ink)
                 Text(dayText).font(AppFont.bodyMedium).foregroundStyle(Palette.inkMuted)
             }

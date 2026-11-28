@@ -7,7 +7,7 @@ struct OpenSourceLibrary: Identifiable {
         case mit = "MIT License"
         case ofl = "SIL Open Font License 1.1"
 
-        /// The bundled text, which both licences oblige a shipped copy of.
+        /// The bundled text, which each licence obliges a shipped copy of.
         var resource: String {
             switch self {
             case .apache2: return "apache_2_0"

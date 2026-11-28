@@ -131,7 +131,7 @@ struct CheckInView: View {
             Button {
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { sessionsExpanded.toggle() }
             } label: {
-                TimelineView(.periodic(from: .now, by: 60)) { context in
+                TimelineView(.periodic(from: .now, by: 1)) { context in
                     HStack(spacing: 4) {
                         Text(String(app: "\(ReportText.sessions(store.todaySessions.count)) · \(SessionText.short(todayTotal(at: context.date))) today"))
                             .font(AppFont.bodyMedium)

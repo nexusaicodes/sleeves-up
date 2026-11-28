@@ -45,7 +45,7 @@ struct PresenceGateView: View {
                     Button("Not now", action: onDismiss)
                         .font(AppFont.labelLarge)
                         .padding(.horizontal, 16)
-                        .frame(minHeight: 44)
+                        .frame(minHeight: 48)
                         .background(Palette.nightPaper.opacity(Self.scrimAlpha), in: Capsule())
                 }
                 Spacer()

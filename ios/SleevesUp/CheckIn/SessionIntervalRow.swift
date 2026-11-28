@@ -7,8 +7,8 @@ struct SessionIntervalRow: View {
 
     let session: SessionRow
 
-    /// The duration column: wide enough for "12h 59m" in either language, growing with Dynamic Type
-    /// rather than cutting a figure short.
+    /// The duration column: wide enough for "12h 59m" in either language at the default size, and
+    /// growing with Dynamic Type. The duration always keeps its full width; only the range gives way.
     @ScaledMetric(relativeTo: .subheadline) private var durationColumn: CGFloat = 64
 
     var body: some View {
@@ -21,7 +21,9 @@ struct SessionIntervalRow: View {
                 .monospacedDigit()
                 .lineLimit(1)
                 .foregroundStyle(session.duration == nil ? Palette.inkMuted : Palette.ink)
+                .fixedSize()
                 .frame(minWidth: min(durationColumn, 128), alignment: .trailing)
+                .layoutPriority(1)
         }
         .font(AppFont.bodyMedium)
         .foregroundStyle(Palette.ink)
@@ -29,5 +31,6 @@ struct SessionIntervalRow: View {
         .padding(.vertical, 10)
         .background(Palette.paper200, in: RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("sessionRow")
     }
 }

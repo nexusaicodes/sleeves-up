@@ -4,6 +4,8 @@ import UIKit
 /// The system chrome in the app's colours and type. The bars stay UIKit's own (the tab bar, the
 /// navigation bar and its back button, swipe-back), so the app behaves as iOS apps do; only their
 /// paint changes: paper behind, ink for what is selected or titled, Outfit titles, Manrope labels.
+/// UIKit's appearance proxies hold fonts, not text styles, so the bars' type is scaled to the text
+/// size the app launched with; a change made while it runs reaches them at the next launch.
 enum AppChrome {
 
     /// Set once, before the first bar is drawn.
@@ -51,13 +53,14 @@ enum AppChrome {
         UIPageControl.appearance().currentPageIndicatorTintColor = Palette.UI.ink
         UIPageControl.appearance().pageIndicatorTintColor = Palette.UI.ink.withAlphaComponent(0.25)
 
+        let segment = AppFont.uiFont(display: false, size: 13, weight: .medium, textStyle: .footnote)
         UISegmentedControl.appearance().selectedSegmentTintColor = Palette.UI.ink
         UISegmentedControl.appearance().backgroundColor = Palette.UI.paper200
         UISegmentedControl.appearance().setTitleTextAttributes(
-            [.foregroundColor: Palette.UI.paper, .font: label.withSize(13)], for: .selected
+            [.foregroundColor: Palette.UI.paper, .font: segment], for: .selected
         )
         UISegmentedControl.appearance().setTitleTextAttributes(
-            [.foregroundColor: Palette.UI.ink, .font: label.withSize(13)], for: .normal
+            [.foregroundColor: Palette.UI.ink, .font: segment], for: .normal
         )
     }
 }
