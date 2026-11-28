@@ -14,6 +14,9 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     # The Kotlin framework is built into shared/build/xcode-frameworks by the app's build phase below.
     FRAMEWORK_SEARCH_PATHS: $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+    # Strings are looked up by key (`String(app:)`), and the catalog keeps Android's `%1$s`
+    # placeholders, which generated symbols cannot type.
+    STRING_CATALOG_GENERATE_SYMBOLS: NO
 packages:
   # SQLite for the record (MIT). Pinned exactly: a release is adopted on purpose, never by resolution.
   GRDB:
