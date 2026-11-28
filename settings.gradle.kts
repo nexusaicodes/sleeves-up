@@ -18,4 +18,8 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "CheckInApp"
+// The Android app lives in android/ but keeps the project path :app, which every task name, CI step
+// and the required check's commands are written against.
 include(":app")
+project(":app").projectDir = file("android")
+include(":shared")

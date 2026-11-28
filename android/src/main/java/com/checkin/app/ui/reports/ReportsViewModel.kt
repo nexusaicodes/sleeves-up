@@ -1,0 +1,287 @@
+package com.checkin.app.ui.reports
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.checkin.app.CheckInApplication
+import com.checkin.app.data.SessionBand
+import com.checkin.app.data.StartBucket
+import com.checkin.app.data.local.byDateKey
+import com.checkin.app.data.repository.CheckInRepository
+import com.checkin.app.data.repository.HabitRepository
+import com.checkin.app.platform.CsvExporter
+import com.checkin.app.platform.ExportResult
+import com.checkin.app.time.TimeSource
+import com.checkin.app.time.dayTrigger
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.datetime.toJavaLocalDate
+import kotlinx.datetime.toKotlinLocalDate
+import kotlinx.datetime.toKotlinTimeZone
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+data class ReportsUiState(
+    val loading: Boolean = true,
+    /** What span every figure below describes. The selector sets it; nothing else may narrow it. */
+    val scope: ReportScope = ReportScope.AllTime,
+    /** Whether a later month exists to step to: false under all time and on the month in progress. */
+    val hasNextMonth: Boolean = false,
+    /** The day of the first session, or null until one exists. Read from the sessions, never stored. */
+    val trackingStartDate: LocalDate? = null,
+    /** The counted days [scope] covers, or null when it covers none — the empty state. */
+    val window: ReportWindow? = null,
+    val totalDays: Int = 0,
+    val showedUpDays: Int = 0,
+    val missedDays: Int = 0,
+    /** Worked time over the scope, stated as a total and compared to nothing. */
+    val totalWorkedMs: Long = 0L,
+    val totalSessions: Int = 0,
+    /**
+     * Worked time per *tracked* day — missed days stay in the denominator.
+     *
+     * A quantity the screen prints as a row, never as a ring: the only denominator available to fill
+     * an arc against is the user's own all-time equivalent, which is a personal best under another
+     * name and ratchets.
+     */
+    val avgDailyMs: Long = 0L,
+    /** Mean sessions per day shown up — a rhythm, not a score. */
+    val avgSessionsPerDay: Float = 0f,
+    /** Completed sessions by the hour they began. Descriptive; no bucket is preferable. */
+    val startBuckets: Map<StartBucket, Int> = emptyMap(),
+    /** Days grouped by how many sessions they held. Descriptive; more is not better. */
+    val sessionBands: Map<SessionBand, Int> = emptyMap(),
+    /** The scope's days, gap-filled so missed days read as zero rather than vanish. */
+    val dailySeries: List<DayPoint> = emptyList(),
+    /** Empty under a month scope: one bar is not a chart, so that card is not rendered. */
+    val monthlySeries: List<MonthPoint> = emptyList(),
+)
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class ReportsViewModel(
+    private val repository: CheckInRepository,
+    private val habits: HabitRepository,
+    private val timeSource: TimeSource,
+    private val csvExporter: CsvExporter,
+) : ViewModel() {
+
+    private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+
+    private val refresh = MutableStateFlow(0)
+
+    // The screen's one clock: the figures, nextMonth's guard and every return to the month in
+    // progress read it, so the arrow, the step it takes and the month landed on cannot disagree.
+    private val day = timeSource.dayTrigger(refresh)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), timeSource.today())
+
+    // Opens on the current month rather than on the whole record: the live question is the month in
+    // progress, and it is the scope History opens on too.
+    private val scope =
+        MutableStateFlow<ReportScope>(currentMonthScope(timeSource.today().toKotlinLocalDate()))
+
+    // The habit the figures last described, so a switch can be told apart from the first emission.
+    private var shownHabitId: Long? = null
+
+    // The habit on screen, deduped at source, so it emits on a switch and on nothing else. A month
+    // stepped to under one habit means nothing under the next — each habit's record has its own
+    // span — so a switch returns to the month in progress, where the tab opens. Reset here, before
+    // the pipeline rebuilds for the new habit, so the switch is one rebuild rather than two, and
+    // nothing holds the subscription open while the tab is off screen.
+    private val habitId = habits.selectedHabitIdFlow().onEach { id ->
+        if (shownHabitId != null && id != shownHabitId) showCurrentMonth()
+        shownHabitId = id
+    }
+
+    // One-shot export outcomes — a Channel (not a StateFlow) so a config-change re-collect can't replay
+    // a past result as a duplicate snackbar.
+    private val exportChannel = Channel<ExportResult>(Channel.BUFFERED)
+    val exportEvents: Flow<ExportResult> = exportChannel.receiveAsFlow()
+
+    /**
+     * The scope's figures, recomputed on DB writes, on refresh, at midnight, and when the scope moves.
+     *
+     * The tracking start is a DB read rather than a setting, so a record with no sessions behind it
+     * cannot report days the user failed to show up for.
+     */
+    private val statsFlow: Flow<ReportsUiState> = combine(day, habitId) { today, habit ->
+        today to habit
+    }
+        .flatMapLatest { (today, habit) -> repository.trackingStartFlow(habit).map { Triple(today, habit, it) } }
+        .flatMapLatest { (today, habit, start) ->
+            // Deduplicated so the same window does not re-subscribe both window queries below.
+            combine(scope, repository.countedThroughFlow(habit, today)) { activeScope, countedThrough ->
+                activeScope to activeScope.resolve(start?.toKotlinLocalDate(), countedThrough.toKotlinLocalDate())
+            }.distinctUntilChanged().flatMapLatest { (activeScope, window) ->
+                if (window == null) {
+                    flowOf(ReportsUiState(loading = false, scope = activeScope, trackingStartDate = start))
+                } else {
+                    windowStats(habit, activeScope, start, window)
+                }
+            }.map { state -> state.copy(hasNextMonth = state.scope.hasMonthAfter(today.toKotlinLocalDate())) }
+        }
+
+    val uiState: StateFlow<ReportsUiState> = statsFlow.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        // The tracking start comes from the DB, so there is nothing to seed it with synchronously.
+        // The screen renders nothing while `loading` rather than flashing an empty state it is about
+        // to replace.
+        ReportsUiState(scope = scope.value),
+    )
+
+    /**
+     * Every figure for one resolved [window].
+     *
+     * The two queries are **scoped identically**, and that is load-bearing rather than tidy: the
+     * aggregates say which days count and the starts say when within them the work began, so a range
+     * that differed between the two would let the start-time split describe sessions the rest of the
+     * screen had excluded. The starts query exists at all because `DailyAggregate.firstCheckIn` is
+     * each day's *first* session, so a day worked in three blocks would contribute one start.
+     */
+    private fun windowStats(
+        habitId: Long,
+        activeScope: ReportScope,
+        trackingStart: LocalDate?,
+        window: ReportWindow,
+    ): Flow<ReportsUiState> {
+        val startKey = window.start.toJavaLocalDate().format(dateFormatter)
+        val endKey = window.end.toJavaLocalDate().format(dateFormatter)
+        return combine(
+            repository.dailyAggregatesFlow(habitId, startKey, endKey),
+            repository.sessionStartsFlow(habitId, startKey, endKey),
+        ) { aggregates, sessionStarts ->
+            val figures = ReportFigures.of(
+                activeScope,
+                window,
+                aggregates.byDateKey(),
+                sessionStarts,
+                timeSource.zone().toKotlinTimeZone(),
+            )
+            ReportsUiState(
+                loading = false,
+                scope = activeScope,
+                trackingStartDate = trackingStart,
+                window = window,
+                totalDays = figures.totalDays,
+                showedUpDays = figures.showedUpDays,
+                missedDays = figures.missedDays,
+                totalWorkedMs = figures.totalWorkedMs,
+                totalSessions = figures.totalSessions,
+                avgDailyMs = figures.avgDailyMs,
+                avgSessionsPerDay = figures.avgSessionsPerDay,
+                startBuckets = figures.startBuckets,
+                sessionBands = figures.sessionBands,
+                dailySeries = figures.dailySeries,
+                monthlySeries = figures.monthlySeries,
+                // `countedThrough` is consumed by `resolve` and is deliberately not carried into the
+                // state: every figure here ends there by construction, so a second copy of it would
+                // only be something for a caller to check the first against.
+            )
+        }
+    }
+
+    fun onResumed() {
+        refresh.value++
+    }
+
+    fun previousMonth() {
+        scope.value = scope.value.previousMonth(day.value.toKotlinLocalDate())
+    }
+
+    /** Stops at the month in progress (`ReportScope.nextMonth`). */
+    fun nextMonth() {
+        scope.value = scope.value.nextMonth(day.value.toKotlinLocalDate())
+    }
+
+    /**
+     * Leaving all time returns to the month in progress; on a month already, nothing moves
+     * (`ReportScope.monthChosen`).
+     *
+     * The decision reads [scope] rather than the rendered state, because the state only catches up
+     * once the window's queries have emitted: judged from the screen, a tap on Month right after one
+     * on All time would see the month it has already left and stay there.
+     */
+    fun selectMonth() {
+        scope.value = scope.value.monthChosen(day.value.toKotlinLocalDate())
+    }
+
+    /** The month in progress, from either scope: where the tab opens, and where a habit switch lands. */
+    private fun showCurrentMonth() {
+        scope.value = currentMonthScope(day.value.toKotlinLocalDate())
+    }
+
+    fun selectAllTime() {
+        scope.value = ReportScope.AllTime
+    }
+
+    /**
+     * Exports whatever the screen is showing.
+     *
+     * The range is the active scope's own window, so the file and the screen cannot describe
+     * different days — they read the one `resolve`, which is where the clamping and its reasons live.
+     *
+     * The clock is read **once**: a rollover between two readings would pair a start and an end
+     * taken from different days.
+     */
+    fun exportCsv() {
+        viewModelScope.launch {
+            val today = timeSource.today()
+            // The habit on screen, read once like the clock: the file is that habit's record alone,
+            // and names it, since nothing inside the file says which habit it is.
+            val habit = habits.selectedHabitFlow().first()
+            // Nothing recorded at all: there is no window to clamp to, let alone a day to write.
+            val trackingStart = repository.trackingStart(habit.id) ?: run {
+                exportChannel.send(ExportResult.Nothing)
+                return@launch
+            }
+            val countedThrough = repository.countedThrough(habit.id, today)
+            // Tracking that began today, or a scope holding no counted day, leaves nothing to write.
+            val window =
+                scope.value.resolve(trackingStart.toKotlinLocalDate(), countedThrough.toKotlinLocalDate()) ?: run {
+                    exportChannel.send(ExportResult.Nothing)
+                    return@launch
+                }
+            val startStr = window.start.toJavaLocalDate().format(dateFormatter)
+            val endStr = window.end.toJavaLocalDate().format(dateFormatter)
+            val summaries = repository.getDailySummaries(habit.id, startStr, endStr)
+            // A window can be well-formed and still hold nothing: every check-in abandoned, or the
+            // app installed and left idle. Exporting anyway would share a file that is pure
+            // gap-fill — a document asserting absences the app never recorded.
+            if (summaries.isEmpty()) {
+                exportChannel.send(ExportResult.Nothing)
+                return@launch
+            }
+            exportChannel.send(csvExporter.export(habit.name, startStr, endStr, summaries))
+        }
+    }
+
+    companion object {
+        val Factory = viewModelFactory {
+            initializer {
+                val container = (this[APPLICATION_KEY] as CheckInApplication).container
+                ReportsViewModel(
+                    container.checkInRepository,
+                    container.habitRepository,
+                    container.timeSource,
+                    container.csvExporter,
+                )
+            }
+        }
+    }
+}

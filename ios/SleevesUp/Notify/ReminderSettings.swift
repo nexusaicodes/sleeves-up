@@ -1,0 +1,43 @@
+import Foundation
+import Observation
+import Shared
+
+/// Each habit's reminder minute and, on iOS only, whether its reminders are on (iOS rule 1), keyed by
+/// the habit's uuid as Android's `reminder_prefs` are, so a rebuilt record never hands one habit's
+/// setting to another. The minute is clamped to `NudgeSchedule.minuteRange` on read and write.
+/// Observable through `revision`, so a change replans the reminders like any other input.
+@Observable
+final class ReminderSettings {
+
+    /// Bumped on every write.
+    private(set) var revision = 0
+
+    @ObservationIgnored private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func minute(_ habitUuid: String) -> Int {
+        let stored = defaults.object(forKey: minuteKey(habitUuid)) as? Int
+        return Int(NudgeSchedule.shared.clampMinute(minute: Int32(stored ?? Int(NudgeSchedule.shared.DEFAULT_MINUTE))))
+    }
+
+    func setMinute(_ minute: Int, for habitUuid: String) {
+        defaults.set(Int(NudgeSchedule.shared.clampMinute(minute: Int32(minute))), forKey: minuteKey(habitUuid))
+        revision += 1
+    }
+
+    /// On unless turned off: the user who has not formed the habit is the one who never goes looking.
+    func isOn(_ habitUuid: String) -> Bool {
+        defaults.object(forKey: onKey(habitUuid)) as? Bool ?? true
+    }
+
+    func setOn(_ on: Bool, for habitUuid: String) {
+        defaults.set(on, forKey: onKey(habitUuid))
+        revision += 1
+    }
+
+    private func minuteKey(_ uuid: String) -> String { "reminder_minute_\(uuid)" }
+    private func onKey(_ uuid: String) -> String { "reminder_on_\(uuid)" }
+}

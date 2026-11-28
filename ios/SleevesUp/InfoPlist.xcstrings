@@ -1,0 +1,42 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSCameraUsageDescription" : {
+      "comment" : "The camera permission's reason, Android's camera_disclosure_message.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تتحقق الكاميرا الأمامية من وجودك عند تسجيل الحضور أو الانصراف."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The front camera checks you're here when you check in or out."
+          }
+        }
+      }
+    },
+    "NSFaceIDUsageDescription" : {
+      "comment" : "The Face ID permission's reason.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تؤكّد بصمة الوجه أنك أنت حين لا تستطيع الكاميرا ذلك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face ID confirms it's you when the camera can't."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

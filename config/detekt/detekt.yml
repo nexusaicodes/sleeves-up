@@ -20,7 +20,7 @@ complexity:
     # constructor's parameter list is. Splitting one to satisfy a threshold hides the dependency.
     constructorThreshold: 8
     # Test builders take one parameter per axis they vary; that is the point of a builder.
-    excludes: ['**/test/**', '**/androidTest/**']
+    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**']
   TooManyFunctions:
     thresholdInFiles: 20
     thresholdInClasses: 20

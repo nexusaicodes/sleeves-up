@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Merged into the generated Info.plist: the keys that take arrays, which build settings cannot set. -->
+<plist version="1.0">
+<dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.nexusai.checkin.app.refresh</string>
+	</array>
+	<!-- The Live Activity's Check Out link. Whoever opens it gets only the presence gate, which
+	     writes nothing unless someone present passes it. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.nexusai.checkin.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>sleevesup</string>
+			</array>
+		</dict>
+	</array>
+	<!-- Android's three typefaces, from android/src/main/res/font (project.yml), in the `font` folder. -->
+	<key>UIAppFonts</key>
+	<array>
+		<string>font/manrope_bold.ttf</string>
+		<string>font/manrope_medium.ttf</string>
+		<string>font/manrope_regular.ttf</string>
+		<string>font/manrope_semibold.ttf</string>
+		<string>font/outfit_bold.ttf</string>
+		<string>font/outfit_medium.ttf</string>
+		<string>font/outfit_regular.ttf</string>
+		<string>font/outfit_semibold.ttf</string>
+		<string>font/plex_arabic_bold.ttf</string>
+		<string>font/plex_arabic_medium.ttf</string>
+		<string>font/plex_arabic_regular.ttf</string>
+		<string>font/plex_arabic_semibold.ttf</string>
+	</array>
+	<!-- The mark on paper, both from generate_icons.py, following the system appearance. -->
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+		<key>UIImageName</key>
+		<string>LaunchMark</string>
+	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
+</dict>
+</plist>

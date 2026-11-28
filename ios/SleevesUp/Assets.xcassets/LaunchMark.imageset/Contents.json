@@ -1,0 +1,25 @@
+{
+  "images": [
+    {
+      "filename": "launch-mark.svg",
+      "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "launch-mark-dark.svg",
+      "idiom": "universal"
+    }
+  ],
+  "info": {
+    "author": "generate_icons.py",
+    "version": 1
+  },
+  "properties": {
+    "preserves-vector-representation": true
+  }
+}

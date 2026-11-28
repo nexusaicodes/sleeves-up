@@ -1,0 +1,130 @@
+# XcodeGen spec for the iOS app. The .xcodeproj is generated from this file (`xcodegen` in ios/) and
+# is not checked in, so this file is the project's only source.
+name: SleevesUp
+options:
+  deploymentTarget:
+    # Live Activities need iOS 16.1 and interactive widgets need 17.
+    iOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    # The app and its extension carry the same version, which an extension needs to install. A
+    # placeholder until the first upload to Apple sets the iOS app's versioning.
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+    # The Kotlin framework is built into shared/build/xcode-frameworks by the app's build phase below.
+    FRAMEWORK_SEARCH_PATHS: $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+    # Strings are looked up by key (`String(app:)`), and the catalog keeps Android's `%1$s`
+    # placeholders, which generated symbols cannot type.
+    STRING_CATALOG_GENERATE_SYMBOLS: NO
+packages:
+  # SQLite for the record (MIT). Pinned exactly: a release is adopted on purpose, never by resolution.
+  GRDB:
+    url: https://github.com/groue/GRDB.swift
+    exactVersion: 7.12.0
+targets:
+  SleevesUp:
+    type: application
+    platform: iOS
+    sources:
+      - SleevesUp
+      - Common
+      # The licence texts the Licences screen shows: GRDB's MIT notice, and the Apache 2.0 text the
+      # Android app bundles too.
+      - path: Licences
+        buildPhase: resources
+      - path: ../android/src/main/res/raw/apache_2_0.txt
+        buildPhase: resources
+      # The SIL Open Font License the three typefaces below are under, as Android bundles it.
+      - path: ../android/src/main/res/raw/ofl_1_1.txt
+        buildPhase: resources
+      # Outfit, Manrope and IBM Plex Sans Arabic: Android's own files, referenced rather than copied
+      # so the two apps cannot drift. Registered by `UIAppFonts` in SleevesUpInfo.plist.
+      - path: ../android/src/main/res/font
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        # Matches the Android applicationId. Permanent once the app is first uploaded to Apple.
+        PRODUCT_BUNDLE_IDENTIFIER: com.nexusai.checkin.app
+        GENERATE_INFOPLIST_FILE: YES
+        # Background refresh's identifier and mode, merged into the generated plist.
+        INFOPLIST_FILE: SleevesUpInfo.plist
+        # The app group holding the record, which the widget extension reads (`RecordLocation`).
+        CODE_SIGN_ENTITLEMENTS: SleevesUp/SleevesUp.entitlements
+        INFOPLIST_KEY_CFBundleDisplayName: Sleeves Up
+        # The open session's Live Activity (iOS rule 4), drawn by SleevesUpWidgets.
+        INFOPLIST_KEY_NSSupportsLiveActivities: YES
+        # The launch screen (the mark on paper) is `UILaunchScreen` in SleevesUpInfo.plist.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        # Says what happens and nothing more, as Android's camera disclosure does. Both reasons are
+        # translated in SleevesUp/InfoPlist.xcstrings, which must keep the same English.
+        INFOPLIST_KEY_NSCameraUsageDescription: The front camera checks you're here when you check in or out.
+        INFOPLIST_KEY_NSFaceIDUsageDescription: Face ID confirms it's you when the camera can't.
+        OTHER_LDFLAGS: [$(inherited), -framework, Shared]
+        # The Gradle build writes outside the target's declared outputs, which Xcode's script sandbox refuses.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    attributes:
+      # Lets automatic signing add the app group to the App ID and its profile.
+      SystemCapabilities:
+        com.apple.ApplicationGroups.iOS:
+          enabled: 1
+    dependencies:
+      - package: GRDB
+      - target: SleevesUpWidgets
+    scheme:
+      testTargets: [SleevesUpTests, SleevesUpUITests]
+    preBuildScripts:
+      - name: Build the shared Kotlin framework
+        basedOnDependencyAnalysis: false
+        script: |
+          set -e
+          # Xcode runs build phases with a minimal environment. Gradle starts on any JDK; its daemon
+          # needs JetBrains Runtime 21 (gradle/gradle-daemon-jvm.properties), Android Studio's bundled one.
+          if [ -z "$JAVA_HOME" ]; then export JAVA_HOME="$(/usr/libexec/java_home)"; fi
+          JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+          cd "$SRCROOT/.."
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode -Dorg.gradle.java.installations.paths="$JBR"
+  SleevesUpWidgets:
+    type: app-extension
+    platform: iOS
+    # `Common` (the record's location, the widget's face, the Live Activity's attributes, the locale and
+    # the string catalog, `Localizable.xcstrings`) is compiled into both.
+    sources: [SleevesUpWidgets, Common]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.nexusai.checkin.app.widgets
+        # The app group holding the record, which the home-screen widget reads.
+        CODE_SIGN_ENTITLEMENTS: SleevesUpWidgets/SleevesUpWidgets.entitlements
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: SleevesUpWidgets/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Sleeves Up
+        SKIP_INSTALL: YES
+    attributes:
+      SystemCapabilities:
+        com.apple.ApplicationGroups.iOS:
+          enabled: 1
+    dependencies:
+      - package: GRDB
+  SleevesUpTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [SleevesUpTests]
+    dependencies:
+      - target: SleevesUp
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.nexusai.checkin.app.tests
+  SleevesUpUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [SleevesUpUITests]
+    dependencies:
+      - target: SleevesUp
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.nexusai.checkin.app.uitests
+        TEST_TARGET_NAME: SleevesUp

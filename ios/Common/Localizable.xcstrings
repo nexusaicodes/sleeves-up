@@ -1,0 +1,2732 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%1$s: a good moment to start" : {
+      "comment" : "Habit reminder title steady.t4 (Android nudge_steady_title_4); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$s: لحظة مناسبة للبدء"
+          }
+        }
+      }
+    },
+    "%1$s: a small start counts" : {
+      "comment" : "Habit reminder title returning.t3 (Android nudge_returning_title_3); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$s: البداية الصغيرة تُحتسب"
+          }
+        }
+      }
+    },
+    "%1$s: make a start" : {
+      "comment" : "Habit reminder title steady.t1 (Android nudge_not_checked_in_title); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$s: ابدأ بخطوة"
+          }
+        }
+      }
+    },
+    "%1$s: one session makes the day" : {
+      "comment" : "Habit reminder title returning.t2 (Android nudge_returning_title_2); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$s: جلسة واحدة تصنع اليوم"
+          }
+        }
+      }
+    },
+    "%1$s: ready when you are" : {
+      "comment" : "Habit reminder title not_started.t1 (Android nudge_not_started_title_1); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$s: حين تكون مستعدًا"
+          }
+        }
+      }
+    },
+    "%1$s: start with a short one" : {
+      "comment" : "Habit reminder title not_started.t3 (Android nudge_not_started_title_3); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$s: ابدأ بجلسة قصيرة"
+          }
+        }
+      }
+    },
+    "%1$s: the first session is the whole step" : {
+      "comment" : "Habit reminder title not_started.t2 (Android nudge_not_started_title_2); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$s: الجلسة الأولى هي الخطوة كلها"
+          }
+        }
+      }
+    },
+    "%1$s: time to show up" : {
+      "comment" : "Habit reminder title steady.t3 (Android nudge_steady_title_3); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$s: حان وقت الحضور"
+          }
+        }
+      }
+    },
+    "%1$s: today can count" : {
+      "comment" : "Habit reminder title returning.t4 (Android nudge_returning_title_4); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$s: اليوم يمكن أن يُحتسب"
+          }
+        }
+      }
+    },
+    "%1$s: today could be the first day" : {
+      "comment" : "Habit reminder title not_started.t4 (Android nudge_not_started_title_4); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$s: قد يكون اليوم هو اليوم الأول"
+          }
+        }
+      }
+    },
+    "%1$s: today starts fresh" : {
+      "comment" : "Habit reminder title returning.t1 (Android nudge_returning_title_1); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$s: اليوم يبدأ من جديد"
+          }
+        }
+      }
+    },
+    "%1$s: worth showing up for" : {
+      "comment" : "Habit reminder title steady.t2 (Android nudge_steady_title_2); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$s: يستحق الحضور"
+          }
+        }
+      }
+    },
+    "%@ %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‏%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@ archived. Its record is kept." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أُرشفت %1$@، وسجلّها محفوظ."
+          }
+        }
+      }
+    },
+    "%@ is running. Check out of it first." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ جارية. سجّل انصرافك منها أولًا."
+          }
+        }
+      }
+    },
+    "%@ · %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‏%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %@ today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$@ اليوم"
+          }
+        }
+      }
+    },
+    "%@ – %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‏%1$@ – %2$@"
+          }
+        }
+      }
+    },
+    "%@. Once a day at most, on days you haven't checked in yet." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@. مرة واحدة في اليوم على الأكثر، في الأيام التي لم تسجّل فيها حضورك بعد."
+          }
+        }
+      }
+    },
+    "%lld days" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days"
+                }
+              }
+            }
+          }
+        },
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld يوم"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "يوم واحد"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "يومان"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld أيام"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld يومًا"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld يوم"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld days · dashed line = average" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld day · dashed line = average"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld days · dashed line = average"
+                }
+              }
+            }
+          }
+        },
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld يوم · الخط المتقطع = المتوسط"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "يوم واحد · الخط المتقطع = المتوسط"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "يومان · الخط المتقطع = المتوسط"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld أيام · الخط المتقطع = المتوسط"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld يومًا · الخط المتقطع = المتوسط"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld يوم · الخط المتقطع = المتوسط"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld sessions" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld session"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld sessions"
+                }
+              }
+            }
+          }
+        },
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld جلسة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "جلسة واحدة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "جلستان"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld جلسات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld جلسة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld جلسة"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld, %@ worked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld، %2$@ من العمل"
+          }
+        }
+      }
+    },
+    "%lldh %lldm" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld س %2$lld د"
+          }
+        }
+      }
+    },
+    "%lldh %lldm %llds" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld س %2$lld د %3$lld ث"
+          }
+        }
+      }
+    },
+    "%lldm" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld د"
+          }
+        }
+      }
+    },
+    "%lldm %llds" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld د %2$lld ث"
+          }
+        }
+      }
+    },
+    ", " : {
+      "comment" : "Joins the entries of a spoken list (Android list_separator).",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "، "
+          }
+        }
+      }
+    },
+    "3 or more" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3 أو أكثر"
+          }
+        }
+      }
+    },
+    "A good moment to start" : {
+      "comment" : "Habit reminder title steady.t4 (Android nudge_steady_title_unnamed_4); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لحظة مناسبة للبدء"
+          }
+        }
+      }
+    },
+    "A habit is running. Check out of it first." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هناك عادة جارية. سجّل انصرافك منها أولًا."
+          }
+        }
+      }
+    },
+    "A quick session now is a whole day shown up for." : {
+      "comment" : "Habit reminder body steady.b5 (Android nudge_steady_body_5).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جلسة سريعة الآن يومٌ حضرتَ فيه كاملًا."
+          }
+        }
+      }
+    },
+    "A reminder comes around then on days you haven't checked in yet." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يصلك تذكير قرابة ذلك الوقت في الأيام التي لم تسجّل فيها حضورك بعد."
+          }
+        }
+      }
+    },
+    "A short check-in today is a full day in the record." : {
+      "comment" : "Habit reminder body returning.b12 (Android nudge_returning_body_12).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تسجيل حضور قصير اليوم يومٌ كامل في السجلّ."
+          }
+        }
+      }
+    },
+    "A short session counts exactly as much as a long one. Start with whichever fits." : {
+      "comment" : "Habit reminder body not_started.b3 (Android nudge_not_started_body_3).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الجلسة القصيرة تُحتسب تمامًا كالطويلة، فابدأ بما يناسبك."
+          }
+        }
+      }
+    },
+    "A small start counts" : {
+      "comment" : "Habit reminder title returning.t3 (Android nudge_returning_title_unnamed_3); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "البداية الصغيرة تُحتسب"
+          }
+        }
+      }
+    },
+    "About" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حول التطبيق"
+          }
+        }
+      }
+    },
+    "Add more in the app when you want." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أضف المزيد من داخل التطبيق متى شئت."
+          }
+        }
+      }
+    },
+    "Add the widget to check in or out without opening the app first. The same presence check runs." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أضف التطبيق المصغّر لتسجيل الحضور أو الانصراف دون فتح التطبيق أولًا. ويجري التحقق من الحضور نفسه."
+          }
+        }
+      }
+    },
+    "Afternoon" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الظهيرة"
+          }
+        }
+      }
+    },
+    "All text when the app is in Arabic." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جميع النصوص حين يكون التطبيق بالعربية."
+          }
+        }
+      }
+    },
+    "All time" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل الأوقات"
+          }
+        }
+      }
+    },
+    "Another habit is already called %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توجد عادة أخرى باسم %1$@"
+          }
+        }
+      }
+    },
+    "Any length counts. Start where you are." : {
+      "comment" : "Habit reminder body steady.b2 (Android nudge_steady_body_2).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أي مدة تُحتسب. ابدأ من حيث أنت."
+          }
+        }
+      }
+    },
+    "App language" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لغة التطبيق"
+          }
+        }
+      }
+    },
+    "Archive" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أرشفة"
+          }
+        }
+      }
+    },
+    "Archived" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المؤرشفة"
+          }
+        }
+      }
+    },
+    "Archived habits keep their records and send no reminders." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحتفظ العادات المؤرشفة بسجلّاتها ولا ترسل أي تذكيرات."
+          }
+        }
+      }
+    },
+    "Around" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قرابة"
+          }
+        }
+      }
+    },
+    "Around %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قرابة %1$@"
+          }
+        }
+      }
+    },
+    "Between %@ and %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بين %1$@ و%2$@"
+          }
+        }
+      }
+    },
+    "Body and label sizes." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أحجام النصوص والتسميات."
+          }
+        }
+      }
+    },
+    "CSV ready to share" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملف CSV جاهز للمشاركة"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إلغاء"
+          }
+        }
+      }
+    },
+    "Check In" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تسجيل الحضور"
+          }
+        }
+      }
+    },
+    "Check Out" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تسجيل الانصراف"
+          }
+        }
+      }
+    },
+    "Check in for a few minutes. That's all a first day needs." : {
+      "comment" : "Habit reminder body not_started.b1 (Android nudge_not_started_body_1).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سجّل حضورك بضع دقائق، فهذا كل ما يحتاجه اليوم الأول."
+          }
+        }
+      }
+    },
+    "Check in from your home screen" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سجّل حضورك من الشاشة الرئيسية"
+          }
+        }
+      }
+    },
+    "Check in to %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تسجيل الحضور في %1$@"
+          }
+        }
+      }
+    },
+    "Check in to…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تسجيل الحضور في…"
+          }
+        }
+      }
+    },
+    "Check in with a glance at the camera, and check out the same way. Your time is logged, but showing up is what counts." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سجّل حضورك بنظرة إلى الكاميرا، وانصرافك بالطريقة نفسها. يُسجَّل وقتك، لكن الحضور هو ما يُحتسب."
+          }
+        }
+      }
+    },
+    "Check in, even briefly, and today counts." : {
+      "comment" : "Habit reminder body steady.b12 (Android nudge_steady_body_12).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سجّل حضورك ولو قليلًا، فيُحتسب اليوم."
+          }
+        }
+      }
+    },
+    "Check out of %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تسجيل الانصراف من %1$@"
+          }
+        }
+      }
+    },
+    "Check out of %@ before archiving it" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سجّل انصرافك من %1$@ قبل أرشفتها"
+          }
+        }
+      }
+    },
+    "Check out of %@ to switch or manage habits" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سجّل انصرافك من %1$@ للتبديل أو لإدارة العادات"
+          }
+        }
+      }
+    },
+    "Checked In" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم تسجيل الحضور"
+          }
+        }
+      }
+    },
+    "Checked In: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم تسجيل الحضور: %1$@"
+          }
+        }
+      }
+    },
+    "Continue" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متابعة"
+          }
+        }
+      }
+    },
+    "Daily Hours" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الساعات اليومية"
+          }
+        }
+      }
+    },
+    "Daily hours over %lld days." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Daily hours over %1$lld day."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Daily hours over %1$lld days."
+                }
+              }
+            }
+          }
+        },
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "الساعات اليومية على مدى %1$lld يوم."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "الساعات اليومية على مدى يوم واحد."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "الساعات اليومية على مدى يومين."
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "الساعات اليومية على مدى %1$lld أيام."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "الساعات اليومية على مدى %1$lld يومًا."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "الساعات اليومية على مدى %1$lld يوم."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Dates and time zones in the shared code." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التواريخ والمناطق الزمنية في الشيفرة المشتركة."
+          }
+        }
+      }
+    },
+    "Days Split" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توزيع الأيام"
+          }
+        }
+      }
+    },
+    "Days split: %@ showed up, %@ missed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توزيع الأيام: حضرت %1$@، وفاتك %2$@"
+          }
+        }
+      }
+    },
+    "Days tracked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأيام المتتبَّعة"
+          }
+        }
+      }
+    },
+    "Display, headline and title sizes." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أحجام العرض والعناوين."
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم"
+          }
+        }
+      }
+    },
+    "Easy does it. One short session is enough." : {
+      "comment" : "Habit reminder body returning.b10 (Android nudge_returning_body_10).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "على مهل. جلسة قصيرة واحدة تكفي."
+          }
+        }
+      }
+    },
+    "Edit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعديل"
+          }
+        }
+      }
+    },
+    "Edit Habit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعديل العادة"
+          }
+        }
+      }
+    },
+    "Evening" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المساء"
+          }
+        }
+      }
+    },
+    "Every day starts fresh. A short session today counts in full." : {
+      "comment" : "Habit reminder body returning.b1 (Android nudge_returning_body_1).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل يوم يبدأ من جديد، والجلسة القصيرة اليوم تُحتسب كاملة."
+          }
+        }
+      }
+    },
+    "Every record begins with one day. This one is open." : {
+      "comment" : "Habit reminder body not_started.b9 (Android nudge_not_started_body_9).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل سجلّ يبدأ بيوم واحد، وهذا اليوم متاح."
+          }
+        }
+      }
+    },
+    "Export %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصدير %1$@"
+          }
+        }
+      }
+    },
+    "Export Data" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصدير البيانات"
+          }
+        }
+      }
+    },
+    "Export failed: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر التصدير: %1$@"
+          }
+        }
+      }
+    },
+    "Face ID & Passcode" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بصمة الوجه ورمز الدخول"
+          }
+        }
+      }
+    },
+    "Five minutes is a whole day shown up for." : {
+      "comment" : "Habit reminder body returning.b7 (Android nudge_returning_body_7).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خمس دقائق يومٌ حضرتَ فيه كاملًا."
+          }
+        }
+      }
+    },
+    "Get started" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لنبدأ"
+          }
+        }
+      }
+    },
+    "Give it a name" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعطها اسمًا"
+          }
+        }
+      }
+    },
+    "Habit: %@. Switch habit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "العادة: %1$@. تبديل العادة"
+          }
+        }
+      }
+    },
+    "Habits" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "العادات"
+          }
+        }
+      }
+    },
+    "Hide today's sessions" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إخفاء جلسات اليوم"
+          }
+        }
+      }
+    },
+    "History" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "السجل"
+          }
+        }
+      }
+    },
+    "Hours by Month" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الساعات حسب الشهر"
+          }
+        }
+      }
+    },
+    "Hours by month: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الساعات حسب الشهر: %1$@"
+          }
+        }
+      }
+    },
+    "Hours per tracked day" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الساعات لكل يوم متتبَّع"
+          }
+        }
+      }
+    },
+    "How to Check" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كيف تتحقق"
+          }
+        }
+      }
+    },
+    "However long it turns out to be, today can count." : {
+      "comment" : "Habit reminder body not_started.b12 (Android nudge_not_started_body_12).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مهما كان طول جلستك، يمكن لهذا اليوم أن يُحتسب."
+          }
+        }
+      }
+    },
+    "Its core, which kotlinx-datetime depends on." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نواتها، التي تعتمد عليها kotlinx-datetime."
+          }
+        }
+      }
+    },
+    "Keep at least one habit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أبقِ عادة واحدة على الأقل"
+          }
+        }
+      }
+    },
+    "Keep it to %lld characters" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Keep it to %lld character"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Keep it to %lld characters"
+                }
+              }
+            }
+          }
+        },
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "اجعله في حدود %lld حرف"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "اجعله في حدود حرف واحد"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "اجعله في حدود حرفين"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "اجعله في حدود %lld أحرف"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "اجعله في حدود %lld حرفًا"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "اجعله في حدود %lld حرف"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Language" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اللغة"
+          }
+        }
+      }
+    },
+    "Licence Texts" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نصوص التراخيص"
+          }
+        }
+      }
+    },
+    "Licences" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التراخيص"
+          }
+        }
+      }
+    },
+    "Looking for a face…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ البحث عن وجه…"
+          }
+        }
+      }
+    },
+    "MMM" : {
+      "comment" : "A month on a chart axis: a DateFormatter pattern, not prose (Android date_axis_month_pattern).",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MMM"
+          }
+        }
+      }
+    },
+    "MMM ''yy" : {
+      "comment" : "A month and year on a chart axis: a DateFormatter pattern, not prose (Android date_axis_month_year_pattern).",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MMM yy"
+          }
+        }
+      }
+    },
+    "MMMM yyyy" : {
+      "comment" : "A month heading: a DateFormatter pattern, not prose (Android date_month_year_pattern).",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MMMM yyyy"
+          }
+        }
+      }
+    },
+    "Make a start" : {
+      "comment" : "Habit reminder title steady.t1 (Android nudge_not_checked_in_unnamed_title); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ بخطوة"
+          }
+        }
+      }
+    },
+    "Make it a habit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجعلها عادة"
+          }
+        }
+      }
+    },
+    "Make it as small as you like. Starting is what counts." : {
+      "comment" : "Habit reminder body returning.b8 (Android nudge_returning_body_8).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجعلها صغيرة كما تشاء، فالبدء هو ما يُحتسب."
+          }
+        }
+      }
+    },
+    "Missed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أيام دون حضور"
+          }
+        }
+      }
+    },
+    "Month" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الشهر"
+          }
+        }
+      }
+    },
+    "Morning" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الصباح"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الاسم"
+          }
+        }
+      }
+    },
+    "New Habit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عادة جديدة"
+          }
+        }
+      }
+    },
+    "New habit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عادة جديدة"
+          }
+        }
+      }
+    },
+    "Next" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التالي"
+          }
+        }
+      }
+    },
+    "Next month" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الشهر التالي"
+          }
+        }
+      }
+    },
+    "No account, no server" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا حساب، ولا خادم"
+          }
+        }
+      }
+    },
+    "No analytics, no ads" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تحليلات، ولا إعلانات"
+          }
+        }
+      }
+    },
+    "No completed day in %@. Use the arrows to look at another month." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوم مكتمل في %1$@. استخدم الأسهم للانتقال إلى شهر آخر."
+          }
+        }
+      }
+    },
+    "No completed days to export yet" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا أيام مكتملة للتصدير بعد"
+          }
+        }
+      }
+    },
+    "No day has been checked out of yet. Check out of a session and it appears here." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم تسجّل انصرافك من أي يوم بعد. سجّل انصرافك من جلسة وسيظهر هنا."
+          }
+        }
+      }
+    },
+    "No day selected" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يُحدَّد أي يوم"
+          }
+        }
+      }
+    },
+    "No email app found. Address copied: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يُعثر على تطبيق بريد. نُسخ العنوان: %1$@"
+          }
+        }
+      }
+    },
+    "No ground to make up — the record only asks about today." : {
+      "comment" : "Habit reminder body returning.b6 (Android nudge_returning_body_6).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء لتعوّضه، فالسجلّ لا يسأل إلا عن اليوم."
+          }
+        }
+      }
+    },
+    "No need to feel ready. Starting is enough." : {
+      "comment" : "Habit reminder body steady.b11 (Android nudge_steady_body_11).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا حاجة لأن تشعر بالاستعداد، فالبدء يكفي."
+          }
+        }
+      }
+    },
+    "No network activity" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا نشاط على الشبكة"
+          }
+        }
+      }
+    },
+    "No photo is taken" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تُلتقط أي صورة"
+          }
+        }
+      }
+    },
+    "No sessions recorded on this day." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا جلسات مسجّلة في هذا اليوم."
+          }
+        }
+      }
+    },
+    "Not now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس الآن"
+          }
+        }
+      }
+    },
+    "Nothing here measures how you use the app, and nothing asks anyone else anything." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء هنا يقيس طريقة استخدامك للتطبيق، ولا شيء يسأل أي جهة أخرى عن أي شيء."
+          }
+        }
+      }
+    },
+    "Nothing is owed. Just today, at whatever length suits it." : {
+      "comment" : "Habit reminder body returning.b3 (Android nudge_returning_body_3).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء مستحق عليك. اليوم فقط، بأي مدة تناسبه."
+          }
+        }
+      }
+    },
+    "Nothing left to set up. One check-in starts the record." : {
+      "comment" : "Habit reminder body not_started.b2 (Android nudge_not_started_body_2).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يبقَ شيء لإعداده، تسجيل حضور واحد يبدأ السجلّ."
+          }
+        }
+      }
+    },
+    "Nothing recorded here" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء مسجّل هنا"
+          }
+        }
+      }
+    },
+    "Nothing to prepare. Check in, and you've begun." : {
+      "comment" : "Habit reminder body not_started.b5 (Android nudge_not_started_body_5).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء لتحضّره. سجّل حضورك، وقد بدأت."
+          }
+        }
+      }
+    },
+    "On your home screen" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "على شاشتك الرئيسية"
+          }
+        }
+      }
+    },
+    "One habit at a time" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عادة واحدة في كل مرة"
+          }
+        }
+      }
+    },
+    "One session makes the day" : {
+      "comment" : "Habit reminder title returning.t2 (Android nudge_returning_title_unnamed_2); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جلسة واحدة تصنع اليوم"
+          }
+        }
+      }
+    },
+    "One session today gives the calendar its first mark." : {
+      "comment" : "Habit reminder body not_started.b11 (Android nudge_not_started_body_11).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جلسة واحدة اليوم تمنح التقويم أول علامة."
+          }
+        }
+      }
+    },
+    "Open Settings, then %@, and turn on a passcode. Then come back here." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح الإعدادات، ثم %@، وفعّل رمز الدخول. ثم عُد إلى هنا."
+          }
+        }
+      }
+    },
+    "Opens outside the app" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُفتح خارج التطبيق"
+          }
+        }
+      }
+    },
+    "Passcode" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رمز الدخول"
+          }
+        }
+      }
+    },
+    "Pick the smallest version of this you can do, and do that." : {
+      "comment" : "Habit reminder body not_started.b8 (Android nudge_not_started_body_8).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر أصغر ما تستطيع فعله من هذا، وافعله."
+          }
+        }
+      }
+    },
+    "Previous month" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الشهر السابق"
+          }
+        }
+      }
+    },
+    "Privacy policy" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سياسة الخصوصية"
+          }
+        }
+      }
+    },
+    "Ready when you are" : {
+      "comment" : "Habit reminder title not_started.t1 (Android nudge_not_started_title_unnamed_1); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حين تكون مستعدًا"
+          }
+        }
+      }
+    },
+    "Reminders" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التذكيرات"
+          }
+        }
+      }
+    },
+    "Reminders off" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التذكيرات متوقفة"
+          }
+        }
+      }
+    },
+    "Reports" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التقارير"
+          }
+        }
+      }
+    },
+    "Restore" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استعادة"
+          }
+        }
+      }
+    },
+    "Save" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حفظ"
+          }
+        }
+      }
+    },
+    "Scope" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النطاق"
+          }
+        }
+      }
+    },
+    "Send feedback" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إرسال ملاحظات"
+          }
+        }
+      }
+    },
+    "Sessions Per Day" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الجلسات في اليوم"
+          }
+        }
+      }
+    },
+    "Sessions per day showed up" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الجلسات لكل يوم حضور"
+          }
+        }
+      }
+    },
+    "Sessions per day: %@ with one session, %@ with two, %@ with three or more. Average %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الجلسات في اليوم: %1$@ بجلسة واحدة، و%2$@ بجلستين، و%3$@ بثلاث جلسات أو أكثر. المتوسط %4$@."
+          }
+        }
+      }
+    },
+    "Set a passcode to use device unlock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عيّن رمز دخول لاستخدام قفل الجهاز"
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإعدادات"
+          }
+        }
+      }
+    },
+    "Short and done counts as much as long and done." : {
+      "comment" : "Habit reminder body steady.b8 (Android nudge_steady_body_8).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القصير المنجَز يُحتسب كالطويل المنجَز."
+          }
+        }
+      }
+    },
+    "Show this habit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عرض هذه العادة"
+          }
+        }
+      }
+    },
+    "Show today's sessions" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إظهار جلسات اليوم"
+          }
+        }
+      }
+    },
+    "Show up for a few minutes and see where it goes." : {
+      "comment" : "Habit reminder body steady.b4 (Android nudge_steady_body_4).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احضر بضع دقائق وانظر إلى أين تمضي."
+          }
+        }
+      }
+    },
+    "Showed up" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أيام الحضور"
+          }
+        }
+      }
+    },
+    "Showing" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "معروضة"
+          }
+        }
+      }
+    },
+    "Showing up is the whole job today." : {
+      "comment" : "Habit reminder body steady.b10 (Android nudge_steady_body_10).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحضور هو مهمة اليوم كلها."
+          }
+        }
+      }
+    },
+    "Showing up is what counts" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحضور هو ما يُحتسب"
+          }
+        }
+      }
+    },
+    "Skip" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تخطٍّ"
+          }
+        }
+      }
+    },
+    "Sleeves Up couldn't open its record." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر على Sleeves Up فتح سجلّه."
+          }
+        }
+      }
+    },
+    "Sleeves Up is built on these projects. Grouped by upstream project rather than by artifact." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بُني Sleeves Up على هذه المشاريع، مجمّعةً حسب المشروع الأصلي لا حسب الحزمة."
+          }
+        }
+      }
+    },
+    "Start Times" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أوقات البدء"
+          }
+        }
+      }
+    },
+    "Start before it feels ready. Showing up is what counts." : {
+      "comment" : "Habit reminder body not_started.b10 (Android nudge_not_started_body_10).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ قبل أن تشعر بالاستعداد، فالحضور هو ما يُحتسب."
+          }
+        }
+      }
+    },
+    "Start small. You can always keep going." : {
+      "comment" : "Habit reminder body steady.b9 (Android nudge_steady_body_9).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ صغيرًا، ويمكنك دائمًا أن تواصل."
+          }
+        }
+      }
+    },
+    "Start times: %@ in the morning, %@ in the afternoon, %@ in the evening" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أوقات البدء: %1$@ صباحًا، و%2$@ ظهرًا، و%3$@ مساءً"
+          }
+        }
+      }
+    },
+    "Start with a short one" : {
+      "comment" : "Habit reminder title not_started.t3 (Android nudge_not_started_title_unnamed_3); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ بجلسة قصيرة"
+          }
+        }
+      }
+    },
+    "Start with one habit you want to build, and add more later — each keeps its own record." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ بعادة واحدة تريد بناءها، وأضف المزيد لاحقًا — لكل عادة سجلّها الخاص."
+          }
+        }
+      }
+    },
+    "Still checked in?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هل ما زلت مسجّل الحضور؟"
+          }
+        }
+      }
+    },
+    "Still looking. You can use device unlock instead." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما زلنا نبحث. يمكنك استخدام قفل الجهاز بدلًا من ذلك."
+          }
+        }
+      }
+    },
+    "Tap a day in the calendar to see its sessions." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انقر على يوم في التقويم لعرض جلساته."
+          }
+        }
+      }
+    },
+    "Tap to close" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انقر للإغلاق"
+          }
+        }
+      }
+    },
+    "Ten minutes counts as much as any day ever did." : {
+      "comment" : "Habit reminder body returning.b2 (Android nudge_returning_body_2).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عشر دقائق تُحتسب كأي يوم مضى."
+          }
+        }
+      }
+    },
+    "Ten minutes is a real start." : {
+      "comment" : "Habit reminder body not_started.b6 (Android nudge_not_started_body_6).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عشر دقائق بدايةٌ حقيقية."
+          }
+        }
+      }
+    },
+    "That didn't load. Try again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر التحميل. حاول مرة أخرى."
+          }
+        }
+      }
+    },
+    "That didn't save. Try again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر الحفظ. حاول مرة أخرى."
+          }
+        }
+      }
+    },
+    "That habit is no longer here, so nothing was saved" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم تعد هذه العادة موجودة، فلم يُحفظ شيء"
+          }
+        }
+      }
+    },
+    "That name can't be saved" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر حفظ هذا الاسم"
+          }
+        }
+      }
+    },
+    "The Numbers" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأرقام"
+          }
+        }
+      }
+    },
+    "The SQLite database the record is kept in." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قاعدة بيانات SQLite التي يُحفظ فيها السجل."
+          }
+        }
+      }
+    },
+    "The app makes no network requests and contains nothing that does, so it cannot upload anything." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يُجري التطبيق أي طلبات شبكة ولا يحتوي على ما يُجريها، فلا يمكنه رفع أي شيء."
+          }
+        }
+      }
+    },
+    "The day still has room for a session." : {
+      "comment" : "Habit reminder body steady.b7 (Android nudge_steady_body_7).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما زال في اليوم متّسع لجلسة."
+          }
+        }
+      }
+    },
+    "The first session is the whole step" : {
+      "comment" : "Habit reminder title not_started.t2 (Android nudge_not_started_title_unnamed_2); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الجلسة الأولى هي الخطوة كلها"
+          }
+        }
+      }
+    },
+    "The hardest session is the first. Make it a small one." : {
+      "comment" : "Habit reminder body not_started.b4 (Android nudge_not_started_body_4).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أصعب جلسة هي الأولى، فلتكن قصيرة."
+          }
+        }
+      }
+    },
+    "The runtime of the code shared with the Android app." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بيئة تشغيل الشيفرة المشتركة مع تطبيق Android."
+          }
+        }
+      }
+    },
+    "The smallest session still counts. Start with that." : {
+      "comment" : "Habit reminder body returning.b4 (Android nudge_returning_body_4).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أصغر جلسة تُحتسب أيضًا، فابدأ بها."
+          }
+        }
+      }
+    },
+    "There is nothing to sign in to. Your sessions live in a database on this iPhone. If iCloud Backup is on, your iPhone's backup in your own iCloud account includes it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد ما تسجّل الدخول إليه. جلساتك محفوظة في قاعدة بيانات على جهاز iPhone هذا. وإن كان النسخ الاحتياطي على iCloud مفعّلًا، فإن النسخة الاحتياطية لجهازك في حسابك الخاص على iCloud تتضمّنها."
+          }
+        }
+      }
+    },
+    "There's no perfect moment. Now works." : {
+      "comment" : "Habit reminder body returning.b11 (Android nudge_returning_body_11).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا توجد لحظة مثالية، والآن مناسبة."
+          }
+        }
+      }
+    },
+    "This camera can't check for a face. Use device unlock instead." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تستطيع هذه الكاميرا التحقق من وجود وجه. استخدم قفل الجهاز بدلًا من ذلك."
+          }
+        }
+      }
+    },
+    "Time to show up" : {
+      "comment" : "Habit reminder title steady.t3 (Android nudge_steady_title_unnamed_3); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حان وقت الحضور"
+          }
+        }
+      }
+    },
+    "Today can count" : {
+      "comment" : "Habit reminder title returning.t4 (Android nudge_returning_title_unnamed_4); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اليوم يمكن أن يُحتسب"
+          }
+        }
+      }
+    },
+    "Today can count, whatever shape it takes." : {
+      "comment" : "Habit reminder body returning.b9 (Android nudge_returning_body_9).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يمكن لليوم أن يُحتسب، أيًّا كان شكله."
+          }
+        }
+      }
+    },
+    "Today could be the first day" : {
+      "comment" : "Habit reminder title not_started.t4 (Android nudge_not_started_title_unnamed_4); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قد يكون اليوم هو اليوم الأول"
+          }
+        }
+      }
+    },
+    "Today doesn't need to be big. It just needs a start." : {
+      "comment" : "Habit reminder body steady.b3 (Android nudge_steady_body_3).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يلزم أن يكون اليوم كبيرًا، يكفي أن يبدأ."
+          }
+        }
+      }
+    },
+    "Today is its own day. Check in for a few minutes." : {
+      "comment" : "Habit reminder body returning.b5 (Android nudge_returning_body_5).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اليوم يومٌ قائم بذاته. سجّل حضورك بضع دقائق."
+          }
+        }
+      }
+    },
+    "Today starts fresh" : {
+      "comment" : "Habit reminder title returning.t1 (Android nudge_returning_title_unnamed_1); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اليوم يبدأ من جديد"
+          }
+        }
+      }
+    },
+    "Total hours" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إجمالي الساعات"
+          }
+        }
+      }
+    },
+    "Total sessions" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إجمالي الجلسات"
+          }
+        }
+      }
+    },
+    "Touch ID & Passcode" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بصمة الإصبع ورمز الدخول"
+          }
+        }
+      }
+    },
+    "Touch and hold an empty part of your Home Screen, tap Edit, then Add Widget." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المس مكانًا فارغًا في الشاشة الرئيسية مع الاستمرار، ثم انقر على «تعديل»، ثم «إضافة أداة»."
+          }
+        }
+      }
+    },
+    "Tracking since" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التتبّع منذ"
+          }
+        }
+      }
+    },
+    "Unnamed habit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عادة بلا اسم"
+          }
+        }
+      }
+    },
+    "Use device unlock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استخدام قفل الجهاز"
+          }
+        }
+      }
+    },
+    "Use your device unlock to verify your presence" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استخدم قفل جهازك للتحقق من حضورك"
+          }
+        }
+      }
+    },
+    "Version %@ (build %@)" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإصدار %1$@ (البنية %2$@)"
+          }
+        }
+      }
+    },
+    "What This App Does Not Do" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما لا يفعله هذا التطبيق"
+          }
+        }
+      }
+    },
+    "What are you showing up for?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما الذي تحضر من أجله؟"
+          }
+        }
+      }
+    },
+    "What this app collects" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما الذي يجمعه هذا التطبيق"
+          }
+        }
+      }
+    },
+    "Whenever you start, it counts — a short day is still a day shown up for." : {
+      "comment" : "Habit reminder body steady.b1 (Android nudge_not_checked_in_body).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متى بدأت فهو يُحتسب، فاليوم القصير يومٌ حضرتَ فيه أيضًا."
+          }
+        }
+      }
+    },
+    "Worth showing up for" : {
+      "comment" : "Habit reminder title steady.t2 (Android nudge_steady_title_unnamed_2); %1$s is the habit's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستحق الحضور"
+          }
+        }
+      }
+    },
+    "You already have a habit with this name" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لديك عادة بهذا الاسم بالفعل"
+          }
+        }
+      }
+    },
+    "You don't have to take this on trust. Turn on App Privacy Report under Settings, Privacy & Security: it lists every domain each app contacts. This app contacts none." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لست مضطرًا إلى أخذ هذا على الثقة. فعّل «تقرير خصوصية التطبيقات» ضمن الإعدادات، «الخصوصية والأمن»: فهو يعرض كل نطاق يتصل به كل تطبيق. وهذا التطبيق لا يتصل بأي نطاق."
+          }
+        }
+      }
+    },
+    "You don't need a plan for today, just a start." : {
+      "comment" : "Habit reminder body not_started.b7 (Android nudge_not_started_body_7).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تحتاج خطة لليوم، يكفيك أن تبدأ."
+          }
+        }
+      }
+    },
+    "You know the drill: check in, then begin." : {
+      "comment" : "Habit reminder body steady.b6 (Android nudge_steady_body_6).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعرف الطريق: سجّل حضورك ثم ابدأ."
+          }
+        }
+      }
+    },
+    "You showed up" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لقد حضرت"
+          }
+        }
+      }
+    },
+    "You're here!" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنت هنا!"
+          }
+        }
+      }
+    },
+    "Your camera reports whether a face is in frame. The app reads that and nothing else." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُبلغ الكاميرا فقط بوجود وجه في الإطار أو عدمه، ولا يقرأ التطبيق سوى ذلك."
+          }
+        }
+      }
+    },
+    "Your session is still running. It closes on its own at midnight." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جلستك ما زالت جارية، وستُغلق تلقائيًا عند منتصف الليل."
+          }
+        }
+      }
+    },
+    "all time" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل الأوقات"
+          }
+        }
+      }
+    },
+    "d MMM" : {
+      "comment" : "A day on a chart axis: a DateFormatter pattern, not prose (Android date_axis_day_pattern).",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "d MMM"
+          }
+        }
+      }
+    },
+    "d MMM yyyy" : {
+      "comment" : "A date with its year: a DateFormatter pattern, not prose (Android date_with_year_pattern).",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "d MMMM yyyy"
+          }
+        }
+      }
+    },
+    "ongoing" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارية"
+          }
+        }
+      }
+    },
+    "the running habit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "العادة الجارية"
+          }
+        }
+      }
+    },
+    "“We are what we repeatedly do. Excellence, then, is not an act, but a habit.” — Will Durant, on Aristotle" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«نحن ما نفعله مرارًا وتكرارًا. فالتميّز إذن ليس فعلًا، بل عادة.» — ويل ديورانت، عن أرسطو"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -13,7 +13,9 @@ Emits, from the same geometry:
     themed/monochrome layer
   * res/drawable/ic_splash_icon.xml, the splash's animated mark, and its two interpolators
   * pathData for res/drawable/ic_stat_check_in.xml (24dp notification silhouette)
-  * app/src/main/ic_launcher-playstore.png (512x512 Play listing icon)
+  * android/src/main/ic_launcher-playstore.png (512x512 Play listing icon)
+  * the iOS app's AppIcon (default, dark and tinted 1024px), its launch screen's background
+    colour and mark, and the template mark the widget and Live Activity draw (SVG asset sets)
 
 WHY NOT A ROLLED SLEEVE. The name suggests one, and it was tried: as a constant-width
 stroke it reads as a hammer, as a stepped silhouette as a chess pawn, and reduced to the
@@ -30,7 +32,9 @@ file is the only place the curve is authored.
 Run from the repo root:  python3 play-store-assets/generate_icons.py
 """
 
+import json
 import math
+import os
 
 from PIL import Image, ImageDraw
 
@@ -60,6 +64,10 @@ EMPTY_CELLS = frozenset({(1, 2), (2, 0)})
 # notification silhouette is white, since the status bar reads only its alpha.
 INK = (0x1B, 0x2A, 0x4A)       # #1B2A4A
 PAPER = (0xF1, 0xE6, 0xCE)     # #F1E6CE
+
+# mudda's dark scheme: night paper behind a cream mark, for the iOS dark icon and launch screen.
+NIGHT_PAPER = (0x0E, 0x18, 0x30)   # #0E1830
+CREAM = (0xEF, 0xE4, 0xCB)         # #EFE4CB
 
 SAFE_RADIUS = 33.0    # adaptive-icon safe circle; nothing may exceed this
 
@@ -145,7 +153,7 @@ def verify():
 
 # --- raster rendering for the Play listing ---------------------------------------------
 
-def render(size, bg=INK, fg=PAPER, supersample=4):
+def render(size, bg=INK, fg=PAPER, supersample=4, view=108.0):
     """Render the mark to a square RGBA image, anti-aliased by supersampling.
 
     Pillow's rounded_rectangle draws the same shape the cubics above describe, so the raster
@@ -154,12 +162,14 @@ def render(size, bg=INK, fg=PAPER, supersample=4):
     predecessor did.
     """
     s = size * supersample
-    k = s / 108.0
+    k = s / view
+    shift = (108.0 - view) / 2.0
     img = Image.new("RGBA", (s, s), bg + (255,) if bg else (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     r = corner_radius()
     for x0, y0, x1, y1 in cells():
-        d.rounded_rectangle([x0 * k, y0 * k, x1 * k, y1 * k], radius=r * k, fill=fg)
+        d.rounded_rectangle([(x0 - shift) * k, (y0 - shift) * k, (x1 - shift) * k, (y1 - shift) * k],
+                            radius=r * k, fill=fg)
     return img.resize((size, size), Image.LANCZOS)
 
 
@@ -193,7 +203,7 @@ STAGGER_MS = 70
 MIN_SCALE = 0.6
 EASE_OUT_CUBIC = (0.33, 1.0, 0.68, 1.0)   # Compose's EaseOutCubic
 EASE_OUT_BACK = (0.34, 1.56, 0.64, 1.0)   # Compose's EaseOutBack
-SPLASH_OUT = "app/src/main/res/drawable/ic_splash_icon.xml"
+SPLASH_OUT = "android/src/main/res/drawable/ic_splash_icon.xml"
 
 
 def splash_duration_ms():
@@ -284,6 +294,86 @@ def interpolator_xml(name, curve):
 """
 
 
+# --- iOS ------------------------------------------------------------------------------------
+#
+# An iOS icon is shown whole, with no adaptive mask cropping it, so it is rendered over the 72-unit
+# window an Android launcher shows of the 108 canvas: the mark then fills the tile as it does there.
+
+IOS_ICON_VIEW = 72.0
+IOS_APP_ASSETS = "ios/SleevesUp/Assets.xcassets"
+IOS_COMMON_ASSETS = "ios/Common/Brand.xcassets"
+LAUNCH_MARK_PT = 128   # about the painted size of Android's splash mark
+MARK_PT = 64           # a template image; every caller sizes it
+
+
+def mark_svg(fill, points):
+    """The mark alone as an SVG, cropped to what is painted, so a caller's frame is the mark's."""
+    hw = painted_half_width()
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{points}" height="{points}" '
+            f'viewBox="{CX - hw:.2f} {CY - hw:.2f} {2 * hw:.2f} {2 * hw:.2f}">'
+            f'<path fill="{hex_colour(fill)}" d="{path_data()}"/></svg>\n')
+
+
+def write_json(path, value):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(value, f, indent=2)
+        f.write("\n")
+
+
+def write_text(path, text):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        f.write(text)
+
+
+def colour_json(rgb):
+    r, g, b = (f"0x{c:02X}" for c in rgb)
+    return {"color-space": "srgb", "components": {"red": r, "green": g, "blue": b, "alpha": "1.000"}}
+
+
+DARK = [{"appearance": "luminosity", "value": "dark"}]
+TINTED = [{"appearance": "luminosity", "value": "tinted"}]
+INFO = {"author": "generate_icons.py", "version": 1}
+
+
+def write_ios():
+    write_json(f"{IOS_APP_ASSETS}/Contents.json", {"info": INFO})
+    write_json(f"{IOS_COMMON_ASSETS}/Contents.json", {"info": INFO})
+
+    icon = f"{IOS_APP_ASSETS}/AppIcon.appiconset"
+    os.makedirs(icon, exist_ok=True)
+    variants = (("icon.png", INK, PAPER, None), ("icon-dark.png", NIGHT_PAPER, CREAM, DARK),
+                ("icon-tinted.png", (0, 0, 0), (0xFF, 0xFF, 0xFF), TINTED))
+    images = []
+    for name, bg, fg, appearances in variants:
+        render(1024, bg=bg, fg=fg, view=IOS_ICON_VIEW).convert("RGB").save(f"{icon}/{name}")
+        entry = {"filename": name, "idiom": "universal", "platform": "ios", "size": "1024x1024"}
+        if appearances:
+            entry["appearances"] = appearances
+        images.append(entry)
+    write_json(f"{icon}/Contents.json", {"images": images, "info": INFO})
+
+    write_json(f"{IOS_APP_ASSETS}/LaunchBackground.colorset/Contents.json", {"colors": [
+        {"color": colour_json(PAPER), "idiom": "universal"},
+        {"appearances": DARK, "color": colour_json(NIGHT_PAPER), "idiom": "universal"},
+    ], "info": INFO})
+
+    launch = f"{IOS_APP_ASSETS}/LaunchMark.imageset"
+    write_text(f"{launch}/launch-mark.svg", mark_svg(INK, LAUNCH_MARK_PT))
+    write_text(f"{launch}/launch-mark-dark.svg", mark_svg(CREAM, LAUNCH_MARK_PT))
+    write_json(f"{launch}/Contents.json", {"images": [
+        {"filename": "launch-mark.svg", "idiom": "universal"},
+        {"appearances": DARK, "filename": "launch-mark-dark.svg", "idiom": "universal"},
+    ], "info": INFO, "properties": {"preserves-vector-representation": True}})
+
+    mark = f"{IOS_COMMON_ASSETS}/Mark.imageset"
+    write_text(f"{mark}/mark.svg", mark_svg((0, 0, 0), MARK_PT))
+    write_json(f"{mark}/Contents.json", {"images": [{"filename": "mark.svg", "idiom": "universal"}],
+               "info": INFO, "properties": {"preserves-vector-representation": True,
+                                            "template-rendering-intent": "template"}})
+
+
 if __name__ == "__main__":
     worst = verify()
     print(f"safe-circle check: furthest extent {worst:.2f} of {SAFE_RADIUS} OK")
@@ -305,11 +395,14 @@ if __name__ == "__main__":
     with open(SPLASH_OUT, "w") as f:
         f.write(splash_xml())
     for name, curve in (("ease out cubic", EASE_OUT_CUBIC), ("ease out back", EASE_OUT_BACK)):
-        path = f"app/src/main/res/interpolator/splash_{name.replace(' ', '_')}.xml"
+        path = f"android/src/main/res/interpolator/splash_{name.replace(' ', '_')}.xml"
         with open(path, "w") as f:
             f.write(interpolator_xml(name, curve))
     print(f"wrote {SPLASH_OUT} ({splash_duration_ms()}ms) and its two interpolators")
 
-    out = "app/src/main/ic_launcher-playstore.png"
+    out = "android/src/main/ic_launcher-playstore.png"
     render(512).convert("RGB").save(out)
     print(f"wrote {out} 512x512")
+
+    write_ios()
+    print(f"wrote {IOS_APP_ASSETS} (AppIcon, LaunchBackground, LaunchMark) and {IOS_COMMON_ASSETS} (Mark)")

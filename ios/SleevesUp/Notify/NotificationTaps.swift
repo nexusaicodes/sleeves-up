@@ -1,0 +1,95 @@
+import Observation
+import UIKit
+import UserNotifications
+
+/// What a tap on a notification asks the app to do, held until a screen acts on it. A tap can land
+/// before the record is open (a cold launch), so it waits here rather than being acted on at once.
+@MainActor
+@Observable
+final class NotificationTaps {
+
+    enum Request: Equatable {
+        /// The session reminder or its Check Out action: the presence gate, then a check-out.
+        case checkOut
+        /// The Live Activity's Check Out: the presence gate, then a check-out recorded as
+        /// `ClosedBy.timerNotification`, the Live Activity being iOS's timer notification.
+        case checkOutFromActivity
+        /// The home-screen widget: routed from the rows at the tap by the shared
+        /// `TapRouting.forWidget`, to the gate for the open session's check-out (recorded as
+        /// `ClosedBy.widget`), the gate for the one habit, or the picker.
+        case widget
+        /// A habit's reminder: that habit shown, then the presence gate for a check-in to it, as the
+        /// shared `TapRouting.forHabit` decides.
+        case checkIn(habitUuid: String)
+        /// iOS Settings' link to the app's notification settings: the Habits screen, where each
+        /// habit's reminders are switched and timed (iOS rule 1).
+        case reminderSettings
+    }
+
+    private(set) var pending: Request?
+
+    func receive(_ request: Request) {
+        pending = request
+    }
+
+    /// Hands the pending request to the screen acting on it, once.
+    func take() -> Request? {
+        defer { pending = nil }
+        return pending
+    }
+}
+
+/// Receives notification responses from launch on, which a SwiftUI scene cannot: the delegate must
+/// be set before launch finishes, or a tap that launched the app is lost.
+final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+
+    @MainActor let taps = NotificationTaps()
+
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        UNUserNotificationCenter.current().delegate = self
+        NotificationKinds.register()
+        BackgroundRefresh.register()
+        return true
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let content = response.notification.request.content
+        let action = response.actionIdentifier
+        let habitUuid = content.userInfo[NotificationKinds.habitUuidKey] as? String
+        defer { completionHandler() }
+        let request: NotificationTaps.Request
+        switch content.categoryIdentifier {
+        case NotificationKinds.sessionReminder
+            where action == NotificationKinds.checkOutAction || action == UNNotificationDefaultActionIdentifier:
+            request = .checkOut
+        case NotificationKinds.habitReminder where action == UNNotificationDefaultActionIdentifier:
+            guard let habitUuid else { return }
+            request = .checkIn(habitUuid: habitUuid)
+        default:
+            return
+        }
+        Task { @MainActor in taps.receive(request) }
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter, openSettingsFor notification: UNNotification?
+    ) {
+        Task { @MainActor in taps.receive(.reminderSettings) }
+    }
+
+    /// A reminder that arrives while the app is open is still shown, as Android posts it regardless.
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .list, .sound])
+    }
+}

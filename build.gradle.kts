@@ -34,13 +34,15 @@ allprojects {
         // real fix or a site-level @Suppress carrying its reason.
         baseline = rootProject.file("config/detekt/baseline.xml")
         // No androidTest set is listed because there is none: the suite is pure JVM and no
-        // instrumentation dependency is declared. The kotlin/ dirs are listed against the day one
-        // is added; absent dirs cost nothing.
+        // instrumentation dependency is declared. Every project gets the same list, so the app's
+        // java/ dirs and :shared's commonMain/commonTest are both covered; absent dirs cost nothing.
         source.setFrom(
             "src/main/java",
             "src/main/kotlin",
             "src/test/java",
             "src/test/kotlin",
+            "src/commonMain/kotlin",
+            "src/commonTest/kotlin",
         )
     }
 

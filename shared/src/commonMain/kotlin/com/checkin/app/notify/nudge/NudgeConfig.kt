@@ -1,0 +1,45 @@
+package com.checkin.app.notify.nudge
+
+import com.checkin.app.util.MILLIS_PER_MINUTE
+
+/**
+ * How often a nudge may be sent. Its own file because this is what anyone tuning nudge cadence is
+ * looking for, and the three files they would try first — [NudgeEligibility], which reads these
+ * values but does not own them, [NudgeSchedule], which owns the bands, and the Android app's
+ * `NudgeCatalog`, which owns the copy — are all dead ends.
+ *
+ * Frequency is bounded two ways and the band is **not** one of them: this object holds the gap,
+ * and [NudgeSnapshot.spentToday] is the other — one nudge per habit per day. **There is no daily
+ * cap across habits**, deliberately: a user with four habits asked for four reminders, and a cap
+ * would decide on their behalf which habits go unmentioned. The gap is what stops those reminders
+ * arriving as a burst.
+ */
+object NudgeConfig {
+    /**
+     * The minimum spacing between two nudges, **whichever habits they belong to**.
+     *
+     * Global rather than per habit, because per habit it would bound nothing: each habit sends once
+     * a day anyway. What it stops is two habits with the same time — or one whose inexact alarm
+     * slipped into another's — arriving back to back as a pair of high-importance messages, which
+     * reads as the app malfunctioning rather than as two reminders.
+     *
+     * Note this defers a nudge rather than cancelling it: the nudge is not marked sent, and
+     * [NudgeEligibility.nextAlarmAcross] arms the alarm for the instant the gap clears while the
+     * band is still open. That is what keeps the rule from silently costing a habit its reminder,
+     * and why [NudgeSchedule]'s latest choosable time leaves room for it before midnight.
+     */
+    const val MIN_GAP_MS = 90L * MILLIS_PER_MINUTE
+
+    /**
+     * How long the alarm waits when the nudge it is armed for is already due — see
+     * [NudgeEligibility.nextAlarmAt].
+     *
+     * Only an arm made off the back of something else lands on a due nudge: a process start, a new
+     * reminder time, a pass that threw. The commonest of those is the user opening the app, and firing
+     * then posts "you haven't checked in" seconds later over the screen they opened to check in from.
+     * Half an hour gives them the chance to, and the pass that fires then asks again. It is also
+     * what keeps a pass that throws every time from re-arming itself at the alarm's minimum
+     * futurity, a wake every few seconds for the rest of the band.
+     */
+    const val DUE_NOW_DELAY_MS = 30L * MILLIS_PER_MINUTE
+}

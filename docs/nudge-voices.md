@@ -1,7 +1,7 @@
 # Nudge voices: which reminder text comes when
 
 How a habit's daily reminder picks its title and body. Every name below is a `<string name>` in
-`app/src/main/res/values/strings.xml`, with an Arabic twin of the same name in `values-ar/`. The
+`android/src/main/res/values/strings.xml`, with an Arabic twin of the same name in `values-ar/`. The
 code is `notify/nudge/NudgeVoice.kt` (voice and pick), `NudgeCatalog.kt` (the pools) and
 `NudgeDispatcher.send` (the wiring). **Keep this file in step with `NudgeCatalog`**: nothing checks
 that they agree.

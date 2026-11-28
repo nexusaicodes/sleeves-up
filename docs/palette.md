@@ -1,6 +1,6 @@
 # Palette
 
-The app's colours: mudda's light and dark schemes in Spark's slots (`SparkLight`/`SparkDark` in `app/src/main/java/com/checkin/app/ui/theme/Color.kt`), the app tokens beside them, and the contrast of every pair that carries text. `Color.kt` is the source; this file is the reasoning and the contrast table, and changes with it.
+The app's colours: mudda's light and dark schemes in Spark's slots (`SparkLight`/`SparkDark` in `android/src/main/java/com/checkin/app/ui/theme/Color.kt`), the app tokens beside them, and the contrast of every pair that carries text. `Color.kt` is the source; this file is the reasoning and the contrast table, and changes with it. The iOS app carries mudda's roles and the app tokens (not Spark's derived slots, which it has no use for) in `ios/Common/Palette.swift`, a hand copy of the same values, so a change here changes both files.
 
 The app takes mudda's two schemes: navy ink on cream paper in light, cream ink on night-navy paper in dark, brass for marks, and vermilion as the one accent. They go in through `lightSparkColors(…)` and `darkSparkColors(…)`. Nothing else about Spark changes; Spark's defaults would ship Leboncoin's orange.
 

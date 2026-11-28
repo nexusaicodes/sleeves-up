@@ -1,0 +1,90 @@
+package com.checkin.app.platform
+
+import android.content.Context
+import android.content.Intent
+import androidx.core.content.FileProvider
+import com.checkin.app.R
+import com.checkin.app.data.local.DailyAggregate
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.datetime.TimeZone
+import java.io.File
+import java.io.FileWriter
+
+/** Outcome of a CSV export — a typed result so no user-facing strings live in the ViewModel. */
+sealed interface ExportResult {
+    data object Success : ExportResult
+
+    /**
+     * The requested range holds no completed day. Not a failure — there is simply nothing to write.
+     * Decided by the caller before it asks for an export; [CsvExporter.export] never returns it.
+     */
+    data object Nothing : ExportResult
+    data class Failure(val message: String?) : ExportResult
+}
+
+/**
+ * Writes one habit's CSV and hands it to the system share sheet. The file holds that habit's days
+ * alone and carries no habit column — the column order is append-only, and a column that only ever
+ * held one value would say nothing — so [habitName] goes in the filename instead (see
+ * [exportFileName]).
+ */
+interface CsvExporter {
+    suspend fun export(
+        habitName: String?,
+        startKey: String,
+        endKey: String,
+        summaries: Map<String, DailyAggregate>,
+    ): ExportResult
+}
+
+class AndroidCsvExporter(private val context: Context) : CsvExporter {
+
+    // Every failure mode here — file I/O, a FileProvider misconfiguration, no app able to receive
+    // the share — is reported to the user the same way, as a Failure carrying the message. Catching
+    // each separately would produce identical branches.
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun export(
+        habitName: String?,
+        startKey: String,
+        endKey: String,
+        summaries: Map<String, DailyAggregate>,
+    ): ExportResult = try {
+        // Blocking file I/O runs off the main thread; the share Intent stays on Main.
+        val csvFile = withContext(Dispatchers.IO) { writeCsv(habitName, startKey, endKey, summaries) }
+        share(csvFile)
+        ExportResult.Success
+    } catch (e: Exception) {
+        ExportResult.Failure(e.message)
+    }
+
+    /** Writes [csvLines] to a file in the cache's exports folder. */
+    private fun writeCsv(
+        habitName: String?,
+        startKey: String,
+        endKey: String,
+        summaries: Map<String, DailyAggregate>,
+    ): File {
+        val exportDir = File(context.cacheDir, "exports").also { it.mkdirs() }
+        val file = File(exportDir, exportFileName(habitName, startKey, endKey))
+
+        // The clock columns read the device's zone, as the person exporting would read them.
+        val zone = TimeZone.currentSystemDefault()
+        FileWriter(file).use { writer -> csvLines(startKey, endKey, summaries, zone).forEach(writer::write) }
+        return file
+    }
+
+    private fun share(csvFile: File) {
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", csvFile)
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/csv"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(
+            Intent.createChooser(shareIntent, context.getString(R.string.export_chooser_title))
+                .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) },
+        )
+    }
+}
